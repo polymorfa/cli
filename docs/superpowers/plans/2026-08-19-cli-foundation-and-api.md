@@ -14,7 +14,7 @@
 
 - The source repository remains private while the npm package name is public: `@polymorfa/cli` with binary `polymorfa`.
 - Runtime is ESM on Node.js 20 or newer.
-- Development pins `@polymorfa/sdk` to `github:polymorfa/sdks#c6ccc7ec9961356530aced3aa52ee42426d15592`.
+- Development pins `@polymorfa/sdk` to `github:polymorfa/sdks#e0758b93f6e4ce805161e5ca41e52b7642f051c2`.
 - The first npm release is blocked until the SDK is available as a public npm semver dependency.
 - The CLI imports only the SDK package root and never duplicates its HTTP transport, authentication validation, retries, cancellation, metadata, pagination, or typed errors.
 - Secrets are never accepted as command-line arguments, written to project files, printed in verbose logs, or included in error context.
@@ -103,7 +103,7 @@ Run: `npm install`
 
 Run: `npm run typecheck`
 
-Expected: PASS with no TypeScript diagnostics and a lockfile whose SDK resolution ends at commit `c6ccc7ec9961356530aced3aa52ee42426d15592`.
+Expected: PASS with no TypeScript diagnostics and a lockfile whose SDK resolution ends at commit `e0758b93f6e4ce805161e5ca41e52b7642f051c2`.
 
 - [ ] **Step 3: Write the failing version command test**
 

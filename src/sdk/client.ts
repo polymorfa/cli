@@ -1,6 +1,7 @@
 import {
   MessagingClient,
   PlatformClient,
+  PolymorfaConfigurationError,
   type RawClient,
   type SharedClientOptions,
 } from '@polymorfa/sdk'
@@ -8,7 +9,45 @@ import {
 import type {ResolvedEnvironment} from '../context/environment.js'
 
 export function createRawClient(environment: ResolvedEnvironment): RawClient {
-  const shared: SharedClientOptions = {
+  return environment.surface === 'platform'
+    ? createPlatformClient(environment).raw
+    : createMessagingClient(environment).raw
+}
+
+export function createMessagingClient(
+  environment: ResolvedEnvironment,
+): MessagingClient {
+  if (environment.surface !== 'messaging') {
+    throw new PolymorfaConfigurationError(
+      'A typed Messaging client requires the Messaging API surface.',
+      'surface',
+    )
+  }
+
+  return new MessagingClient({
+    credential: environment.credential,
+    ...sharedOptions(environment),
+  })
+}
+
+export function createPlatformClient(
+  environment: ResolvedEnvironment,
+): PlatformClient {
+  if (environment.surface !== 'platform') {
+    throw new PolymorfaConfigurationError(
+      'A typed Platform client requires the Platform API surface.',
+      'surface',
+    )
+  }
+
+  return new PlatformClient({
+    apiKey: environment.credential.value,
+    ...sharedOptions(environment),
+  })
+}
+
+function sharedOptions(environment: ResolvedEnvironment): SharedClientOptions {
+  return {
     ...(environment.baseUrl === undefined
       ? {}
       : {baseUrl: environment.baseUrl}),
@@ -19,16 +58,4 @@ export function createRawClient(environment: ResolvedEnvironment): RawClient {
       ? {}
       : {timeoutMs: environment.timeoutMs}),
   }
-
-  if (environment.surface === 'platform') {
-    return new PlatformClient({
-      apiKey: environment.credential.value,
-      ...shared,
-    }).raw
-  }
-
-  return new MessagingClient({
-    credential: environment.credential,
-    ...shared,
-  }).raw
 }
