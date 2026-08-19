@@ -1,8 +1,8 @@
 # Platform management command research
 
-- **Status:** Complete ten-operation organization-key implementation slice
+- **Status:** Complete fourteen-operation organization-key implementation slice
 - **Reviewed:** 2026-08-20
-- **SDK baseline:** `fb23a126a99e1448b36716dd66cff4440f21abf6`
+- **SDK baseline:** `c36d151c102d7812977635e677341141721cac9a`
 
 ## Sources reviewed
 
@@ -16,6 +16,11 @@
   secret values from list operations.
 - [Vercel CLI copy guidance](https://github.com/vercel/vercel/blob/main/packages/cli/.agents/skills/cli-ux/references/copy.md),
   especially concrete action/object copy and blast-radius-aware confirmation.
+- [GitHub CLI workflow input](https://cli.github.com/manual/gh_workflow_run),
+  supporting bounded structured JSON input for multi-field operational actions.
+- [Wrangler destructive command behavior](https://github.com/cloudflare/workers-sdk/issues/8995),
+  reinforcing explicit remote targeting and confirmation before permanent
+  deletion.
 - The pinned Polymorfa Platform contract, live handler behavior, and public
   TypeScript SDK.
 
@@ -44,13 +49,22 @@ operation
 
 project-token
   list --project <project>
+
+widget
+  view [--project <project>]
+  update [--project <project>] --input <file|->
+
+session
+  stop <session...> [--project <project>]
+  delete <session...> [--project <project>] --yes
 ```
 
 The CLI uses the public typed `PlatformClient` resources only. All commands
 require an organization server API key. Reads require `sessions:read`; key
-revocation and incident acknowledgement require `sessions:manage`. Platform
-project tokens and Messaging browser client tokens are rejected before
-transport.
+revocation and incident acknowledgement require `sessions:manage`. Widget reads
+and updates require `widget:create`; batch session stop/delete require
+`sessions:manage`. Platform project tokens and Messaging browser client tokens
+are rejected before transport.
 
 ## Command decisions
 
@@ -81,13 +95,36 @@ Project-token listing requires an explicit project because the live
 organization-key handler rejects an absent project even though its OpenAPI
 query field is optional. Only metadata is returned.
 
+Widget settings keep target selection outside the JSON patch: `--project`
+selects one project row, while its omission selects organization defaults. The
+CLI rejects `projectId` inside input so a reviewed settings document cannot hide
+its mutation target. A missing saved row remains `null` in JSON and has explicit
+human output. Empty patches remain representable because bodyless PUT is a live
+compatibility no-op. Logo fields are storage identifiers only; the CLI does not
+invent file, URL, base64, multipart, upload, attach, or download behavior.
+
+Batch session commands use positional IDs because they are the primary action
+targets. The CLI trims and validates 1..100 unique IDs before transport instead
+of relying on the handler's silent deduplication. `session stop` reports the
+matched/queued count and explicitly says it has not waited for completion.
+`session delete` requires `--yes`, reports the matched management rows removed,
+and identifies device termination as best effort. Neither command compares the
+returned count to the requested count or invents per-item outcomes.
+
+The source does not persist idempotency headers for these batch operations.
+Retrying a stop can enqueue another stop; retrying deletion reports only rows
+still present. Both commands expose an idempotency option for request identity
+without claiming stronger server behavior.
+
 ## Explicit gaps
 
 There is no organization-key member mutation, API-key creation or rotation,
 project-token minting or revocation, raw bearer material, cross-project token
 aggregate, incident detail, pagination, operation list/watch/stream/cancel, or
-security-state aggregation in this slice. The CLI does not invent those
-workflows or use the SDK raw escape hatch to cross dashboard/staff boundaries.
+security-state aggregation, widget logo transfer, batch per-item result,
+operation ID, completion wait, watch, stream, cancel, or history in this slice.
+The CLI does not invent those workflows or use the SDK raw escape hatch to cross
+dashboard/staff boundaries.
 
-At this exact baseline the SDK ledger records 331 total / 194 covered / 71
+At this exact baseline the SDK ledger records 331 total / 198 covered / 67
 missing / 66 excluded / 0 partial / 0 changed operations.

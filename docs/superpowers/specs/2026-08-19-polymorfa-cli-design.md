@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `fb23a126a99e1448b36716dd66cff4440f21abf6`. It is ESM-only, requires Node.js
+commit `c36d151c102d7812977635e677341141721cac9a`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#fb23a126a99e1448b36716dd66cff4440f21abf6
+npm install github:polymorfa/sdks#c36d151c102d7812977635e677341141721cac9a
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,13 +118,13 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32310852723](https://github.com/polymorfa/sdks/actions/runs/32310852723).
-The run exercised 44 test files and 183 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32312282486](https://github.com/polymorfa/sdks/actions/runs/32312282486).
+The run exercised 45 test files and 189 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-194 curated typed methods, 71 explicitly missing operations available through
+198 curated typed methods, 67 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 66 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
@@ -136,8 +136,8 @@ collections, orders, compliance, observation policies, webhooks, client tokens,
 project templates, and all 33 signed event payload schemas plus Platform
 organizations, projects, sessions, billing, campaigns, audiences, opt-outs,
 media, organization API keys, members, audit logs, session bans, security
-incidents, management operations, and project-token metadata. A CLI command
-outside that set uses
+incidents, management operations, project-token metadata, widget settings, and
+batch session stop/delete. A CLI command outside that set uses
 the SDK's raw escape hatch rather than recreating authentication, transport,
 retry, pagination, or error behavior. Its command-research record must identify
 the exact raw operation and track promotion to a curated SDK method when the
@@ -360,6 +360,10 @@ billing
   reminders
     set
   portal
+
+widget
+  view
+  update
 ```
 
 Key and client-token creation print secret material once and never include it
@@ -399,6 +403,7 @@ session
   connect
   reconnect
   disconnect
+  stop
   delete
   qr
   pairing-code
@@ -1047,7 +1052,9 @@ The private `dev` branch now contains working, unpublished vertical slices:
   security-code inspection commands;
 - organization-key API-key list/revocation, member and audit lists, session-ban
   filtering, security-incident list/acknowledgement, operation inspection, and
-  project-token metadata commands; and
+  project-token metadata commands;
+- organization/project widget settings inspection and JSON patching, plus
+  bounded batch session stop and confirmed management deletion commands; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real

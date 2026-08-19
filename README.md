@@ -473,6 +473,10 @@ polymorfa security-incident list
 polymorfa security-incident acknowledge incident_123
 polymorfa operation view operation_123
 polymorfa project-token list --project project_123
+polymorfa widget view --project project_123
+polymorfa widget update --project project_123 --input widget-patch.json
+polymorfa session stop session_1 session_2 --project project_123
+polymorfa session delete session_1 session_2 --project project_123 --yes
 ```
 
 Key and project-token lists contain metadata only; neither command returns raw
@@ -492,6 +496,22 @@ not exposed through server-key commands. The API also exposes no compatible
 API-key creation, token mint/revoke, incident detail, or cross-project token
 aggregate in this typed slice. The raw API command is not a credential-boundary
 bypass.
+
+Widget view returns `null` in JSON when no settings row has been saved. Update
+accepts one bounded JSON object from `--input`; the target project is selected
+separately with `--project` and cannot be hidden in that input. Omitting the
+project targets organization defaults. Widget logo fields are existing storage
+identifiers, not file, URL, base64, upload, or download operations. Widget
+access requires the source `widget:create` scope.
+
+Session stop and delete accept 1 through 100 unique UUIDs or stable slugs. The
+CLI trims IDs and rejects duplicates or oversized batches before transport.
+Returned counts are matching rows, not the number requested. Stop only requests
+asynchronous work and does not wait for completion. Delete synchronously removes
+matching management rows and requires `--yes`; subsequent device termination is
+best effort. Neither operation returns an operation ID or supports status,
+watch, stream, cancellation, history, or per-item results. Retrying stop can
+enqueue another request, while repeated deletion counts only rows still present.
 
 ## Raw API requests
 
