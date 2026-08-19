@@ -48,7 +48,7 @@ prompts, output, errors, and workflows are written and reviewed by hand.
 
 - The private source repository is `polymorfa/cli`.
 - `dev` is the default development branch and follows the Polymorfa monorepo
-  `dev` contract through the TypeScript SDK's development channel.
+  `dev` contract through an exact TypeScript SDK development revision.
 - `main` is stable and follows the monorepo and SDK `main` contracts.
 - Development changes land on `dev` and are promoted to `main` for releases.
 - The public npm package is `@polymorfa/cli` with the `polymorfa` binary.
@@ -100,8 +100,34 @@ event forwarding, MCP presentation, and skill installation. MCP tools call the
 same TypeScript application services used by commands; they never execute the
 `polymorfa` binary or parse terminal output.
 
-Implementation planning is blocked until a usable public TypeScript SDK exists
-on the matching development channel and satisfies the contract above.
+### Initial SDK baseline
+
+The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
+commit `db6cab4454f2508ddf4ce2adcb7932763ef697d1`. It is ESM-only, requires Node.js
+20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
+development installs pin the exact Git revision:
+
+```shell
+npm install github:polymorfa/sdks#db6cab4454f2508ddf4ce2adcb7932763ef697d1
+```
+
+The CLI must not publish an npm release against a moving Git branch or an
+unpublished SDK. Before the first public CLI release, replace the Git revision
+with a compatible npm semver dependency on `@polymorfa/sdk` and verify the
+packed CLI installs without private or Git-only runtime dependencies.
+
+This SDK revision is generated against Polymorfa monorepo `dev` contract commit
+`0d91ee0e396c18188f68b112ad852f16bb519ed3`. Its coverage ledger contains 331
+operations: 32 curated typed methods, 249 operations available through
+`raw.request` or `raw.paginate`, and 50 excluded dashboard or staff routes.
+Graph-compatible APIs are outside this baseline.
+
+The curated resources cover Messaging sessions, messages, and webhooks plus
+Platform organizations, projects, and sessions. A CLI command outside that set
+uses the SDK's raw escape hatch rather than recreating authentication, transport,
+retry, pagination, or error behavior. Its command-research record must identify
+the exact raw operation and track promotion to a curated SDK method when the
+workflow benefits from one.
 
 ## Internal boundaries
 
@@ -601,7 +627,8 @@ maintenance work.
 
 ### Phase 0: foundation
 
-- Public TypeScript SDK dependency available on the development channel.
+- Pin and exercise the verified `@polymorfa/sdk@0.1.0-dev.0` development
+  baseline described above.
 - Repository, branching, release, testing, and command-research scaffolding.
 - CLI runtime, global flags, config, secure credentials, output, errors, and
   redaction.
