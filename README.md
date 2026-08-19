@@ -327,6 +327,39 @@ is ignored by the pinned service implementation. The CLI will expose it only
 after the source contract and runner agree. Channels remain separate from chats
 and groups, and the source has no dedicated channel-send operation.
 
+## Contacts
+
+Contacts are Linked Device resources and require a server API key:
+
+```shell
+polymorfa contact list --session session_123
+
+polymorfa contact check \
+  --session session_123 \
+  --phone +15551234567 \
+  --phone +15557654321
+
+polymorfa contact view alice@lid --session session_123
+polymorfa contact info alice@lid --session session_123
+polymorfa contact picture alice@lid --session session_123
+polymorfa contact devices alice@lid --session session_123
+polymorfa contact business-profile alice@lid --session session_123
+polymorfa contact blocklist --session session_123
+polymorfa contact block alice@lid --session session_123
+polymorfa contact unblock alice@lid --session session_123
+```
+
+`contact view` reads contact data known to the connected session. `contact info`
+requests live WhatsApp user metadata. The CLI keeps those sources distinct.
+`contact picture` returns the service-provided URL and does not download the
+image. `contact devices` returns the upstream linked-device JIDs without
+inventing local device records.
+
+`contact check` accepts repeatable `--phone` values and checks them in one
+request. Lists are complete arrays because the source exposes no contact
+pagination. Block and unblock are reversible actions and accept
+`--idempotency-key`; they are not available to browser client tokens.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It

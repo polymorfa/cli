@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `79730b9ccc04339f7e28d8dd0f216af43758ca9e`. It is ESM-only, requires Node.js
+commit `6afb40b3e354eea57d9ce45257ed93a0cc8a8f41`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#79730b9ccc04339f7e28d8dd0f216af43758ca9e
+npm install github:polymorfa/sdks#6afb40b3e354eea57d9ce45257ed93a0cc8a8f41
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,20 +118,20 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32304788953](https://github.com/polymorfa/sdks/actions/runs/32304788953).
-The run exercised 41 test files and 165 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32307601088](https://github.com/polymorfa/sdks/actions/runs/32307601088).
+The run exercised 42 test files and 170 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-156 curated typed methods, 112 explicitly missing operations available through
+181 curated typed methods, 87 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 63 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
 The curated resources cover Messaging sessions, pairing QR and codes, operation
 polling, messages, contacts, chats, channels, groups, labels, presence,
-observation policies,
+business profiles/catalogs/products/collections/orders/compliance, observation policies,
 webhooks, client tokens, project templates, and all 33 signed event payload
 schemas plus Platform organizations, projects, sessions, billing, campaigns,
 audiences, opt-outs, and media. A CLI
@@ -483,8 +483,15 @@ channel
 
 contact
   list
+  check
   view
-  search
+  picture
+  info
+  devices
+  business-profile
+  blocklist
+  block
+  unblock
 
 chat
   list
@@ -612,6 +619,16 @@ without claiming a stream, listener, socket, polling helper, or unsubscribe.
 Creation omits picture input while the pinned public field is ignored by the
 runner. Reactions enforce the live runner's 32 UTF-8 byte boundary and preserve
 an empty value for removal.
+
+Contacts are server-key-only resources for active Linked Device sessions.
+`contact list` and `contact view` expose stored session contact data, while the
+explicit `contact info` command exposes live WhatsApp user metadata. Check
+accepts repeatable phone numbers in one registration query. Picture returns a
+URL without downloading bytes; devices remain upstream JID strings; business
+profile preserves all typed fields. Blocklist keeps its source hash, and
+reversible block/unblock actions accept idempotency without redundant deletion
+confirmation. The source exposes no search, pagination, contact CRUD, picture
+download, device management, or business-profile mutation route.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -949,7 +966,9 @@ The private `dev` branch now contains working, unpublished vertical slices:
 - complete remembered self-presence view/set and policy-governed chat
   observation view/subscription commands;
 - complete Channel discovery, lifecycle, bounded message/update reads, message
-  actions, temporary subscription, and follow/mute state commands; and
+  actions, temporary subscription, and follow/mute state commands;
+- complete Contact list/check/view, live metadata, picture URL, device,
+  business-profile, blocklist, and block/unblock commands; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real
