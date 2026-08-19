@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `31c88ac436d555b642adfd3ce9b7395476476f6b`. It is ESM-only, requires Node.js
+commit `d0c6ecdcd6aee3fb3162d7be98f69bd240abdcc2`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#31c88ac436d555b642adfd3ce9b7395476476f6b
+npm install github:polymorfa/sdks#d0c6ecdcd6aee3fb3162d7be98f69bd240abdcc2
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,23 +118,27 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32274333748](https://github.com/polymorfa/sdks/actions/runs/32274333748).
-The run exercised 29 test files and 106 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32275751306](https://github.com/polymorfa/sdks/actions/runs/32275751306).
+The run exercised 30 test files and 115 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-59 curated typed methods, 212 explicitly missing operations available through
+73 curated typed methods, 198 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 60 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
-The curated resources cover Messaging sessions, messages, and webhooks plus
-Platform organizations, projects, sessions, campaigns, audiences, opt-outs, and
-media. A CLI command outside that set uses the SDK's raw escape hatch rather
-than recreating authentication, transport, retry, pagination, or error behavior.
-Its command-research record must identify the exact raw operation and track
-promotion to a curated SDK method when the workflow benefits from one.
+The curated resources cover Messaging sessions, messages, webhooks, and client
+tokens plus Platform organizations, projects, sessions, campaigns, audiences,
+opt-outs, and media. A CLI command outside that set uses the SDK's raw escape
+hatch rather than recreating authentication, transport, retry, pagination, or
+error behavior. Its command-research record must identify the exact raw
+operation and track promotion to a curated SDK method when the workflow benefits
+from one.
+
+The CLI depends only on the root server package. Browser, React, Next.js, UI,
+Elements, and Devtools SDK workspaces are not CLI runtime dependencies.
 
 ## Internal boundaries
 
@@ -302,7 +306,7 @@ and available credential make the choice unique.
 `dashboard` opens the active organization, project, session, or other supplied
 resource in the Polymorfa console without embedding credentials in the URL.
 
-### Organizations, projects, access, and billing
+### Organizations, projects, credentials, access, and billing
 
 ```text
 organization
@@ -332,6 +336,13 @@ key
   revoke
   rotate
 
+client-token
+  mint
+  rules
+    view
+    set
+    delete
+
 usage
   summary
   export
@@ -341,12 +352,20 @@ billing
   portal
 ```
 
-Key creation prints secret material once and never includes it in ordinary JSON
-or logs. Rotation is an orchestrated workflow with an overlap period when the
-API supports one; otherwise it explains the safe manual sequence rather than
-pretending rotation is atomic. Billing commands expose operational status and
-open the hosted billing portal; they do not duplicate the console's purchasing
-UI.
+Key and client-token creation print secret material once and never include it
+in logs. Client-token minting requires an explicit session and ephemeral client
+identifier, validates the requested TTL, and does not persist the minted token
+in a CLI profile. Rules can be supplied as a file or structured flags, are
+rendered before mutation, and use the SDK's typed client-token request and
+response contracts.
+
+Client-token minting is not exposed as an MCP tool in the initial release
+because returning a bearer token through an agent transcript creates an
+avoidable disclosure path. Rotation is an orchestrated workflow with an overlap
+period when the API supports one; otherwise it explains the safe manual sequence
+rather than pretending rotation is atomic. Billing commands expose operational
+status and open the hosted billing portal; they do not duplicate the console's
+purchasing UI.
 
 ### Sessions and messaging
 
