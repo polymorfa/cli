@@ -165,6 +165,39 @@ neither labels nor `--clear`. Add `--include-observation` to list commands when
 policy and freshness metadata are needed. Label reads are unpaged, and the API
 exposes no message-label operation.
 
+## Quick Replies
+
+Stored business quick replies require a server API key and an explicit
+Messaging session:
+
+```shell
+polymorfa quick-reply list --session session_123
+
+polymorfa quick-reply create \
+  --session session_123 \
+  --shortcut /hours \
+  --message 'We are open from 09:00 to 17:00.' \
+  --keyword hours \
+  --keyword opening
+
+polymorfa quick-reply replace reply_123 \
+  --session session_123 \
+  --shortcut /hours \
+  --message 'We are open from 08:00 to 18:00.'
+
+polymorfa quick-reply delete reply_123 --session session_123 --yes
+```
+
+`quick-reply replace` replaces the complete shortcut and message rather than
+applying a partial patch, so both flags are required. `--keyword` is repeatable,
+and create and replace also accept `--count`. Every mutation accepts
+`--idempotency-key`. List output preserves the source observation policy and
+freshness metadata under `--json`.
+
+The source API exposes no retrieve-by-ID, send, sync, history, search, or
+pagination operation for quick replies, so the CLI does not advertise those
+commands. Interactive message buttons are a separate message-send concept.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It

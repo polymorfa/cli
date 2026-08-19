@@ -434,6 +434,12 @@ label
     list
     replace
 
+quick-reply
+  list
+  create
+  replace
+  delete
+
 contact
   list
   view
@@ -513,6 +519,16 @@ reads return the legacy array by default and preserve the typed observation
 envelope only when `--include-observation` is requested. Observation-policy
 updates remain a separate future command family because they affect presence,
 typing, label retention, and event behavior rather than label CRUD alone.
+
+Quick Replies are an unpaged, server-key-only Linked Device resource.
+`quick-reply list` preserves the source observation envelope. Create and the
+deliberately named `quick-reply replace` accept shortcut, message, repeatable
+keywords, and optional count; replacement requires the complete shortcut and
+message rather than pretending the source `PUT` is a patch. Confirmed delete is
+the fourth and final operation. The source exposes no retrieve-by-ID, send,
+sync, history, or search route. Quick Replies are stored canned responses, not
+interactive message buttons, and `quickReplyMode` remains part of the separate
+observation-policy contract.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -840,7 +856,9 @@ The private `dev` branch now contains working, unpublished vertical slices:
 - typed text send, reaction, seen, typing, and star message actions;
 - Messaging media metadata, bounded local download, and server persistence
   commands;
-- complete label CRUD and explicit full-set chat assignment commands; and
+- complete label CRUD and explicit full-set chat assignment commands;
+- complete observed Quick Replies list, create, replace, and confirmed delete
+  commands; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real
