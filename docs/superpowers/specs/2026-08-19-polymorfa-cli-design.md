@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `7a19c0b07ee40ae69018f37777a81422b46f491b`. It is ESM-only, requires Node.js
+commit `b8cf1aba3cdb120287657a608e1a3a9bc8c302b6`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#7a19c0b07ee40ae69018f37777a81422b46f491b
+npm install github:polymorfa/sdks#b8cf1aba3cdb120287657a608e1a3a9bc8c302b6
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,21 +118,22 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32285930555](https://github.com/polymorfa/sdks/actions/runs/32285930555).
-The run exercised 30 test files and 130 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32287212642](https://github.com/polymorfa/sdks/actions/runs/32287212642).
+The run exercised 31 test files and 131 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-96 curated typed methods, 174 explicitly missing operations available through
-`raw.request` or `raw.paginate`, and 61 deliberately excluded dashboard or staff
+96 curated typed methods, 172 explicitly missing operations available through
+`raw.request` or `raw.paginate`, and 63 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
 The curated resources cover Messaging sessions, pairing QR and codes, operation
-polling, messages, contacts, chat mutations, webhooks, client tokens, and
-project templates plus Platform organizations, projects, sessions, billing,
-campaigns, audiences, opt-outs, and media. A CLI command outside that set uses
+polling, messages, contacts, chat mutations, webhooks, client tokens, project
+templates, and all 33 signed event payload schemas plus Platform organizations,
+projects, sessions, billing, campaigns, audiences, opt-outs, and media. A CLI
+command outside that set uses
 the SDK's raw escape hatch rather than recreating authentication, transport,
 retry, pagination, or error behavior. Its command-research record must identify
 the exact raw operation and track promotion to a curated SDK method when the
@@ -569,6 +570,15 @@ Webhook tests generate a traceable test event. Event replay creates a new
 delivery attempt linked to the original event and does not rewrite event
 history. Logs and event payloads apply redaction before rendering.
 
+The pinned credential-compatible contract does not yet support those webhook
+test and event replay workflows. Messaging webhook subscription management is
+typed and uses `webhooks:manage`; inbound raw-body verification and all 33
+signed event payload schemas are typed. Platform organization keys can inspect
+campaign events only. General event history, webhook delivery-attempt
+inspection, replay/redrive, and test-delivery operations remain reserved and
+unshipped. Dashboard and staff webhook routes are excluded and must not be
+reached with `raw.request`.
+
 Commands remain hidden or clearly unavailable until their underlying API
 contract exists. The CLI must never advertise a command that only fails with a
 generic not-implemented response.
@@ -592,6 +602,11 @@ The command requires an authenticated, resumable event stream that does not
 exist merely because durable outbound webhooks exist. The upstream platform
 must provide short-lived listener sessions, scoped event filters, an expiring
 stream credential, cursor-based reconnection, and a clear retention limit.
+
+The current API audit confirms that neither general event history nor a
+server-credential listener-session endpoint exists. Typed webhook payloads make
+future streaming safe to consume, but do not by themselves make `listen`
+implementable.
 
 The CLI prints events or forwards the exact request body to a local HTTP
 endpoint with documented Polymorfa signature headers. It maintains a bounded

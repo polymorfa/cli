@@ -1,4 +1,10 @@
-import {MessagingClient, PlatformClient, RawClient} from '@polymorfa/sdk'
+import {
+  isEvent,
+  MessagingClient,
+  PlatformClient,
+  RawClient,
+  type WebhookEvent,
+} from '@polymorfa/sdk'
 import {describe, expect, test} from 'vitest'
 
 import {
@@ -68,5 +74,28 @@ describe('createRawClient', () => {
         credential: {type: 'apiKey', value: 'pmfa_test-key'},
       }),
     ).toThrow('requires the Platform API surface')
+  })
+})
+
+describe('typed webhook events', () => {
+  test('narrows a signed event to its concrete root-exported payload', () => {
+    const event: WebhookEvent = {
+      event: 'command.result',
+      id: 'evt_123',
+      payload: {
+        command: 'session.start',
+        requestId: 'req_123',
+        success: true,
+      },
+      session: 'session_123',
+      timestamp: '2026-08-19T18:00:00.000Z',
+    }
+
+    expect(isEvent(event, 'command.result')).toBe(true)
+    if (isEvent(event, 'command.result')) {
+      expect(event.payload.command).toBe('session.start')
+      expect(event.payload.success).toBe(true)
+    }
+    expect(isEvent(event, 'message.received')).toBe(false)
   })
 })
