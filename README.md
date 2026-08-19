@@ -140,6 +140,31 @@ storage. It does not write a local file. The source API has no Messaging media
 upload, delete, list, resumable-upload, or streaming endpoint, so the CLI does
 not advertise those operations.
 
+## Labels
+
+Labels require a server API key and an explicit Messaging session:
+
+```shell
+polymorfa label list --session session_123
+polymorfa label create --session session_123 --name Priority --color 5
+polymorfa label update label_123 --session session_123 --name Urgent
+polymorfa label delete label_123 --session session_123 --yes
+
+polymorfa label chat list 15551234567@s.whatsapp.net \
+  --session session_123
+
+polymorfa label chat replace 15551234567@s.whatsapp.net \
+  --session session_123 \
+  --label priority \
+  --label customer
+```
+
+`label chat replace` replaces the complete set; it is not incremental attach.
+Use `--clear` to detach every label. The command rejects calls that provide
+neither labels nor `--clear`. Add `--include-observation` to list commands when
+policy and freshness metadata are needed. Label reads are unpaged, and the API
+exposes no message-label operation.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It

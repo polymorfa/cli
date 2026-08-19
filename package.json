@@ -30,7 +30,7 @@
   "dependencies": {
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "github:polymorfa/sdks#873fb817e4967f8c1d032fb73216774c64ec21f5"
+    "@polymorfa/sdk": "github:polymorfa/sdks#87dcf28624742dfe4cab27dab165a26de142b151"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -55,8 +55,17 @@
       "group": {
         "description": "Inspect and manage Messaging groups."
       },
+      "label": {
+        "description": "Manage Messaging labels and chat assignments."
+      },
+      "label:chat": {
+        "description": "Manage the complete label set assigned to a chat."
+      },
       "message": {
         "description": "Send messages and perform message actions."
+      },
+      "message:send": {
+        "description": "Send a message by content type."
       },
       "media": {
         "description": "Inspect, download, and persist Messaging media."

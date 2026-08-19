@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `873fb817e4967f8c1d032fb73216774c64ec21f5`. It is ESM-only, requires Node.js
+commit `87dcf28624742dfe4cab27dab165a26de142b151`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#873fb817e4967f8c1d032fb73216774c64ec21f5
+npm install github:polymorfa/sdks#87dcf28624742dfe4cab27dab165a26de142b151
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,21 +118,22 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32294615955](https://github.com/polymorfa/sdks/actions/runs/32294615955).
-The run exercised 34 test files and 144 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32296233682](https://github.com/polymorfa/sdks/actions/runs/32296233682).
+The run exercised 36 test files and 150 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-120 curated typed methods, 148 explicitly missing operations available through
+130 curated typed methods, 138 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 63 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
 The curated resources cover Messaging sessions, pairing QR and codes, operation
-polling, messages, contacts, chats, groups, webhooks, client tokens, project
-templates, and all 33 signed event payload schemas plus Platform organizations,
-projects, sessions, billing, campaigns, audiences, opt-outs, and media. A CLI
+polling, messages, contacts, chats, groups, labels, observation policies,
+webhooks, client tokens, project templates, and all 33 signed event payload
+schemas plus Platform organizations, projects, sessions, billing, campaigns,
+audiences, opt-outs, and media. A CLI
 command outside that set uses
 the SDK's raw escape hatch rather than recreating authentication, transport,
 retry, pagination, or error behavior. Its command-research record must identify
@@ -424,6 +425,15 @@ media
   view
   persist
 
+label
+  list
+  create
+  update
+  delete
+  chat
+    list
+    replace
+
 contact
   list
   view
@@ -493,6 +503,16 @@ entire response and the source exposes no upload, delete, list, resumable,
 range, or streaming contract, so the CLI does not claim any of those
 capabilities. Media send URL/base64 inputs remain part of `message send media`,
 not an upload API.
+
+Labels are an unpaged, server-key-only session resource. `label list`, create,
+update, and confirmed delete map directly onto typed SDK methods. Chat
+assignment uses `label chat list` and the deliberately explicit `label chat
+replace`: the source PUT replaces the complete set, `--clear` sends an empty
+set, and there are no incremental attach/detach or message-label routes. Label
+reads return the legacy array by default and preserve the typed observation
+envelope only when `--include-observation` is requested. Observation-policy
+updates remain a separate future command family because they affect presence,
+typing, label retention, and event behavior rather than label CRUD alone.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -819,7 +839,8 @@ The private `dev` branch now contains working, unpublished vertical slices:
   with explicit session scope;
 - typed text send, reaction, seen, typing, and star message actions;
 - Messaging media metadata, bounded local download, and server persistence
-  commands; and
+  commands;
+- complete label CRUD and explicit full-set chat assignment commands; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real
