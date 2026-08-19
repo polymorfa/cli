@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `e0758b93f6e4ce805161e5ca41e52b7642f051c2`. It is ESM-only, requires Node.js
+commit `7a19c0b07ee40ae69018f37777a81422b46f491b`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#e0758b93f6e4ce805161e5ca41e52b7642f051c2
+npm install github:polymorfa/sdks#7a19c0b07ee40ae69018f37777a81422b46f491b
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,21 +118,21 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32284879455](https://github.com/polymorfa/sdks/actions/runs/32284879455).
-The run exercised 30 test files and 128 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32285930555](https://github.com/polymorfa/sdks/actions/runs/32285930555).
+The run exercised 30 test files and 130 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-92 curated typed methods, 179 explicitly missing operations available through
-`raw.request` or `raw.paginate`, and 60 deliberately excluded dashboard or staff
+96 curated typed methods, 174 explicitly missing operations available through
+`raw.request` or `raw.paginate`, and 61 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
 The curated resources cover Messaging sessions, pairing QR and codes, operation
 polling, messages, contacts, chat mutations, webhooks, client tokens, and
-project templates plus Platform organizations, projects, sessions, campaigns,
-audiences, opt-outs, and media. A CLI command outside that set uses
+project templates plus Platform organizations, projects, sessions, billing,
+campaigns, audiences, opt-outs, and media. A CLI command outside that set uses
 the SDK's raw escape hatch rather than recreating authentication, transport,
 retry, pagination, or error behavior. Its command-research record must identify
 the exact raw operation and track promotion to a curated SDK method when the
@@ -350,6 +350,10 @@ usage
 
 billing
   status
+  transactions
+  pricing
+  reminders
+    set
   portal
 ```
 
@@ -367,6 +371,18 @@ period when the API supports one; otherwise it explains the safe manual sequence
 rather than pretending rotation is atomic. Billing commands expose operational
 status and open the hosted billing portal; they do not duplicate the console's
 purchasing UI.
+
+The organization-key billing contract provides balance status, usage, an
+unpaged transaction list, tier pricing, and reminder-settings mutation. The CLI
+does not invent pagination or a usage export when the API exposes neither.
+Billing top-ups and console usage-insight aggregation remain dashboard/staff
+surfaces. `billing portal` is a credential-free console navigation helper, not
+an API mutation.
+
+`organization view` remains credential-compatible. Organization update and
+member/invite mutations remain reserved and unshipped because those routes
+require a dashboard session. In particular, the CLI must not use
+`raw.request` to bypass that credential boundary.
 
 ### Sessions and messaging
 

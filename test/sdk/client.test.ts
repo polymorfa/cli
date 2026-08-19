@@ -49,12 +49,18 @@ describe('createRawClient', () => {
   })
 
   test('creates a typed Platform client and rejects the wrong surface', () => {
-    expect(
-      createPlatformClient({
-        surface: 'platform',
-        credential: {type: 'apiKey', value: 'pmfa_test-key'},
-      }),
-    ).toBeInstanceOf(PlatformClient)
+    const client = createPlatformClient({
+      surface: 'platform',
+      credential: {type: 'apiKey', value: 'pmfa_test-key'},
+    })
+
+    expect(client).toBeInstanceOf(PlatformClient)
+    expect(client.billing).toHaveProperty('retrieve')
+    expect(client.billing).toHaveProperty('usage')
+    expect(client.billing).toHaveProperty('listTransactions')
+    expect(client.billing).toHaveProperty('listPricing')
+    expect(client.billing).toHaveProperty('updateReminderSettings')
+    expect(client.organizations).not.toHaveProperty('update')
 
     expect(() =>
       createPlatformClient({
