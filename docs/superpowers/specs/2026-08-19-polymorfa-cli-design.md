@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `db6cab4454f2508ddf4ce2adcb7932763ef697d1`. It is ESM-only, requires Node.js
+commit `997a44bb0e6ce285a254e62694d4c05366807c88`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#db6cab4454f2508ddf4ce2adcb7932763ef697d1
+npm install github:polymorfa/sdks#997a44bb0e6ce285a254e62694d4c05366807c88
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -116,11 +116,14 @@ unpublished SDK. Before the first public CLI release, replace the Git revision
 with a compatible npm semver dependency on `@polymorfa/sdk` and verify the
 packed CLI installs without private or Git-only runtime dependencies.
 
-This SDK revision is generated against Polymorfa monorepo `dev` contract commit
-`0d91ee0e396c18188f68b112ad852f16bb519ed3`. Its coverage ledger contains 331
-operations: 32 curated typed methods, 249 operations available through
-`raw.request` or `raw.paginate`, and 50 excluded dashboard or staff routes.
-Graph-compatible APIs are outside this baseline.
+This SDK revision is pinned to Polymorfa monorepo `dev` contract commit
+`11c984512a4d52f5444a5804a046a10fbcf06ea0`. Messaging and Platform spec bytes,
+and therefore the public runtime and API contract, are unchanged from SDK commit
+`db6cab4454f2508ddf4ce2adcb7932763ef697d1`. Hosted Node.js 20 and 22 CI passed
+for the pinned revision in [GitHub Actions run 32254743256](https://github.com/polymorfa/sdks/actions/runs/32254743256).
+Its coverage ledger contains 331 operations: 32 curated typed methods, 249
+operations available through `raw.request` or `raw.paginate`, and 50 excluded
+dashboard or staff routes. Graph-compatible APIs are outside this baseline.
 
 The curated resources cover Messaging sessions, messages, and webhooks plus
 Platform organizations, projects, and sessions. A CLI command outside that set
