@@ -30,7 +30,7 @@
   "dependencies": {
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "github:polymorfa/sdks#c36d151c102d7812977635e677341141721cac9a"
+    "@polymorfa/sdk": "github:polymorfa/sdks#b4d5f3c8ce51bb0c171264eec8961797314cb172"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -94,6 +94,9 @@
       "call": {
         "description": "Manage incoming Linked Device calls."
       },
+      "campaign": {
+        "description": "Inspect and manage Messaging campaigns."
+      },
       "channel": {
         "description": "Inspect and manage Messaging channels."
       },
@@ -134,7 +137,7 @@
         "description": "Inspect organization members."
       },
       "operation": {
-        "description": "Inspect durable Platform operations."
+        "description": "Inspect durable Platform and Messaging operations."
       },
       "profile": {
         "description": "View and manage the connected account profile."

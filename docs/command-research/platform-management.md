@@ -45,7 +45,7 @@ security-incident
   acknowledge <incident>
 
 operation
-  view <operation>
+  view <operation> [--surface platform|messaging]
 
 project-token
   list --project <project>
@@ -89,8 +89,10 @@ SDK's distinct active-only operation. Incident acknowledgement is repeatable,
 has no confirmation gate, and sends no body. `acknowledgedBy` may be empty when
 an organization key performed the acknowledgement.
 
-`operation view` is deliberately singular. It performs one durable state read
-and does not imply polling, waiting, watching, cancellation, or a list route.
+`operation view` is deliberately singular. It defaults to the Platform surface;
+the later Messaging campaign slice adds an explicit `--surface messaging`
+selection. Either form performs one durable state read and does not imply
+polling, waiting, watching, cancellation, or a list route.
 Project-token listing requires an explicit project because the live
 organization-key handler rejects an absent project even though its OpenAPI
 query field is optional. Only metadata is returned.

@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `c36d151c102d7812977635e677341141721cac9a`. It is ESM-only, requires Node.js
+commit `b4d5f3c8ce51bb0c171264eec8961797314cb172`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#c36d151c102d7812977635e677341141721cac9a
+npm install github:polymorfa/sdks#b4d5f3c8ce51bb0c171264eec8961797314cb172
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,13 +118,13 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32312282486](https://github.com/polymorfa/sdks/actions/runs/32312282486).
-The run exercised 45 test files and 189 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32313662730](https://github.com/polymorfa/sdks/actions/runs/32313662730).
+The run exercised 46 test files and 195 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-198 curated typed methods, 67 explicitly missing operations available through
+207 curated typed methods, 58 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 66 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
@@ -133,7 +133,8 @@ The curated resources cover Messaging sessions, pairing QR and codes, operation
 polling, messages, contacts, chats, channels, groups, labels, presence, calls,
 LID resolution, user security codes, business profiles, catalogs, products,
 collections, orders, compliance, observation policies, webhooks, client tokens,
-project templates, and all 33 signed event payload schemas plus Platform
+project templates, project-scoped campaigns, and all 33 signed event payload
+schemas plus Platform
 organizations, projects, sessions, billing, campaigns, audiences, opt-outs,
 media, organization API keys, members, audit logs, session bans, security
 incidents, management operations, project-token metadata, widget settings, and
@@ -742,19 +743,12 @@ campaign
   list
   view
   create
-  update
-  delete
-  validate
-  start
+  analytics
+  launch
   pause
   resume
-  cancel
-  archive
-  duplicate
+  stop
   requeue
-  analytics
-  events
-  recipients
 
 audience
   list
@@ -808,9 +802,14 @@ SDK exposes it. The shipped `template` family uses the credential-compatible
 Messaging project-template resource instead. `message send template` is a
 separate Messaging send operation.
 
-Campaign start and resume display audience size, project, schedule, and
-validation status before confirmation. Bulk failures return a partial-success
-exit category and a machine-readable failure artifact.
+Campaign creation accepts one bounded JSON object. Launch accepts epoch
+milliseconds or a timezone-qualified ISO instant, then returns a durable
+operation ID. Launch, pause, resume, and terminal stop report accepted work and
+direct the user to `operation view --surface messaging`; they do not imply that
+the transition completed. Stop requires `--yes`. Requeue is a direct
+transaction and reports its moved-recipient count. The source exposes no
+campaign update, delete, validation, archive, duplicate, recipient, event,
+history, replay, watch, or cancel route, so those commands remain reserved.
 
 Webhook tests generate a traceable test event. Event replay creates a new
 delivery attempt linked to the original event and does not rewrite event
@@ -1000,7 +999,7 @@ maintenance work.
 
 ### Phase 3: complete curated surface
 
-- Contacts, chats, groups, templates, campaigns, audiences, opt-outs, media, access
+- Contacts, chats, groups, templates, audiences, opt-outs, media, access
   management, usage, billing, logs, and remaining curated operations.
 - Reassess the reserved Platform Flow command family only if a compatible
   non-dashboard credential contract has shipped.
@@ -1055,6 +1054,8 @@ The private `dev` branch now contains working, unpublished vertical slices:
   project-token metadata commands;
 - organization/project widget settings inspection and JSON patching, plus
   bounded batch session stop and confirmed management deletion commands; and
+- complete Messaging campaign list/create/view/analytics and lifecycle
+  commands, with explicit accepted-operation polling and direct requeue; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real

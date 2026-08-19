@@ -513,6 +513,45 @@ best effort. Neither operation returns an operation ID or supports status,
 watch, stream, cancellation, history, or per-item results. Retrying stop can
 enqueue another request, while repeated deletion counts only rows still present.
 
+## Messaging campaigns
+
+Campaign commands use organization Messaging API keys and require an explicit
+project slug because the source routes are slug-scoped:
+
+```shell
+polymorfa campaign list --project-slug launch-project
+polymorfa campaign create --project-slug launch-project --input campaign.json
+polymorfa campaign view campaign_123 --project-slug launch-project
+polymorfa campaign analytics campaign_123 --project-slug launch-project
+
+polymorfa campaign launch campaign_123 \
+  --project-slug launch-project \
+  --scheduled-at 2026-09-01T12:00:00Z
+polymorfa campaign pause campaign_123 --project-slug launch-project
+polymorfa campaign resume campaign_123 --project-slug launch-project
+polymorfa campaign stop campaign_123 --project-slug launch-project --yes
+polymorfa campaign requeue campaign_123 \
+  --project-slug launch-project \
+  --include-skipped-error
+```
+
+Launch, pause, resume, and stop return accepted durable work; they do not wait
+for the state transition. Poll the returned operation explicitly:
+
+```shell
+polymorfa operation view operation_123 --surface messaging
+```
+
+Launch times accept epoch milliseconds or timezone-qualified ISO 8601
+instants. List returns one complete newest-first array with no cursor. Requeue
+is synchronous and reports only the number moved. Every mutation accepts
+`--idempotency-key`, but the API does not persist the header, so it must not be
+treated as server-side deduplication.
+
+The source exposes no campaign update, delete, validate, archive, duplicate,
+recipient, event, history, replay, watch, or operation-cancel route. The CLI
+does not substitute similarly named Platform campaign methods for these gaps.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It
