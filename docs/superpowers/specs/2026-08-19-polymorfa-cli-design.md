@@ -1,0 +1,689 @@
+# Polymorfa CLI design
+
+- **Status:** Draft for user review
+- **Repository:** `polymorfa/cli`
+- **Package:** `@polymorfa/cli`
+- **Primary executable:** `polymorfa`
+
+## Objective
+
+Build a public npm CLI with a deliberately handwritten developer experience for
+working with Polymorfa from an interactive terminal, scripts, CI, and
+standards-compliant MCP clients. The repository remains private while the npm
+package is public.
+
+The product should feel coherent in the way GitHub CLI, Stripe CLI, Vercel CLI,
+and Cloudflare Wrangler feel coherent: a small number of durable concepts,
+consistent flags and output, excellent recovery paths, and escape hatches that
+do not force every API operation into a bespoke command.
+
+The CLI is not an OpenAPI-generated command tree. OpenAPI remains useful for
+coverage checks and the raw API escape hatch, but public command names, flags,
+prompts, output, errors, and workflows are written and reviewed by hand.
+
+## Product principles
+
+1. **Design workflows, not endpoint aliases.** Frequent user goals receive
+   curated commands even when they require multiple SDK calls.
+2. **Keep complete access available.** `polymorfa api` exposes authenticated raw
+   requests for operations that do not yet have a curated command.
+3. **One behavior across humans and agents.** CLI commands and MCP tools call
+   the same application services and share validation, authorization, and error
+   handling.
+4. **Make context visible.** Organization, project, environment, API surface,
+   and profile are shown before consequential actions and in verbose output.
+5. **Never leak credentials.** Secrets do not appear in arguments, config
+   files, debug logs, shell history, MCP results, or generated support bundles.
+6. **Automation is deterministic.** Non-interactive execution never waits for a
+   prompt and every machine-readable format has a versioned schema.
+7. **Drift may be deliberate but never invisible.** A coverage ledger records
+   which API operations have curated commands, raw-only support, or an explicit
+   deferral.
+8. **Research each command at implementation time.** The command contract below
+   fixes names and responsibilities. Exact flags and edge cases are verified
+   against current APIs and relevant open-source CLIs before each command is
+   implemented.
+
+## Repository and release model
+
+- The private source repository is `polymorfa/cli`.
+- `dev` is the default development branch and follows the Polymorfa monorepo
+  `dev` contract through the TypeScript SDK's development channel.
+- `main` is stable and follows the monorepo and SDK `main` contracts.
+- Development changes land on `dev` and are promoted to `main` for releases.
+- The public npm package is `@polymorfa/cli` with the `polymorfa` binary.
+- The initial release line is `0.x`; breaking command changes require explicit
+  changelog entries and migration notes.
+- Publishing uses npm trusted publishing. Because the source repository is
+  private, release documentation must not claim public source provenance.
+- Customer-facing CLI documentation is released with the corresponding
+  Polymorfa product documentation rather than living only in this private
+  repository.
+
+## Dependency architecture
+
+```text
+private shared contracts and types
+                |
+                v
+        public @polymorfa/sdk
+                |
+                v
+        public @polymorfa/cli
+          |             |
+          v             v
+      terminal CLI   local MCP server
+                          |
+                          v
+                    portable skills
+```
+
+`@polymorfa/sdk` is the only network client used by the CLI. It owns:
+
+- Messaging and Platform authentication;
+- request construction and serialization;
+- typed resources and errors;
+- request IDs and response metadata;
+- timeouts, cancellation, retries, and idempotency behavior;
+- pagination primitives;
+- webhook signature verification and typed event parsing;
+- API-version selection and per-request options; and
+- a raw-request escape hatch.
+
+The SDK may consume private shared contracts internally, but it must publish or
+re-export every public type required by the CLI. The public CLI must not have an
+unresolvable npm-private runtime dependency.
+
+The CLI owns terminal interaction, configuration, profile selection, project
+linking, command orchestration, formatting, progress, confirmation, diagnostics,
+event forwarding, MCP presentation, and skill installation. MCP tools call the
+same TypeScript application services used by commands; they never execute the
+`polymorfa` binary or parse terminal output.
+
+Implementation planning is blocked until a usable public TypeScript SDK exists
+on the matching development channel and satisfies the contract above.
+
+## Internal boundaries
+
+The implementation will use TypeScript, ESM, Node.js, and `@oclif/core`. The
+repository is divided by responsibility rather than by individual endpoint:
+
+- `src/commands/`: thin oclif adapters that parse input and render results.
+- `src/services/`: handwritten workflows shared by the CLI and MCP server.
+- `src/sdk/`: client construction, credential selection, API-surface routing,
+  and SDK error normalization.
+- `src/config/`: global profiles, project links, environment resolution, and
+  secure credential references.
+- `src/output/`: tables, JSON schemas, templates, redaction, progress, and
+  terminal capability detection.
+- `src/listen/`: event-stream client, local forwarding, cursors, retries, and
+  shutdown handling.
+- `src/mcp/`: tool, resource, prompt, transport, and annotation definitions.
+- `skills/`: portable workflow skills that depend on documented CLI or MCP
+  contracts rather than internal code.
+- `docs/command-research/`: one implementation research record per command
+  family.
+
+Command adapters must not contain business logic. Application services accept
+typed inputs and return typed results independently of terminal or MCP output.
+
+## Global CLI contract
+
+### Command grammar
+
+Commands use singular resource nouns and explicit verbs:
+
+```text
+polymorfa session list
+polymorfa session view <session>
+polymorfa message send text --to <recipient> --body <text>
+```
+
+IDs, canonical names, and linked context are accepted wherever resolution is
+unambiguous. Ambiguous names fail with a selectable list rather than silently
+choosing the first result.
+
+### Global context flags
+
+- `--profile <name>` selects stored authentication and defaults.
+- `--organization <id-or-slug>` overrides the active organization.
+- `--project <id-or-slug>` overrides the linked or profile project.
+- `--api-version <version>` overrides the SDK default when the API permits it.
+- `--no-interactive` forbids prompts and interactive selection.
+- `--yes` accepts command-level confirmations in automation.
+- `--verbose` explains context and workflow decisions.
+- `--debug` emits sanitized transport diagnostics.
+- `--no-color` disables ANSI styling.
+- `--help` and `--version` behave consistently at every command level.
+
+Resolution precedence is command flag, environment variable, linked project,
+profile default, then interactive selection. A missing value in non-interactive
+execution is a usage error with the exact flag or environment variable needed.
+
+### Output
+
+Interactive output uses concise tables, summaries, progress indicators, and
+next-step commands. Automation uses explicit modes:
+
+- `--json` returns the complete stable JSON representation.
+- `--json <fields>` selects fields when the command supports field selection.
+- `--jq <expression>` filters JSON output.
+- `--template <template>` renders a documented template contract.
+- `--quiet` prints only the primary identifier or value.
+
+Colors and progress may change based on TTY detection; data shape may not.
+Secrets are redacted in every mode. Streaming commands use JSON Lines when
+`--json` is selected.
+
+List commands use `--limit`, `--cursor`, and `--paginate`. A single page is the
+default for interactive use. `--paginate` follows all pages and preserves
+stable ordering. Commands warn before producing unusually large terminal
+output, but non-interactive output does not prompt.
+
+### Mutations and errors
+
+Normal explicit mutations such as `message send` execute without a redundant
+confirmation. Destructive, bulk, irreversible, or unusually broad actions show
+their resolved scope and require confirmation in an interactive terminal or
+`--yes` in automation. `--dry-run` is implemented for workflows where the
+server can validate the same payload without applying it; it is not simulated
+client-side when that would provide false confidence.
+
+Errors contain:
+
+- a concise human message;
+- a stable CLI error code;
+- the Polymorfa request ID when available;
+- the selected profile, organization, project, and API surface when relevant;
+- a corrective command or documentation link; and
+- additional sanitized detail under `--verbose` or `--debug`.
+
+Stable process exit categories cover usage, authentication, authorization, not
+found, conflict, rate limiting, network failure, server failure, partial
+success, and interrupted execution.
+
+## Authentication, profiles, and project links
+
+`polymorfa auth login` prefers a browser/device authorization flow for human
+users. That flow is a backend prerequisite and must issue a CLI-appropriate,
+revocable credential rather than reuse browser cookies or dashboard headers.
+Headless login accepts a key through standard input; credentials are never
+accepted as positional arguments or ordinary flag values.
+
+Credentials are stored in macOS Keychain, Windows Credential Manager, or the
+Linux Secret Service. The config file stores only profile metadata and secure
+credential references. CI normally supplies credentials through environment
+variables and receives an explicit warning if an interactive profile is being
+used unexpectedly.
+
+`polymorfa link` creates `.polymorfa/project.json` with non-secret organization,
+project, and environment identifiers and adds the local file to `.gitignore` by
+default. `polymorfa unlink` removes only the local link. Commands always show a
+clear distinction between changing local context and changing a remote
+resource.
+
+## Command tree
+
+### Foundation and escape hatches
+
+```text
+auth
+  login
+  logout
+  status
+  list
+  use
+
+config
+  list
+  get
+  set
+  unset
+  path
+  edit
+
+context
+  current
+  list
+  use
+
+link
+unlink
+whoami
+dashboard
+
+api <path>
+listen
+doctor
+completion
+update
+version
+```
+
+`api` follows the useful parts of `gh api`: method selection, typed and raw
+fields, headers, body input, inclusion of response headers, pagination,
+slurping, and JSON filtering. It adds an explicit `--surface
+messaging|platform` selector. The CLI may infer the surface only when the route
+and available credential make the choice unique.
+
+`dashboard` opens the active organization, project, session, or other supplied
+resource in the Polymorfa console without embedding credentials in the URL.
+
+### Organizations, projects, access, and billing
+
+```text
+organization
+  list
+  view
+  create
+  update
+
+member
+  list
+  invite
+  update
+  remove
+
+project
+  list
+  view
+  create
+  update
+  archive
+  restore
+  delete
+
+key
+  list
+  create
+  revoke
+  rotate
+
+usage
+  summary
+  export
+
+billing
+  status
+  portal
+```
+
+Key creation prints secret material once and never includes it in ordinary JSON
+or logs. Rotation is an orchestrated workflow with an overlap period when the
+API supports one; otherwise it explains the safe manual sequence rather than
+pretending rotation is atomic. Billing commands expose operational status and
+open the hosted billing portal; they do not duplicate the console's purchasing
+UI.
+
+### Sessions and messaging
+
+```text
+session
+  list
+  view
+  create
+  connect
+  reconnect
+  disconnect
+  delete
+  qr
+  pairing-code
+  status
+  logs
+
+message
+  list
+  view
+  send
+    text
+    media
+    template
+    location
+    contact
+    poll
+    interactive
+  react
+  edit
+  delete
+
+media
+  upload
+  download
+  view
+
+contact
+  list
+  view
+  search
+
+chat
+  list
+  view
+  messages
+
+group
+  list
+  view
+  create
+  update
+  delete
+  participants
+    list
+    add
+    remove
+    promote
+    demote
+  invite-link
+  join
+  leave
+```
+
+`session connect` chooses QR or pairing-code presentation based on explicit
+flags and terminal capability. QR output has terminal, plain-text URL, and JSON
+forms. Pairing state is streamed with a timeout and cancellable cleanly.
+
+Message content uses typed subcommands instead of a single flag-heavy command.
+Each type validates mutually exclusive content locally, then relies on the SDK
+and API for canonical validation. File uploads use streamed I/O, MIME detection,
+size preflight, progress in TTYs, and resumability only where the server
+supports it.
+
+Commands for contacts, chat history, and logs state whether data comes from
+opt-in hosted storage, live session state, or another documented source. Empty
+hosted-storage results must not be presented as proof that no message or contact
+exists.
+
+### Templates, campaigns, flows, webhooks, and events
+
+```text
+template
+  list
+  view
+  create
+  update
+  validate
+  publish
+  archive
+
+campaign
+  list
+  view
+  create
+  validate
+  start
+  pause
+  resume
+  cancel
+  duplicate
+
+flow
+  list
+  view
+  create
+  update
+  validate
+  publish
+  deprecate
+
+webhook
+  list
+  view
+  create
+  update
+  delete
+  test
+  rotate-secret
+
+event
+  list
+  view
+  replay
+
+logs
+  tail
+  query
+```
+
+Template, campaign, and flow commands support file-based declarative input and
+`--dry-run` only when backed by server validation. Interactive creation may
+guide the user, but every workflow must also have a complete non-interactive
+form suitable for source control and CI.
+
+Campaign start and resume display audience size, project, schedule, and
+validation status before confirmation. Bulk failures return a partial-success
+exit category and a machine-readable failure artifact.
+
+Webhook tests generate a traceable test event. Event replay creates a new
+delivery attempt linked to the original event and does not rewrite event
+history. Logs and event payloads apply redaction before rendering.
+
+Commands remain hidden or clearly unavailable until their underlying API
+contract exists. The CLI must never advertise a command that only fails with a
+generic not-implemented response.
+
+## `listen` design
+
+`polymorfa listen` is inspired by Stripe CLI but is a Polymorfa event workflow,
+not a permanent webhook configuration shortcut.
+
+```text
+polymorfa listen
+  --events <event[,event...]>
+  --forward-to <local-url>
+  --header <name:value>
+  --project <id-or-slug>
+  --from <cursor-or-time>
+  --json
+```
+
+The command requires an authenticated, resumable event stream that does not
+exist merely because durable outbound webhooks exist. The upstream platform
+must provide short-lived listener sessions, scoped event filters, an expiring
+stream credential, cursor-based reconnection, and a clear retention limit.
+
+The CLI prints events or forwards the exact request body to a local HTTP
+endpoint with documented Polymorfa signature headers. It maintains a bounded
+local retry queue, preserves ordering within the guarantees of the upstream
+stream, reports dropped or expired events visibly, and shuts down cleanly on
+interrupt. Local forwarding never disables TLS verification for remote
+destinations and never prints signing secrets unless the user explicitly asks
+for the one-time value in an interactive terminal.
+
+Implementation of `listen` begins with a focused comparison of Stripe's open
+source listener, Cloudflare/Vercel log streams, the current Polymorfa webhook
+delivery model, and the final upstream listener API. The command does not ship
+until one real event has been streamed, forwarded to localhost, retried, and
+resumed after disconnection.
+
+## MCP design
+
+The local MCP server is a first-class mode of the npm package:
+
+```text
+polymorfa mcp serve
+polymorfa mcp install <client>
+polymorfa mcp uninstall <client>
+polymorfa mcp status [client]
+polymorfa mcp tools
+polymorfa mcp doctor
+```
+
+`mcp serve` uses standard input/output by default. An optional local HTTP
+transport may be added for clients that require it, but no platform-specific
+plugin is required. A future hosted remote MCP endpoint may reuse the same
+registry and schemas; it is not a prerequisite for the local server.
+
+Tools are curated and typed rather than mechanically generated from OpenAPI.
+They are registered from the same application services as commands and grouped
+into selectable toolsets such as `core`, `messaging`, `webhooks`, `campaigns`,
+and `operations`. The default toolset stays small enough for reliable tool
+selection; clients can request broader sets explicitly.
+
+The server also exposes non-secret resources for active context, capabilities,
+session summaries, and webhook/event metadata where useful. Reusable MCP
+prompts cover diagnostic or multi-step workflows only when a prompt adds value
+beyond a skill.
+
+Every tool includes accurate read-only, destructive, idempotent, and external-
+effect annotations. Mutating tools return a proposed action or require host
+approval where the MCP client supports approval. The server never weakens
+authorization because the caller is an agent. Credentials are resolved through
+the selected CLI profile or environment and never returned through MCP.
+
+`mcp install` is a convenience command that writes or prints standards-based
+client configuration for known clients after showing the exact target file and
+server command. It does not submit a Claude plugin, require a plugin directory,
+or make platform-specific packaging a capability boundary.
+
+## Skills
+
+Portable skills live beside the CLI and depend only on public CLI and MCP
+contracts:
+
+```text
+polymorfa
+polymorfa-messaging
+polymorfa-webhooks
+polymorfa-campaigns
+polymorfa-operations
+```
+
+The core skill teaches authentication, context, output, safe mutation, and when
+to prefer MCP versus the CLI. Domain skills cover high-quality workflows,
+required evidence, expected side effects, and failure recovery. They do not
+embed credentials, unpublished implementation details, or brittle absolute
+paths.
+
+```text
+polymorfa skill install [name] [--agent <agent>] [--global|--project]
+polymorfa skill list
+polymorfa skill update [name]
+polymorfa skill remove <name>
+polymorfa skill doctor
+```
+
+The installer supports documented skill-directory conventions and a generic
+output mode. Claude plugin packaging and approval are explicitly outside the
+initial scope.
+
+## Per-command research contract
+
+Before implementing each command family, create or update
+`docs/command-research/<family>.md` with:
+
+1. the exact current SDK methods and API operations used;
+2. current authentication, scopes, pagination, rate limits, and idempotency;
+3. comparable behavior in relevant open-source CLIs;
+4. proposed flags, interactive flow, machine output, and examples;
+5. destructive or high-volume behavior and approval rules;
+6. error cases and recovery commands;
+7. telemetry and redaction considerations;
+8. test fixtures and live verification required; and
+9. the coverage-ledger changes produced by the command.
+
+Research can refine options and subcommands, but it may not silently violate
+the global CLI contract or rename an approved top-level command. A material
+change to command ownership or safety returns to design review.
+
+The repository maintains a machine-readable ledger mapping every Messaging and
+Platform operation to one of:
+
+- curated CLI command and MCP tool;
+- curated CLI command only;
+- curated MCP tool only with a documented reason;
+- raw `api` access only; or
+- intentionally deferred with an issue and target milestone.
+
+Coverage gaps do not force low-quality generated commands. They create visible
+maintenance work.
+
+## Delivery phases
+
+### Phase 0: foundation
+
+- Public TypeScript SDK dependency available on the development channel.
+- Repository, branching, release, testing, and command-research scaffolding.
+- CLI runtime, global flags, config, secure credentials, output, errors, and
+  redaction.
+- `auth`, `context`, `link`, `api`, `doctor`, completion, and version commands.
+
+### Phase 1: core messaging and MCP
+
+- Organization and project discovery.
+- Session lifecycle and connection workflows.
+- Text and media message sending plus essential reads.
+- Webhook inspection and testing.
+- Local MCP server, core/messaging toolsets, resources, annotations, and client
+  configuration helpers.
+- Initial core and messaging skills.
+
+### Phase 2: event development workflow
+
+- Upstream listener-session API.
+- `listen`, event inspection/replay, local forwarding, reconnection, and test
+  fixtures.
+- Webhook and event skills.
+
+### Phase 3: complete curated surface
+
+- Contacts, chats, groups, templates, campaigns, flows, access management,
+  usage, billing, logs, and remaining curated operations.
+- Coverage-ledger reconciliation and command-specific research.
+
+### Phase 4: release hardening
+
+- Install and upgrade testing across supported Node.js versions and macOS,
+  Linux, and Windows.
+- Public documentation, examples, migration policy, support bundles, and npm
+  trusted publishing.
+- Stable-channel promotion from `dev` to `main`.
+
+## Verification
+
+Each application service has unit tests independent of oclif and MCP. Commands
+have parser and golden-output tests. MCP tools have schema, annotation, result,
+and approval tests against the same service fixtures.
+
+Release gates include:
+
+- TypeScript typecheck, lint, unit tests, and production build;
+- `npm pack` inspection and clean-install smoke tests;
+- PTY tests for prompts, progress, interrupts, QR output, and non-interactive
+  behavior;
+- golden tests for help, tables, JSON, JSON Lines, templates, and errors;
+- authentication-store tests on supported operating systems;
+- redaction tests containing seeded secret-like values in every output path;
+- SDK compatibility and API coverage-ledger checks;
+- MCP protocol conformance and client smoke tests;
+- real development-environment checks for authentication, linking, session
+  connection, message sending, webhook testing, and event listening; and
+- public documentation validation in the Polymorfa documentation repository.
+
+Compilation and mocked tests are not sufficient evidence for browser login,
+keychain storage, live pairing, message delivery, webhook forwarding, event
+resume, or MCP client configuration.
+
+## Explicit non-goals
+
+- Generating the public command tree from OpenAPI.
+- Reimplementing SDK transport behavior inside the CLI.
+- Depending on Claude plugins or marketplace approval.
+- Shipping a general plugin framework in the first release.
+- Treating raw API access as a substitute for core curated workflows.
+- Storing credentials in project files or printing them in debug output.
+- Advertising commands whose supporting API contract does not yet exist.
+- Duplicating the full Polymorfa console, billing checkout, or visual builders
+  inside a terminal.
+
+## Acceptance criteria
+
+The first public release is acceptable when a new user can install
+`@polymorfa/cli`, authenticate without placing a secret in shell history, link
+a project, inspect and connect a session, send a real message, inspect and test
+a webhook, call an unsupported endpoint through `api`, configure a standard MCP
+client, and receive actionable errors without reading repository internals.
+
+An agent using the local MCP server must be able to discover the active context,
+perform the same core read workflows, propose or execute an approved message or
+webhook action, and receive typed, redacted results with correct side-effect
+annotations.
