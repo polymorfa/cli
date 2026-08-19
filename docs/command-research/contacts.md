@@ -2,7 +2,7 @@
 
 - **Status:** Complete Messaging Contacts implementation slice
 - **Reviewed:** 2026-08-20
-- **SDK baseline:** `6afb40b3e354eea57d9ce45257ed93a0cc8a8f41`
+- **SDK baseline:** `3324a1d5ae840ed96d1a5f987880587cab2312fb`
 
 ## Sources reviewed
 
@@ -76,5 +76,5 @@ full client-side contact scan and does not cross the client-token boundary with
 raw requests.
 
 Contacts remain ten covered operations in the SDK ledger. At the exact CLI
-baseline, the overall ledger records 331 total / 181 covered / 87 missing / 63
+baseline, the overall ledger records 331 total / 184 covered / 84 missing / 63
 excluded / 0 partial / 0 changed operations.

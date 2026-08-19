@@ -360,6 +360,67 @@ request. Lists are complete arrays because the source exposes no contact
 pagination. Block and unblock are reversible actions and accept
 `--idempotency-key`; they are not available to browser client tokens.
 
+## Business App
+
+The complete Linked Device Business App surface requires a server API key and
+an active connected session. Its resource tree keeps the account's own profile,
+catalog, products, collections, orders, compliance, and linked-account state
+separate:
+
+```shell
+polymorfa business profile view --session session_123
+polymorfa business catalog view --session session_123 --jid shop@lid
+polymorfa business product view product_123 \
+  --session session_123 \
+  --jid shop@lid
+polymorfa business collection list --session session_123 --jid shop@lid
+polymorfa business compliance view --session session_123
+polymorfa business accounts view --session session_123
+polymorfa business eligibility view --session session_123
+```
+
+Structurally rich mutations accept one bounded JSON document from a file or
+standard input, matching the `gh api --input` convention:
+
+```shell
+polymorfa business profile update \
+  --session session_123 \
+  --input profile-update.json
+
+polymorfa business product create \
+  --session session_123 \
+  --input product.json
+
+polymorfa business product replace product_123 \
+  --session session_123 \
+  --input product-replacement.json
+
+polymorfa business compliance replace \
+  --session session_123 \
+  --input compliance.json
+```
+
+Product replacement requires an explicit `hidden` boolean because the pinned
+runner treats omission as `false` and can otherwise unhide an existing product.
+Product images require exactly one `url`, `base64`, or trusted `mediaUrl`
+source; the CLI additionally accepts `file` and converts a locally preflighted
+image into the SDK's base64 form. Local product images are bounded to 16 MiB.
+Price strings use integer thousandths and require a three-letter uppercase
+currency. Appeal commands enforce the live 4,096 UTF-8 byte limit.
+
+Cover photos accept exactly one `--url` or local `--file`; local files are
+bounded to 5 MiB and sent as base64 JSON. Collection create/update use
+repeatable product flags, while reorder accepts a JSON move list. Permanent
+cover-photo, product, and collection deletions require `--yes`. Every mutation,
+including the POST order lookup, accepts `--idempotency-key`.
+
+Catalog and collection reads expose source cursors without claiming automatic
+pagination. A single collection accepts an `--after` cursor but its response
+has no next cursor. Order lookup requires the exact event token and is not an
+order-history command. The source exposes no catalog-independent list, product
+or collection search/history, binary upload, resumability, or Business App
+support for project credentials, client tokens, or Cloud API sessions.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It

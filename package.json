@@ -30,7 +30,7 @@
   "dependencies": {
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "github:polymorfa/sdks#6afb40b3e354eea57d9ce45257ed93a0cc8a8f41"
+    "@polymorfa/sdk": "github:polymorfa/sdks#3324a1d5ae840ed96d1a5f987880587cab2312fb"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -51,6 +51,42 @@
     "topics": {
       "auth": {
         "description": "Manage authentication profiles and credentials."
+      },
+      "business": {
+        "description": "Manage Linked Device Business App resources."
+      },
+      "business:accounts": {
+        "description": "Inspect linked business accounts and ad identities."
+      },
+      "business:catalog": {
+        "description": "Inspect and manage the connected account catalog."
+      },
+      "business:catalog:cart": {
+        "description": "Manage the business catalog cart setting."
+      },
+      "business:collection": {
+        "description": "Inspect and manage business collections."
+      },
+      "business:compliance": {
+        "description": "Inspect and replace merchant compliance."
+      },
+      "business:eligibility": {
+        "description": "Inspect business feature eligibility."
+      },
+      "business:order": {
+        "description": "Look up business orders from event tokens."
+      },
+      "business:product": {
+        "description": "Inspect and manage business products."
+      },
+      "business:product:visibility": {
+        "description": "Manage business product visibility."
+      },
+      "business:profile": {
+        "description": "Inspect and manage the account business profile."
+      },
+      "business:profile:cover": {
+        "description": "Manage the business profile cover photo."
       },
       "channel": {
         "description": "Inspect and manage Messaging channels."
