@@ -198,6 +198,38 @@ The source API exposes no retrieve-by-ID, send, sync, history, search, or
 pagination operation for quick replies, so the CLI does not advertise those
 commands. Interactive message buttons are a separate message-send concept.
 
+## Profile
+
+View and update the connected account's Messaging profile with a server API
+key:
+
+```shell
+polymorfa profile view --session session_123
+polymorfa profile name set --session session_123 --name Polymorfa
+polymorfa profile status set --session session_123 --status Available
+
+polymorfa profile picture set \
+  --session session_123 \
+  --file ./profile.jpg
+
+polymorfa profile picture set \
+  --session session_123 \
+  --url https://example.com/profile.jpg
+
+polymorfa profile picture delete --session session_123 --yes
+```
+
+Picture setting requires exactly one source. `--file` reads at most 50 MiB and
+sends bounded base64 JSON; it is not a multipart or streaming upload. `--url`
+asks the Messaging service to retrieve the remote image. Every mutation accepts
+`--idempotency-key`.
+
+JSON output preserves the service response and SDK request metadata. Human
+profile output supports both the published profile fields and the connected
+account fields returned by the development service. The source exposes no
+profile history, picture download, binary upload, streaming, or pagination
+operation.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It

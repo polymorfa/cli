@@ -440,6 +440,16 @@ quick-reply
   replace
   delete
 
+profile
+  view
+  name
+    set
+  status
+    set
+  picture
+    set
+    delete
+
 contact
   list
   view
@@ -529,6 +539,16 @@ the fourth and final operation. The source exposes no retrieve-by-ID, send,
 sync, history, or search route. Quick Replies are stored canned responses, not
 interactive message buttons, and `quickReplyMode` remains part of the separate
 observation-policy contract.
+
+Profile is a server-key-only Linked Device resource. `profile view` preserves
+the source response in JSON and renders both the published profile shape and
+the connected-account fields returned by the pinned live handler. Name and
+status use explicit nested setters. Picture set accepts exactly one remote URL
+or bounded local file; local bytes are encoded into the source's JSON base64
+field rather than advertised as a multipart or streaming upload. Confirmed
+picture delete completes the five-operation family. The source exposes no
+profile history, picture download, binary upload, streaming, pagination, or
+client-token action.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -858,7 +878,9 @@ The private `dev` branch now contains working, unpublished vertical slices:
   commands;
 - complete label CRUD and explicit full-set chat assignment commands;
 - complete observed Quick Replies list, create, replace, and confirmed delete
-  commands; and
+  commands;
+- complete connected-account Profile view, name/status setters, bounded
+  picture setting, and confirmed picture deletion commands; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real
