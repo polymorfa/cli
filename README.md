@@ -114,6 +114,32 @@ The API does not expose message history, list, or search operations. Those
 commands are not synthesized by the CLI. Additional typed send kinds will be
 added as focused subcommands instead of a generic JSON payload interface.
 
+## Media
+
+Messaging media is distinct from Platform media and requires a server API key:
+
+```shell
+polymorfa media view media_123
+
+polymorfa media download media_123 \
+  --output ./attachment.bin
+
+polymorfa media persist media_123 \
+  --idempotency-key persist_media_123
+```
+
+`media download` retrieves metadata before fetching bytes and rejects media
+larger than 100 MiB by default. Override the memory guard with `--max-bytes`
+only when the process has enough memory. An explicit output path is required,
+and existing files are preserved unless `--force` is passed. The SDK buffers
+the complete response before the CLI writes it; this is not a streaming or
+range-download command.
+
+`media persist` asks the server to copy the media into configured object
+storage. It does not write a local file. The source API has no Messaging media
+upload, delete, list, resumable-upload, or streaming endpoint, so the CLI does
+not advertise those operations.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It

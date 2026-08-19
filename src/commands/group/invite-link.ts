@@ -20,7 +20,7 @@ export default class GroupInviteLink extends BaseCommand {
   async run(): Promise<void> {
     const {args, flags} = await this.parse(GroupInviteLink)
     const result = await getGroupInviteLink(
-      await this.messagingClient(flags, {serverApiKeyOnly: true}),
+      await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
       flags.session,
       args.group,
     )

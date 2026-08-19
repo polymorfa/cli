@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `b9f9445390a35ba6582bf63dac1bbf65a24ff502`. It is ESM-only, requires Node.js
+commit `873fb817e4967f8c1d032fb73216774c64ec21f5`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#b9f9445390a35ba6582bf63dac1bbf65a24ff502
+npm install github:polymorfa/sdks#873fb817e4967f8c1d032fb73216774c64ec21f5
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,13 +118,13 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32293193654](https://github.com/polymorfa/sdks/actions/runs/32293193654).
-The run exercised 33 test files and 140 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32294615955](https://github.com/polymorfa/sdks/actions/runs/32294615955).
+The run exercised 34 test files and 144 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-117 curated typed methods, 151 explicitly missing operations available through
+120 curated typed methods, 148 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 63 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
@@ -420,10 +420,9 @@ message
   delete
 
 media
-  upload
   download
   view
-  delete
+  persist
 
 contact
   list
@@ -482,6 +481,18 @@ remain send options rather than synthetic commands. Server API keys require
 live allowed-action, recipient, rate, and daily-limit rules. Message history,
 list, and search remain unshipped because the pinned source exposes no such
 operations.
+
+Messaging media lookup is distinct from Platform media. `media view` returns
+typed metadata, `media download` writes a buffered SDK response to an explicit
+local path, and `media persist` asks the server to save media into configured
+object storage. All three require a server API key; client tokens have no Media
+action. Downloads preflight `fileLength`, enforce a 100 MiB default memory
+limit, reject existing destinations unless `--force` is explicit, and return a
+small receipt instead of serializing binary data into JSON. The SDK buffers the
+entire response and the source exposes no upload, delete, list, resumable,
+range, or streaming contract, so the CLI does not claim any of those
+capabilities. Media send URL/base64 inputs remain part of `message send media`,
+not an upload API.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -792,7 +803,7 @@ maintenance work.
 
 ## Development implementation status
 
-The private `dev` branch now contains two working, unpublished vertical slices:
+The private `dev` branch now contains working, unpublished vertical slices:
 
 - the installable `polymorfa` ESM executable on Node.js 20 or newer;
 - `polymorfa version` with human, JSON, and quiet output;
@@ -803,9 +814,12 @@ The private `dev` branch now contains two working, unpublished vertical slices:
   redaction;
 - stdin-only API-key login with named profiles and fail-closed native keyring
   storage;
-- profile listing, activation, local credential status, and scoped logout; and
+- profile listing, activation, local credential status, and scoped logout;
 - read-oriented group list, view, participant list, and invite-link commands
-  with explicit session scope; and
+  with explicit session scope;
+- typed text send, reaction, seen, typing, and star message actions;
+- Messaging media metadata, bounded local download, and server persistence
+  commands; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real

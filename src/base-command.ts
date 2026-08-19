@@ -71,7 +71,7 @@ export abstract class BaseCommand extends Command {
 
   protected async messagingClient(
     flags: GlobalFlags,
-    options: {readonly serverApiKeyOnly?: boolean} = {},
+    options: {readonly serverApiKeyOnly?: string} = {},
   ): Promise<MessagingClient> {
     const environment = await resolveCommandEnvironment({
       env: process.env,
@@ -83,11 +83,11 @@ export abstract class BaseCommand extends Command {
       ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
     })
     if (
-      options.serverApiKeyOnly === true &&
+      options.serverApiKeyOnly !== undefined &&
       environment.credential.type !== 'apiKey'
     ) {
       throw new PolymorfaConfigurationError(
-        'Groups commands require a server API key; Messaging client tokens do not have Groups access. Set POLYMORFA_API_KEY or select an API-key profile.',
+        `${options.serverApiKeyOnly} commands require a server API key; Messaging client tokens do not have ${options.serverApiKeyOnly} access. Set POLYMORFA_API_KEY or select an API-key profile.`,
         'credential',
       )
     }

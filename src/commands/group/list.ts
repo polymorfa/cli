@@ -16,7 +16,7 @@ export default class GroupList extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(GroupList)
     const result = await listGroups(
-      await this.messagingClient(flags, {serverApiKeyOnly: true}),
+      await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
       flags.session,
     )
     const human =

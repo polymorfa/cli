@@ -8,8 +8,9 @@ export interface CapturedRequest {
 }
 
 export interface ResponseFixture {
-  readonly body: unknown
+  readonly body?: unknown
   readonly headers?: Readonly<Record<string, string>>
+  readonly rawBody?: string | Uint8Array
   readonly status?: number
 }
 
@@ -22,8 +23,21 @@ export interface TestHttpServer {
 export async function startHttpServer(
   response: ResponseFixture,
 ): Promise<TestHttpServer> {
+  return startHttpSequenceServer([response])
+}
+
+export async function startHttpSequenceServer(
+  responses: readonly ResponseFixture[],
+): Promise<TestHttpServer> {
   const requests: CapturedRequest[] = []
   const server = createServer((request, reply) => {
+    const response = responses[Math.min(requests.length, responses.length - 1)]
+    if (response === undefined) {
+      reply.writeHead(500, {'content-type': 'application/json'})
+      reply.end(JSON.stringify({error: 'Missing test response fixture.'}))
+      return
+    }
+
     void captureAndReply(request, reply, requests, response).catch((error) => {
       reply.destroy(error instanceof Error ? error : undefined)
     })
@@ -70,10 +84,17 @@ async function captureAndReply(
   })
 
   reply.writeHead(response.status ?? 200, {
-    'content-type': 'application/json',
+    'content-type':
+      response.rawBody === undefined
+        ? 'application/json'
+        : 'application/octet-stream',
     ...response.headers,
   })
-  reply.end(JSON.stringify(response.body))
+  reply.end(
+    response.rawBody === undefined
+      ? JSON.stringify(response.body)
+      : Buffer.from(response.rawBody),
+  )
 }
 
 export async function withEnvironment<T>(

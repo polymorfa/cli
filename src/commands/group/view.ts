@@ -20,7 +20,7 @@ export default class GroupView extends BaseCommand {
   async run(): Promise<void> {
     const {args, flags} = await this.parse(GroupView)
     const result = await viewGroup(
-      await this.messagingClient(flags, {serverApiKeyOnly: true}),
+      await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
       flags.session,
       args.group,
     )
