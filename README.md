@@ -256,6 +256,34 @@ does not change an existing chat's timer; per-chat disappearing messages use a
 separate Chats operation. The source exposes no privacy history, pagination,
 value-list endpoint, or allowlist/blacklist member-management route.
 
+## Presence
+
+View the remembered self state, change it with a server key, or inspect and
+renew policy-governed chat observations:
+
+```shell
+polymorfa presence view --session session_123
+polymorfa presence set --session session_123 --state available
+
+polymorfa presence chat view 15551234567@s.whatsapp.net \
+  --session session_123
+
+polymorfa presence chat subscribe 15551234567@s.whatsapp.net \
+  --session session_123
+```
+
+`presence view` reports the service's remembered desired and last-sent state;
+it is not a live authoritative account query. `presence chat view` reports a
+retained observation and includes policy, freshness, staleness, and separate
+typing-observation fields. It does not bypass the configured observation
+policy.
+
+Reads and subscription accept either a server API key or an appropriately
+scoped, session-bound client token. Changing self presence requires a server
+API key. Repeat `presence chat subscribe` before the returned `expiresAt` to
+renew the subscription; the API exposes no watch, history, polling helper, or
+unsubscribe operation. Mutations accept `--idempotency-key`.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It

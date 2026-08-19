@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `87dcf28624742dfe4cab27dab165a26de142b151`. It is ESM-only, requires Node.js
+commit `e9c83a9c298e0b0f335b9c5ad953a4627dcefeb4`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#87dcf28624742dfe4cab27dab165a26de142b151
+npm install github:polymorfa/sdks#e9c83a9c298e0b0f335b9c5ad953a4627dcefeb4
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,19 +118,19 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32296233682](https://github.com/polymorfa/sdks/actions/runs/32296233682).
-The run exercised 36 test files and 150 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32302789604](https://github.com/polymorfa/sdks/actions/runs/32302789604).
+The run exercised 40 test files and 163 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-130 curated typed methods, 138 explicitly missing operations available through
+143 curated typed methods, 125 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 63 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
 The curated resources cover Messaging sessions, pairing QR and codes, operation
-polling, messages, contacts, chats, groups, labels, observation policies,
+polling, messages, contacts, chats, groups, labels, presence, observation policies,
 webhooks, client tokens, project templates, and all 33 signed event payload
 schemas plus Platform organizations, projects, sessions, billing, campaigns,
 audiences, opt-outs, and media. A CLI
@@ -456,6 +456,13 @@ privacy
   disappearing-timer
     set
 
+presence
+  view
+  set
+  chat
+    view
+    subscribe
+
 contact
   list
   view
@@ -564,6 +571,17 @@ command maps `off`, `24h`, `7d`, and `90d` to the exact supported seconds and
 changes the account default only. Per-chat timers remain owned by Chats. The
 source exposes no privacy history, value-list endpoint, pagination, or
 allowlist/blacklist member-management route.
+
+Presence separates remembered self state from policy-governed chat
+observations. `presence view` reports desired and last successfully sent state
+and visibly preserves `authoritative: false`; it is not a live remote-account
+query. `presence set` accepts only the SDK's available/unavailable values and
+requires a server key. Chat view and subscribe accept server keys or
+appropriately scoped, session-bound client tokens. Subscription is an explicit
+one-shot or renewal operation whose returned expiry drives the caller; no
+watch, history, polling helper, unsubscribe, or policy-bypass command is
+invented. Retained composing/paused observations are rendered separately from
+the outbound `message typing` action.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -897,7 +915,9 @@ The private `dev` branch now contains working, unpublished vertical slices:
 - complete connected-account Profile view, name/status setters, bounded
   picture setting, and confirmed picture deletion commands;
 - complete account-level Privacy view, matrix-validated setting update, and
-  default disappearing-timer commands; and
+  default disappearing-timer commands;
+- complete remembered self-presence view/set and policy-governed chat
+  observation view/subscription commands; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real
