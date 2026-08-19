@@ -4,7 +4,7 @@ import {PolymorfaValidationError, type HttpMethod} from '@polymorfa/sdk'
 import {executeRawRequest} from '../api/execute.js'
 import {buildRawRequest, readJsonInput} from '../api/request.js'
 import {BaseCommand} from '../base-command.js'
-import {resolveEnvironment} from '../context/environment.js'
+import {resolveCommandEnvironment} from '../context/environment.js'
 import {createRawClient} from '../sdk/client.js'
 
 const HTTP_METHODS = [
@@ -65,14 +65,16 @@ export default class Api extends BaseCommand {
       )
     }
 
-    const environment = resolveEnvironment({
+    const environment = await resolveCommandEnvironment({
       env: process.env,
       surface: flags.surface,
+      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags['api-version'] === undefined
         ? {}
         : {apiVersion: flags['api-version']}),
       ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
     })
+    this.registerSecret(environment.credential.value)
     const body =
       flags.input === undefined ? undefined : await readJsonInput(flags.input)
     const request = buildRawRequest({

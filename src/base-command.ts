@@ -16,6 +16,8 @@ export interface GlobalFlags {
 }
 
 export abstract class BaseCommand extends Command {
+  private readonly registeredSecrets: string[] = []
+
   static override baseFlags = {
     'api-version': Flags.string({
       description: 'Override the API version for this request.',
@@ -64,10 +66,15 @@ export abstract class BaseCommand extends Command {
     return 'human'
   }
 
+  protected registerSecret(secret: string): void {
+    if (secret.length > 0) this.registeredSecrets.push(secret)
+  }
+
   protected override catch(error: Interfaces.CommandError): Promise<never> {
     const presented = presentError(error, [
       process.env.POLYMORFA_API_KEY ?? '',
       process.env.POLYMORFA_CLIENT_TOKEN ?? '',
+      ...this.registeredSecrets,
     ])
 
     if (this.argv.includes('--json')) {

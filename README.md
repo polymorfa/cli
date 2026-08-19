@@ -36,6 +36,29 @@ The verified version output includes both runtime components:
 polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.0
 ```
 
+## Authentication profiles
+
+Until the backend exposes a revocable CLI device-authorization flow, login
+accepts a server API key only through standard input:
+
+```shell
+printf '%s' "$POLYMORFA_API_KEY" | \
+  polymorfa auth login --with-api-key --profile work
+
+polymorfa auth list
+polymorfa auth status --profile work
+polymorfa auth use work
+```
+
+Profile metadata is written to the platform configuration directory. API keys
+are stored separately in macOS Keychain, Windows Credential Manager, or Linux
+Secret Service. A keyring failure stops the command; the CLI never silently
+falls back to plaintext. `auth status` reports local secure-store availability
+in this development slice and does not yet claim remote identity validation.
+
+Environment credentials take precedence over the active profile for automation.
+An explicit `--profile <name>` takes precedence over environment credentials.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It
@@ -85,8 +108,8 @@ is capped at 10 MiB. Use `--header name:value` for additional headers and
 successful output without hiding failures. Diagnostics and errors go to stderr;
 SDK request IDs are preserved and active credentials are redacted.
 
-`POLYMORFA_BASE_URL` exists only for development and controlled testing. It is
-not a profile setting and must not be placed in project files.
+`POLYMORFA_BASE_URL` exists only for development and controlled testing. It
+overrides a profile endpoint and must not be placed in project files.
 
 ## Verification
 

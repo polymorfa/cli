@@ -3,12 +3,21 @@ import {
   type MessagingCredential,
 } from '@polymorfa/sdk'
 
+import {
+  SecureCredentialStore,
+  type CredentialStore,
+} from '../config/credentials.js'
+import {ProfileRepository} from '../config/profiles.js'
+import type {ProfileRepositoryLike} from '../services/auth.js'
+
 export type ApiSurface = 'messaging' | 'platform'
 
 export interface ResolvedEnvironment {
   readonly apiVersion?: string
   readonly baseUrl?: string
   readonly credential: MessagingCredential
+  readonly profile?: string
+  readonly source?: 'environment' | 'profile'
   readonly surface: ApiSurface
   readonly timeoutMs?: number
 }
@@ -18,6 +27,61 @@ export interface ResolveEnvironmentInput {
   readonly env: Readonly<Record<string, string | undefined>>
   readonly surface: ApiSurface
   readonly timeoutMs?: number | undefined
+}
+
+export interface ResolveCommandEnvironmentInput extends ResolveEnvironmentInput {
+  readonly profile?: string | undefined
+}
+
+export async function resolveCommandEnvironment(
+  input: ResolveCommandEnvironmentInput,
+  profiles: ProfileRepositoryLike = new ProfileRepository(),
+  credentials: CredentialStore = new SecureCredentialStore(),
+): Promise<ResolvedEnvironment> {
+  const explicitProfile = nonEmpty(input.profile)
+  const hasEnvironmentCredential =
+    nonEmpty(input.env.POLYMORFA_API_KEY) !== undefined ||
+    nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN) !== undefined
+
+  if (explicitProfile === undefined && hasEnvironmentCredential) {
+    return {
+      ...resolveEnvironment(input),
+      source: 'environment',
+    }
+  }
+
+  const config = await profiles.load()
+  const selected = explicitProfile ?? config.activeProfile
+  if (selected === undefined) {
+    return resolveEnvironment(input)
+  }
+
+  const profile = config.profiles[selected]
+  if (profile === undefined) {
+    throw new PolymorfaConfigurationError(
+      `Profile ${selected} does not exist. Run polymorfa auth list to inspect configured profiles.`,
+      'profile',
+    )
+  }
+
+  const apiKey = await credentials.get(profile.credential.account)
+  if (apiKey === undefined) {
+    throw new PolymorfaConfigurationError(
+      `Profile ${selected} has no credential in the operating-system keyring. Run polymorfa auth login --with-api-key --profile ${selected}.`,
+      'keyring',
+    )
+  }
+
+  const resolved = resolveEnvironment({
+    ...input,
+    apiVersion: input.apiVersion ?? profile.apiVersion,
+    env: {
+      POLYMORFA_API_KEY: apiKey,
+      POLYMORFA_BASE_URL:
+        nonEmpty(input.env.POLYMORFA_BASE_URL) ?? profile.baseUrl,
+    },
+  })
+  return {...resolved, profile: selected, source: 'profile'}
 }
 
 export function resolveEnvironment(

@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `ea47ca2ffd6f9aa52abe551dda8ad18a67c07f8b`. It is ESM-only, requires Node.js
+commit `c6ccc7ec9961356530aced3aa52ee42426d15592`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#ea47ca2ffd6f9aa52abe551dda8ad18a67c07f8b
+npm install github:polymorfa/sdks#c6ccc7ec9961356530aced3aa52ee42426d15592
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,20 +118,21 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32282078631](https://github.com/polymorfa/sdks/actions/runs/32282078631).
-The run exercised 30 test files and 122 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32284220152](https://github.com/polymorfa/sdks/actions/runs/32284220152).
+The run exercised 30 test files and 126 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-80 curated typed methods, 191 explicitly missing operations available through
+91 curated typed methods, 180 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 60 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
-The curated resources cover Messaging sessions, messages, webhooks, client
-tokens, and project templates plus Platform organizations, projects, sessions,
-campaigns, audiences, opt-outs, and media. A CLI command outside that set uses
+The curated resources cover Messaging sessions, messages, contacts, chat
+mutations, webhooks, client tokens, and project templates plus Platform
+organizations, projects, sessions, campaigns, audiences, opt-outs, and media. A
+CLI command outside that set uses
 the SDK's raw escape hatch rather than recreating authentication, transport,
 retry, pagination, or error behavior. Its command-research record must identify
 the exact raw operation and track promotion to a curated SDK method when the
@@ -446,6 +447,12 @@ opt-in hosted storage, live session state, or another documented source. Empty
 hosted-storage results must not be presented as proof that no message or contact
 exists.
 
+The pinned source contract exposes chat message edit/delete, archive/unarchive,
+and disappearing-timer mutations, but no chat list or history-read route.
+Accordingly, `chat list`, `chat view`, and `chat messages` remain reserved and
+unshipped until a real credential-compatible source operation exists. The CLI
+does not synthesize them from unrelated label or hosted-storage routes.
+
 ### Templates, campaigns, audiences, webhooks, and events
 
 ```text
@@ -722,8 +729,7 @@ maintenance work.
 
 ## Development implementation status
 
-The private `dev` branch now contains the first working, unpublished vertical
-slice:
+The private `dev` branch now contains two working, unpublished vertical slices:
 
 - the installable `polymorfa` ESM executable on Node.js 20 or newer;
 - `polymorfa version` with human, JSON, and quiet output;
@@ -731,12 +737,16 @@ slice:
 - GET query fields, JSON request fields, custom headers, file or bounded stdin
   bodies, response metadata, timeouts, and API-version overrides;
 - SDK-derived error categories, request IDs, exit codes, and credential
-  redaction; and
+  redaction;
+- stdin-only API-key login with named profiles and fail-closed native keyring
+  storage;
+- profile listing, activation, local credential status, and scoped logout; and
 - real local HTTP integration tests that exercise the SDK transport.
 
-This status does not claim an npm release, persistent authentication profiles,
-project linking, curated resource commands, MCP, skills, or `listen`. Those
-remain planned work in the delivery phases above.
+This status does not claim an npm release, browser/device authorization, a real
+operating-system keyring smoke test, remote identity validation from `auth
+status`, project linking, curated resource commands, MCP, skills, or `listen`.
+Those remain planned work in the delivery phases above.
 
 ## Verification
 
