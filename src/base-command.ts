@@ -1,5 +1,6 @@
-import {Command, Flags} from '@oclif/core'
+import {Command, Flags, type Interfaces} from '@oclif/core'
 
+import {presentError} from './errors/present.js'
 import {renderValue, type OutputMode} from './output/render.js'
 
 export interface GlobalFlags {
@@ -61,6 +62,26 @@ export abstract class BaseCommand extends Command {
     if (flags.quiet === true) return 'quiet'
     if (flags.json === true) return 'json'
     return 'human'
+  }
+
+  protected override async catch(
+    error: Interfaces.CommandError,
+  ): Promise<never> {
+    const presented = presentError(error, [
+      process.env.POLYMORFA_API_KEY ?? '',
+      process.env.POLYMORFA_CLIENT_TOKEN ?? '',
+    ])
+
+    if (this.argv.includes('--json')) {
+      process.stderr.write(`${JSON.stringify(presented)}\n`)
+    } else {
+      process.stderr.write(`Error: ${presented.message}\n`)
+      if (presented.requestId !== undefined) {
+        process.stderr.write(`Request ID: ${presented.requestId}\n`)
+      }
+    }
+
+    this.exit(presented.exitCode)
   }
 
   protected writeValue(

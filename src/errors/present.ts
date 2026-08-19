@@ -96,7 +96,25 @@ function classifyError(
     return {category: 'server', exitCode: 5}
   }
 
+  if (isOclifUsageError(error)) {
+    return {category: 'validation', exitCode: 2}
+  }
+
   return {category: 'internal', exitCode: 1}
+}
+
+function isOclifUsageError(error: unknown): boolean {
+  if (typeof error !== 'object' || error === null || !('oclif' in error)) {
+    return false
+  }
+
+  const oclif = (error as {oclif?: unknown}).oclif
+  return (
+    typeof oclif === 'object' &&
+    oclif !== null &&
+    'exit' in oclif &&
+    (oclif as {exit?: unknown}).exit === 2
+  )
 }
 
 function errorMessage(error: unknown): string {

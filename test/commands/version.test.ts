@@ -28,4 +28,23 @@ describe('version', () => {
     expect(result.stdout).toBe('')
     expect(result.stderr).toBe('')
   })
+
+  test('reports conflicting output flags as a validation error', async () => {
+    const result = await runCommand('version --json --quiet')
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(JSON.parse(result.stderr)).toMatchObject({
+      category: 'validation',
+      exitCode: 2,
+    })
+    expect(result.stdout).toBe('')
+  })
 })
+
+function exitCode(error: unknown): number | undefined {
+  if (typeof error !== 'object' || error === null || !('oclif' in error)) {
+    return undefined
+  }
+
+  return (error as {oclif?: {exit?: number}}).oclif?.exit
+}
