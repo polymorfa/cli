@@ -531,6 +531,15 @@ business
   eligibility
     view
 
+call
+  reject
+
+lid
+  resolve
+
+user
+  security-code
+
 chat
   list
   view
@@ -680,6 +689,16 @@ including order lookup, preserve idempotency and asynchronous request envelopes.
 Catalog and collection cursors remain explicit; collection view cannot claim a
 next cursor the source does not return. Media stays URL/base64/trusted-media
 JSON, not a fabricated upload or streaming abstraction.
+
+Calls, LIDs, and user security codes are three distinct server-key-only Linked
+Device resources. Call rejection requires the incoming caller and call ID,
+accepts idempotency, and preserves either synchronous or asynchronous response
+shapes without implying broader call support. LID resolution accepts exactly one
+phone number, stable ID, deprecated LID alias, or username and optional four-
+digit key. Security-code lookup requires a stable `digits@lid` user ID; human
+output favors the 60-digit code and does not dump display-QR base64, while JSON
+retains the complete no-store response. No command claims bulk identity lookup,
+call history/acceptance/streaming, or security-code verification submission.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -1021,7 +1040,9 @@ The private `dev` branch now contains working, unpublished vertical slices:
 - complete Contact list/check/view, live metadata, picture URL, device,
   business-profile, blocklist, and block/unblock commands;
 - complete 25-operation Linked Device Business App profile, catalog, product,
-  collection, order, compliance, linked-account, and eligibility commands; and
+  collection, order, compliance, linked-account, and eligibility commands;
+- complete incoming-call rejection, singular LID resolution, and no-store user
+  security-code inspection commands; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real

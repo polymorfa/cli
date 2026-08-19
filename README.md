@@ -360,6 +360,42 @@ request. Lists are complete arrays because the source exposes no contact
 pagination. Block and unblock are reversible actions and accept
 `--idempotency-key`; they are not available to browser client tokens.
 
+## Calls and stable identities
+
+Three focused Linked Device commands cover the exact Calls, LIDs, and Users
+source tags:
+
+```shell
+polymorfa call reject call_123 \
+  --session session_123 \
+  --from caller@lid \
+  --idempotency-key reject_call_123
+
+polymorfa lid resolve \
+  --session session_123 \
+  --phone-number +15551234567
+
+polymorfa lid resolve \
+  --session session_123 \
+  --username alice \
+  --username-key 1234
+
+polymorfa user security-code 15551234567@lid --session session_123
+```
+
+All three require a server API key and an active Linked Device session. Call
+rejection requires the incoming call ID and caller JID; it is not call accept,
+placement, history, or streaming. LID resolution accepts exactly one phone
+number, stable `digits@lid` ID, deprecated `--lid` alias, or username. A username
+key is exactly four digits and is valid only with `--username`.
+
+Security-code lookup accepts only a stable `digits@lid` user ID. Human output
+shows the 60-digit numeric verification code and identity, but does not dump the
+base64 display QR. `--json` preserves the complete response and no-store header
+metadata. The private WhatsApp verification payload is never returned by the
+API. The source exposes no bulk LID resolution, call list/history, security-code
+history/refresh, or verification-submit operation.
+
 ## Business App
 
 The complete Linked Device Business App surface requires a server API key and
