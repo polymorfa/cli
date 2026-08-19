@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `e9c83a9c298e0b0f335b9c5ad953a4627dcefeb4`. It is ESM-only, requires Node.js
+commit `79730b9ccc04339f7e28d8dd0f216af43758ca9e`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#e9c83a9c298e0b0f335b9c5ad953a4627dcefeb4
+npm install github:polymorfa/sdks#79730b9ccc04339f7e28d8dd0f216af43758ca9e
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,19 +118,20 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32302789604](https://github.com/polymorfa/sdks/actions/runs/32302789604).
-The run exercised 40 test files and 163 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32304788953](https://github.com/polymorfa/sdks/actions/runs/32304788953).
+The run exercised 41 test files and 165 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-143 curated typed methods, 125 explicitly missing operations available through
+156 curated typed methods, 112 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 63 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
 The curated resources cover Messaging sessions, pairing QR and codes, operation
-polling, messages, contacts, chats, groups, labels, presence, observation policies,
+polling, messages, contacts, chats, channels, groups, labels, presence,
+observation policies,
 webhooks, client tokens, project templates, and all 33 signed event payload
 schemas plus Platform organizations, projects, sessions, billing, campaigns,
 audiences, opt-outs, and media. A CLI
@@ -463,6 +464,23 @@ presence
     view
     subscribe
 
+channel
+  list
+  view
+  create
+  delete
+  message
+    list
+    updates
+    mark-viewed
+    react
+  live-updates
+    subscribe
+  follow
+  unfollow
+  mute
+  unmute
+
 contact
   list
   view
@@ -582,6 +600,18 @@ one-shot or renewal operation whose returned expiry drives the caller; no
 watch, history, polling helper, unsubscribe, or policy-bypass command is
 invented. Retained composing/paused observations are rendered separately from
 the outbound `message typing` action.
+
+Channels are server-key-only resources for active Linked Device sessions and
+remain distinct from chats and groups. The complete 13-operation family covers
+list/view/create/confirmed delete, bounded message and update reads, viewed and
+reaction actions, temporary live-update subscription, and follow/unfollow and
+mute/unmute state. Message reads map `--limit` to the source count of 1 through
+100 and accept the source's numeric boundaries, but the bare-array responses do
+not support automatic pagination. Live-update subscription reports its duration
+without claiming a stream, listener, socket, polling helper, or unsubscribe.
+Creation omits picture input while the pinned public field is ignored by the
+runner. Reactions enforce the live runner's 32 UTF-8 byte boundary and preserve
+an empty value for removal.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -917,7 +947,9 @@ The private `dev` branch now contains working, unpublished vertical slices:
 - complete account-level Privacy view, matrix-validated setting update, and
   default disappearing-timer commands;
 - complete remembered self-presence view/set and policy-governed chat
-  observation view/subscription commands; and
+  observation view/subscription commands;
+- complete Channel discovery, lifecycle, bounded message/update reads, message
+  actions, temporary subscription, and follow/mute state commands; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real

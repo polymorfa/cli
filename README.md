@@ -284,6 +284,49 @@ API key. Repeat `presence chat subscribe` before the returned `expiresAt` to
 renew the subscription; the API exposes no watch, history, polling helper, or
 unsubscribe operation. Mutations accept `--idempotency-key`.
 
+## Channels
+
+Channels are connected-session resources and require a server API key:
+
+```shell
+polymorfa channel list --session session_123
+polymorfa channel view 120363000000000000@newsletter --session session_123
+
+polymorfa channel create \
+  --session session_123 \
+  --name 'Product updates' \
+  --description 'Release announcements'
+
+polymorfa channel message list 120363000000000000@newsletter \
+  --session session_123 \
+  --limit 25 \
+  --before 951
+
+polymorfa channel message updates 120363000000000000@newsletter \
+  --session session_123 \
+  --since 1787212800
+
+polymorfa channel live-updates subscribe \
+  120363000000000000@newsletter \
+  --session session_123
+```
+
+Message and update listing return bounded arrays, not cursor pages. `--limit`
+accepts 1–100 and maps to the source `count`; there is no `--paginate` or
+returned `hasMore`. Live-update subscription returns a temporary duration. It
+does not start a listener, socket, or watch process, and the API exposes no
+unsubscribe operation.
+
+Message actions are `channel message mark-viewed` and `channel message react`.
+An empty reaction removes the caller's reaction. Channel-level actions are
+`follow`, `unfollow`, `mute`, and `unmute`. Mutations accept
+`--idempotency-key`, and deletion additionally requires `--yes`.
+
+Channel creation intentionally has no picture flag: the published request field
+is ignored by the pinned service implementation. The CLI will expose it only
+after the source contract and runner agree. Channels remain separate from chats
+and groups, and the source has no dedicated channel-send operation.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It
