@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `c57aab84c896412cf4622d0b8f21203ec17c81b6`. It is ESM-only, requires Node.js
+commit `31c88ac436d555b642adfd3ce9b7395476476f6b`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#c57aab84c896412cf4622d0b8f21203ec17c81b6
+npm install github:polymorfa/sdks#31c88ac436d555b642adfd3ce9b7395476476f6b
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -117,24 +117,24 @@ with a compatible npm semver dependency on `@polymorfa/sdk` and verify the
 packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
-`5475b869a953d87ae39a94cdfb1e4be2cd3f4f0c`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32259887184](https://github.com/polymorfa/sdks/actions/runs/32259887184).
-The run exercised 28 test files and 99 tests across the repository, built the
+`f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
+for the pinned SDK revision in [GitHub Actions run 32274333748](https://github.com/polymorfa/sdks/actions/runs/32274333748).
+The run exercised 29 test files and 106 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-32 curated typed methods, 249 explicitly missing operations available through
-`raw.request` or `raw.paginate`, and 50 deliberately excluded dashboard or staff
+59 curated typed methods, 212 explicitly missing operations available through
+`raw.request` or `raw.paginate`, and 60 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
 The curated resources cover Messaging sessions, messages, and webhooks plus
-Platform organizations, projects, and sessions. A CLI command outside that set
-uses the SDK's raw escape hatch rather than recreating authentication, transport,
-retry, pagination, or error behavior. Its command-research record must identify
-the exact raw operation and track promotion to a curated SDK method when the
-workflow benefits from one.
+Platform organizations, projects, sessions, campaigns, audiences, opt-outs, and
+media. A CLI command outside that set uses the SDK's raw escape hatch rather
+than recreating authentication, transport, retry, pagination, or error behavior.
+Its command-research record must identify the exact raw operation and track
+promotion to a curated SDK method when the workflow benefits from one.
 
 ## Internal boundaries
 
@@ -383,6 +383,7 @@ media
   upload
   download
   view
+  delete
 
 contact
   list
@@ -426,37 +427,39 @@ opt-in hosted storage, live session state, or another documented source. Empty
 hosted-storage results must not be presented as proof that no message or contact
 exists.
 
-### Templates, campaigns, flows, webhooks, and events
+### Campaigns, audiences, webhooks, and events
 
 ```text
-template
-  list
-  view
-  create
-  update
-  validate
-  publish
-  archive
-
 campaign
   list
   view
   create
+  update
+  delete
   validate
   start
   pause
   resume
   cancel
+  archive
   duplicate
+  requeue
+  analytics
+  events
+  recipients
 
-flow
+audience
   list
   view
   create
-  update
-  validate
-  publish
-  deprecate
+  import
+  delete
+
+opt-out
+  list
+  add
+  add-batch
+  remove
 
 webhook
   list
@@ -477,10 +480,23 @@ logs
   query
 ```
 
-Template, campaign, and flow commands support file-based declarative input and
+Campaign and audience commands support file-based declarative input and
 `--dry-run` only when backed by server validation. Interactive creation may
 guide the user, but every workflow must also have a complete non-interactive
-form suitable for source control and CI.
+form suitable for source control and CI. Audience import and opt-out batch
+operations use explicit input schemas, preview counts, bounded concurrency, and
+machine-readable partial-failure artifacts.
+
+The `template` and `flow` top-level command names are reserved but not shipped
+against this SDK baseline. The available Platform template and Flow routes
+require dashboard JWTs and reject organization keys. The CLI must not collect,
+persist, or replay dashboard session JWTs to bypass that boundary, and neither
+MCP tools nor skills may expose those routes. These command families can enter
+the implementation plan only after the Platform API provides a CLI-appropriate
+organization or project credential contract and the public SDK exposes it.
+`message send template`, if retained after command-specific research, is a
+separate Messaging operation and does not grant access to Platform template
+management.
 
 Campaign start and resume display audience size, project, schedule, and
 validation status before confirmation. Bulk failures return a partial-success
@@ -660,8 +676,10 @@ maintenance work.
 
 ### Phase 3: complete curated surface
 
-- Contacts, chats, groups, templates, campaigns, flows, access management,
-  usage, billing, logs, and remaining curated operations.
+- Contacts, chats, groups, campaigns, audiences, opt-outs, media, access
+  management, usage, billing, logs, and remaining curated operations.
+- Reassess reserved template and Flow command families only if a compatible
+  non-dashboard credential contract has shipped.
 - Coverage-ledger reconciliation and command-specific research.
 
 ### Phase 4: release hardening
