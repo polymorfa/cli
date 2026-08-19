@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `b6a808366e84eb049c396a524b563ac600284826`. It is ESM-only, requires Node.js
+commit `b9f9445390a35ba6582bf63dac1bbf65a24ff502`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#b6a808366e84eb049c396a524b563ac600284826
+npm install github:polymorfa/sdks#b9f9445390a35ba6582bf63dac1bbf65a24ff502
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,8 +118,8 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32291197369](https://github.com/polymorfa/sdks/actions/runs/32291197369).
-The run exercised 32 test files and 136 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32293193654](https://github.com/polymorfa/sdks/actions/runs/32293193654).
+The run exercised 33 test files and 140 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
@@ -413,6 +413,9 @@ message
     poll
     interactive
   react
+  mark-seen
+  typing
+  star
   edit
   delete
 
@@ -467,6 +470,18 @@ Each type validates mutually exclusive content locally, then relies on the SDK
 and API for canonical validation. File uploads use streamed I/O, MIME detection,
 size preflight, progress in TTYs, and resumability only where the server
 supports it.
+
+The source Messages tag is a five-operation mutation family: send, seen,
+typing, react, and star. The initial CLI slice exposes all five through
+`message send text`, `message mark-seen`, `message typing`, `message react`, and
+`message star`. Every command requires explicit session and chat scope and
+accepts an idempotency key. Reply context and forwarding are request fields on
+the single send route, so `--reply-to`/`--reply-participant` and `--forwarded`
+remain send options rather than synthetic commands. Server API keys require
+`messages:write`; client tokens reach the same SDK methods only under their
+live allowed-action, recipient, rate, and daily-limit rules. Message history,
+list, and search remain unshipped because the pinned source exposes no such
+operations.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty

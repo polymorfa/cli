@@ -75,6 +75,45 @@ Add `--json` for complete resource data and response metadata. Group and
 participant lists are unpaged because the source API does not expose cursors.
 Mutating group commands remain under implementation.
 
+## Messages
+
+Send text and perform the complete set of source-defined Messaging actions:
+
+```shell
+polymorfa message send text \
+  --session session_123 \
+  --to 15551234567@s.whatsapp.net \
+  --body 'Hello'
+
+polymorfa message react message_123 \
+  --session session_123 \
+  --chat 15551234567@s.whatsapp.net \
+  --emoji '👍'
+
+polymorfa message mark-seen message_123 \
+  --session session_123 \
+  --chat 15551234567@s.whatsapp.net
+
+polymorfa message typing \
+  --session session_123 \
+  --chat 15551234567@s.whatsapp.net \
+  --state typing
+
+polymorfa message star message_123 \
+  --session session_123 \
+  --chat 15551234567@s.whatsapp.net
+```
+
+Add `--remove` to `message star` to unstar. Text sends accept repeatable
+`--mention`, paired `--reply-to` and `--reply-participant`, and `--forwarded`.
+Every mutation accepts `--idempotency-key` for safe retry identity. Server API
+keys require `messages:write`; client tokens remain subject to their live
+recipient rules, allowed actions, and rate limits.
+
+The API does not expose message history, list, or search operations. Those
+commands are not synthesized by the CLI. Additional typed send kinds will be
+added as focused subcommands instead of a generic JSON payload interface.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It
