@@ -64,9 +64,7 @@ export abstract class BaseCommand extends Command {
     return 'human'
   }
 
-  protected override async catch(
-    error: Interfaces.CommandError,
-  ): Promise<never> {
+  protected override catch(error: Interfaces.CommandError): Promise<never> {
     const presented = presentError(error, [
       process.env.POLYMORFA_API_KEY ?? '',
       process.env.POLYMORFA_CLIENT_TOKEN ?? '',

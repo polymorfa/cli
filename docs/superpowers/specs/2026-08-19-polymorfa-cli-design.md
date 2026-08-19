@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `d0c6ecdcd6aee3fb3162d7be98f69bd240abdcc2`. It is ESM-only, requires Node.js
+commit `ea47ca2ffd6f9aa52abe551dda8ad18a67c07f8b`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#d0c6ecdcd6aee3fb3162d7be98f69bd240abdcc2
+npm install github:polymorfa/sdks#ea47ca2ffd6f9aa52abe551dda8ad18a67c07f8b
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,24 +118,24 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32275751306](https://github.com/polymorfa/sdks/actions/runs/32275751306).
-The run exercised 30 test files and 115 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32282078631](https://github.com/polymorfa/sdks/actions/runs/32282078631).
+The run exercised 30 test files and 122 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-73 curated typed methods, 198 explicitly missing operations available through
+80 curated typed methods, 191 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 60 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
-The curated resources cover Messaging sessions, messages, webhooks, and client
-tokens plus Platform organizations, projects, sessions, campaigns, audiences,
-opt-outs, and media. A CLI command outside that set uses the SDK's raw escape
-hatch rather than recreating authentication, transport, retry, pagination, or
-error behavior. Its command-research record must identify the exact raw
-operation and track promotion to a curated SDK method when the workflow benefits
-from one.
+The curated resources cover Messaging sessions, messages, webhooks, client
+tokens, and project templates plus Platform organizations, projects, sessions,
+campaigns, audiences, opt-outs, and media. A CLI command outside that set uses
+the SDK's raw escape hatch rather than recreating authentication, transport,
+retry, pagination, or error behavior. Its command-research record must identify
+the exact raw operation and track promotion to a curated SDK method when the
+workflow benefits from one.
 
 The CLI depends only on the root server package. Browser, React, Next.js, UI,
 Elements, and Devtools SDK workspaces are not CLI runtime dependencies.
@@ -446,9 +446,18 @@ opt-in hosted storage, live session state, or another documented source. Empty
 hosted-storage results must not be presented as proof that no message or contact
 exists.
 
-### Campaigns, audiences, webhooks, and events
+### Templates, campaigns, audiences, webhooks, and events
 
 ```text
+template
+  list
+  view
+  create
+  update
+  delete
+  preview
+  submit
+
 campaign
   list
   view
@@ -499,23 +508,25 @@ logs
   query
 ```
 
-Campaign and audience commands support file-based declarative input and
-`--dry-run` only when backed by server validation. Interactive creation may
+Template, campaign, and audience commands support file-based declarative input
+and `--dry-run` only when backed by server validation. Interactive creation may
 guide the user, but every workflow must also have a complete non-interactive
-form suitable for source control and CI. Audience import and opt-out batch
-operations use explicit input schemas, preview counts, bounded concurrency, and
-machine-readable partial-failure artifacts.
+form suitable for source control and CI. Template preview uses the typed
+Messaging project-template builder contract; submit remains an explicit
+external-effect action with a confirmation and idempotency strategy. Audience
+import and opt-out batch operations use explicit input schemas, preview counts,
+bounded concurrency, and machine-readable partial-failure artifacts.
 
-The `template` and `flow` top-level command names are reserved but not shipped
-against this SDK baseline. The available Platform template and Flow routes
-require dashboard JWTs and reject organization keys. The CLI must not collect,
-persist, or replay dashboard session JWTs to bypass that boundary, and neither
-MCP tools nor skills may expose those routes. These command families can enter
-the implementation plan only after the Platform API provides a CLI-appropriate
-organization or project credential contract and the public SDK exposes it.
-`message send template`, if retained after command-specific research, is a
-separate Messaging operation and does not grant access to Platform template
-management.
+The `flow` top-level command name remains reserved but is not shipped against
+this SDK baseline. The separate Platform template and Flow routes require
+dashboard JWTs and reject organization keys. The CLI must not collect, persist,
+or replay dashboard session JWTs to bypass that boundary, and neither MCP tools
+nor skills may expose those routes. Platform template management and Flow
+commands can enter the implementation plan only after the Platform API provides
+a CLI-appropriate organization or project credential contract and the public
+SDK exposes it. The shipped `template` family uses the credential-compatible
+Messaging project-template resource instead. `message send template` is a
+separate Messaging send operation.
 
 Campaign start and resume display audience size, project, schedule, and
 validation status before confirmation. Bulk failures return a partial-success
@@ -695,9 +706,9 @@ maintenance work.
 
 ### Phase 3: complete curated surface
 
-- Contacts, chats, groups, campaigns, audiences, opt-outs, media, access
+- Contacts, chats, groups, templates, campaigns, audiences, opt-outs, media, access
   management, usage, billing, logs, and remaining curated operations.
-- Reassess reserved template and Flow command families only if a compatible
+- Reassess the reserved Platform Flow command family only if a compatible
   non-dashboard credential contract has shipped.
 - Coverage-ledger reconciliation and command-specific research.
 
@@ -708,6 +719,24 @@ maintenance work.
 - Public documentation, examples, migration policy, support bundles, and npm
   trusted publishing.
 - Stable-channel promotion from `dev` to `main`.
+
+## Development implementation status
+
+The private `dev` branch now contains the first working, unpublished vertical
+slice:
+
+- the installable `polymorfa` ESM executable on Node.js 20 or newer;
+- `polymorfa version` with human, JSON, and quiet output;
+- `polymorfa api <endpoint>` for Messaging or Platform credentials;
+- GET query fields, JSON request fields, custom headers, file or bounded stdin
+  bodies, response metadata, timeouts, and API-version overrides;
+- SDK-derived error categories, request IDs, exit codes, and credential
+  redaction; and
+- real local HTTP integration tests that exercise the SDK transport.
+
+This status does not claim an npm release, persistent authentication profiles,
+project linking, curated resource commands, MCP, skills, or `listen`. Those
+remain planned work in the delivery phases above.
 
 ## Verification
 

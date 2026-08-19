@@ -4,10 +4,7 @@ import {PolymorfaValidationError, type HttpMethod} from '@polymorfa/sdk'
 import {executeRawRequest} from '../api/execute.js'
 import {buildRawRequest, readJsonInput} from '../api/request.js'
 import {BaseCommand} from '../base-command.js'
-import {
-  resolveEnvironment,
-  type ApiSurface,
-} from '../context/environment.js'
+import {resolveEnvironment} from '../context/environment.js'
 import {createRawClient} from '../sdk/client.js'
 
 const HTTP_METHODS = [
@@ -44,7 +41,8 @@ export default class Api extends BaseCommand {
       description: 'Include response metadata in human output.',
     }),
     input: Flags.string({
-      description: 'Read a complete JSON body from a file or standard input (-).',
+      description:
+        'Read a complete JSON body from a file or standard input (-).',
     }),
     method: Flags.option({
       default: 'GET',
@@ -69,7 +67,7 @@ export default class Api extends BaseCommand {
 
     const environment = resolveEnvironment({
       env: process.env,
-      surface: flags.surface as ApiSurface,
+      surface: flags.surface,
       ...(flags['api-version'] === undefined
         ? {}
         : {apiVersion: flags['api-version']}),
@@ -84,7 +82,10 @@ export default class Api extends BaseCommand {
       ...(flags.header === undefined ? {} : {headers: flags.header}),
       ...(body === undefined ? {} : {body}),
     })
-    const result = await executeRawRequest(createRawClient(environment), request)
+    const result = await executeRawRequest(
+      createRawClient(environment),
+      request,
+    )
     const humanValue = flags.include ? result : result.data
 
     this.writeValue(result, formatHuman(humanValue), flags)

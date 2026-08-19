@@ -40,7 +40,8 @@ export function presentError(
 ): PresentedError {
   const message = redact(errorMessage(error), secrets)
   const classified = classifyError(error)
-  const requestId = error instanceof PolymorfaError ? error.requestId : undefined
+  const requestId =
+    error instanceof PolymorfaError ? error.requestId : undefined
 
   return {
     ...classified,
@@ -92,7 +93,10 @@ function classifyError(
     return {category: 'cancelled', exitCode: 130}
   }
 
-  if (error instanceof PolymorfaServerError || error instanceof PolymorfaError) {
+  if (
+    error instanceof PolymorfaServerError ||
+    error instanceof PolymorfaError
+  ) {
     return {category: 'server', exitCode: 5}
   }
 

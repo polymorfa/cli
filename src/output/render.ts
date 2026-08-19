@@ -8,7 +8,8 @@ export function renderValue(
   if (mode === 'quiet') return undefined
   if (mode === 'json') {
     const json = JSON.stringify(value)
-    if (json === undefined) throw new TypeError('Cannot render undefined as JSON.')
+    if (json === undefined)
+      throw new TypeError('Cannot render undefined as JSON.')
     return `${json}\n`
   }
 

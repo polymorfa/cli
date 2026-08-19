@@ -30,13 +30,13 @@ describe('presentError', () => {
   })
 
   test('uses the cancellation exit code for an interrupted SDK request', () => {
-    expect(presentError(new PolymorfaCancelledError('Request cancelled.'))).toEqual(
-      {
-        category: 'cancelled',
-        exitCode: 130,
-        message: 'Request cancelled.',
-      },
-    )
+    expect(
+      presentError(new PolymorfaCancelledError('Request cancelled.')),
+    ).toEqual({
+      category: 'cancelled',
+      exitCode: 130,
+      message: 'Request cancelled.',
+    })
   })
 
   test('preserves a public SDK request ID', () => {

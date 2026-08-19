@@ -2,14 +2,98 @@
 
 The official command-line interface for Polymorfa.
 
-This package is under active development and has not been published to npm.
+The package is under active development and has not been published to npm.
+The source repository is private, so GitHub installation requires repository
+access until `@polymorfa/cli` is released publicly.
+
+## Requirements
+
+- Node.js 20 or newer
+- A Polymorfa server API key for Platform requests
+- A server API key or short-lived client token for Messaging requests
+
+## Development installation
+
+Install the current private development branch globally:
+
+```shell
+npm install --global github:polymorfa/cli#dev
+polymorfa version
+```
+
+Build a local clone instead:
 
 ```shell
 npm install
 npm run build
-node bin/run.js version
+npm link
+polymorfa version
 ```
 
-The verified `version` command prints both the CLI and bundled server SDK
-versions. Additional commands remain under implementation and are not yet
-available from npm.
+The verified version output includes both runtime components:
+
+```text
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.0
+```
+
+## Raw API requests
+
+`polymorfa api` is the complete-access escape hatch inspired by `gh api`. It
+uses the public Polymorfa SDK for credential validation, HTTP transport,
+timeouts, retries, error typing, request IDs, and response decoding.
+
+Set credentials through the environment, never a command argument:
+
+```shell
+export POLYMORFA_API_KEY='pmfa_...'
+polymorfa api /v1/projects --surface platform --json
+```
+
+Messaging accepts exactly one of `POLYMORFA_API_KEY` or
+`POLYMORFA_CLIENT_TOKEN`. Platform accepts only `POLYMORFA_API_KEY`. Supplying
+both Messaging credentials is an error rather than an implicit preference.
+
+Examples:
+
+```shell
+polymorfa api /v1/projects --surface platform
+
+polymorfa api /v1/campaigns \
+  --surface platform \
+  --method POST \
+  --field projectId=project_123 \
+  --field name='August launch' \
+  --json
+
+polymorfa api /v1/campaigns \
+  --surface platform \
+  --method POST \
+  --input campaign.json
+
+cat campaign.json | polymorfa api /v1/campaigns \
+  --surface platform \
+  --method POST \
+  --input -
+```
+
+GET and HEAD fields become query parameters. Other methods encode fields as a
+JSON object. `--input` reads one JSON value from a file or standard input and
+is capped at 10 MiB. Use `--header name:value` for additional headers and
+`--include` to include response metadata in human output.
+
+`--json` prints exactly one JSON document on stdout. `--quiet` suppresses
+successful output without hiding failures. Diagnostics and errors go to stderr;
+SDK request IDs are preserved and active credentials are redacted.
+
+`POLYMORFA_BASE_URL` exists only for development and controlled testing. It is
+not a profile setting and must not be placed in project files.
+
+## Verification
+
+```shell
+npm run verify
+```
+
+The verification gate checks formatting, lint, strict TypeScript, tests,
+production build, npm package contents, and the production dependency audit on
+Node.js 20 and 22 in hosted CI.

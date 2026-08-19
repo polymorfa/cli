@@ -92,10 +92,9 @@ async function readBoundedInput(
     const buffer = Buffer.from(chunk)
     totalBytes += buffer.byteLength
     if (totalBytes > MAX_INPUT_BYTES) {
-      throw new PolymorfaValidationError(
-        'API input must not exceed 10 MiB.',
-        {code: 'input_too_large'},
-      )
+      throw new PolymorfaValidationError('API input must not exceed 10 MiB.', {
+        code: 'input_too_large',
+      })
     }
 
     chunks.push(buffer)

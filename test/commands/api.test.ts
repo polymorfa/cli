@@ -18,9 +18,9 @@ describe('api', () => {
     await server?.close()
     server = undefined
     await Promise.all(
-      tempDirectories.splice(0).map((directory) =>
-        rm(directory, {force: true, recursive: true}),
-      ),
+      tempDirectories
+        .splice(0)
+        .map((directory) => rm(directory, {force: true, recursive: true})),
     )
   })
 

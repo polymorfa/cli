@@ -23,22 +23,10 @@ export async function startHttpServer(
   response: ResponseFixture,
 ): Promise<TestHttpServer> {
   const requests: CapturedRequest[] = []
-  const server = createServer(async (request, reply) => {
-    const chunks: Buffer[] = []
-    for await (const chunk of request) chunks.push(Buffer.from(chunk))
-
-    requests.push({
-      body: Buffer.concat(chunks).toString('utf8'),
-      headers: request.headers,
-      method: request.method ?? '',
-      url: request.url ?? '',
+  const server = createServer((request, reply) => {
+    void captureAndReply(request, reply, requests, response).catch((error) => {
+      reply.destroy(error instanceof Error ? error : undefined)
     })
-
-    reply.writeHead(response.status ?? 200, {
-      'content-type': 'application/json',
-      ...response.headers,
-    })
-    reply.end(JSON.stringify(response.body))
   })
 
   await new Promise<void>((resolve, reject) => {
@@ -56,9 +44,36 @@ export async function startHttpServer(
     requests,
     close: () =>
       new Promise<void>((resolve, reject) => {
-        server.close((error) => (error === undefined ? resolve() : reject(error)))
+        server.close((error) =>
+          error === undefined ? resolve() : reject(error),
+        )
       }),
   }
+}
+
+async function captureAndReply(
+  request: import('node:http').IncomingMessage,
+  reply: import('node:http').ServerResponse,
+  requests: CapturedRequest[],
+  response: ResponseFixture,
+): Promise<void> {
+  const chunks: Buffer[] = []
+  for await (const chunk of request as AsyncIterable<Uint8Array>) {
+    chunks.push(Buffer.from(chunk))
+  }
+
+  requests.push({
+    body: Buffer.concat(chunks).toString('utf8'),
+    headers: request.headers,
+    method: request.method ?? '',
+    url: request.url ?? '',
+  })
+
+  reply.writeHead(response.status ?? 200, {
+    'content-type': 'application/json',
+    ...response.headers,
+  })
+  reply.end(JSON.stringify(response.body))
 }
 
 export async function withEnvironment<T>(

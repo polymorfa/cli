@@ -14,7 +14,7 @@
 
 - The source repository remains private while the npm package name is public: `@polymorfa/cli` with binary `polymorfa`.
 - Runtime is ESM on Node.js 20 or newer.
-- Development pins `@polymorfa/sdk` to `github:polymorfa/sdks#d0c6ecdcd6aee3fb3162d7be98f69bd240abdcc2`.
+- Development pins `@polymorfa/sdk` to `github:polymorfa/sdks#ea47ca2ffd6f9aa52abe551dda8ad18a67c07f8b`.
 - The first npm release is blocked until the SDK is available as a public npm semver dependency.
 - The CLI imports only the SDK package root and never duplicates its HTTP transport, authentication validation, retries, cancellation, metadata, pagination, or typed errors.
 - Secrets are never accepted as command-line arguments, written to project files, printed in verbose logs, or included in error context.
@@ -54,6 +54,7 @@
 ### Task 1: Package foundation and version command
 
 **Files:**
+
 - Create: `package.json`
 - Create: `bin/run.js`
 - Create: `bin/dev.js`
@@ -68,6 +69,7 @@
 - Generate: `package-lock.json`
 
 **Interfaces:**
+
 - Consumes: `SDK_VERSION: string` from the public `@polymorfa/sdk` package root.
 - Produces: oclif command id `version`; compiled executable `bin/run.js`; npm scripts `build`, `test`, `typecheck`, `format:check`, and `lint`.
 
@@ -101,7 +103,7 @@ Run: `npm install`
 
 Run: `npm run typecheck`
 
-Expected: PASS with no TypeScript diagnostics and a lockfile whose SDK resolution ends at commit `d0c6ecdcd6aee3fb3162d7be98f69bd240abdcc2`.
+Expected: PASS with no TypeScript diagnostics and a lockfile whose SDK resolution ends at commit `ea47ca2ffd6f9aa52abe551dda8ad18a67c07f8b`.
 
 - [ ] **Step 3: Write the failing version command test**
 
@@ -165,6 +167,7 @@ git commit -m "Build installable CLI foundation"
 ### Task 2: Global output and safe error presentation
 
 **Files:**
+
 - Create: `src/base-command.ts`
 - Create: `src/output/render.ts`
 - Create: `src/errors/present.ts`
@@ -174,6 +177,7 @@ git commit -m "Build installable CLI foundation"
 - Modify: `test/commands/version.test.ts`
 
 **Interfaces:**
+
 - Consumes: `PolymorfaError`, `ResponseMetadata`, and oclif `Flags`.
 - Produces: `OutputMode`, `renderValue(value, mode)`, `presentError(error)`, `PresentedError`, and `BaseCommand.baseFlags`.
 
@@ -215,7 +219,10 @@ Define:
 ```ts
 export type OutputMode = 'human' | 'json' | 'quiet'
 
-export function renderValue(value: unknown, mode: OutputMode): string | undefined {
+export function renderValue(
+  value: unknown,
+  mode: OutputMode,
+): string | undefined {
   if (mode === 'quiet') return undefined
   if (mode === 'json') return `${JSON.stringify(value)}\n`
   return `${String(value)}\n`
@@ -277,13 +284,28 @@ Define:
 
 ```ts
 export interface PresentedError {
-  readonly category: 'authentication' | 'authorization' | 'configuration' | 'conflict' | 'not_found' | 'rate_limit' | 'timeout' | 'validation' | 'network' | 'server' | 'cancelled' | 'internal'
+  readonly category:
+    | 'authentication'
+    | 'authorization'
+    | 'configuration'
+    | 'conflict'
+    | 'not_found'
+    | 'rate_limit'
+    | 'timeout'
+    | 'validation'
+    | 'network'
+    | 'server'
+    | 'cancelled'
+    | 'internal'
   readonly exitCode: number
   readonly message: string
   readonly requestId?: string
 }
 
-export function presentError(error: unknown, secrets: readonly string[] = []): PresentedError
+export function presentError(
+  error: unknown,
+  secrets: readonly string[] = [],
+): PresentedError
 ```
 
 Map public SDK subclasses to stable categories, use exit code 2 for configuration/validation, 3 for authentication/authorization, 4 for conflict/not-found, 5 for rate-limit/network/server/timeout, 130 for cancellation, and 1 for unknown errors. Replace every non-empty literal secret occurrence with `[REDACTED]`. Include `requestId` only when the public SDK error exposes one.
@@ -302,12 +324,14 @@ git commit -m "Standardize CLI output and errors"
 ### Task 3: Environment context and SDK raw-client selection
 
 **Files:**
+
 - Create: `src/context/environment.ts`
 - Create: `src/sdk/client.ts`
 - Create: `test/context/environment.test.ts`
 - Create: `test/sdk/client.test.ts`
 
 **Interfaces:**
+
 - Consumes: public `MessagingClient`, `PlatformClient`, `RawClient`, `MessagingCredential`, and SDK validation.
 - Produces: `ApiSurface`, `ResolvedEnvironment`, `resolveEnvironment(input)`, and `createRawClient(environment)`.
 
@@ -319,15 +343,17 @@ import {resolveEnvironment} from '../../src/context/environment.js'
 
 describe('resolveEnvironment', () => {
   test('resolves a platform server key without returning unrelated environment values', () => {
-    expect(resolveEnvironment({
-      env: {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
-        POLYMORFA_BASE_URL: 'http://127.0.0.1:4567',
-        UNRELATED_SECRET: 'do-not-copy',
-      },
-      surface: 'platform',
-      timeoutMs: 5000,
-    })).toEqual({
+    expect(
+      resolveEnvironment({
+        env: {
+          POLYMORFA_API_KEY: 'pmfa_test-key',
+          POLYMORFA_BASE_URL: 'http://127.0.0.1:4567',
+          UNRELATED_SECRET: 'do-not-copy',
+        },
+        surface: 'platform',
+        timeoutMs: 5000,
+      }),
+    ).toEqual({
       surface: 'platform',
       credential: {type: 'apiKey', value: 'pmfa_test-key'},
       baseUrl: 'http://127.0.0.1:4567',
@@ -336,10 +362,12 @@ describe('resolveEnvironment', () => {
   })
 
   test('rejects a client token for the Platform surface', () => {
-    expect(() => resolveEnvironment({
-      env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser'},
-      surface: 'platform',
-    })).toThrow('Platform API requests require POLYMORFA_API_KEY')
+    expect(() =>
+      resolveEnvironment({
+        env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser'},
+        surface: 'platform',
+      }),
+    ).toThrow('Platform API requests require POLYMORFA_API_KEY')
   })
 })
 ```
@@ -391,16 +419,24 @@ Expected: FAIL because `createRawClient` does not exist.
 ```ts
 export function createRawClient(environment: ResolvedEnvironment): RawClient {
   const shared = {
-    ...(environment.baseUrl === undefined ? {} : {baseUrl: environment.baseUrl}),
-    ...(environment.apiVersion === undefined ? {} : {apiVersion: environment.apiVersion}),
-    ...(environment.timeoutMs === undefined ? {} : {timeoutMs: environment.timeoutMs}),
+    ...(environment.baseUrl === undefined
+      ? {}
+      : {baseUrl: environment.baseUrl}),
+    ...(environment.apiVersion === undefined
+      ? {}
+      : {apiVersion: environment.apiVersion}),
+    ...(environment.timeoutMs === undefined
+      ? {}
+      : {timeoutMs: environment.timeoutMs}),
   }
 
   if (environment.surface === 'platform') {
-    return new PlatformClient({apiKey: environment.credential.value, ...shared}).raw
+    return new PlatformClient({apiKey: environment.credential.value, ...shared})
+      .raw
   }
 
-  return new MessagingClient({credential: environment.credential, ...shared}).raw
+  return new MessagingClient({credential: environment.credential, ...shared})
+    .raw
 }
 ```
 
@@ -418,6 +454,7 @@ git commit -m "Resolve SDK clients from safe environment context"
 ### Task 4: Raw API command vertical slice
 
 **Files:**
+
 - Create: `src/api/request.ts`
 - Create: `src/api/execute.ts`
 - Create: `src/commands/api.ts`
@@ -426,6 +463,7 @@ git commit -m "Resolve SDK clients from safe environment context"
 - Modify: `src/errors/present.ts`
 
 **Interfaces:**
+
 - Consumes: `BaseCommand`, `resolveEnvironment`, `createRawClient`, and SDK `RawRequest`/`ApiResponse`.
 - Produces: command id `api`; `buildRawRequest(input)`; `executeRawRequest(client, request)`.
 
@@ -445,7 +483,10 @@ const result = await runCommand('api /v1/projects --surface platform --json', {
 Have the server respond with JSON `{data: [{id: 'project_1'}]}` and headers `request-id: req_123`, `content-type: application/json`. Assert the real received request uses `GET /v1/projects` and `authorization: Bearer pmfa_test-key`. Assert stdout JSON equals:
 
 ```json
-{"data":{"data":[{"id":"project_1"}]},"metadata":{"status":200,"requestId":"req_123","attempts":1}}
+{
+  "data": {"data": [{"id": "project_1"}]},
+  "metadata": {"status": 200, "requestId": "req_123", "attempts": 1}
+}
 ```
 
 Do not assert on an SDK mock.
@@ -514,6 +555,7 @@ git commit -m "Add SDK-backed raw API command"
 ### Task 5: CI, package verification, and user documentation
 
 **Files:**
+
 - Create: `eslint.config.js`
 - Create: `.prettierignore`
 - Create: `.github/workflows/ci.yml`
@@ -522,6 +564,7 @@ git commit -m "Add SDK-backed raw API command"
 - Modify: `docs/superpowers/specs/2026-08-19-polymorfa-cli-design.md`
 
 **Interfaces:**
+
 - Consumes: all commands and npm scripts from Tasks 1-4.
 - Produces: repeatable Node 20/22 CI and a development package contract ready for the next feature plan.
 
