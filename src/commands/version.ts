@@ -1,11 +1,18 @@
-import {Command} from '@oclif/core'
 import {SDK_VERSION} from '@polymorfa/sdk'
 
-export default class Version extends Command {
+import {BaseCommand} from '../base-command.js'
+
+export default class Version extends BaseCommand {
   static override description = 'Print the Polymorfa CLI and SDK versions.'
 
   async run(): Promise<void> {
-    await this.parse(Version)
-    this.log(`polymorfa/${this.config.version} sdk/${SDK_VERSION}`)
+    const {flags} = await this.parse(Version)
+    const versions = {cli: this.config.version, sdk: SDK_VERSION}
+
+    this.writeValue(
+      versions,
+      `polymorfa/${versions.cli} sdk/${versions.sdk}`,
+      flags,
+    )
   }
 }
