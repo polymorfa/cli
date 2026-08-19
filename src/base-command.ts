@@ -1,10 +1,14 @@
 import {Command, Flags, type Interfaces} from '@oclif/core'
-import {PolymorfaConfigurationError, type MessagingClient} from '@polymorfa/sdk'
+import {
+  PolymorfaConfigurationError,
+  type MessagingClient,
+  type PlatformClient,
+} from '@polymorfa/sdk'
 
 import {resolveCommandEnvironment} from './context/environment.js'
 import {presentError} from './errors/present.js'
 import {renderValue, type OutputMode} from './output/render.js'
-import {createMessagingClient} from './sdk/client.js'
+import {createMessagingClient, createPlatformClient} from './sdk/client.js'
 
 export interface GlobalFlags {
   readonly 'api-version'?: string | undefined
@@ -93,6 +97,20 @@ export abstract class BaseCommand extends Command {
     }
     this.registerSecret(environment.credential.value)
     return createMessagingClient(environment)
+  }
+
+  protected async platformClient(flags: GlobalFlags): Promise<PlatformClient> {
+    const environment = await resolveCommandEnvironment({
+      env: process.env,
+      surface: 'platform',
+      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
+      ...(flags['api-version'] === undefined
+        ? {}
+        : {apiVersion: flags['api-version']}),
+      ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
+    })
+    this.registerSecret(environment.credential.value)
+    return createPlatformClient(environment)
   }
 
   protected registerSecret(secret: string): void {

@@ -457,6 +457,42 @@ order-history command. The source exposes no catalog-independent list, product
 or collection search/history, binary upload, resumability, or Business App
 support for project credentials, client tokens, or Cloud API sessions.
 
+## Platform access and security
+
+Organization server API keys can inspect the credential, membership, audit,
+ban, incident, durable-operation, and project-token metadata made available by
+the Platform API:
+
+```shell
+polymorfa key list
+polymorfa key revoke key_123 --yes --idempotency-key revoke_key_123
+polymorfa member list
+polymorfa audit-log list --action key.revoked --resource api-key --limit 100
+polymorfa session-ban list --active
+polymorfa security-incident list
+polymorfa security-incident acknowledge incident_123
+polymorfa operation view operation_123
+polymorfa project-token list --project project_123
+```
+
+Key and project-token lists contain metadata only; neither command returns raw
+bearer material. The API's reported API-key scope mask is retained in JSON but
+must not be treated as proof of live authorization. `key revoke` requires
+`--yes` because revocation is immediate. If a successful response is lost, a
+retry can return not found because the API does not persist idempotency keys for
+this route. Security-incident acknowledgement is repeatable and sends no body.
+
+Audit filters are exact matches, and `--limit` is bounded to 1 through 500.
+These list operations return complete arrays and expose no cursor. Project-token
+listing requires one explicit project ID. `operation view` is a single durable
+state read; it does not wait, watch, stream, list, or cancel operations.
+
+Member invite, role update, and removal remain dashboard-session routes and are
+not exposed through server-key commands. The API also exposes no compatible
+API-key creation, token mint/revoke, incident detail, or cross-project token
+aggregate in this typed slice. The raw API command is not a credential-boundary
+bypass.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It
