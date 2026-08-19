@@ -1,7 +1,10 @@
 import {Command, Flags, type Interfaces} from '@oclif/core'
+import {PolymorfaConfigurationError, type MessagingClient} from '@polymorfa/sdk'
 
+import {resolveCommandEnvironment} from './context/environment.js'
 import {presentError} from './errors/present.js'
 import {renderValue, type OutputMode} from './output/render.js'
+import {createMessagingClient} from './sdk/client.js'
 
 export interface GlobalFlags {
   readonly 'api-version'?: string | undefined
@@ -64,6 +67,32 @@ export abstract class BaseCommand extends Command {
     if (flags.quiet === true) return 'quiet'
     if (flags.json === true) return 'json'
     return 'human'
+  }
+
+  protected async messagingClient(
+    flags: GlobalFlags,
+    options: {readonly serverApiKeyOnly?: boolean} = {},
+  ): Promise<MessagingClient> {
+    const environment = await resolveCommandEnvironment({
+      env: process.env,
+      surface: 'messaging',
+      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
+      ...(flags['api-version'] === undefined
+        ? {}
+        : {apiVersion: flags['api-version']}),
+      ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
+    })
+    if (
+      options.serverApiKeyOnly === true &&
+      environment.credential.type !== 'apiKey'
+    ) {
+      throw new PolymorfaConfigurationError(
+        'Groups commands require a server API key; Messaging client tokens do not have Groups access. Set POLYMORFA_API_KEY or select an API-key profile.',
+        'credential',
+      )
+    }
+    this.registerSecret(environment.credential.value)
+    return createMessagingClient(environment)
   }
 
   protected registerSecret(secret: string): void {

@@ -59,6 +59,22 @@ in this development slice and does not yet claim remote identity validation.
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
 
+## Groups
+
+The first curated Messaging resource commands are read-only and require an
+explicit session:
+
+```shell
+polymorfa group list --session session_123
+polymorfa group view 123@g.us --session session_123
+polymorfa group participants list 123@g.us --session session_123
+polymorfa group invite-link 123@g.us --session session_123
+```
+
+Add `--json` for complete resource data and response metadata. Group and
+participant lists are unpaged because the source API does not expose cursors.
+Mutating group commands remain under implementation.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It

@@ -103,12 +103,12 @@ same TypeScript application services used by commands; they never execute the
 ### Initial SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `b8cf1aba3cdb120287657a608e1a3a9bc8c302b6`. It is ESM-only, requires Node.js
+commit `b6a808366e84eb049c396a524b563ac600284826`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#b8cf1aba3cdb120287657a608e1a3a9bc8c302b6
+npm install github:polymorfa/sdks#b6a808366e84eb049c396a524b563ac600284826
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -118,19 +118,19 @@ packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
 `f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32287212642](https://github.com/polymorfa/sdks/actions/runs/32287212642).
-The run exercised 31 test files and 131 tests across the repository, built the
+for the pinned SDK revision in [GitHub Actions run 32291197369](https://github.com/polymorfa/sdks/actions/runs/32291197369).
+The run exercised 32 test files and 136 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
 The handwritten coverage ledger contains 331 Messaging and Platform operations:
-96 curated typed methods, 172 explicitly missing operations available through
+117 curated typed methods, 151 explicitly missing operations available through
 `raw.request` or `raw.paginate`, and 63 deliberately excluded dashboard or staff
 routes. It records zero structurally changed signatures. Graph-compatible APIs
 are outside this baseline, and the CLI must not claim typed API parity.
 
 The curated resources cover Messaging sessions, pairing QR and codes, operation
-polling, messages, contacts, chat mutations, webhooks, client tokens, project
+polling, messages, contacts, chats, groups, webhooks, client tokens, project
 templates, and all 33 signed event payload schemas plus Platform organizations,
 projects, sessions, billing, campaigns, audiences, opt-outs, and media. A CLI
 command outside that set uses
@@ -437,7 +437,6 @@ group
   view
   create
   update
-  delete
   participants
     list
     add
@@ -473,6 +472,14 @@ Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
 hosted-storage results must not be presented as proof that no message or contact
 exists.
+
+Groups require an explicit Messaging session until linked session context is
+implemented. The source exposes complete, unpaged group and participant arrays,
+so the CLI does not synthesize cursors. The source `DELETE` operation is a leave
+alias rather than remote group deletion; the CLI exposes `group leave` and does
+not claim a destructive `group delete` workflow. Groups accept server API keys
+and reject Messaging browser client tokens; the CLI enforces that boundary
+before transport.
 
 The pinned source contract exposes chat message edit/delete, archive/unarchive,
 and disappearing-timer mutations, but no chat list or history-read route.
@@ -782,11 +789,14 @@ The private `dev` branch now contains two working, unpublished vertical slices:
 - stdin-only API-key login with named profiles and fail-closed native keyring
   storage;
 - profile listing, activation, local credential status, and scoped logout; and
+- read-oriented group list, view, participant list, and invite-link commands
+  with explicit session scope; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real
 operating-system keyring smoke test, remote identity validation from `auth
-status`, project linking, curated resource commands, MCP, skills, or `listen`.
+status`, project linking, the remaining curated resource commands, MCP, skills,
+or `listen`.
 Those remain planned work in the delivery phases above.
 
 ## Verification
