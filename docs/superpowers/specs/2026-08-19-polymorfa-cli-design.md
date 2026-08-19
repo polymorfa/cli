@@ -450,6 +450,12 @@ profile
     set
     delete
 
+privacy
+  view
+  set
+  disappearing-timer
+    set
+
 contact
   list
   view
@@ -549,6 +555,15 @@ field rather than advertised as a multipart or streaming upload. Confirmed
 picture delete completes the five-operation family. The source exposes no
 profile history, picture download, binary upload, streaming, pagination, or
 client-token action.
+
+Privacy is a server-key-only account-level resource. `privacy view` returns the
+complete typed setting set. `privacy set` validates setting/value pairs directly
+against the public SDK's runtime matrix rather than copying an aggregate enum or
+sending unvalidated strings. The separate `privacy disappearing-timer set`
+command maps `off`, `24h`, `7d`, and `90d` to the exact supported seconds and
+changes the account default only. Per-chat timers remain owned by Chats. The
+source exposes no privacy history, value-list endpoint, pagination, or
+allowlist/blacklist member-management route.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -880,7 +895,9 @@ The private `dev` branch now contains working, unpublished vertical slices:
 - complete observed Quick Replies list, create, replace, and confirmed delete
   commands;
 - complete connected-account Profile view, name/status setters, bounded
-  picture setting, and confirmed picture deletion commands; and
+  picture setting, and confirmed picture deletion commands;
+- complete account-level Privacy view, matrix-validated setting update, and
+  default disappearing-timer commands; and
 - real local HTTP integration tests that exercise the SDK transport.
 
 This status does not claim an npm release, browser/device authorization, a real

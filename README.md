@@ -230,6 +230,32 @@ account fields returned by the development service. The source exposes no
 profile history, picture download, binary upload, streaming, or pagination
 operation.
 
+## Privacy
+
+View and change account-level Messaging privacy with a server API key:
+
+```shell
+polymorfa privacy view --session session_123
+
+polymorfa privacy set \
+  --session session_123 \
+  --setting online \
+  --value match_last_seen
+
+polymorfa privacy disappearing-timer set \
+  --session session_123 \
+  --duration 7d
+```
+
+The setting command validates each value against its selected setting using the
+SDK's canonical runtime matrix. An invalid pair fails before transport and
+prints that setting's allowed values. Mutations accept `--idempotency-key`.
+
+Account-default timer choices are `off`, `24h`, `7d`, and `90d`. This command
+does not change an existing chat's timer; per-chat disappearing messages use a
+separate Chats operation. The source exposes no privacy history, pagination,
+value-list endpoint, or allowlist/blacklist member-management route.
+
 ## Raw API requests
 
 `polymorfa api` is the complete-access escape hatch inspired by `gh api`. It
