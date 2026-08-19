@@ -1,0 +1,52 @@
+{
+  "name": "@polymorfa/cli",
+  "version": "0.1.0-dev.0",
+  "description": "The official command-line interface for Polymorfa",
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
+  "bin": {
+    "polymorfa": "./bin/run.js"
+  },
+  "files": [
+    "bin",
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@oclif/core": "^4.13.5",
+    "@polymorfa/sdk": "github:polymorfa/sdks#d0c6ecdcd6aee3fb3162d7be98f69bd240abdcc2"
+  },
+  "devDependencies": {
+    "@oclif/test": "^4.1.22",
+    "@types/node": "^24.0.0",
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.6",
+    "tsx": "^4.20.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "3.2.7"
+  },
+  "oclif": {
+    "bin": "polymorfa",
+    "dirname": "polymorfa",
+    "commands": "./dist/commands",
+    "topicSeparator": " "
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/polymorfa/cli.git"
+  }
+}

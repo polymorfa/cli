@@ -6,7 +6,7 @@
 
 **Architecture:** Oclif command classes remain thin and delegate to focused TypeScript modules for output, environment resolution, raw-request parsing, and SDK execution. The CLI imports only the public root of `@polymorfa/sdk`; tests exercise command behavior and a real local HTTP boundary rather than SDK mocks.
 
-**Tech Stack:** Node.js 20+, TypeScript 6, ESM, `@oclif/core` 4, `@polymorfa/sdk@0.1.0-dev.0`, Vitest 4, `@oclif/test` 4, ESLint 9, Prettier 3, npm.
+**Tech Stack:** Node.js 20+, TypeScript 6, ESM, `@oclif/core` 4, `@polymorfa/sdk@0.1.0-dev.0`, Vitest 3, `@oclif/test` 4, ESLint 9, Prettier 3, npm.
 
 **Spec:** `docs/superpowers/specs/2026-08-19-polymorfa-cli-design.md`
 
@@ -73,7 +73,7 @@
 
 - [ ] **Step 1: Add package and tool configuration without a command implementation**
 
-Use `@oclif/core` `^4.13.5`, `@oclif/test` `^4.1.22`, TypeScript `^6.0.3`, Vitest `^4.1.11`, ESLint `^9.39.5`, `typescript-eslint` `^8.67.0`, and Prettier `^3.9.6`. Configure `package.json` with `type: "module"`, `engines.node: ">=20"`, `bin.polymorfa: "./bin/run.js"`, `files: ["bin", "dist", "README.md", "LICENSE"]`, and oclif command discovery at `./dist/commands`.
+Use `@oclif/core` `^4.13.5`, `@oclif/test` `^4.1.22`, TypeScript `^6.0.3`, Vitest `3.2.7`, ESLint `^9.39.5`, `typescript-eslint` `^8.67.0`, and Prettier `^3.9.6`. Configure `package.json` with `type: "module"`, `engines.node: ">=20"`, `bin.polymorfa: "./bin/run.js"`, `files: ["bin", "dist", "README.md", "LICENSE"]`, and oclif command discovery at `./dist/commands`.
 
 `bin/run.js` must contain:
 
@@ -600,4 +600,3 @@ Send the SDK task the exact CLI commit, the operations used, any public SDK fric
 - Deliberately separate plans: persistent profiles/keychain, context/linking, domain commands, client-token workflows, MCP, skills, `listen`, completions, and updater behavior remain outside this first independently testable slice.
 - Placeholder scan: every task names exact files, interfaces, commands, expected failures, expected outputs, and commit boundaries.
 - Type consistency: `ResolvedEnvironment` feeds `createRawClient`; `createRawClient` returns SDK `RawClient`; `buildRawRequest` returns SDK `RawRequest`; `BaseCommand` owns shared flags and output.
-
