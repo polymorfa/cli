@@ -59,6 +59,41 @@ in this development slice and does not yet claim remote identity validation.
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
 
+## Customers
+
+Manage Customers through the Platform API with an organization server key and
+an explicit project ID:
+
+```shell
+polymorfa customer status --project project_123
+polymorfa customer enable \
+  --project project_123 \
+  --idempotency-key enable-customers-project-123
+
+polymorfa customer create \
+  --project project_123 \
+  --name Ada \
+  --phone +15551234567 \
+  --external-id crm_456 \
+  --idempotency-key create-customer-crm-456
+
+polymorfa customer pairing-link create customer_123 \
+  --project project_123 \
+  --method qr \
+  --method phone \
+  --idempotency-key pair-customer-123
+```
+
+The `customer` commands cover project enablement, list filters and cursors,
+profile creation and updates, archive and restore, assigned Numbers, recent
+events, pairing-link creation/listing/revocation, and confirmed Number
+transfers. Mutations that require retry identity also require
+`--idempotency-key`. Archive, pairing-link revocation, and Number transfer
+require explicit confirmation with `--yes`.
+
+Pairing-link creation prints the one-time URL in human output. Store it when it
+is returned. An idempotent replay returns the link record without the URL.
+
 ## Groups
 
 The first curated Messaging resource commands are read-only and require an
