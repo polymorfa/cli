@@ -30,14 +30,14 @@ describe('contact commands', () => {
       data: [contact()],
       metadata: {attempts: 1, requestId: 'req_contacts', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/api/session%2Fmain/contacts')
+    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/contacts')
   })
 
   test('checks multiple phone numbers in one exact registration query', async () => {
     server = await startHttpServer({
       body: {
         data: [
-          {exists: true, lid: 'alice@lid', phoneNumber: '+15551234567'},
+          {exists: true, lid: '750000000001', phoneNumber: '+15551234567'},
           {exists: false, phoneNumber: '+15557654321'},
         ],
         success: true,
@@ -55,7 +55,7 @@ describe('contact commands', () => {
       data: [{exists: true}, {exists: false}],
     })
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/contacts/check?phone=%2B15551234567%2C%2B15557654321',
+      '/messaging/session_1/contacts/check?phone=%2B15551234567%2C%2B15557654321',
     )
   })
 
@@ -75,15 +75,15 @@ describe('contact commands', () => {
     server = await startHttpServer({body: {data: contact(), success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact view alice@lid --session session/main'),
+      runCommand('contact view 750000000001 --session session/main'),
     )
 
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain('Alice Example')
-    expect(result.stdout).toContain('LID\talice@lid')
+    expect(result.stdout).toContain('ID\t750000000001')
     expect(result.stdout).toContain('Phone\t+15551234567')
     expect(server.requests[0]?.url).toBe(
-      '/api/session%2Fmain/contacts/alice%40lid',
+      '/messaging/session%2Fmain/contacts/750000000001',
     )
   })
 
@@ -93,13 +93,13 @@ describe('contact commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact picture alice@lid --session session_1'),
+      runCommand('contact picture 750000000001 --session session_1'),
     )
 
     expect(result.error).toBeUndefined()
     expect(result.stdout).toBe('https://example.com/alice.jpg\n')
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/contacts/alice%40lid/picture',
+      '/messaging/session_1/contacts/750000000001/picture',
     )
   })
 
@@ -110,7 +110,7 @@ describe('contact commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact info alice@lid --session session_1 --json'),
+      runCommand('contact info 750000000001 --session session_1 --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -119,7 +119,7 @@ describe('contact commands', () => {
       metadata: {attempts: 1, requestId: 'req_contact_info', status: 200},
     })
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/contacts/alice%40lid/info',
+      '/messaging/session_1/contacts/750000000001/info',
     )
   })
 
@@ -132,7 +132,7 @@ describe('contact commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact devices alice@lid --session session_1'),
+      runCommand('contact devices 750000000001 --session session_1'),
     )
 
     expect(result.error).toBeUndefined()
@@ -140,7 +140,7 @@ describe('contact commands', () => {
       'alice:1@s.whatsapp.net\nalice:2@s.whatsapp.net\n',
     )
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/contacts/alice%40lid/devices',
+      '/messaging/session_1/contacts/750000000001/devices',
     )
   })
 
@@ -150,22 +150,25 @@ describe('contact commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact business-profile alice@lid --session session_1'),
+      runCommand('contact business-profile 750000000001 --session session_1'),
     )
 
     expect(result.error).toBeUndefined()
-    expect(result.stdout).toContain('JID\talice@s.whatsapp.net')
+    expect(result.stdout).toContain('ID\t750000000001')
     expect(result.stdout).toContain('Email\talice@example.com')
     expect(result.stdout).toContain('Category\tSoftware')
     expect(result.stdout).toContain('Website\thttps://example.com')
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/contacts/alice%40lid/business-profile',
+      '/messaging/session_1/contacts/750000000001/business-profile',
     )
   })
 
   test('lists exact blocklist hash and JIDs', async () => {
     server = await startHttpServer({
-      body: {data: {hash: 'hash_1', jids: ['blocked@lid']}, success: true},
+      body: {
+        data: {hash: 'hash_1', contacts: [{id: '750000000002'}]},
+        success: true,
+      },
     })
 
     const result = await apiKeyEnvironment(() =>
@@ -174,10 +177,12 @@ describe('contact commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(JSON.parse(result.stdout)).toEqual({
-      data: {hash: 'hash_1', jids: ['blocked@lid']},
+      data: {hash: 'hash_1', contacts: [{id: '750000000002'}]},
       metadata: {attempts: 1, status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/api/session_1/contacts/blocked')
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/session_1/contacts/blocked',
+    )
   })
 
   test.each(['block', 'unblock'] as const)(
@@ -189,7 +194,7 @@ describe('contact commands', () => {
 
       const result = await apiKeyEnvironment(() =>
         runCommand(
-          `contact ${action} alice@lid --session session/main --idempotency-key ${action}_alice --json`,
+          `contact ${action} 750000000001 --session session/main --idempotency-key ${action}_alice --json`,
         ),
       )
 
@@ -201,7 +206,7 @@ describe('contact commands', () => {
       expect(server.requests[0]).toMatchObject({
         body: '',
         method: 'POST',
-        url: `/api/session%2Fmain/contacts/alice%40lid/${action}`,
+        url: `/messaging/session%2Fmain/contacts/750000000001/${action}`,
       })
       expect(server.requests[0]?.headers['idempotency-key']).toBe(
         `${action}_alice`,
@@ -213,7 +218,8 @@ describe('contact commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -237,8 +243,7 @@ describe('contact commands', () => {
 function contact() {
   return {
     businessName: 'Alice Software',
-    id: 'alice@s.whatsapp.net',
-    lid: 'alice@lid',
+    id: '750000000001',
     name: 'Alice Example',
     phoneNumber: '+15551234567',
     profileUrl: 'https://example.com/alice.jpg',
@@ -249,10 +254,8 @@ function contact() {
 
 function userInfo() {
   return {
-    devices: ['alice:1@s.whatsapp.net'],
-    id: 'alice@s.whatsapp.net',
-    jid: 'alice@s.whatsapp.net',
-    lid: 'alice@lid',
+    devices: [{id: '750000000001', device: 1}],
+    id: '750000000001',
     phoneNumber: '+15551234567',
     pictureId: 'picture_1',
     status: 'Available',
@@ -263,6 +266,7 @@ function userInfo() {
 
 function businessProfile() {
   return {
+    id: '750000000001',
     address: '1 Example Street',
     categories: [{id: 'software', name: 'Software'}],
     coverPhotoId: 'cover_1',
@@ -277,7 +281,6 @@ function businessProfile() {
       },
     ],
     hoursTimeZone: 'America/New_York',
-    jid: 'alice@s.whatsapp.net',
     options: {cartEnabled: 'true'},
     websites: ['https://example.com'],
   }

@@ -2,7 +2,7 @@ import {Command, Flags, type Interfaces} from '@oclif/core'
 import {
   PolymorfaConfigurationError,
   type MessagingClient,
-  type PlatformClient,
+  type Client as PlatformClient,
 } from '@polymorfa/sdk'
 
 import {resolveCommandEnvironment} from './context/environment.js'

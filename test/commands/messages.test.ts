@@ -20,7 +20,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message send text --session session/main --to 15551234567@s.whatsapp.net --body Hello --json',
+        'message send text --session session/main --to +15551234567 --body Hello --json',
       ),
     )
 
@@ -31,12 +31,11 @@ describe('message commands', () => {
     })
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({
-        chatId: '15551234567@s.whatsapp.net',
-        text: 'Hello',
-        type: 'text',
+        conversation: {phoneNumber: '+15551234567'},
+        content: {text: 'Hello'},
       }),
       method: 'POST',
-      url: '/api/session%2Fmain/messages/send',
+      url: '/messaging/session%2Fmain/messages/send',
     })
   })
 
@@ -45,26 +44,25 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message send text --session session_1 --to 120363@g.us --body Reply --reply-to message_1 --reply-participant member@lid --forwarded --mention first@lid --mention second@lid --idempotency-key send_1 --json',
+        'message send text --session session_1 --to 730000000001 --body Reply --reply-to 740000000001 --forwarded --mention 750000000001 --mention 750000000002 --idempotency-key send_1 --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      chatId: '120363@g.us',
+      conversation: {id: '730000000001'},
+      content: {text: 'Reply'},
       isForwarded: true,
-      mentions: ['first@lid', 'second@lid'],
-      quotedMessage: {messageId: 'message_1', participant: 'member@lid'},
-      text: 'Reply',
-      type: 'text',
+      mentions: ['750000000001', '750000000002'],
+      quotedMessage: {id: '740000000001'},
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('send_1')
-    expect(server.requests[0]?.url).toBe('/api/session_1/messages/send')
+    expect(server.requests[0]?.url).toBe('/messaging/session_1/messages/send')
   })
 
   test('requires explicit session scope before sending', async () => {
     const result = await runCommand(
-      'message send text --to 15551234567@s.whatsapp.net --body Hello --json',
+      'message send text --to +15551234567 --body Hello --json',
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -77,7 +75,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message send text --session session_1 --to 15551234567@s.whatsapp.net --body "" --json',
+        'message send text --session session_1 --to +15551234567 --body "" --json',
       ),
     )
 
@@ -98,7 +96,7 @@ describe('message commands', () => {
       },
       () =>
         runCommand(
-          'message send text --session session_1 --to 15551234567@s.whatsapp.net --body Hello --json',
+          'message send text --session session_1 --to +15551234567 --body Hello --json',
         ),
     )
 
@@ -111,7 +109,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message react message_1 --session session/main --chat 120363@g.us --emoji 👍 --idempotency-key react_1 --json',
+        'message react 740000000001 --session session/main --chat 730000000001 --emoji 👍 --idempotency-key react_1 --json',
       ),
     )
 
@@ -122,12 +120,12 @@ describe('message commands', () => {
     })
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({
-        chatId: '120363@g.us',
-        messageId: 'message_1',
+        conversation: {id: '730000000001'},
+        id: '740000000001',
         reaction: '👍',
       }),
       method: 'POST',
-      url: '/api/session%2Fmain/messages/react',
+      url: '/messaging/session%2Fmain/messages/react',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('react_1')
   })
@@ -137,7 +135,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message mark-seen message_1 --session session_1 --chat 120363@g.us --json',
+        'message mark-seen 740000000001 --session session_1 --chat 730000000001 --json',
       ),
     )
 
@@ -147,9 +145,12 @@ describe('message commands', () => {
       metadata: {attempts: 1, status: 200},
     })
     expect(server.requests[0]).toMatchObject({
-      body: JSON.stringify({chatId: '120363@g.us', messageId: 'message_1'}),
+      body: JSON.stringify({
+        conversation: {id: '730000000001'},
+        id: '740000000001',
+      }),
       method: 'POST',
-      url: '/api/session_1/messages/seen',
+      url: '/messaging/session_1/messages/seen',
     })
   })
 
@@ -158,40 +159,45 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message typing --session session_1 --chat 120363@g.us --state recording --json',
+        'message typing --session session_1 --chat 730000000001 --state recording --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(JSON.parse(result.stdout)).toMatchObject({data: {success: true}})
     expect(server.requests[0]).toMatchObject({
-      body: JSON.stringify({chatId: '120363@g.us', state: 'recording'}),
+      body: JSON.stringify({
+        conversation: {id: '730000000001'},
+        state: 'recording',
+      }),
       method: 'POST',
-      url: '/api/session_1/messages/typing',
+      url: '/messaging/session_1/messages/typing',
     })
   })
 
   test('removes a star through the explicit remove flag', async () => {
-    server = await messageServer()
+    server = await startHttpServer({
+      body: {success: true, data: {status: 'OK'}},
+    })
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message star message_1 --session session_1 --chat 120363@g.us --remove --json',
+        'message star 740000000001 --session session_1 --chat 730000000001 --remove --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(JSON.parse(result.stdout)).toMatchObject({
-      data: {id: 'message_1', status: 'sent'},
+      data: {status: 'OK'},
     })
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({
-        chatId: '120363@g.us',
-        messageId: 'message_1',
+        conversation: {id: '730000000001'},
+        id: '740000000001',
         star: false,
       }),
       method: 'POST',
-      url: '/api/session_1/messages/star',
+      url: '/messaging/session_1/messages/star',
     })
   })
 
@@ -199,7 +205,8 @@ describe('message commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -217,12 +224,10 @@ async function messageServer(requestId?: string): Promise<TestHttpServer> {
 
 function completeMessage() {
   return {
-    fromLid: 'sender@lid',
-    fromPhoneNumber: '15550000000',
-    id: 'message_1',
-    senderLid: 'sender@lid',
-    senderPhoneNumber: '15550000000',
-    status: 'sent',
+    id: '740000000001',
+    whatsapp_id: '3A000000000000000001',
+    conversation: {id: '730000000001', phoneNumber: '+15551234567'},
+    type: 'text',
     timestamp: '2026-08-19T20:00:00.000Z',
   }
 }

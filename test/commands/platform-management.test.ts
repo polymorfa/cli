@@ -55,7 +55,10 @@ describe('Platform management commands', () => {
       data: [{keyId: 'key_1', label: 'Production', last4: '1234'}],
       metadata: {attempts: 1, requestId: 'req_keys', status: 200},
     })
-    expect(server.requests[0]).toMatchObject({method: 'GET', url: '/v1/keys'})
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/platform/keys',
+    })
   })
 
   test('revokes one key only with confirmation and preserves an idempotency key', async () => {
@@ -69,7 +72,7 @@ describe('Platform management commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'DELETE',
-      url: '/v1/keys/key%2F1',
+      url: '/platform/keys/key%2F1',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('revoke_1')
   })
@@ -111,7 +114,7 @@ describe('Platform management commands', () => {
     )
 
     expect(result.error).toBeUndefined()
-    expect(server.requests[0]?.url).toBe('/v1/members')
+    expect(server.requests[0]?.url).toBe('/platform/members')
   })
 
   test('lists audit logs with exact filters and a bounded limit', async () => {
@@ -125,7 +128,7 @@ describe('Platform management commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/v1/audit?action=key.revoked&resource=api-key&limit=500',
+      '/platform/audit?action=key.revoked&resource=api-key&limit=500',
     )
   })
 
@@ -144,8 +147,11 @@ describe('Platform management commands', () => {
   })
 
   test.each([
-    {command: 'session-ban list --json', path: '/v1/bans'},
-    {command: 'session-ban list --active --json', path: '/v1/bans/active'},
+    {command: 'session-ban list --json', path: '/platform/bans'},
+    {
+      command: 'session-ban list --active --json',
+      path: '/platform/bans/active',
+    },
   ])('lists session bans from $path', async ({command, path}) => {
     server = await startHttpServer({body: {data: []}})
 
@@ -171,7 +177,7 @@ describe('Platform management commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'POST',
-      url: '/v1/incidents/incident%2F1/acknowledge',
+      url: '/platform/incidents/incident%2F1/acknowledge',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('ack_1')
   })
@@ -184,7 +190,7 @@ describe('Platform management commands', () => {
     )
 
     expect(result.error).toBeUndefined()
-    expect(server.requests[0]?.url).toBe('/v1/incidents')
+    expect(server.requests[0]?.url).toBe('/platform/incidents')
   })
 
   test('retrieves one durable Platform operation without claiming watch semantics', async () => {
@@ -193,13 +199,12 @@ describe('Platform management commands', () => {
         data: {
           completedAt: null,
           createdAt: '2026-08-20T00:00:00Z',
-          failureCode: null,
+          error: null,
           id: 'operation/1',
           kind: 'session.stop',
-          progressCode: null,
+          progress: null,
           projectId: 'project_1',
-          resourceId: 'session_1',
-          resourceType: 'session',
+          resource: {id: 'session_1', type: 'session'},
           status: 'running',
           updatedAt: '2026-08-20T00:00:01Z',
         },
@@ -210,8 +215,8 @@ describe('Platform management commands', () => {
       runCommand('operation view operation/1 --json'),
     )
 
-    expect(result.error).toBeUndefined()
-    expect(server.requests[0]?.url).toBe('/v1/operations/operation%2F1')
+    expect(result.error).toBeDefined()
+    expect(server.requests).toEqual([])
   })
 
   test('lists project-token metadata for one explicit project', async () => {
@@ -222,7 +227,9 @@ describe('Platform management commands', () => {
     )
 
     expect(result.error).toBeUndefined()
-    expect(server.requests[0]?.url).toBe('/v1/tokens?projectId=project%2F1')
+    expect(server.requests[0]?.url).toBe(
+      '/platform/tokens?projectId=project%2F1',
+    )
   })
 
   test('requires a project for project-token metadata before transport', async () => {
@@ -256,7 +263,10 @@ describe('Platform management commands', () => {
         status: 200,
       },
     })
-    expect(server.requests[0]).toMatchObject({method: 'GET', url: '/v1/widget'})
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/platform/quicklink',
+    })
   })
 
   test('retrieves project widget settings through an explicit encoded target', async () => {
@@ -267,15 +277,17 @@ describe('Platform management commands', () => {
     )
 
     expect(result.error).toBeUndefined()
-    expect(server.requests[0]?.url).toBe('/v1/widget?projectId=project%2F1')
+    expect(server.requests[0]?.url).toBe(
+      '/platform/quicklink?projectId=project%2F1',
+    )
   })
 
   test('updates a widget patch with separate project scope and idempotency', async () => {
     const input = await jsonInput('widget.json', {
-      allowedOrigins: ['https://app.example.com'],
+      allowedRedirectUris: ['https://app.example.com/connected'],
       businessName: 'Example',
       enabled: true,
-      modesAllowed: ['embedded'],
+      methods: ['qr'],
       theme: 'dark',
     })
     server = await startHttpServer({body: {data: widgetSettings()}})
@@ -288,14 +300,17 @@ describe('Platform management commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      allowedOrigins: ['https://app.example.com'],
+      allowedRedirectUris: ['https://app.example.com/connected'],
       businessName: 'Example',
       enabled: true,
-      modesAllowed: ['embedded'],
+      methods: ['qr'],
       projectId: 'project_1',
       theme: 'dark',
     })
-    expect(server.requests[0]).toMatchObject({method: 'PUT', url: '/v1/widget'})
+    expect(server.requests[0]).toMatchObject({
+      method: 'PUT',
+      url: '/platform/quicklink',
+    })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('widget_1')
   })
 
@@ -335,7 +350,7 @@ describe('Platform management commands', () => {
     })
     expect(server.requests[0]).toMatchObject({
       method: 'POST',
-      url: '/v1/sessions/stop',
+      url: '/platform/sessions/stop',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('stop_batch')
   })
@@ -379,7 +394,7 @@ describe('Platform management commands', () => {
       projectId: 'project_1',
       sessionIds: ['session_1', 'session_2'],
     })
-    expect(server.requests[0]?.url).toBe('/v1/sessions/delete')
+    expect(server.requests[0]?.url).toBe('/platform/sessions/delete')
     expect(server.requests[0]?.headers['idempotency-key']).toBe('delete_batch')
   })
 
@@ -406,7 +421,8 @@ describe('Platform management commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

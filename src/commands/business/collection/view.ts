@@ -26,8 +26,8 @@ export default class BusinessCollectionView extends BaseCommand {
       max: 1024,
       min: 1,
     }),
-    jid: Flags.string({
-      description: 'Business account user or LID JID.',
+    id: Flags.string({
+      description: 'Polymorfa business user ID.',
       required: true,
     }),
     limit: Flags.integer({
@@ -53,7 +53,7 @@ export default class BusinessCollectionView extends BaseCommand {
       flags.session,
       args.collection,
       {
-        jid: flags.jid,
+        id: flags.id,
         ...(flags.after === undefined ? {} : {after: flags.after}),
         ...(flags.limit === undefined ? {} : {limit: flags.limit}),
         ...(flags.width === undefined ? {} : {width: flags.width}),

@@ -6,8 +6,8 @@ import {reactToChannelMessage} from '../../../services/channels.js'
 export default class ChannelMessageReact extends BaseCommand {
   static override args = {
     channel: Args.string({description: 'Channel ID.', required: true}),
-    'server-id': Args.string({
-      description: 'Positive numeric message server ID.',
+    'message-id': Args.string({
+      description: 'Polymorfa message ID.',
       required: true,
     }),
   }
@@ -35,7 +35,7 @@ export default class ChannelMessageReact extends BaseCommand {
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
       flags.session,
       args.channel,
-      args['server-id'],
+      args['message-id'],
       flags.reaction,
       flags['idempotency-key'] === undefined
         ? {}
@@ -44,8 +44,8 @@ export default class ChannelMessageReact extends BaseCommand {
     this.writeValue(
       result,
       flags.reaction.length === 0
-        ? `Removed the reaction from channel message ${args['server-id']}.`
-        : `Reacted to channel message ${args['server-id']}.`,
+        ? `Removed the reaction from channel message ${args['message-id']}.`
+        : `Reacted to channel message ${args['message-id']}.`,
       flags,
     )
   }

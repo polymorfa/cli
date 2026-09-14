@@ -3,6 +3,7 @@ import type {SendTextMessageRequest} from '@polymorfa/sdk'
 
 import {BaseCommand} from '../../../base-command.js'
 import {sendTextMessage} from '../../../services/messages.js'
+import {conversationReference} from '../../../services/conversation.js'
 
 export default class MessageSendText extends BaseCommand {
   static override description = 'Send a text message.'
@@ -19,23 +20,19 @@ export default class MessageSendText extends BaseCommand {
       description: 'Safely identify retries of this send operation.',
     }),
     mention: Flags.string({
-      description: 'Mention a recipient JID. Repeat for multiple recipients.',
+      description:
+        'Mention a Polymorfa user ID. Repeat for multiple recipients.',
       multiple: true,
     }),
-    'reply-participant': Flags.string({
-      dependsOn: ['reply-to'],
-      description: 'Participant JID for the quoted message.',
-    }),
     'reply-to': Flags.string({
-      dependsOn: ['reply-participant'],
-      description: 'Message ID to quote in the reply.',
+      description: 'Polymorfa message ID to quote in the reply.',
     }),
     session: Flags.string({
       description: 'Messaging session ID.',
       required: true,
     }),
     to: Flags.string({
-      description: 'Recipient chat or group JID.',
+      description: 'Conversation ID, E.164 phone number, or BSUID.',
       required: true,
     }),
   }
@@ -43,17 +40,15 @@ export default class MessageSendText extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(MessageSendText)
     const request: SendTextMessageRequest = {
-      chatId: flags.to,
-      text: flags.body,
-      type: 'text',
+      conversation: conversationReference(flags.to),
+      content: {text: flags.body},
       ...(flags.forwarded ? {isForwarded: true} : {}),
       ...(flags.mention === undefined ? {} : {mentions: flags.mention}),
       ...(flags['reply-to'] === undefined
         ? {}
         : {
             quotedMessage: {
-              messageId: flags['reply-to'],
-              participant: flags['reply-participant']!,
+              id: flags['reply-to'],
             },
           }),
     }

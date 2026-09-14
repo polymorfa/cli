@@ -35,7 +35,7 @@ describe('call and identity commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({from: 'caller@lid'}),
       method: 'POST',
-      url: '/api/session%2Fmain/calls/call%2F1/reject',
+      url: '/messaging/session%2Fmain/calls/call%2F1/reject',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('reject_1')
   })
@@ -68,37 +68,37 @@ describe('call and identity commands', () => {
   test('resolves a trimmed phone number through one exact identity query', async () => {
     server = await startHttpServer({
       body: {
-        data: {id: '15551234567@lid', phoneNumber: '+15551234567'},
+        data: {id: '750000000001', phoneNumber: '+15551234567'},
         success: true,
       },
     })
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'lid resolve --session session_1 --phone-number "  +15551234567  " --json',
+        'identity resolve --session session_1 --phone-number "  +15551234567  " --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/lids/resolve?phoneNumber=%2B15551234567',
+      '/messaging/session_1/identities/resolve?phoneNumber=%2B15551234567',
     )
   })
 
   test('resolves a username with its exact optional four-digit key', async () => {
     server = await startHttpServer({
-      body: {data: {id: '15551234567@lid', username: 'alice'}, success: true},
+      body: {data: {id: '750000000001', username: 'alice'}, success: true},
     })
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'lid resolve --session session_1 --username alice --username-key 1234 --json',
+        'identity resolve --session session_1 --username alice --username-key 1234 --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/lids/resolve?username=alice&usernameKey=1234',
+      '/messaging/session_1/identities/resolve?username=alice&usernameKey=1234',
     )
   })
 
@@ -106,12 +106,12 @@ describe('call and identity commands', () => {
     server = await startHttpServer({body: {data: {}, success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('lid resolve --session session_1 --json'),
+      runCommand('identity resolve --session session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
     expect(result.stderr).toContain(
-      'Provide exactly one of --phone-number, --id, --lid, or --username',
+      'Provide exactly one of --phone-number, --id, or --username',
     )
     expect(server.requests).toHaveLength(0)
   })
@@ -121,7 +121,7 @@ describe('call and identity commands', () => {
     server = await startHttpServer({
       body: {
         data: {
-          id: '15551234567@lid',
+          id: '750000000001',
           numericCode,
           phoneNumber: '+15551234567',
           qrCode: 'cHJpdmF0ZS1kaXNwbGF5LXFy',
@@ -133,15 +133,15 @@ describe('call and identity commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('user security-code 15551234567@lid --session session/main'),
+      runCommand('user security-code 750000000001 --session session/main'),
     )
 
     expect(result.error).toBeUndefined()
-    expect(result.stdout).toContain('ID\t15551234567@lid')
+    expect(result.stdout).toContain('ID\t750000000001')
     expect(result.stdout).toContain(`Numeric code\t${numericCode}`)
     expect(result.stdout).not.toContain('cHJpdmF0ZS1kaXNwbGF5LXFy')
     expect(server.requests[0]?.url).toBe(
-      '/api/session%2Fmain/users/15551234567%40lid/security-code',
+      '/messaging/session%2Fmain/users/750000000001/security-code',
     )
   })
 
@@ -155,7 +155,7 @@ describe('call and identity commands', () => {
     )
 
     expect(exitCode(result.error)).toBe(2)
-    expect(result.stderr).toContain('User ID must use the digits@lid form')
+    expect(result.stderr).toContain('User ID must be a decimal string')
     expect(server.requests).toHaveLength(0)
   })
 
@@ -163,7 +163,8 @@ describe('call and identity commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

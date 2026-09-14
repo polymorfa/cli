@@ -41,7 +41,7 @@ describe('profile commands', () => {
       data: declaredProfile(),
       metadata: {attempts: 1, requestId: 'req_profile', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/api/session%2Fmain/profile')
+    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/profile')
   })
 
   test('renders the live runner profile shape without assuming declared fields', async () => {
@@ -118,7 +118,7 @@ describe('profile commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({name: 'Polymorfa'}),
       method: 'PUT',
-      url: '/api/session_1/profile/name',
+      url: '/messaging/session_1/profile/name',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('name_1')
   })
@@ -138,7 +138,7 @@ describe('profile commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({status: 'Available'}),
       method: 'PUT',
-      url: '/api/session_1/profile/status',
+      url: '/messaging/session_1/profile/status',
     })
   })
 
@@ -157,7 +157,7 @@ describe('profile commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({url: 'https://example.test/profile.jpg'}),
       method: 'PUT',
-      url: '/api/session_1/profile/picture',
+      url: '/messaging/session_1/profile/picture',
     })
   })
 
@@ -178,7 +178,7 @@ describe('profile commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({base64: '/9j/2Q=='}),
       method: 'PUT',
-      url: '/api/session%2Fmain/profile/picture',
+      url: '/messaging/session%2Fmain/profile/picture',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('picture_1')
   })
@@ -256,7 +256,7 @@ describe('profile commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'DELETE',
-      url: '/api/session_1/profile/picture',
+      url: '/messaging/session_1/profile/picture',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe(
       'picture_delete_1',
@@ -267,7 +267,8 @@ describe('profile commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

@@ -9,7 +9,8 @@ describe('AuthService', () => {
     const fixture = createFixture()
 
     const result = await fixture.service.login({
-      apiKey: 'pmfa_test-key',
+      apiKey:
+        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
       profile: 'work',
     })
 
@@ -20,7 +21,7 @@ describe('AuthService', () => {
     })
     expect(fixture.credentials.set).toHaveBeenCalledWith(
       'profile:work:apiKey',
-      'pmfa_test-key',
+      'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     )
     expect(fixture.saved()).toEqual({
       activeProfile: 'work',
@@ -31,14 +32,20 @@ describe('AuthService', () => {
       },
       version: 1,
     })
-    expect(JSON.stringify(fixture.saved())).not.toContain('pmfa_test-key')
+    expect(JSON.stringify(fixture.saved())).not.toContain(
+      'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    )
   })
 
   test('rejects an invalid profile name before touching secure storage', async () => {
     const fixture = createFixture()
 
     await expect(
-      fixture.service.login({apiKey: 'pmfa_test-key', profile: '../work'}),
+      fixture.service.login({
+        apiKey:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        profile: '../work',
+      }),
     ).rejects.toThrow('Profile names may contain')
     expect(fixture.credentials.set).not.toHaveBeenCalled()
   })
@@ -48,7 +55,7 @@ describe('AuthService', () => {
 
     await expect(
       fixture.service.login({apiKey: 'secret', profile: 'work'}),
-    ).rejects.toThrow('must use the pmfa_ prefix')
+    ).rejects.toThrow('must use the canonical pmfa_ v1 format')
     expect(fixture.credentials.set).not.toHaveBeenCalled()
   })
 
@@ -87,7 +94,9 @@ describe('AuthService', () => {
 
   test('switches the active profile and reports secure credential availability', async () => {
     const fixture = createFixture(profileConfig())
-    vi.mocked(fixture.credentials.get).mockResolvedValue('pmfa_test-key')
+    vi.mocked(fixture.credentials.get).mockResolvedValue(
+      'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    )
 
     await expect(fixture.service.use('work')).resolves.toMatchObject({
       active: true,

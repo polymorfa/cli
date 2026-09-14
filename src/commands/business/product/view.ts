@@ -14,8 +14,8 @@ export default class BusinessProductView extends BaseCommand {
   static override description = 'View one business product.'
 
   static override flags = {
-    jid: Flags.string({
-      description: 'Business account user or LID JID.',
+    id: Flags.string({
+      description: 'Polymorfa business user ID.',
       required: true,
     }),
     session: Flags.string({
@@ -30,7 +30,7 @@ export default class BusinessProductView extends BaseCommand {
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
       flags.session,
       args.product,
-      {jid: flags.jid},
+      {id: flags.id},
     )
     this.writeValue(result, renderBusinessProduct(result.data), flags)
   }

@@ -101,7 +101,9 @@ describe('group commands', () => {
     expect(JSON.parse(result.stdout)).toMatchObject({
       data: {id: '123@g.us', name: 'Launch team'},
     })
-    expect(server.requests[0]?.url).toBe('/api/session_1/groups/123%40g.us')
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/session_1/groups/123%40g.us',
+    )
   })
 
   test('lists participants without claiming pagination', async () => {
@@ -146,7 +148,8 @@ describe('group commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

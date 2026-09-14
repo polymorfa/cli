@@ -9,7 +9,7 @@ import {
 export default class PresenceChatView extends BaseCommand {
   static override args = {
     chat: Args.string({
-      description: 'Chat, user, or group JID.',
+      description: 'Polymorfa conversation ID.',
       required: true,
     }),
   }

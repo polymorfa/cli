@@ -1,6 +1,6 @@
 import {
   MessagingClient,
-  PlatformClient,
+  Client as PlatformClient,
   PolymorfaConfigurationError,
   type RawClient,
   type SharedClientOptions,
@@ -41,7 +41,10 @@ export function createPlatformClient(
   }
 
   return new PlatformClient({
-    apiKey: environment.credential.value,
+    credential: {
+      type: 'organizationApiKey',
+      value: environment.credential.value,
+    },
     ...sharedOptions(environment),
   })
 }

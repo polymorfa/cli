@@ -117,30 +117,32 @@ Send text and perform the complete set of source-defined Messaging actions:
 ```shell
 polymorfa message send text \
   --session session_123 \
-  --to 15551234567@s.whatsapp.net \
+  --to +15551234567 \
   --body 'Hello'
 
-polymorfa message react message_123 \
+polymorfa message react 740000000001 \
   --session session_123 \
-  --chat 15551234567@s.whatsapp.net \
+  --chat +15551234567 \
   --emoji '👍'
 
-polymorfa message mark-seen message_123 \
+polymorfa message mark-seen 740000000001 \
   --session session_123 \
-  --chat 15551234567@s.whatsapp.net
+  --chat +15551234567
 
 polymorfa message typing \
   --session session_123 \
-  --chat 15551234567@s.whatsapp.net \
+  --chat +15551234567 \
   --state typing
 
-polymorfa message star message_123 \
+polymorfa message star 740000000001 \
   --session session_123 \
-  --chat 15551234567@s.whatsapp.net
+  --chat +15551234567
 ```
 
 Add `--remove` to `message star` to unstar. Text sends accept repeatable
-`--mention`, paired `--reply-to` and `--reply-participant`, and `--forwarded`.
+`--mention` with a Polymorfa user ID, `--reply-to` with a Polymorfa message ID,
+and `--forwarded`. `--to` and `--chat` accept a conversation ID, E.164 phone
+number, or BSUID. The API resolves message direction and sender identity.
 Every mutation accepts `--idempotency-key` for safe retry identity. Server API
 keys require `messages:write`; client tokens remain subject to their live
 recipient rules, allowed actions, and rate limits.
@@ -185,10 +187,10 @@ polymorfa label create --session session_123 --name Priority --color 5
 polymorfa label update label_123 --session session_123 --name Urgent
 polymorfa label delete label_123 --session session_123 --yes
 
-polymorfa label chat list 15551234567@s.whatsapp.net \
+polymorfa label chat list +15551234567 \
   --session session_123
 
-polymorfa label chat replace 15551234567@s.whatsapp.net \
+polymorfa label chat replace +15551234567 \
   --session session_123 \
   --label priority \
   --label customer
@@ -300,10 +302,10 @@ renew policy-governed chat observations:
 polymorfa presence view --session session_123
 polymorfa presence set --session session_123 --state available
 
-polymorfa presence chat view 15551234567@s.whatsapp.net \
+polymorfa presence chat view +15551234567 \
   --session session_123
 
-polymorfa presence chat subscribe 15551234567@s.whatsapp.net \
+polymorfa presence chat subscribe +15551234567 \
   --session session_123
 ```
 
@@ -374,14 +376,14 @@ polymorfa contact check \
   --phone +15551234567 \
   --phone +15557654321
 
-polymorfa contact view alice@lid --session session_123
-polymorfa contact info alice@lid --session session_123
-polymorfa contact picture alice@lid --session session_123
-polymorfa contact devices alice@lid --session session_123
-polymorfa contact business-profile alice@lid --session session_123
+polymorfa contact view 750000000001 --session session_123
+polymorfa contact info 750000000001 --session session_123
+polymorfa contact picture 750000000001 --session session_123
+polymorfa contact devices 750000000001 --session session_123
+polymorfa contact business-profile 750000000001 --session session_123
 polymorfa contact blocklist --session session_123
-polymorfa contact block alice@lid --session session_123
-polymorfa contact unblock alice@lid --session session_123
+polymorfa contact block 750000000001 --session session_123
+polymorfa contact unblock 750000000001 --session session_123
 ```
 
 `contact view` reads contact data known to the connected session. `contact info`
@@ -403,32 +405,32 @@ source tags:
 ```shell
 polymorfa call reject call_123 \
   --session session_123 \
-  --from caller@lid \
+  --from 750000000001 \
   --idempotency-key reject_call_123
 
-polymorfa lid resolve \
+polymorfa identity resolve \
   --session session_123 \
   --phone-number +15551234567
 
-polymorfa lid resolve \
+polymorfa identity resolve \
   --session session_123 \
   --username alice \
   --username-key 1234
 
-polymorfa user security-code 15551234567@lid --session session_123
+polymorfa user security-code 750000000001 --session session_123
 ```
 
 All three require a server API key and an active Linked Device session. Call
-rejection requires the incoming call ID and caller JID; it is not call accept,
-placement, history, or streaming. LID resolution accepts exactly one phone
-number, stable `digits@lid` ID, deprecated `--lid` alias, or username. A username
+rejection requires the incoming call ID and caller's Polymorfa ID; it is not call accept,
+placement, history, or streaming. Identity resolution accepts exactly one phone
+number, decimal Polymorfa user ID, or username. A username
 key is exactly four digits and is valid only with `--username`.
 
-Security-code lookup accepts only a stable `digits@lid` user ID. Human output
+Security-code lookup accepts only a decimal Polymorfa user ID. Human output
 shows the 60-digit numeric verification code and identity, but does not dump the
 base64 display QR. `--json` preserves the complete response and no-store header
 metadata. The private WhatsApp verification payload is never returned by the
-API. The source exposes no bulk LID resolution, call list/history, security-code
+API. The source exposes no bulk identity resolution, call list/history, security-code
 history/refresh, or verification-submit operation.
 
 ## Business App
@@ -440,11 +442,11 @@ separate:
 
 ```shell
 polymorfa business profile view --session session_123
-polymorfa business catalog view --session session_123 --jid shop@lid
+polymorfa business catalog view --session session_123 --id 750000000001
 polymorfa business product view product_123 \
   --session session_123 \
-  --jid shop@lid
-polymorfa business collection list --session session_123 --jid shop@lid
+  --id 750000000001
+polymorfa business collection list --session session_123 --id 750000000001
 polymorfa business compliance view --session session_123
 polymorfa business accounts view --session session_123
 polymorfa business eligibility view --session session_123
@@ -506,7 +508,6 @@ polymorfa audit-log list --action key.revoked --resource api-key --limit 100
 polymorfa session-ban list --active
 polymorfa security-incident list
 polymorfa security-incident acknowledge incident_123
-polymorfa operation view operation_123
 polymorfa project-token list --project project_123
 polymorfa widget view --project project_123
 polymorfa widget update --project project_123 --input widget-patch.json
@@ -523,8 +524,8 @@ this route. Security-incident acknowledgement is repeatable and sends no body.
 
 Audit filters are exact matches, and `--limit` is bounded to 1 through 500.
 These list operations return complete arrays and expose no cursor. Project-token
-listing requires one explicit project ID. `operation view` is a single durable
-state read; it does not wait, watch, stream, list, or cancel operations.
+listing requires one explicit project ID. Operation inspection is console-only;
+the CLI does not expose operation polling or cancellation.
 
 Member invite, role update, and removal remain dashboard-session routes and are
 not exposed through server-key commands. The API also exposes no compatible
@@ -574,7 +575,7 @@ Launch, pause, resume, and stop return accepted durable work; they do not wait
 for the state transition. Poll the returned operation explicitly:
 
 ```shell
-polymorfa operation view operation_123 --surface messaging
+
 ```
 
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601

@@ -40,7 +40,7 @@ describe('Messaging campaign commands', () => {
       metadata: {attempts: 1, requestId: 'req_campaign_list', status: 200},
     })
     expect(server.requests[0]?.url).toBe(
-      '/api/projects/project%2Fmain/campaigns',
+      '/messaging/projects/project%2Fmain/campaigns',
     )
   })
 
@@ -68,7 +68,7 @@ describe('Messaging campaign commands', () => {
     })
     expect(server.requests[0]).toMatchObject({
       method: 'POST',
-      url: '/api/projects/project_1/campaigns',
+      url: '/messaging/projects/project_1/campaigns',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe(
       'campaign_create',
@@ -108,8 +108,8 @@ describe('Messaging campaign commands', () => {
     expect(view.error).toBeUndefined()
     expect(analytics.error).toBeUndefined()
     expect(server.requests.map((request) => request.url)).toEqual([
-      '/api/projects/project%2Fmain/campaigns/campaign%2F1',
-      '/api/projects/project%2Fmain/campaigns/campaign%2F1/analytics',
+      '/messaging/projects/project%2Fmain/campaigns/campaign%2F1',
+      '/messaging/projects/project%2Fmain/campaigns/campaign%2F1/analytics',
     ])
   })
 
@@ -132,13 +132,13 @@ describe('Messaging campaign commands', () => {
       'Accepted campaign launch as operation operation_1.',
     )
     expect(result.stdout).toContain(
-      'Poll with polymorfa operation view operation_1 --surface messaging.',
+      'Check the campaign status with polymorfa campaign view.',
     )
     expect(result.stdout).not.toContain('Campaign launched successfully')
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({scheduledAt: 1_788_264_000_000}),
       method: 'POST',
-      url: '/api/projects/project_1/campaigns/campaign_1/launch',
+      url: '/messaging/projects/project_1/campaigns/campaign_1/launch',
     })
   })
 
@@ -185,9 +185,9 @@ describe('Messaging campaign commands', () => {
     expect(resume.error).toBeUndefined()
     expect(stop.error).toBeUndefined()
     expect(server.requests.map((request) => request.url)).toEqual([
-      '/api/projects/project_1/campaigns/campaign_1/pause',
-      '/api/projects/project_1/campaigns/campaign_1/resume',
-      '/api/projects/project_1/campaigns/campaign_1/stop',
+      '/messaging/projects/project_1/campaigns/campaign_1/pause',
+      '/messaging/projects/project_1/campaigns/campaign_1/resume',
+      '/messaging/projects/project_1/campaigns/campaign_1/stop',
     ])
     expect(
       server.requests.map((request) => request.headers['idempotency-key']),
@@ -220,11 +220,11 @@ describe('Messaging campaign commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({includeSkippedError: true}),
       method: 'POST',
-      url: '/api/projects/project_1/campaigns/campaign_1/requeue',
+      url: '/messaging/projects/project_1/campaigns/campaign_1/requeue',
     })
   })
 
-  test('polls accepted campaign operations on the Messaging surface', async () => {
+  test('does not expose console-only operation polling', async () => {
     server = await startHttpServer({
       body: {
         data: {
@@ -248,8 +248,8 @@ describe('Messaging campaign commands', () => {
       runCommand('operation view operation/1 --surface messaging --json'),
     )
 
-    expect(result.error).toBeUndefined()
-    expect(server.requests[0]?.url).toBe('/api/operations/operation%2F1')
+    expect(result.error).toBeDefined()
+    expect(server.requests).toEqual([])
   })
 
   test('rejects browser client tokens before campaign transport', async () => {
@@ -277,7 +277,8 @@ describe('Messaging campaign commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

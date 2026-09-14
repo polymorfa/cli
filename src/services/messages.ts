@@ -1,6 +1,7 @@
 import {
   PolymorfaConfigurationError,
   type MessageResponse,
+  type MessageReceipt,
   type MessagingClient,
   type ReactRequest,
   type RequestOptions,
@@ -28,7 +29,7 @@ export async function sendTextMessage(
   request: SendTextMessageRequest,
   options: RequestOptions = {},
 ): Promise<MessageResult<MessageResponse>> {
-  if (request.text?.trim().length === 0 || request.text === undefined) {
+  if (request.content.text.trim().length === 0) {
     throw new PolymorfaConfigurationError(
       'Text message body cannot be empty.',
       'body',
@@ -43,7 +44,7 @@ export async function reactToMessage(
   session: string,
   request: ReactRequest,
   options: RequestOptions = {},
-): Promise<MessageResult<MessageResponse>> {
+): Promise<MessageResult<MessageReceipt>> {
   const response = await client.messages.react(session, request, options)
   return result(response.data.data, response.metadata)
 }
@@ -73,7 +74,7 @@ export async function setMessageStar(
   session: string,
   request: StarRequest,
   options: RequestOptions = {},
-): Promise<MessageResult<MessageResponse>> {
+): Promise<MessageResult<{readonly status: 'OK'}>> {
   const response = await client.messages.star(session, request, options)
   return result(response.data.data, response.metadata)
 }

@@ -30,7 +30,7 @@ describe('privacy commands', () => {
       data: privacySettings(),
       metadata: {attempts: 1, requestId: 'req_privacy', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/api/session%2Fmain/privacy')
+    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/privacy')
   })
 
   test('renders privacy settings as a readable setting matrix', async () => {
@@ -88,7 +88,7 @@ describe('privacy commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({value: 'match_last_seen'}),
       method: 'PUT',
-      url: '/api/session_1/privacy/online',
+      url: '/messaging/session_1/privacy/online',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe(
       'privacy_online_1',
@@ -152,7 +152,7 @@ describe('privacy commands', () => {
       expect(server.requests[0]).toMatchObject({
         body: JSON.stringify({durationSeconds}),
         method: 'PUT',
-        url: '/api/session_1/privacy/disappearing/default',
+        url: '/messaging/session_1/privacy/disappearing/default',
       })
       expect(server.requests[0]?.headers['idempotency-key']).toBe(
         `timer_${duration}`,
@@ -164,7 +164,8 @@ describe('privacy commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

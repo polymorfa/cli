@@ -377,7 +377,7 @@ export async function viewBusinessEligibility(
 
 export function renderBusinessProfile(profile: BusinessProfile): string {
   return [
-    row('JID', profile.jid),
+    row('ID', profile.id),
     row('Address', profile.address),
     row('Email', profile.email),
     row('Description', profile.description),

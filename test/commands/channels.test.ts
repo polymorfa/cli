@@ -30,7 +30,7 @@ describe('channel commands', () => {
       data: [channel()],
       metadata: {attempts: 1, requestId: 'req_channels', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/api/session%2Fmain/channels')
+    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/channels')
   })
 
   test('renders optional channel metadata without assuming every field exists', async () => {
@@ -39,16 +39,16 @@ describe('channel commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('channel view 120363@newsletter --session session_1'),
+      runCommand('channel view 760000000001 --session session_1'),
     )
 
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain('Polymorfa updates')
-    expect(result.stdout).toContain('120363@newsletter')
+    expect(result.stdout).toContain('760000000001')
     expect(result.stdout).toContain('Followers\t42')
     expect(result.stdout).toContain('Muted\tno')
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/channels/120363%40newsletter',
+      '/messaging/session_1/channels/760000000001',
     )
   })
 
@@ -81,7 +81,7 @@ describe('channel commands', () => {
     })
     expect(server.requests[0]).toMatchObject({
       method: 'POST',
-      url: '/api/session_1/channels',
+      url: '/messaging/session_1/channels',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe(
       'channel_create_1',
@@ -107,7 +107,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel delete 120363@newsletter --session session_1 --yes --idempotency-key channel_delete_1 --json',
+        'channel delete 760000000001 --session session_1 --yes --idempotency-key channel_delete_1 --json',
       ),
     )
 
@@ -118,7 +118,7 @@ describe('channel commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'DELETE',
-      url: '/api/session_1/channels/120363%40newsletter',
+      url: '/messaging/session_1/channels/760000000001',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe(
       'channel_delete_1',
@@ -133,7 +133,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message list 120363@newsletter --session session/main --limit 25 --before 951 --json',
+        'channel message list 760000000001 --session session/main --limit 25 --before 951 --json',
       ),
     )
 
@@ -147,7 +147,7 @@ describe('channel commands', () => {
       },
     })
     expect(server.requests[0]?.url).toBe(
-      '/api/session%2Fmain/channels/120363%40newsletter/messages?count=25&before=951',
+      '/messaging/session%2Fmain/channels/760000000001/messages?count=25&before=951',
     )
   })
 
@@ -158,7 +158,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message updates 120363@newsletter --session session_1 --limit 10 --since 1787212800 --after 951 --json',
+        'channel message updates 760000000001 --session session_1 --limit 10 --since 1787212800 --after 951 --json',
       ),
     )
 
@@ -168,7 +168,7 @@ describe('channel commands', () => {
       metadata: {attempts: 1, status: 200},
     })
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/channels/120363%40newsletter/message-updates?count=10&since=1787212800&after=951',
+      '/messaging/session_1/channels/760000000001/message-updates?count=10&since=1787212800&after=951',
     )
   })
 
@@ -177,7 +177,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message list 120363@newsletter --session session_1 --limit 101 --json',
+        'channel message list 760000000001 --session session_1 --limit 101 --json',
       ),
     )
 
@@ -188,14 +188,14 @@ describe('channel commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
-  test('marks a positive numeric server ID viewed with idempotency', async () => {
+  test('marks a public message ID viewed with idempotency', async () => {
     server = await startHttpServer({
       body: {data: {status: 'VIEWED'}, success: true},
     })
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message mark-viewed 120363@newsletter 951 --session session_1 --idempotency-key viewed_951 --json',
+        'channel message mark-viewed 760000000001 951 --session session_1 --idempotency-key viewed_951 --json',
       ),
     )
 
@@ -207,23 +207,23 @@ describe('channel commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'POST',
-      url: '/api/session_1/channels/120363%40newsletter/messages/951/viewed',
+      url: '/messaging/session_1/channels/760000000001/messages/951/viewed',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('viewed_951')
   })
 
-  test('rejects a non-positive message server ID before transport', async () => {
+  test('rejects an invalid public message ID before transport', async () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message mark-viewed 120363@newsletter 0 --session session_1 --json',
+        'channel message mark-viewed 760000000001 0 --session session_1 --json',
       ),
     )
 
     expect(exitCode(result.error)).toBe(2)
     expect(result.stderr).toContain(
-      'Message server ID must be a positive integer',
+      'Message ID must be an opaque decimal string',
     )
     expect(server.requests).toHaveLength(0)
   })
@@ -235,7 +235,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message react 120363@newsletter 951 --session session_1 --reaction 👍 --idempotency-key reaction_951 --json',
+        'channel message react 760000000001 951 --session session_1 --reaction 👍 --idempotency-key reaction_951 --json',
       ),
     )
 
@@ -247,7 +247,7 @@ describe('channel commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({reaction: '👍'}),
       method: 'POST',
-      url: '/api/session_1/channels/120363%40newsletter/messages/951/reaction',
+      url: '/messaging/session_1/channels/760000000001/messages/951/reaction',
     })
   })
 
@@ -256,7 +256,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        `channel message react 120363@newsletter 951 --session session_1 --reaction ${'👍'.repeat(9)} --json`,
+        `channel message react 760000000001 951 --session session_1 --reaction ${'👍'.repeat(9)} --json`,
       ),
     )
 
@@ -275,7 +275,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel live-updates subscribe 120363@newsletter --session session/main --idempotency-key live_1',
+        'channel live-updates subscribe 760000000001 --session session/main --idempotency-key live_1',
       ),
     )
 
@@ -287,7 +287,7 @@ describe('channel commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'POST',
-      url: '/api/session%2Fmain/channels/120363%40newsletter/live-updates',
+      url: '/messaging/session%2Fmain/channels/760000000001/live-updates',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('live_1')
   })
@@ -306,7 +306,7 @@ describe('channel commands', () => {
 
       const result = await apiKeyEnvironment(() =>
         runCommand(
-          `channel ${action} 120363@newsletter --session session_1 --idempotency-key ${action}_1 --json`,
+          `channel ${action} 760000000001 --session session_1 --idempotency-key ${action}_1 --json`,
         ),
       )
 
@@ -318,7 +318,7 @@ describe('channel commands', () => {
       expect(server.requests[0]).toMatchObject({
         body: '',
         method: 'POST',
-        url: `/api/session_1/channels/120363%40newsletter/${action}`,
+        url: `/messaging/session_1/channels/760000000001/${action}`,
       })
       expect(server.requests[0]?.headers['idempotency-key']).toBe(`${action}_1`)
     },
@@ -328,7 +328,8 @@ describe('channel commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -353,7 +354,7 @@ function channel() {
   return {
     description: 'Product news',
     followers: 42,
-    lid: '120363@newsletter',
+    id: '760000000001',
     muted: false,
     name: 'Polymorfa updates',
     preview: false,
@@ -363,9 +364,11 @@ function channel() {
 
 function channelMessage() {
   return {
-    id: 'message_951',
+    id: '760000000951',
+    whatsapp_id: 'message_951',
+    conversation: {id: '760000000001'},
     reactionCounts: {'👍': 2},
-    serverId: 951,
+    position: 951,
     text: 'A new release is available.',
     timestamp: '2026-08-20T12:00:00.000Z',
     type: 'text',
@@ -375,9 +378,11 @@ function channelMessage() {
 
 function withoutUndefinedText() {
   return {
-    id: 'message_951',
+    id: '760000000951',
+    whatsapp_id: 'message_951',
+    conversation: {id: '760000000001'},
     reactionCounts: {'👍': 2},
-    serverId: 951,
+    position: 951,
     timestamp: '2026-08-20T12:00:00.000Z',
     type: 'text',
     views: 10,

@@ -5,7 +5,10 @@ import {labelItems, listChatLabels} from '../../../services/labels.js'
 
 export default class LabelChatList extends BaseCommand {
   static override args = {
-    chat: Args.string({description: 'Chat or group JID.', required: true}),
+    chat: Args.string({
+      description: 'Polymorfa conversation ID.',
+      required: true,
+    }),
   }
 
   static override description = 'List the labels assigned to a chat.'

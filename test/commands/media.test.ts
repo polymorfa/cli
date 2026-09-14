@@ -41,7 +41,7 @@ describe('media commands', () => {
       data: mediaInfo(),
       metadata: {attempts: 1, requestId: 'req_media_info', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/api/media/media%2F1/info')
+    expect(server.requests[0]?.url).toBe('/messaging/media/media%2F1/info')
   })
 
   test('rejects a client token before a Messaging media request', async () => {
@@ -98,8 +98,8 @@ describe('media commands', () => {
       Buffer.from([0x89, 0x50, 0x4e, 0x47]),
     )
     expect(server.requests.map(({url}) => url)).toEqual([
-      '/api/media/media%2F1/info',
-      '/api/media/media%2F1',
+      '/messaging/media/media%2F1/info',
+      '/messaging/media/media%2F1',
     ])
   })
 
@@ -196,7 +196,7 @@ describe('media commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'POST',
-      url: '/api/media/media%2F1/download-and-save',
+      url: '/messaging/media/media%2F1/download-and-save',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('persist_1')
   })
@@ -205,7 +205,8 @@ describe('media commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

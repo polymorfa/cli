@@ -1,4 +1,5 @@
 import {Flags} from '@oclif/core'
+import {conversationReference} from '../../services/conversation.js'
 
 import {BaseCommand} from '../../base-command.js'
 import {setMessageTyping} from '../../services/messages.js'
@@ -9,7 +10,10 @@ export default class MessageTyping extends BaseCommand {
   static override description = 'Set the typing state for a chat.'
 
   static override flags = {
-    chat: Flags.string({description: 'Chat or group JID.', required: true}),
+    chat: Flags.string({
+      description: 'Conversation ID, E.164 phone number, or BSUID.',
+      required: true,
+    }),
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this typing update.',
     }),
@@ -29,7 +33,7 @@ export default class MessageTyping extends BaseCommand {
     const result = await setMessageTyping(
       await this.messagingClient(flags),
       flags.session,
-      {chatId: flags.chat, state: flags.state},
+      {conversation: conversationReference(flags.chat), state: flags.state},
       flags['idempotency-key'] === undefined
         ? {}
         : {idempotencyKey: flags['idempotency-key']},

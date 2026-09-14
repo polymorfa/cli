@@ -3,9 +3,8 @@ import {
   type ApiKeyDeactivation,
   type AuditLog,
   type ListAuditLogsParams,
-  type ManagementOperation,
   type OrganizationMember,
-  type PlatformClient,
+  type Client as PlatformClient,
   PolymorfaValidationError,
   type ProjectToken,
   type RequestOptions,
@@ -16,9 +15,12 @@ import {
   type SessionBatchRemoveResult,
   type SessionBatchRequest,
   type SessionBatchStopResult,
-  type UpdateWidgetSettingsRequest,
-  type WidgetSettings,
+  type UpdateQuickLinkSettingsInput,
+  type OrganizationQuickLinkSettings,
+  type ProjectQuickLinkSettings,
 } from '@polymorfa/sdk'
+
+type WidgetSettings = OrganizationQuickLinkSettings | ProjectQuickLinkSettings
 
 export interface PlatformResult<T> {
   readonly data: T
@@ -90,14 +92,6 @@ export async function acknowledgeSecurityIncident(
   return result(response.data.data, response.metadata)
 }
 
-export async function viewPlatformOperation(
-  client: PlatformClient,
-  operationId: string,
-): Promise<PlatformResult<ManagementOperation>> {
-  const response = await client.operations.retrieve(operationId)
-  return result(response.data.data, response.metadata)
-}
-
 export async function listProjectTokens(
   client: PlatformClient,
   projectId: string,
@@ -110,10 +104,10 @@ export async function viewWidgetSettings(
   client: PlatformClient,
   projectId?: string,
 ): Promise<PlatformResult<WidgetSettings | null>> {
-  const response = await client.widgetSettings.retrieve(
-    projectId === undefined ? {} : {projectId},
-  )
-  return result(response.data.data, response.metadata)
+  const response = await (
+    projectId === undefined ? client : client.project(projectId)
+  ).quickLinkSettings.retrieve()
+  return result(response.data, response.metadata)
 }
 
 export async function updateWidgetSettings(
@@ -122,11 +116,10 @@ export async function updateWidgetSettings(
   projectId?: string,
   options: RequestOptions = {},
 ): Promise<PlatformResult<WidgetSettings>> {
-  const response = await client.widgetSettings.update(
-    widgetUpdate(input, projectId),
-    options,
-  )
-  return result(response.data.data, response.metadata)
+  const response = await (
+    projectId === undefined ? client : client.project(projectId)
+  ).quickLinkSettings.update(widgetUpdate(input), options)
+  return result(response.data, response.metadata)
 }
 
 export async function stopSessions(
@@ -224,28 +217,6 @@ export function renderSecurityIncidents(
     .join('\n')
 }
 
-export function renderPlatformOperation(
-  operation: ManagementOperation,
-): string {
-  return [
-    `ID\t${operation.id}`,
-    `Kind\t${operation.kind}`,
-    `Status\t${operation.status}`,
-    `Resource\t${operation.resourceType}\t${operation.resourceId}`,
-    ...(operation.projectId === null
-      ? []
-      : [`Project\t${operation.projectId}`]),
-    ...(operation.progressCode === null
-      ? []
-      : [`Progress\t${operation.progressCode}`]),
-    ...(operation.failureCode === null
-      ? []
-      : [`Failure\t${operation.failureCode}`]),
-    `Created\t${operation.createdAt}`,
-    `Updated\t${operation.updatedAt}`,
-  ].join('\n')
-}
-
 export function renderProjectTokens(tokens: readonly ProjectToken[]): string {
   if (tokens.length === 0) return 'No project tokens found.'
   return tokens
@@ -274,16 +245,14 @@ export function renderWidgetSettings(
     `ID\t${settings.id}`,
     `Scope\t${settings.projectId ?? 'organization defaults'}`,
     `Enabled\t${settings.enabled}`,
-    `Modes\t${settings.modesAllowed.join(', ')}`,
     `Methods\t${settings.methods?.join(', ') ?? 'default'}`,
     `Theme\t${settings.theme}`,
     `Business name\t${settings.businessName ?? ''}`,
-    `Allowed origins\t${settings.allowedOrigins.join(', ')}`,
     `Redirect URIs\t${settings.allowedRedirectUris.join(', ')}`,
     `Hide watermark\t${settings.hideWatermark}`,
     `Shape\t${settings.shape ?? 'default'}`,
     `Radius\t${settings.radiusPx ?? 'default'}`,
-    `QR logo\t${settings.qrLogoMode}`,
+    `Logo\t${settings.logoMode}`,
     `History sync\t${settings.historySync}`,
   ].join('\n')
 }
@@ -317,10 +286,7 @@ function timestamp(value: number): string {
   return new Date(milliseconds).toISOString()
 }
 
-function widgetUpdate(
-  input: unknown,
-  projectId?: string,
-): UpdateWidgetSettingsRequest {
+function widgetUpdate(input: unknown): UpdateQuickLinkSettingsInput {
   if (!isRecord(input)) {
     throw new PolymorfaValidationError(
       'Widget input must contain one JSON object.',
@@ -336,7 +302,6 @@ function widgetUpdate(
 
   return {
     ...input,
-    ...(projectId === undefined ? {} : {projectId}),
   }
 }
 

@@ -1,4 +1,5 @@
 import {Args, Flags} from '@oclif/core'
+import {conversationReference} from '../../services/conversation.js'
 
 import {BaseCommand} from '../../base-command.js'
 import {setMessageStar} from '../../services/messages.js'
@@ -11,7 +12,10 @@ export default class MessageStar extends BaseCommand {
   static override description = 'Star or unstar a message.'
 
   static override flags = {
-    chat: Flags.string({description: 'Chat or group JID.', required: true}),
+    chat: Flags.string({
+      description: 'Conversation ID, E.164 phone number, or BSUID.',
+      required: true,
+    }),
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this star update.',
     }),
@@ -27,7 +31,11 @@ export default class MessageStar extends BaseCommand {
     const result = await setMessageStar(
       await this.messagingClient(flags),
       flags.session,
-      {chatId: flags.chat, messageId: args.message, star: !flags.remove},
+      {
+        conversation: conversationReference(flags.chat),
+        id: args.message,
+        star: !flags.remove,
+      },
       flags['idempotency-key'] === undefined
         ? {}
         : {idempotencyKey: flags['idempotency-key']},

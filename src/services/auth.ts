@@ -1,7 +1,7 @@
 import {
   PolymorfaConfigurationError,
   PolymorfaNotFoundError,
-  validatePlatformApiKey,
+  validateOrganizationApiKey,
 } from '@polymorfa/sdk'
 
 import {
@@ -54,7 +54,7 @@ export class AuthService {
     readonly profile: string
   }): Promise<ProfileSummary> {
     assertProfileName(input.profile)
-    const apiKey = validatePlatformApiKey(input.apiKey.trim())
+    const apiKey = validateOrganizationApiKey(input.apiKey.trim())
     const config = await this.profiles.load()
     const previous = config.profiles[input.profile]
     const previousAccount = previous?.credential.account
@@ -133,7 +133,7 @@ export class AuthService {
     let credentialFormatValid = false
     if (credential !== undefined) {
       try {
-        validatePlatformApiKey(credential)
+        validateOrganizationApiKey(credential)
         credentialFormatValid = true
       } catch {
         credentialFormatValid = false

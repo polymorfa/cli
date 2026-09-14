@@ -28,8 +28,8 @@ export default class BusinessCollectionList extends BaseCommand {
       max: 100,
       min: 1,
     }),
-    jid: Flags.string({
-      description: 'Business account user or LID JID.',
+    id: Flags.string({
+      description: 'Polymorfa business user ID.',
       required: true,
     }),
     session: Flags.string({
@@ -49,7 +49,7 @@ export default class BusinessCollectionList extends BaseCommand {
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
       flags.session,
       {
-        jid: flags.jid,
+        id: flags.id,
         ...(flags.after === undefined ? {} : {after: flags.after}),
         ...(flags['collection-limit'] === undefined
           ? {}

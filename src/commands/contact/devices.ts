@@ -5,10 +5,13 @@ import {listContactDevices} from '../../services/contacts.js'
 
 export default class ContactDevices extends BaseCommand {
   static override args = {
-    contact: Args.string({description: 'Contact LID or JID.', required: true}),
+    contact: Args.string({
+      description: 'Polymorfa contact ID.',
+      required: true,
+    }),
   }
 
-  static override description = 'List a contact’s linked-device JIDs.'
+  static override description = 'List a contact’s linked devices.'
 
   static override flags = {
     session: Flags.string({

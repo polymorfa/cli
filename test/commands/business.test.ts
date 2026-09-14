@@ -57,7 +57,9 @@ describe('business commands', () => {
         status: 200,
       },
     })
-    expect(server.requests[0]?.url).toBe('/api/session%2Fmain/business/profile')
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/session%2Fmain/business/profile',
+    )
   })
 
   test('updates structured profile fields from one bounded JSON input', async () => {
@@ -93,7 +95,7 @@ describe('business commands', () => {
     })
     expect(server.requests[0]).toMatchObject({
       method: 'PATCH',
-      url: '/api/session_1/business/profile',
+      url: '/messaging/session_1/business/profile',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('profile_1')
   })
@@ -123,12 +125,12 @@ describe('business commands', () => {
       base64: '/9j/2Q==',
     })
     expect(server.requests[0]?.url).toBe(
-      '/api/session%2Fmain/business/profile/cover-photo',
+      '/messaging/session%2Fmain/business/profile/cover-photo',
     )
     expect(deleteResult.error).toBeUndefined()
     expect(server.requests[1]).toMatchObject({
       method: 'DELETE',
-      url: '/api/session%2Fmain/business/profile/cover-photo/cover%2F1',
+      url: '/messaging/session%2Fmain/business/profile/cover-photo/cover%2F1',
     })
   })
 
@@ -139,13 +141,13 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'business catalog view --session session_1 --jid shop@lid --after cursor_1 --limit 25 --width 320 --height 240 --json',
+        'business catalog view --session session_1 --id 750000000001 --after cursor_1 --limit 25 --width 320 --height 240 --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/business/catalog?jid=shop%40lid&after=cursor_1&limit=25&width=320&height=240',
+      '/messaging/session_1/business/catalog?id=750000000001&after=cursor_1&limit=25&width=320&height=240',
     )
   })
 
@@ -169,13 +171,13 @@ describe('business commands', () => {
     expect(createResult.error).toBeUndefined()
     expect(server.requests[0]).toMatchObject({
       method: 'POST',
-      url: '/api/session_1/business/catalog',
+      url: '/messaging/session_1/business/catalog',
     })
     expect(cartResult.error).toBeUndefined()
     expect(server.requests[1]).toMatchObject({
       body: JSON.stringify({enabled: false}),
       method: 'PATCH',
-      url: '/api/session_1/business/catalog/cart',
+      url: '/messaging/session_1/business/catalog/cart',
     })
   })
 
@@ -184,13 +186,13 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'business product view product/1 --session session/main --jid shop@lid --json',
+        'business product view product/1 --session session/main --id 750000000001 --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/api/session%2Fmain/business/products/product%2F1?jid=shop%40lid',
+      '/messaging/session%2Fmain/business/products/product%2F1?id=750000000001',
     )
   })
 
@@ -210,7 +212,7 @@ describe('business commands', () => {
     )
     expect(server.requests[0]).toMatchObject({
       method: 'POST',
-      url: '/api/session_1/business/products',
+      url: '/messaging/session_1/business/products',
     })
   })
 
@@ -283,12 +285,12 @@ describe('business commands', () => {
     expect(replaceResult.error).toBeUndefined()
     expect(server.requests[0]).toMatchObject({
       method: 'PUT',
-      url: '/api/session_1/business/products/product%2F1',
+      url: '/messaging/session_1/business/products/product%2F1',
     })
     expect(deleteResult.error).toBeUndefined()
     expect(server.requests[1]).toMatchObject({
       method: 'DELETE',
-      url: '/api/session_1/business/products/product%2F1',
+      url: '/messaging/session_1/business/products/product%2F1',
     })
   })
 
@@ -313,13 +315,13 @@ describe('business commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({hidden: true}),
       method: 'PATCH',
-      url: '/api/session_1/business/products/product_1/visibility',
+      url: '/messaging/session_1/business/products/product_1/visibility',
     })
     expect(appealResult.error).toBeUndefined()
     expect(server.requests[1]).toMatchObject({
       body: JSON.stringify({reason: 'Please review'}),
       method: 'POST',
-      url: '/api/session_1/business/products/product_1/appeal',
+      url: '/messaging/session_1/business/products/product_1/appeal',
     })
   })
 
@@ -330,13 +332,13 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'business collection list --session session_1 --jid shop@lid --after next_1 --collection-limit 10 --item-limit 40 --width 128 --height 96 --json',
+        'business collection list --session session_1 --id 750000000001 --after next_1 --collection-limit 10 --item-limit 40 --width 128 --height 96 --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/business/collections?jid=shop%40lid&after=next_1&collectionLimit=10&itemLimit=40&width=128&height=96',
+      '/messaging/session_1/business/collections?id=750000000001&after=next_1&collectionLimit=10&itemLimit=40&width=128&height=96',
     )
   })
 
@@ -345,13 +347,13 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'business collection view collection/1 --session session_1 --jid shop@lid --after product_cursor --limit 20 --width 256 --height 256 --json',
+        'business collection view collection/1 --session session_1 --id 750000000001 --after product_cursor --limit 20 --width 256 --height 256 --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/business/collections/collection%2F1?jid=shop%40lid&after=product_cursor&limit=20&width=256&height=256',
+      '/messaging/session_1/business/collections/collection%2F1?id=750000000001&after=product_cursor&limit=20&width=256&height=256',
     )
   })
 
@@ -389,7 +391,7 @@ describe('business commands', () => {
         productIds: ['product_1', 'product_2'],
       }),
       method: 'POST',
-      url: '/api/session_1/business/collections',
+      url: '/messaging/session_1/business/collections',
     })
     expect(updateResult.error).toBeUndefined()
     expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
@@ -399,7 +401,7 @@ describe('business commands', () => {
     })
     expect(server.requests[1]).toMatchObject({
       method: 'PATCH',
-      url: '/api/session_1/business/collections/collection_1',
+      url: '/messaging/session_1/business/collections/collection_1',
     })
   })
 
@@ -446,7 +448,7 @@ describe('business commands', () => {
     expect(deleteResult.error).toBeUndefined()
     expect(server.requests[0]).toMatchObject({
       method: 'DELETE',
-      url: '/api/session_1/business/collections/collection%2F1',
+      url: '/messaging/session_1/business/collections/collection%2F1',
     })
     expect(reorderResult.error).toBeUndefined()
     expect(server.requests[1]).toMatchObject({
@@ -454,11 +456,11 @@ describe('business commands', () => {
         moves: [{collectionId: 'collection_1', fromIndex: 0, toIndex: 1}],
       }),
       method: 'POST',
-      url: '/api/session_1/business/collections/reorder',
+      url: '/messaging/session_1/business/collections/reorder',
     })
     expect(appealResult.error).toBeUndefined()
     expect(server.requests[2]?.url).toBe(
-      '/api/session_1/business/collections/collection%2F1/appeal',
+      '/messaging/session_1/business/collections/collection%2F1/appeal',
     )
   })
 
@@ -475,7 +477,7 @@ describe('business commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({token: 'event_token'}),
       method: 'POST',
-      url: '/api/session%2Fmain/business/orders/order%2F1/lookup',
+      url: '/messaging/session%2Fmain/business/orders/order%2F1/lookup',
     })
   })
 
@@ -496,12 +498,14 @@ describe('business commands', () => {
     )
 
     expect(viewResult.error).toBeUndefined()
-    expect(server.requests[0]?.url).toBe('/api/session_1/business/compliance')
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/session_1/business/compliance',
+    )
     expect(replaceResult.error).toBeUndefined()
     expect(server.requests[1]).toMatchObject({
       body: JSON.stringify(compliance()),
       method: 'PUT',
-      url: '/api/session_1/business/compliance',
+      url: '/messaging/session_1/business/compliance',
     })
   })
 
@@ -524,7 +528,7 @@ describe('business commands', () => {
 
       expect(result.error).toBeUndefined()
       expect(server.requests[0]?.url).toBe(
-        `/api/session_1/business/${endpoint}`,
+        `/messaging/session_1/business/${endpoint}`,
       )
     },
   )
@@ -540,7 +544,8 @@ describe('business commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -570,7 +575,7 @@ function businessProfile() {
     email: 'shop@example.com',
     hours: [],
     hoursTimeZone: 'Europe/Zurich',
-    jid: 'shop@lid',
+    id: '750000000001',
     options: {},
     websites: ['https://example.com'],
   }

@@ -102,13 +102,13 @@ export async function markChannelMessageViewed(
   client: MessagingClient,
   session: string,
   channel: string,
-  serverId: string,
+  messageId: string,
   options: RequestOptions = {},
 ): Promise<ChannelResult<MarkChannelMessageViewedResponse>> {
   const response = await client.channels.markMessageViewed(
     session,
     channel,
-    parseServerId(serverId),
+    parseMessageId(messageId),
     options,
   )
   return result(response.data, response.metadata)
@@ -118,7 +118,7 @@ export async function reactToChannelMessage(
   client: MessagingClient,
   session: string,
   channel: string,
-  serverId: string,
+  messageId: string,
   reaction: string,
   options: RequestOptions = {},
 ): Promise<ChannelResult<ReactToChannelMessageResponse>> {
@@ -132,7 +132,7 @@ export async function reactToChannelMessage(
   const response = await client.channels.reactToMessage(
     session,
     channel,
-    parseServerId(serverId),
+    parseMessageId(messageId),
     {reaction},
     options,
   )
@@ -193,7 +193,7 @@ export function renderChannels(channels: readonly Channel[]): string {
   if (channels.length === 0) return 'No channels found.'
   return channels
     .map((channel) =>
-      [channel.lid ?? 'unknown', channel.name ?? 'Unnamed channel']
+      [channel.id ?? 'unknown', channel.name ?? 'Unnamed channel']
         .concat(
           channel.followers === undefined
             ? []
@@ -207,7 +207,7 @@ export function renderChannels(channels: readonly Channel[]): string {
 export function renderChannel(channel: Channel): string {
   const rows = [
     row('Name', channel.name),
-    row('ID', channel.lid),
+    row('ID', channel.id),
     row('Description', channel.description),
     row('Picture', channel.profileUrl),
     numberRow('Followers', channel.followers),
@@ -226,7 +226,7 @@ export function renderChannelMessages(
   return messages
     .map((message) =>
       [
-        String(message.serverId),
+        message.id,
         message.timestamp,
         message.type,
         `${message.views} views`,
@@ -238,23 +238,15 @@ export function renderChannelMessages(
     .join('\n')
 }
 
-function parseServerId(serverId: string): number {
-  if (!/^[1-9]\d*$/.test(serverId)) {
+function parseMessageId(messageId: string): string {
+  if (!/^[1-9]\d{0,18}$/.test(messageId)) {
     throw new PolymorfaConfigurationError(
-      'Message server ID must be a positive integer.',
-      'serverId',
+      'Message ID must be an opaque decimal string.',
+      'messageId',
     )
   }
 
-  const parsed = Number(serverId)
-  if (!Number.isSafeInteger(parsed)) {
-    throw new PolymorfaConfigurationError(
-      'Message server ID must be a positive safe integer.',
-      'serverId',
-    )
-  }
-
-  return parsed
+  return messageId
 }
 
 async function channelAction<T>(
