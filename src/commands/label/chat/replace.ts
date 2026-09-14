@@ -5,7 +5,10 @@ import {replaceChatLabels} from '../../../services/labels.js'
 
 export default class LabelChatReplace extends BaseCommand {
   static override args = {
-    chat: Args.string({description: 'Chat or group JID.', required: true}),
+    chat: Args.string({
+      description: 'Polymorfa conversation ID.',
+      required: true,
+    }),
   }
 
   static override description = "Replace a chat's complete label set."

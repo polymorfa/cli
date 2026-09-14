@@ -1,4 +1,5 @@
 import {Args, Flags} from '@oclif/core'
+import {conversationReference} from '../../services/conversation.js'
 
 import {BaseCommand} from '../../base-command.js'
 import {reactToMessage} from '../../services/messages.js'
@@ -11,7 +12,10 @@ export default class MessageReact extends BaseCommand {
   static override description = 'React to a message.'
 
   static override flags = {
-    chat: Flags.string({description: 'Chat or group JID.', required: true}),
+    chat: Flags.string({
+      description: 'Conversation ID, E.164 phone number, or BSUID.',
+      required: true,
+    }),
     emoji: Flags.string({description: 'Reaction emoji.', required: true}),
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this reaction.',
@@ -27,7 +31,11 @@ export default class MessageReact extends BaseCommand {
     const result = await reactToMessage(
       await this.messagingClient(flags),
       flags.session,
-      {chatId: flags.chat, messageId: args.message, reaction: flags.emoji},
+      {
+        conversation: conversationReference(flags.chat),
+        id: args.message,
+        reaction: flags.emoji,
+      },
       flags['idempotency-key'] === undefined
         ? {}
         : {idempotencyKey: flags['idempotency-key']},

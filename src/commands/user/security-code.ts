@@ -9,7 +9,7 @@ import {
 export default class UserSecurityCode extends BaseCommand {
   static override args = {
     user: Args.string({
-      description: 'Stable user ID in digits@lid form.',
+      description: 'Decimal Polymorfa user ID.',
       required: true,
     }),
   }

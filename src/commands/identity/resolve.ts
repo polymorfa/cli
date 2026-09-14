@@ -2,23 +2,20 @@ import {Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
 import {
-  renderResolvedLid,
-  resolveLid,
+  renderResolvedIdentity,
+  resolveIdentity,
 } from '../../services/session-identities.js'
 
-const IDENTITY_FLAGS = ['phone-number', 'id', 'lid', 'username']
+const IDENTITY_FLAGS = ['phone-number', 'id', 'username']
 
-export default class LidResolve extends BaseCommand {
-  static override description = 'Resolve one phone number, LID, or username.'
+export default class IdentityResolve extends BaseCommand {
+  static override description =
+    'Resolve one phone number, user ID, or username.'
 
   static override flags = {
     id: Flags.string({
-      description: 'Stable user ID in digits@lid form.',
+      description: 'Opaque Polymorfa user ID.',
       exclusive: IDENTITY_FLAGS.filter((name) => name !== 'id'),
-    }),
-    lid: Flags.string({
-      description: 'Deprecated alias for --id.',
-      exclusive: IDENTITY_FLAGS.filter((name) => name !== 'lid'),
     }),
     'phone-number': Flags.string({
       description: 'Phone digits with an optional leading plus sign.',
@@ -39,13 +36,14 @@ export default class LidResolve extends BaseCommand {
   }
 
   async run(): Promise<void> {
-    const {flags} = await this.parse(LidResolve)
-    const result = await resolveLid(
-      await this.messagingClient(flags, {serverApiKeyOnly: 'LID'}),
+    const {flags} = await this.parse(IdentityResolve)
+    const result = await resolveIdentity(
+      await this.messagingClient(flags, {
+        serverApiKeyOnly: 'identity resolution',
+      }),
       flags.session,
       {
         ...(flags.id === undefined ? {} : {id: flags.id}),
-        ...(flags.lid === undefined ? {} : {lid: flags.lid}),
         ...(flags['phone-number'] === undefined
           ? {}
           : {phoneNumber: flags['phone-number']}),
@@ -55,6 +53,6 @@ export default class LidResolve extends BaseCommand {
           : {usernameKey: flags['username-key']}),
       },
     )
-    this.writeValue(result, renderResolvedLid(result.data), flags)
+    this.writeValue(result, renderResolvedIdentity(result.data), flags)
   }
 }

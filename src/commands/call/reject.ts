@@ -14,7 +14,10 @@ export default class CallReject extends BaseCommand {
   static override description = 'Reject an incoming Linked Device call.'
 
   static override flags = {
-    from: Flags.string({description: 'Incoming caller JID.', required: true}),
+    from: Flags.string({
+      description: 'Incoming caller Polymorfa ID.',
+      required: true,
+    }),
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this call rejection.',
     }),

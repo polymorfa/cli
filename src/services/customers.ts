@@ -12,7 +12,7 @@ import {
   type CustomersStatus,
   type ListCustomerEventsParams,
   type ListCustomersParams,
-  type PlatformClient,
+  type Client as PlatformClient,
   PolymorfaConfigurationError,
   PolymorfaValidationError,
   type RequestOptions,

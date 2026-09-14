@@ -59,8 +59,10 @@ describe('auth commands', () => {
 
   test('logs in from stdin, lists profiles, and switches active profile', async () => {
     await withConfig(async () => {
-      const login = await withStdin('pmfa_test-key\n', async () =>
-        runCommand('auth login --with-api-key --profile work --json'),
+      const login = await withStdin(
+        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n',
+        async () =>
+          runCommand('auth login --with-api-key --profile work --json'),
       )
       expect(login.error).toBeUndefined()
       expect(JSON.parse(login.stdout)).toEqual({
@@ -81,8 +83,10 @@ describe('auth commands', () => {
 
   test('reports keyring availability and logs out only the selected profile', async () => {
     await withConfig(async () => {
-      await withStdin('pmfa_test-key\n', async () =>
-        runCommand('auth login --with-api-key --profile work --json'),
+      await withStdin(
+        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n',
+        async () =>
+          runCommand('auth login --with-api-key --profile work --json'),
       )
 
       const status = await runCommand('auth status --profile work --json')
@@ -105,7 +109,7 @@ describe('auth commands', () => {
   test('reports environment credential validation separately from remote exercise', async () => {
     await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_environment-key',
+        POLYMORFA_API_KEY: `pmfa_${'A'.repeat(72)}`,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
       async () => {

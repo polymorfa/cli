@@ -53,8 +53,8 @@ describe('Customer commands', () => {
     expect(status.error).toBeUndefined()
     expect(enable.error).toBeUndefined()
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      'GET /v1/projects/project%2F1/customers/status',
-      'POST /v1/projects/project%2F1/customers/enable',
+      'GET /platform/projects/project%2F1/customers/status',
+      'POST /platform/projects/project%2F1/customers/enable',
     ])
     expect(server.requests[1]?.headers['idempotency-key']).toBe('enable_1')
   })
@@ -75,7 +75,7 @@ describe('Customer commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/v1/customers?projectId=project%2F1&cursor=cursor%2F1&limit=20&search=Ada&status=active&isDefault=false&hasNumbers=true&needsAttention=false',
+      '/platform/customers?projectId=project%2F1&cursor=cursor%2F1&limit=20&search=Ada&status=active&isDefault=false&hasNumbers=true&needsAttention=false',
     )
     expect(JSON.parse(result.stdout)).toMatchObject({
       data: {
@@ -110,9 +110,9 @@ describe('Customer commands', () => {
     expect(viewed.error).toBeUndefined()
     expect(updated.error).toBeUndefined()
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      'POST /v1/customers',
-      'GET /v1/customers/customer%2F1?projectId=project%2F1',
-      'PATCH /v1/customers/customer%2F1',
+      'POST /platform/customers',
+      'GET /platform/customers/customer%2F1?projectId=project%2F1',
+      'PATCH /platform/customers/customer%2F1',
     ])
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       externalCustomerId: 'crm/1',
@@ -147,8 +147,8 @@ describe('Customer commands', () => {
     expect(archived.error).toBeUndefined()
     expect(restored.error).toBeUndefined()
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      'POST /v1/customers/customer%2F1/archive',
-      'POST /v1/customers/customer%2F1/restore',
+      'POST /platform/customers/customer%2F1/archive',
+      'POST /platform/customers/customer%2F1/restore',
     ])
     expect(
       server.requests.map(({headers}) => headers['idempotency-key']),
@@ -180,9 +180,9 @@ describe('Customer commands', () => {
     expect(events.error).toBeUndefined()
     expect(links.error).toBeUndefined()
     expect(server.requests.map(({url}) => url)).toEqual([
-      '/v1/customers/customer%2F1/numbers?projectId=project%2F1',
-      '/v1/customers/customer%2F1/events?projectId=project%2F1&limit=25',
-      '/v1/customers/customer%2F1/pairing-links?projectId=project%2F1',
+      '/platform/customers/customer%2F1/numbers?projectId=project%2F1',
+      '/platform/customers/customer%2F1/events?projectId=project%2F1&limit=25',
+      '/platform/customers/customer%2F1/pairing-links?projectId=project%2F1',
     ])
   })
 
@@ -213,9 +213,9 @@ describe('Customer commands', () => {
     expect(revoked.error).toBeUndefined()
     expect(transferred.error).toBeUndefined()
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      'POST /v1/customers/customer%2F1/pairing-links',
-      'DELETE /v1/customers/customer%2F1/pairing-links/link%2F1?projectId=project%2F1',
-      'POST /v1/customers/customer%2F1/numbers/session%2F1/transfer',
+      'POST /platform/customers/customer%2F1/pairing-links',
+      'DELETE /platform/customers/customer%2F1/pairing-links/link%2F1?projectId=project%2F1',
+      'POST /platform/customers/customer%2F1/numbers/session%2F1/transfer',
     ])
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       expectedPhone: '+15551234567',
@@ -256,7 +256,8 @@ describe('Customer commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

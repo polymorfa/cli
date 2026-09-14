@@ -3,7 +3,7 @@ import {createAuthService} from '../../config/auth-service.js'
 import {
   PolymorfaConfigurationError,
   validateMessagingCredential,
-  validatePlatformApiKey,
+  validateOrganizationApiKey,
 } from '@polymorfa/sdk'
 
 export default class AuthStatus extends BaseCommand {
@@ -59,7 +59,7 @@ function environmentStatus(
     )
   }
 
-  if (apiKey !== undefined) validatePlatformApiKey(apiKey)
+  if (apiKey !== undefined) validateOrganizationApiKey(apiKey)
   if (clientToken !== undefined) {
     validateMessagingCredential({type: 'clientToken', value: clientToken})
   }

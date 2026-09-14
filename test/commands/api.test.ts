@@ -32,7 +32,8 @@ describe('api', () => {
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -52,7 +53,7 @@ describe('api', () => {
       url: '/v1/projects',
     })
     expect(server.requests[0]?.headers.authorization).toBe(
-      'Bearer pmfa_test-key',
+      'Bearer pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
     )
   })
 
@@ -64,7 +65,8 @@ describe('api', () => {
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -93,7 +95,8 @@ describe('api', () => {
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -115,7 +118,8 @@ describe('api', () => {
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -135,14 +139,18 @@ describe('api', () => {
 
   test('redacts credentials from API errors and preserves the request ID', async () => {
     server = await startHttpServer({
-      body: {error: 'Invalid API key pmfa_test-key.'},
+      body: {
+        error:
+          'Invalid API key pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA.',
+      },
       headers: {'request-id': 'req_auth'},
       status: 401,
     })
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -156,7 +164,9 @@ describe('api', () => {
       message: 'Invalid API key [REDACTED].',
       requestId: 'req_auth',
     })
-    expect(result.stderr).not.toContain('pmfa_test-key')
+    expect(result.stderr).not.toContain(
+      'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    )
     expect(result.stdout).toBe('')
   })
 
@@ -165,7 +175,8 @@ describe('api', () => {
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -188,7 +199,8 @@ describe('api', () => {
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -215,7 +227,8 @@ describe('api', () => {
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -248,7 +261,8 @@ describe('api', () => {
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -265,7 +279,8 @@ describe('api', () => {
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -284,7 +299,8 @@ describe('api', () => {
 
     const result = await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

@@ -34,7 +34,7 @@ export default class GroupParticipantsList extends BaseCommand {
                 : participant.isAdmin
                   ? 'admin'
                   : 'member'
-              return `${participant.lid}\t${participant.phoneNumber ?? '-'}\t${role}`
+              return `${participant.id}\t${participant.phoneNumber ?? '-'}\t${role}`
             })
             .join('\n')
     this.writeValue(result, human, flags)

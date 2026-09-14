@@ -5,7 +5,7 @@ import {subscribeToChatPresence} from '../../../services/presence.js'
 
 export default class PresenceChatSubscribe extends BaseCommand {
   static override args = {
-    chat: Args.string({description: 'User or LID JID.', required: true}),
+    chat: Args.string({description: 'Polymorfa user ID.', required: true}),
   }
 
   static override description =

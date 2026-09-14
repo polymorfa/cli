@@ -5,7 +5,10 @@ import {renderContactInfo, viewContactInfo} from '../../services/contacts.js'
 
 export default class ContactInfo extends BaseCommand {
   static override args = {
-    contact: Args.string({description: 'Contact LID or JID.', required: true}),
+    contact: Args.string({
+      description: 'Polymorfa contact ID.',
+      required: true,
+    }),
   }
 
   static override description = 'Get live WhatsApp metadata for a contact.'

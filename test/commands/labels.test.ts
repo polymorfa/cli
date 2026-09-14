@@ -30,7 +30,7 @@ describe('label commands', () => {
       data: [label()],
       metadata: {attempts: 1, requestId: 'req_labels', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/api/session%2Fmain/labels')
+    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/labels')
   })
 
   test('preserves the observation envelope only when requested', async () => {
@@ -52,7 +52,7 @@ describe('label commands', () => {
     expect(result.error).toBeUndefined()
     expect(JSON.parse(result.stdout)).toMatchObject({data: collection})
     expect(server.requests[0]?.url).toBe(
-      '/api/session_1/labels?includeObservation=true',
+      '/messaging/session_1/labels?includeObservation=true',
     )
   })
 
@@ -88,7 +88,7 @@ describe('label commands', () => {
     expect(JSON.parse(result.stdout)).toMatchObject({data: label()})
     expect(server.requests[0]).toMatchObject({
       method: 'POST',
-      url: '/api/session_1/labels',
+      url: '/messaging/session_1/labels',
     })
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       color: 5,
@@ -123,7 +123,7 @@ describe('label commands', () => {
     expect(result.error).toBeUndefined()
     expect(server.requests[0]).toMatchObject({
       method: 'PUT',
-      url: '/api/session_1/labels/label%2F1',
+      url: '/messaging/session_1/labels/label%2F1',
     })
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       color: 7,
@@ -153,7 +153,7 @@ describe('label commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'DELETE',
-      url: '/api/session_1/labels/label%2F1',
+      url: '/messaging/session_1/labels/label%2F1',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('delete_1')
   })
@@ -169,7 +169,7 @@ describe('label commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/api/session%2Fmain/labels/chats/120363%40g.us',
+      '/messaging/session%2Fmain/labels/chats/120363%40g.us',
     )
   })
 
@@ -186,7 +186,7 @@ describe('label commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({labels: ['priority', 'customer']}),
       method: 'PUT',
-      url: '/api/session_1/labels/chats/120363%40g.us',
+      url: '/messaging/session_1/labels/chats/120363%40g.us',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('replace_1')
   })
@@ -220,7 +220,8 @@ describe('label commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

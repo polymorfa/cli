@@ -8,7 +8,10 @@ import {
 
 export default class ContactBusinessProfile extends BaseCommand {
   static override args = {
-    contact: Args.string({description: 'Contact LID or JID.', required: true}),
+    contact: Args.string({
+      description: 'Polymorfa contact ID.',
+      required: true,
+    }),
   }
 
   static override description = 'Get a contact’s WhatsApp business profile.'

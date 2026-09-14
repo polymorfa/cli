@@ -41,7 +41,7 @@ describe('quick-reply commands', () => {
       },
     })
     expect(server.requests[0]?.url).toBe(
-      '/api/session%2Fmain/business/quick-replies',
+      '/messaging/session%2Fmain/business/quick-replies',
     )
   })
 
@@ -97,7 +97,7 @@ describe('quick-reply commands', () => {
     expect(JSON.parse(result.stdout)).toMatchObject({data: quickReply()})
     expect(server.requests[0]).toMatchObject({
       method: 'POST',
-      url: '/api/session_1/business/quick-replies',
+      url: '/messaging/session_1/business/quick-replies',
     })
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       count: 2,
@@ -142,7 +142,7 @@ describe('quick-reply commands', () => {
     expect(result.error).toBeUndefined()
     expect(server.requests[0]).toMatchObject({
       method: 'PUT',
-      url: '/api/session%2Fmain/business/quick-replies/reply%2F1',
+      url: '/messaging/session%2Fmain/business/quick-replies/reply%2F1',
     })
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       keywords: ['hours'],
@@ -175,7 +175,7 @@ describe('quick-reply commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'DELETE',
-      url: '/api/session_1/business/quick-replies/reply%2F1',
+      url: '/messaging/session_1/business/quick-replies/reply%2F1',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe(
       'delete_reply_1',
@@ -186,7 +186,8 @@ describe('quick-reply commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

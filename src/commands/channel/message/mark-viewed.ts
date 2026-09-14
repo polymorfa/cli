@@ -6,8 +6,8 @@ import {markChannelMessageViewed} from '../../../services/channels.js'
 export default class ChannelMessageMarkViewed extends BaseCommand {
   static override args = {
     channel: Args.string({description: 'Channel ID.', required: true}),
-    'server-id': Args.string({
-      description: 'Positive numeric message server ID.',
+    'message-id': Args.string({
+      description: 'Polymorfa message ID.',
       required: true,
     }),
   }
@@ -30,14 +30,14 @@ export default class ChannelMessageMarkViewed extends BaseCommand {
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
       flags.session,
       args.channel,
-      args['server-id'],
+      args['message-id'],
       flags['idempotency-key'] === undefined
         ? {}
         : {idempotencyKey: flags['idempotency-key']},
     )
     this.writeValue(
       result,
-      `Marked channel message ${args['server-id']} as viewed.`,
+      `Marked channel message ${args['message-id']} as viewed.`,
       flags,
     )
   }

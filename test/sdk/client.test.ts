@@ -1,7 +1,7 @@
 import {
   isEvent,
   MessagingClient,
-  PlatformClient,
+  Client as PlatformClient,
   RawClient,
   type WebhookEvent,
 } from '@polymorfa/sdk'
@@ -17,7 +17,11 @@ describe('createRawClient', () => {
   test('returns the public Platform raw client', () => {
     const client = createRawClient({
       surface: 'platform',
-      credential: {type: 'apiKey', value: 'pmfa_test-key'},
+      credential: {
+        type: 'apiKey',
+        value:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
     })
 
     expect(client).toBeInstanceOf(RawClient)
@@ -38,26 +42,36 @@ describe('createRawClient', () => {
         surface: 'platform',
         credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
       }),
-    ).toThrow('Platform server API key must use the pmfa_ prefix.')
+    ).toThrow(
+      'Client and project tokens cannot be used as organization server API keys.',
+    )
   })
 
   test('creates a typed Messaging client with session pairing and operation polling', () => {
     const client = createMessagingClient({
       surface: 'messaging',
-      credential: {type: 'apiKey', value: 'pmfa_test-key'},
+      credential: {
+        type: 'apiKey',
+        value:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
       timeoutMs: 1234,
     })
 
     expect(client).toBeInstanceOf(MessagingClient)
     expect(client.sessions).toHaveProperty('qr')
     expect(client.sessions).toHaveProperty('requestPairingCode')
-    expect(client.operations).toHaveProperty('retrieve')
+    expect(client).not.toHaveProperty('operations')
   })
 
   test('creates a typed Platform client and rejects the wrong surface', () => {
     const client = createPlatformClient({
       surface: 'platform',
-      credential: {type: 'apiKey', value: 'pmfa_test-key'},
+      credential: {
+        type: 'apiKey',
+        value:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
     })
 
     expect(client).toBeInstanceOf(PlatformClient)
@@ -71,7 +85,11 @@ describe('createRawClient', () => {
     expect(() =>
       createPlatformClient({
         surface: 'messaging',
-        credential: {type: 'apiKey', value: 'pmfa_test-key'},
+        credential: {
+          type: 'apiKey',
+          value:
+            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        },
       }),
     ).toThrow('requires the Platform API surface')
   })

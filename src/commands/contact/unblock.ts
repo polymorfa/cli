@@ -5,7 +5,10 @@ import {unblockContact} from '../../services/contacts.js'
 
 export default class ContactUnblock extends BaseCommand {
   static override args = {
-    contact: Args.string({description: 'Contact LID or JID.', required: true}),
+    contact: Args.string({
+      description: 'Polymorfa contact ID.',
+      required: true,
+    }),
   }
 
   static override description = 'Unblock a contact.'

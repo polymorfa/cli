@@ -5,7 +5,6 @@ import {
   type CampaignRequeueResult,
   type CreateCampaignRequest,
   type MessagingClient,
-  type Operation,
   PolymorfaValidationError,
   type RequestOptions,
   type ResponseMetadata,
@@ -131,14 +130,6 @@ export async function requeueCampaign(
   return result(response.data.data, response.metadata)
 }
 
-export async function viewMessagingOperation(
-  client: MessagingClient,
-  operationId: string,
-): Promise<CampaignResult<Operation>> {
-  const response = await client.operations.retrieve(operationId)
-  return result(response.data.data, response.metadata)
-}
-
 export function parseCampaignSchedule(value?: string): number | undefined {
   if (value === undefined) return undefined
 
@@ -206,32 +197,12 @@ export function renderCampaignOperation(
   return [
     `Accepted campaign ${action} as operation ${campaign.operationId}.`,
     `Campaign ${campaign.id} is ${campaign.status}.`,
-    `Poll with polymorfa operation view ${campaign.operationId} --surface messaging.`,
+    'Check the campaign status with polymorfa campaign view.',
   ].join('\n')
 }
 
 export function renderCampaignRequeue(result: CampaignRequeueResult): string {
   return `Requeued ${result.requeued} ${result.requeued === 1 ? 'recipient' : 'recipients'}.`
-}
-
-export function renderMessagingOperation(operation: Operation): string {
-  return [
-    `ID\t${operation.id}`,
-    `Kind\t${operation.kind}`,
-    `Status\t${operation.status}`,
-    `Resource\t${operation.resourceType}\t${operation.resourceId}`,
-    ...(operation.projectId === null
-      ? []
-      : [`Project\t${operation.projectId}`]),
-    ...(operation.progressCode === null
-      ? []
-      : [`Progress\t${operation.progressCode}`]),
-    ...(operation.failureCode === null
-      ? []
-      : [`Failure\t${operation.failureCode}`]),
-    `Created\t${operation.createdAt}`,
-    `Updated\t${operation.updatedAt}`,
-  ].join('\n')
 }
 
 function campaignInput(input: unknown): CreateCampaignRequest {

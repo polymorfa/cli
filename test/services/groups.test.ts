@@ -30,7 +30,7 @@ describe('group read services', () => {
       data: [group],
       metadata: {attempts: 1, requestId: 'req_groups', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/api/session%2Fmain/groups')
+    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/groups')
   })
 
   test('retrieves a group and its participants through encoded identifiers', async () => {
@@ -41,7 +41,7 @@ describe('group read services', () => {
       viewGroup(client(server.baseUrl), 'session/main', '123@g.us'),
     ).resolves.toMatchObject({data: group})
     expect(server.requests[0]?.url).toBe(
-      '/api/session%2Fmain/groups/123%40g.us',
+      '/messaging/session%2Fmain/groups/123%40g.us',
     )
 
     await server.close()
@@ -72,7 +72,11 @@ describe('group read services', () => {
 function client(baseUrl: string) {
   return createMessagingClient({
     baseUrl,
-    credential: {type: 'apiKey', value: 'pmfa_test-key'},
+    credential: {
+      type: 'apiKey',
+      value:
+        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    },
     surface: 'messaging',
   })
 }

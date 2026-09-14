@@ -3,8 +3,8 @@ import {
   type MessagingClient,
   type RejectCallResponse,
   type RequestOptions,
-  type ResolveLidParams,
-  type ResolveLidResult,
+  type ResolveIdentityParams,
+  type ResolveIdentityResult,
   type ResponseMetadata,
   type UserSecurityCode,
 } from '@polymorfa/sdk'
@@ -37,7 +37,7 @@ export async function rejectCall(
   }
   if (from.trim().length === 0) {
     throw new PolymorfaConfigurationError(
-      'Incoming caller JID cannot be empty.',
+      'Incoming caller Polymorfa ID cannot be empty.',
       'from',
     )
   }
@@ -51,18 +51,20 @@ export async function rejectCall(
   return result(response.data, response.metadata)
 }
 
-export async function resolveLid(
+export async function resolveIdentity(
   client: MessagingClient,
   session: string,
   input: {
     readonly id?: string
-    readonly lid?: string
     readonly phoneNumber?: string
     readonly username?: string
     readonly usernameKey?: string
   },
-): Promise<SessionIdentityResult<ResolveLidResult>> {
-  const response = await client.lids.resolve(session, lidParams(input))
+): Promise<SessionIdentityResult<ResolveIdentityResult>> {
+  const response = await client.identities.resolve(
+    session,
+    identityParams(input),
+  )
   return result(response.data.data, response.metadata)
 }
 
@@ -71,14 +73,17 @@ export async function viewUserSecurityCode(
   session: string,
   userId: string,
 ): Promise<SessionIdentityResult<UserSecurityCode>> {
-  validateLid(userId, 'User ID')
+  validateUserId(userId, 'User ID')
   const response = await client.users.getSecurityCode(session, userId)
   return result(response.data.data, response.metadata)
 }
 
-export function renderResolvedLid(identity: ResolveLidResult): string {
+export function renderResolvedIdentity(
+  identity: ResolveIdentityResult,
+): string {
   const rows = [
-    row('ID', identity.id ?? identity.lid),
+    row('ID', identity.id),
+    row('BSUID', identity.bsuid),
     row('Phone', identity.phoneNumber),
     row('Username', identity.username),
     identity.keyRequired === undefined
@@ -108,22 +113,18 @@ export function renderCallRejection(response: RejectCallResponse): string {
   return 'Rejected the incoming call.'
 }
 
-function lidParams(input: {
+function identityParams(input: {
   readonly id?: string
-  readonly lid?: string
   readonly phoneNumber?: string
   readonly username?: string
   readonly usernameKey?: string
-}): ResolveLidParams {
-  const identities = [
-    input.phoneNumber,
-    input.id,
-    input.lid,
-    input.username,
-  ].filter((value) => value !== undefined)
+}): ResolveIdentityParams {
+  const identities = [input.phoneNumber, input.id, input.username].filter(
+    (value) => value !== undefined,
+  )
   if (identities.length !== 1) {
     throw new PolymorfaConfigurationError(
-      'Provide exactly one of --phone-number, --id, --lid, or --username.',
+      'Provide exactly one of --phone-number, --id, or --username.',
       'identity',
     )
   }
@@ -139,12 +140,8 @@ function lidParams(input: {
     return {phoneNumber}
   }
   if (input.id !== undefined) {
-    validateLid(input.id, 'LID')
+    validateUserId(input.id, 'User ID')
     return {id: input.id}
-  }
-  if (input.lid !== undefined) {
-    validateLid(input.lid, 'LID')
-    return {lid: input.lid}
   }
 
   const username = input.username!
@@ -168,10 +165,10 @@ function lidParams(input: {
   }
 }
 
-function validateLid(value: string, label: string): void {
-  if (!/^\d+@lid$/.test(value)) {
+function validateUserId(value: string, label: string): void {
+  if (!/^[1-9]\d{0,18}$/.test(value)) {
     throw new PolymorfaConfigurationError(
-      `${label} must use the digits@lid form.`,
+      `${label} must be a decimal string.`,
       'id',
     )
   }

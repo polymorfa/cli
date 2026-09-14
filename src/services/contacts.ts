@@ -115,7 +115,7 @@ export function renderContacts(contacts: readonly Contact[]): string {
   if (contacts.length === 0) return 'No contacts found.'
   return contacts
     .map((contact) =>
-      [contact.lid, contact.name, contact.phoneNumber, contact.businessName]
+      [contact.id, contact.name, contact.phoneNumber, contact.businessName]
         .filter((value): value is string => value !== undefined)
         .join('\t'),
     )
@@ -127,7 +127,7 @@ export function renderContact(contact: Contact): string {
     row('Name', contact.name),
     row('Push name', contact.pushName),
     row('Business name', contact.businessName),
-    row('LID', contact.lid),
+    row('BSUID', contact.bsuid),
     row('ID', contact.id),
     row('Phone', contact.phoneNumber),
     row('Username', contact.username),
@@ -143,9 +143,9 @@ export function renderContactChecks(
   return checks
     .map((check) =>
       [
-        check.phoneNumber ?? check.id ?? check.lid ?? 'unknown',
+        check.phoneNumber ?? check.id ?? 'unknown',
         check.exists ? 'registered' : 'not registered',
-        check.lid,
+        check.id,
       ]
         .filter((value): value is string => value !== undefined)
         .join('\t'),
@@ -155,15 +155,14 @@ export function renderContactChecks(
 
 export function renderContactInfo(info: ContactUserInfo): string {
   return [
-    row('JID', info.jid),
-    row('LID', info.lid),
+    row('BSUID', info.bsuid),
     row('ID', info.id),
     row('Phone', info.phoneNumber),
     row('Username', info.username),
     row('Status', info.status),
     row('Picture ID', info.pictureId),
     row('Verified name', info.verifiedName),
-    ...info.devices.map((device) => `Device\t${device}`),
+    ...info.devices.map((device) => `Device\t${device.id}\t${device.device}`),
   ]
     .filter((value): value is string => value !== undefined)
     .join('\n')
@@ -171,7 +170,8 @@ export function renderContactInfo(info: ContactUserInfo): string {
 
 export function renderBusinessProfile(profile: BusinessProfile): string {
   return [
-    row('JID', profile.jid),
+    row('ID', profile.id),
+    row('BSUID', profile.bsuid),
     row('Description', profile.description),
     row('Address', profile.address),
     row('Email', profile.email),
@@ -194,7 +194,7 @@ export function renderBusinessProfile(profile: BusinessProfile): string {
 export function renderBlocklist(blocklist: ContactBlocklist): string {
   return [
     `Hash\t${blocklist.hash}`,
-    ...blocklist.jids.map((jid) => `Blocked\t${jid}`),
+    ...blocklist.contacts.map((contact) => `Blocked\t${contact.id}`),
   ].join('\n')
 }
 

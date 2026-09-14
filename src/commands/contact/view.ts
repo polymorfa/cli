@@ -5,7 +5,10 @@ import {renderContact, viewContact} from '../../services/contacts.js'
 
 export default class ContactView extends BaseCommand {
   static override args = {
-    contact: Args.string({description: 'Contact LID.', required: true}),
+    contact: Args.string({
+      description: 'Polymorfa contact ID.',
+      required: true,
+    }),
   }
 
   static override description = 'View stored contact data known to a session.'

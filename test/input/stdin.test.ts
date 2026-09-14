@@ -6,8 +6,14 @@ import {readSecretFromStdin} from '../../src/input/stdin.js'
 describe('readSecretFromStdin', () => {
   test('reads one trimmed secret without returning extra input', async () => {
     await expect(
-      readSecretFromStdin(Readable.from(['  pmfa_test-key\n'])),
-    ).resolves.toBe('pmfa_test-key')
+      readSecretFromStdin(
+        Readable.from([
+          '  pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n',
+        ]),
+      ),
+    ).resolves.toBe(
+      'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    )
   })
 
   test('rejects empty and oversized input', async () => {

@@ -30,7 +30,7 @@ describe('presence commands', () => {
     expect(result.stdout).toContain('Last sent\tavailable')
     expect(result.stdout).toContain('Authoritative\tno')
     expect(result.stdout).not.toContain('live')
-    expect(server.requests[0]?.url).toBe('/api/session%2Fmain/presence')
+    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/presence')
   })
 
   test('preserves self presence and response metadata as JSON', async () => {
@@ -69,7 +69,7 @@ describe('presence commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({presence: 'unavailable'}),
       method: 'POST',
-      url: '/api/session_1/presence',
+      url: '/messaging/session_1/presence',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('presence_1')
   })
@@ -122,7 +122,7 @@ describe('presence commands', () => {
       },
     })
     expect(server.requests[0]?.url).toBe(
-      '/api/session%2Fmain/presence/120363%40g.us',
+      '/messaging/session%2Fmain/presence/120363%40g.us',
     )
   })
 
@@ -172,7 +172,7 @@ describe('presence commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'POST',
-      url: '/api/session%2Fmain/presence/member%40lid/subscribe',
+      url: '/messaging/session%2Fmain/presence/member%40lid/subscribe',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe(
       'presence_sub_1',
@@ -183,7 +183,8 @@ describe('presence commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_test-key',
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

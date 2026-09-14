@@ -1,4 +1,5 @@
 import {Args, Flags} from '@oclif/core'
+import {conversationReference} from '../../services/conversation.js'
 
 import {BaseCommand} from '../../base-command.js'
 import {markMessageSeen} from '../../services/messages.js'
@@ -11,7 +12,10 @@ export default class MessageMarkSeen extends BaseCommand {
   static override description = 'Mark a message as seen.'
 
   static override flags = {
-    chat: Flags.string({description: 'Chat or group JID.', required: true}),
+    chat: Flags.string({
+      description: 'Conversation ID, E.164 phone number, or BSUID.',
+      required: true,
+    }),
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this seen receipt.',
     }),
@@ -26,7 +30,7 @@ export default class MessageMarkSeen extends BaseCommand {
     const result = await markMessageSeen(
       await this.messagingClient(flags),
       flags.session,
-      {chatId: flags.chat, messageId: args.message},
+      {conversation: conversationReference(flags.chat), id: args.message},
       flags['idempotency-key'] === undefined
         ? {}
         : {idempotencyKey: flags['idempotency-key']},
