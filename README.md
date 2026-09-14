@@ -101,9 +101,9 @@ explicit session:
 
 ```shell
 polymorfa group list --session session_123
-polymorfa group view 123@g.us --session session_123
-polymorfa group participants list 123@g.us --session session_123
-polymorfa group invite-link 123@g.us --session session_123
+polymorfa group view 750000000001 --session session_123
+polymorfa group participants list 750000000001 --session session_123
+polymorfa group invite-link 750000000001 --session session_123
 ```
 
 Add `--json` for complete resource data and response metadata. Group and
@@ -327,24 +327,24 @@ Channels are connected-session resources and require a server API key:
 
 ```shell
 polymorfa channel list --session session_123
-polymorfa channel view 120363000000000000@newsletter --session session_123
+polymorfa channel view 760000000001 --session session_123
 
 polymorfa channel create \
   --session session_123 \
   --name 'Product updates' \
   --description 'Release announcements'
 
-polymorfa channel message list 120363000000000000@newsletter \
+polymorfa channel message list 760000000001 \
   --session session_123 \
   --limit 25 \
   --before 951
 
-polymorfa channel message updates 120363000000000000@newsletter \
+polymorfa channel message updates 760000000001 \
   --session session_123 \
   --since 1787212800
 
 polymorfa channel live-updates subscribe \
-  120363000000000000@newsletter \
+  760000000001 \
   --session session_123
 ```
 
@@ -355,6 +355,8 @@ does not start a listener, socket, or watch process, and the API exposes no
 unsubscribe operation.
 
 Message actions are `channel message mark-viewed` and `channel message react`.
+Human output includes both the public message ID for actions and `position=N`
+for the numeric `--before` and `--after` pagination arguments.
 An empty reaction removes the caller's reaction. Channel-level actions are
 `follow`, `unfollow`, `mute`, and `unmute`. Mutations accept
 `--idempotency-key`, and deletion additionally requires `--yes`.

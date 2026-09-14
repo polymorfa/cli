@@ -227,6 +227,7 @@ export function renderChannelMessages(
     .map((message) =>
       [
         message.id,
+        `position=${message.position}`,
         message.timestamp,
         message.type,
         `${message.views} views`,

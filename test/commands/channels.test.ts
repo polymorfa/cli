@@ -151,6 +151,22 @@ describe('channel commands', () => {
     )
   })
 
+  test.each(['list', 'updates'])(
+    'keeps action ID and pagination position in human %s output',
+    async (command) => {
+      server = await startHttpServer({
+        body: {data: [channelMessage()], success: true},
+      })
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `channel message ${command} 760000000001 --session session_1`,
+        ),
+      )
+      expect(result.error).toBeUndefined()
+      expect(result.stdout).toContain('760000000951\tposition=951')
+    },
+  )
+
   test('maps update filters without inventing a returned cursor', async () => {
     server = await startHttpServer({
       body: {data: [{...channelMessage(), text: undefined}], success: true},
