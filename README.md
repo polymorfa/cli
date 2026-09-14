@@ -572,11 +572,8 @@ polymorfa campaign requeue campaign_123 \
 ```
 
 Launch, pause, resume, and stop return accepted durable work; they do not wait
-for the state transition. Poll the returned operation explicitly:
-
-```shell
-
-```
+for the state transition. Check the campaign with `polymorfa campaign view`.
+Operation inspection is console-only; the CLI has no operation-polling command.
 
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue

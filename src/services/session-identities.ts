@@ -61,7 +61,10 @@ export async function resolveIdentity(
     readonly usernameKey?: string
   },
 ): Promise<SessionIdentityResult<ResolveIdentityResult>> {
-  const response = await client.identities.resolve(session, lidParams(input))
+  const response = await client.identities.resolve(
+    session,
+    identityParams(input),
+  )
   return result(response.data.data, response.metadata)
 }
 
@@ -110,7 +113,7 @@ export function renderCallRejection(response: RejectCallResponse): string {
   return 'Rejected the incoming call.'
 }
 
-function lidParams(input: {
+function identityParams(input: {
   readonly id?: string
   readonly phoneNumber?: string
   readonly username?: string

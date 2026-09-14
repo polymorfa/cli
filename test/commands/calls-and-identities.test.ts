@@ -102,7 +102,7 @@ describe('call and identity commands', () => {
     )
   })
 
-  test('requires exactly one valid LID identity input before transport', async () => {
+  test('requires exactly one valid identity input before transport', async () => {
     server = await startHttpServer({body: {data: {}, success: true}})
 
     const result = await apiKeyEnvironment(() =>
