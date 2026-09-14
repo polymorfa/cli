@@ -83,6 +83,7 @@ describe('createRawClient', () => {
     expect(client.sessions).toHaveProperty('retrieve')
     expect(client.sessions).toHaveProperty('update')
     expect(client.sessions).toHaveProperty('quoteTierChange')
+    expect(client.sessions).toHaveProperty('retrieveTierChange')
     expect(client.organizations).not.toHaveProperty('update')
 
     expect(() =>

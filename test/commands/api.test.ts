@@ -14,6 +14,64 @@ describe('api', () => {
   let server: TestHttpServer | undefined
   const tempDirectories: string[] = []
 
+  test('preserves fractional prepaid balances in JSON output', async () => {
+    server = await startHttpServer({
+      body: {data: {balanceCents: 17.500001, preferredCurrency: 'USD'}},
+    })
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+      },
+      () => runCommand('api /platform/billing --surface platform --json'),
+    )
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      data: {data: {balanceCents: 17.500001}},
+    })
+    expect(server.requests).toHaveLength(1)
+  })
+
+  test('reports insufficient credit as payment required without retrying the operation', async () => {
+    server = await startHttpServer({
+      status: 402,
+      headers: {'request-id': 'req_billing'},
+      body: {
+        error: {
+          type: 'permission_error',
+          code: 'entitlement_required',
+          message:
+            'The account needs the required entitlement for this action.',
+          param: null,
+        },
+        data: null,
+        docs: 'https://docs.polymorfa.com/api/errors#entitlement-required',
+      },
+    })
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+      },
+      () =>
+        runCommand(
+          'api /platform/sessions/number/start --surface platform --method POST --json',
+        ),
+    )
+    expect(exitCode(result.error)).toBe(4)
+    expect(JSON.parse(result.stderr)).toMatchObject({
+      category: 'payment_required',
+      code: 'entitlement_required',
+      retryable: false,
+      requestId: 'req_billing',
+    })
+    expect(server.requests).toHaveLength(1)
+  })
+
   afterEach(async () => {
     await server?.close()
     server = undefined
