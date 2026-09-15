@@ -30,7 +30,7 @@
   "dependencies": {
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "github:polymorfa/sdks#a98d0a6afa10dd3dd09133e37e24448b9dd96c12"
+    "@polymorfa/sdk": "github:polymorfa/sdks#ff40750822975d0d67d030a3cb963d0d4e92b7b7"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
