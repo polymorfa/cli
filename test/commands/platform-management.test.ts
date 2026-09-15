@@ -51,6 +51,75 @@ describe('Platform management commands', () => {
     })
   })
 
+  test.each([
+    [],
+    {},
+    {unknown: true},
+    {set: []},
+    {set: {unknown: true}},
+    {set: {historySync: []}},
+    {set: {historySync: {mode: ['deliver']}}},
+    {set: {historySync: {requestFull: 'yes'}}},
+    {set: {observation: {presenceMode: 'project'}}},
+    {set: {observation: {unknown: 'off'}}},
+    {set: {hms: {enabled: false, region: 'br'}}},
+    {set: {hms: {enabled: true, region: 'BR', policy: 'short'}}},
+    {
+      set: {
+        hms: {enabled: true, region: 'br', policy: 'short', retentionDays: 90},
+      },
+    },
+    {set: {hms: {enabled: true, region: 'br', policy: 'enterprise_archive'}}},
+    {reset: 'hms'},
+    {reset: ['unknown']},
+    {reset: [{}]},
+    {set: {historySync: {mode: 'deliver'}}, reset: ['historySync']},
+    {
+      set: {observation: {labelMode: 'project'}},
+      reset: ['observation.labelMode'],
+    },
+  ])(
+    'rejects invalid nested configuration before HTTP: %j',
+    async (configuration) => {
+      server = await startHttpServer({body: {success: true, data: {}}})
+      const input = await jsonInput('invalid-configuration.json', {
+        revision: 0,
+        configuration,
+      })
+      const result = await platformEnvironment(() =>
+        runCommand(
+          `session configuration update support --input ${input} --json`,
+        ),
+      )
+      expect(result.error).toBeDefined()
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
+  test('sends validated nested overrides and non-overlapping resets unchanged', async () => {
+    server = await startHttpServer({body: {success: true, data: {}}})
+    const payload = {
+      revision: 3,
+      configuration: {
+        set: {
+          historySync: {mode: 'deliver'},
+          hms: {enabled: false},
+          observation: {presenceMode: 'cache', labelMode: 'project'},
+        },
+        reset: ['historySync.requestFull', 'observation.typingMode'],
+      },
+    }
+    const input = await jsonInput('configuration.json', payload)
+    const result = await platformEnvironment(() =>
+      runCommand(
+        `session configuration update support --input ${input} --json`,
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(server.requests).toHaveLength(1)
+    expect(JSON.parse(server.requests[0]!.body)).toEqual(payload)
+  })
+
   test('lists API-key metadata without implying that the scope mask is authoritative', async () => {
     server = await startHttpServer({
       body: {

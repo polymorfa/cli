@@ -1,10 +1,7 @@
 import {Args, Flags} from '@oclif/core'
-import {
-  PolymorfaConfigurationError,
-  type UpdateSessionRequest,
-} from '@polymorfa/sdk'
 import {readJsonInput} from '../../../api/request.js'
 import {BaseCommand} from '../../../base-command.js'
+import {parseSessionConfigurationUpdate} from '../../../services/session-configuration.js'
 
 export default class SessionConfigurationUpdate extends BaseCommand {
   static override description =
@@ -21,29 +18,12 @@ export default class SessionConfigurationUpdate extends BaseCommand {
   }
   async run(): Promise<void> {
     const {args, flags} = await this.parse(SessionConfigurationUpdate)
-    const input = await readJsonInput(flags.input)
-    if (!input || typeof input !== 'object' || Array.isArray(input))
-      throw new PolymorfaConfigurationError(
-        'Configuration update must be an object.',
-        'input',
-      )
-    const body = input as Record<string, unknown>
-    if (
-      Object.keys(body).some(
-        (key) => !['revision', 'configuration'].includes(key),
-      ) ||
-      !Number.isSafeInteger(body.revision) ||
-      Number(body.revision) < 0 ||
-      !body.configuration ||
-      typeof body.configuration !== 'object'
+    const input = parseSessionConfigurationUpdate(
+      await readJsonInput(flags.input),
     )
-      throw new PolymorfaConfigurationError(
-        'Expected a nonnegative revision and configuration.set/reset.',
-        'input',
-      )
     const response = await (
       await this.platformClient(flags)
-    ).sessions.update(args.session, input as UpdateSessionRequest)
+    ).sessions.update(args.session, input)
     this.writeValue(
       {data: response.data.data, metadata: response.metadata},
       'Configuration saved. Check application status for runtime acknowledgement.',

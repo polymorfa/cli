@@ -657,6 +657,7 @@ Page copy, appearance, legal links and callbacks belong in saved widget settings
 Free-tier real accounts must pair inside the authenticated Console.
 
 Session configuration uses Platform authority and requires a server API key.
+Updates reject unknown fields, invalid nested values, and fields listed in both `set` and `reset` before sending a request. Include at least one of `set` or `reset`; the API enforces permissions, consent, and storage eligibility.
 Inspect configuration with `polymorfa session configuration get <session>`.
 Update it with `polymorfa session configuration update <session> --input update.json`:
 
