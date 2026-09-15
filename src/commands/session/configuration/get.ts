@@ -10,7 +10,7 @@ export default class SessionConfigurationGet extends BaseCommand {
   async run(): Promise<void> {
     const {args, flags} = await this.parse(SessionConfigurationGet)
     const response = await (
-      await this.messagingClient(flags, {serverApiKeyOnly: 'Configuration'})
+      await this.platformClient(flags)
     ).sessions.retrieve(args.session)
     const data = response.data.data
     this.writeValue(

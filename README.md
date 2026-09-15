@@ -656,6 +656,7 @@ The request accepts `configuration` for connection, phone, history and test simu
 Page copy, appearance, legal links and callbacks belong in saved widget settings.
 Free-tier real accounts must pair inside the authenticated Console.
 
+Session configuration uses Platform authority and requires a server API key.
 Inspect configuration with `polymorfa session configuration get <session>`.
 Update it with `polymorfa session configuration update <session> --input update.json`:
 

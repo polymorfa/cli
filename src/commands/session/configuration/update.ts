@@ -42,7 +42,7 @@ export default class SessionConfigurationUpdate extends BaseCommand {
         'input',
       )
     const response = await (
-      await this.messagingClient(flags, {serverApiKeyOnly: 'Configuration'})
+      await this.platformClient(flags)
     ).sessions.update(args.session, input as UpdateSessionRequest)
     this.writeValue(
       {data: response.data.data, metadata: response.metadata},

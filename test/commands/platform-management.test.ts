@@ -23,6 +23,34 @@ describe('Platform management commands', () => {
     directory = undefined
   })
 
+  test('reads and updates session configuration using Platform authority', async () => {
+    server = await startHttpServer({
+      body: {success: true, data: {name: 'support', configuration: {}}},
+    })
+    const input = await jsonInput('configuration.json', {
+      revision: 2,
+      configuration: {reset: ['historySync.mode']},
+    })
+    const read = await platformEnvironment(() =>
+      runCommand('session configuration get support --json'),
+    )
+    expect(read.error).toBeUndefined()
+    const update = await platformEnvironment(() =>
+      runCommand(
+        `session configuration update support --input ${input} --json`,
+      ),
+    )
+    expect(update.error).toBeUndefined()
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/sessions/support',
+      'PUT /platform/sessions/support',
+    ])
+    expect(JSON.parse(server.requests[1]!.body)).toEqual({
+      revision: 2,
+      configuration: {reset: ['historySync.mode']},
+    })
+  })
+
   test('lists API-key metadata without implying that the scope mask is authoritative', async () => {
     server = await startHttpServer({
       body: {
