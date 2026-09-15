@@ -648,3 +648,39 @@ npm run verify
 The verification gate checks formatting, lint, strict TypeScript, tests,
 production build, npm package contents, and the production dependency audit on
 Node.js 20 and 22 in hosted CI.
+
+### Guided session creation and configuration
+
+Create real or simulated sessions with `polymorfa quicklink create --project <id> --input request.json`.
+The request accepts `configuration` for connection, phone, history and test simulation.
+Page copy, appearance, legal links and callbacks belong in saved widget settings.
+Free-tier real accounts must pair inside the authenticated Console.
+
+Inspect configuration with `polymorfa session configuration get <session>`.
+Update it with `polymorfa session configuration update <session> --input update.json`:
+
+```json
+{
+  "revision": 2,
+  "configuration": {
+    "set": {"historySync": {"mode": "deliver"}},
+    "reset": ["historySync.requestFull"]
+  }
+}
+```
+
+Use the revision from the preceding read. Reset removes an override so future defaults
+continue to apply. A saved update can remain pending until the runtime acknowledges it.
+The CLI does not offer direct session creation; QuickLinks preserve onboarding authority.
+
+Upload simulated history separately from configuration, then use the returned
+fixture ID in `configuration.testing.configuration.historyFixtureId`:
+
+```sh
+polymorfa testing history-fixture create --project PROJECT_ID --input history.json
+```
+
+The file contains `messages`, with up to 100 entries specifying `id`,
+`senderPhone`, `text`, `timestamp` (Unix seconds), and `fromMe`. Senders must be
+existing simulated numbers in the selected project. This command does not enable
+hosted message storage.
