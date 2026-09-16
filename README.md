@@ -64,33 +64,38 @@ An explicit `--profile <name>` takes precedence over environment credentials.
 
 ## QuickLinks
 
-Use a hosted QuickLink for the standard number-pairing flow. These commands
-accept either an organization API key or an exact-project token with
-`quicklink:manage`:
+A QuickLink is a persistent hosted link that connects one WhatsApp number to a
+new session in a project. Create one from a JSON request with an organization
+API key that has `quicklink:manage`:
 
 ```shell
 polymorfa quicklink create \
   --project 11111111-1111-4111-8111-111111111111 \
-  --method qr \
-  --method pairing \
-  --expires-in 900 \
-  --idempotency-key create-quicklink-1
+  --input quicklink.json
+```
 
+The request accepts `customerId`, `externalId`, and `configuration`. See
+[Guided session creation and configuration](#guided-session-creation-and-configuration)
+for the configuration fields.
+
+Inspect or cancel a link with an organization API key or an exact-project
+token that has `quicklink:manage`:
+
+```shell
 polymorfa quicklink view ql_123 \
   --project 11111111-1111-4111-8111-111111111111
 
 polymorfa quicklink cancel ql_123 \
   --project 11111111-1111-4111-8111-111111111111 \
-  --yes \
-  --idempotency-key cancel-quicklink-1
+  --yes
 ```
 
-Creation prints the short-lived hosted URL. Treat it as a credential and share
-it only with the person holding the phone. The CLI never retrieves direct
-session QR payloads or pairing codes. It can also set an allowed callback,
-business name, theme, accent, Customer, pre-filled phone, and history-sync
-policy. The API exposes no QuickLink list, recovery, or history operation, so
-the CLI does not synthesize them.
+Creation prints the hosted URL. Treat it as a credential and share it only with
+the person holding the phone. The CLI never retrieves direct session QR payloads
+or pairing codes. Cancel requires `--yes`, removes the pending session, and
+fails for a link that has already connected. The API does not accept an
+idempotency key for cancellation. The API exposes no QuickLink list, recovery,
+or history operation, so the CLI does not synthesize them.
 
 ## Customers
 
@@ -532,8 +537,8 @@ support for project credentials, client tokens, or Cloud API sessions.
 ## Platform access and security
 
 Organization server API keys can inspect the credential, membership, audit,
-ban, incident, durable-operation, and project-token metadata made available by
-the Platform API:
+ban, incident, saved QuickLink settings, and project-token metadata made
+available by the Platform API:
 
 ```shell
 polymorfa key list
@@ -544,6 +549,8 @@ polymorfa session-ban list --active
 polymorfa security-incident list
 polymorfa security-incident acknowledge incident_123
 polymorfa project-token list --project project_123
+polymorfa widget view --project project_123
+polymorfa widget update --project project_123 --input widget-patch.json
 polymorfa session stop session_1 session_2 --project project_123
 polymorfa session delete session_1 session_2 --project project_123 --yes
 ```
@@ -565,6 +572,13 @@ not exposed through server-key commands. The API also exposes no compatible
 API-key creation, token mint/revoke, incident detail, or cross-project token
 aggregate in this typed slice. The raw API command is not a credential-boundary
 bypass.
+
+Widget view returns `null` in JSON when no settings row has been saved. Update
+accepts one bounded JSON object from `--input`; the target project is selected
+separately with `--project` and cannot be hidden in that input. Omitting the
+project targets organization defaults. Widget logo fields are existing storage
+identifiers, not file, URL, base64, upload, or download operations. Widget
+access requires the `quicklink:manage` scope.
 
 Session stop and delete accept 1 through 100 unique UUIDs or stable slugs. The
 CLI trims IDs and rejects duplicates or oversized batches before transport.
@@ -611,7 +625,7 @@ The source exposes no campaign update, delete, validate, archive, duplicate,
 recipient, event, history, replay, watch, or operation-cancel route. The CLI
 does not substitute similarly named Platform campaign methods for these gaps.
 
-## Developer events, webhooks, and operations
+## Developer events and webhooks
 
 Developer resources always have an explicit owner. Project-owned commands need
 `--owner project --project <id>`. Organization-owned commands use
@@ -663,26 +677,16 @@ List commands return opaque cursors. `--paginate` requires `--max-items`, which
 is capped at 10,000. The CLI shrinks the last request to the remaining item
 budget instead of fetching records it will discard.
 
-Replay, delivery retry, webhook test, and operation cancellation return durable
-operation receipts. Use the same explicit owner and context to inspect them:
+Replay, delivery retry, and webhook test return an idempotency receipt and an
+operation ID in the JSON `operation.id` field. Operation inspection is
+console-only, so the CLI has no command to poll or cancel that operation. Use
+`webhook delivery view` and `webhook delivery attempt list` to follow the
+resulting delivery.
 
-```shell
-polymorfa operation list --owner project --project project_123
-polymorfa operation view operation_123 --owner project --project project_123
-polymorfa operation wait operation_123 \
-  --owner project \
-  --project project_123 \
-  --timeout 5m
-polymorfa operation watch operation_123 \
-  --owner project \
-  --project project_123 \
-  --json
-```
-
-`operation watch --json` writes one JSON object per line. It drains transition
-pages, removes duplicate sequences, and fetches the final operation after a
-terminal transition. A local timeout or interrupt stops only the CLI; it does
-not cancel remote work.
+`event view` prints the retained payload in human output only with
+`--include-payload`. `webhook delivery attempt view` prints the redacted
+response excerpt that the API records for a failed HTTP response. Human output
+escapes control characters in remote text.
 
 ## Local event listening and forwarding
 
@@ -725,14 +729,12 @@ forwarding secrets, or unrestricted payloads.
 
 ## Agent skills
 
-The npm package includes three portable skills under `skills/`:
+The npm package includes two portable skills under `skills/`:
 
 - `polymorfa` establishes profile, owner, project, JSON, and mutation-safety
   conventions for CLI and MCP use.
 - `polymorfa-webhooks` covers event inspection, webhook testing, replay and
   retry, local listening and forwarding, and one-time secret handling.
-- `polymorfa-operations` covers durable operation inspection, waiting,
-  transition watching, and explicit cancellation.
 
 Copy or link the relevant skill directory into the skills folder used by your
 agent host. The skill treats the installed command help as authoritative, so it
@@ -792,8 +794,7 @@ SDK request IDs are preserved and active credentials are redacted.
 overrides a profile endpoint and must not be placed in project files.
 
 The raw command does not bypass owner, principal, or scope boundaries. Events,
-webhooks, deliveries, attempts, and developer operations use their typed
-commands; the CLI does not use `api` to synthesize a missing developer
+webhooks, deliveries, and attempts use their typed commands; the CLI does not use `api` to synthesize a missing developer
 workflow.
 
 ## Verification

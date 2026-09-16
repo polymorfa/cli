@@ -419,6 +419,94 @@ describe('Platform management commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test('represents absent organization-default widget settings as null', async () => {
+    server = await startHttpServer({
+      body: {data: null},
+      headers: {'request-id': 'req_widget_missing'},
+    })
+
+    const result = await platformEnvironment(() =>
+      runCommand('widget view --json'),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toEqual({
+      data: null,
+      metadata: {
+        attempts: 1,
+        requestId: 'req_widget_missing',
+        status: 200,
+      },
+    })
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/platform/quicklink',
+    })
+  })
+
+  test('retrieves project widget settings through an explicit encoded target', async () => {
+    server = await startHttpServer({body: {data: widgetSettings()}})
+
+    const result = await platformEnvironment(() =>
+      runCommand('widget view --project project/1 --json'),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(server.requests[0]?.url).toBe(
+      '/platform/quicklink?projectId=project%2F1',
+    )
+  })
+
+  test('updates a widget patch with separate project scope and idempotency', async () => {
+    const input = await jsonInput('widget.json', {
+      allowedRedirectUris: ['https://app.example.com/connected'],
+      businessName: 'Example',
+      enabled: true,
+      methods: ['qr'],
+      theme: 'dark',
+    })
+    server = await startHttpServer({body: {data: widgetSettings()}})
+
+    const result = await platformEnvironment(() =>
+      runCommand(
+        `widget update --project project_1 --input ${input} --idempotency-key widget_1 --json`,
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+      allowedRedirectUris: ['https://app.example.com/connected'],
+      businessName: 'Example',
+      enabled: true,
+      methods: ['qr'],
+      projectId: 'project_1',
+      theme: 'dark',
+    })
+    expect(server.requests[0]).toMatchObject({
+      method: 'PUT',
+      url: '/platform/quicklink',
+    })
+    expect(server.requests[0]?.headers['idempotency-key']).toBe('widget_1')
+  })
+
+  test('rejects a widget input that hides its target project', async () => {
+    const input = await jsonInput('widget.json', {
+      enabled: true,
+      projectId: 'hidden_project',
+    })
+    server = await startHttpServer({body: {data: widgetSettings()}})
+
+    const result = await platformEnvironment(() =>
+      runCommand(`widget update --input ${input} --json`),
+    )
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(result.stderr).toContain(
+      'Widget input cannot contain projectId; use --project',
+    )
+    expect(server.requests).toHaveLength(0)
+  })
+
   async function jsonInput(name: string, value: unknown): Promise<string> {
     directory ??= await mkdtemp(join(tmpdir(), 'polymorfa-platform-'))
     const path = join(directory, name)
@@ -439,6 +527,31 @@ describe('Platform management commands', () => {
     )
   }
 })
+
+function widgetSettings() {
+  return {
+    accent: null,
+    allowedOrigins: ['https://app.example.com'],
+    allowedRedirectUris: [],
+    businessName: 'Example',
+    colors: null,
+    createdAt: 1_723_000_000_000,
+    enabled: true,
+    hideWatermark: false,
+    historySync: 'ask',
+    id: 'widget_1',
+    methods: ['qr'],
+    modesAllowed: ['embedded'],
+    projectId: 'project_1',
+    qrLogoMode: 'none',
+    qrLogoSourceStorageId: null,
+    qrLogoStorageId: null,
+    radiusPx: null,
+    shape: null,
+    theme: 'dark',
+    updatedAt: 1_723_000_000_000,
+  }
+}
 
 function exitCode(error: unknown): number | undefined {
   return (error as {oclif?: {exit?: number}} | undefined)?.oclif?.exit

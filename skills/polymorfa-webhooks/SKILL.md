@@ -36,4 +36,4 @@ Forwarded requests use a local ephemeral signing secret. Store it only through t
 
 Secret creation and rotation must never put secrets in JSON, JSONL, MCP results, logs, pipes, profiles, or debug output. For noninteractive or JSON use, always pass `--secret-out PATH`; the CLI writes a new mode-0600 file without overwriting. If the API succeeds but local secret delivery fails, record the safe `partial_success` receipt and do not retry rotation automatically.
 
-Destructive or delivery-producing actions require an exact target and the command's confirmation policy. Keep the mutation receipt and operation ID, then wait or watch when terminal completion matters.
+Destructive or delivery-producing actions require an exact target and the command's confirmation policy. Keep the mutation receipt and operation ID. When the outcome matters, inspect the resulting delivery with `polymorfa webhook delivery view` and its attempts.

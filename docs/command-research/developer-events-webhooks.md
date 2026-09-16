@@ -1,10 +1,10 @@
-# Developer events, webhooks, operations, and listener research
+# Developer events, webhooks, and listener research
 
 - **Status:** Implementation complete against the accepted contract and exact
   SDK pin; deployed Staging acceptance remains a separate gate
-- **Reviewed:** 2026-09-08
-- **Monorepo baseline:** `6918c56135e28ba64557e344cb72889f1f517eb5`
-- **SDK baseline:** `1b99aef26f2b726ecdb00707d5d6a70beb6dc3cd`
+- **Reviewed:** 2026-09-16
+- **Monorepo baseline:** `1600403db9dcf7996dbbb882375b1165859829d3`
+- **SDK baseline:** `08452992a32a392de5fc3d0fa3954ba6addd7f32`
 - **Listener protocol SHA-256:**
   `0f324f0ce4aa6b39e9af9f4aed51fcce42aa818abae00f9e3e03eb551f35d1ee`
 
@@ -31,7 +31,6 @@ webhook list|view|create|update|delete|test
 webhook secret rotate
 webhook delivery list|view|retry
 webhook delivery attempt list|view
-operation list|view|wait|watch|cancel
 listen
 mcp serve|install|uninstall|status|tools|doctor
 ```
@@ -43,7 +42,12 @@ probes one owner after another and never treats a credential prefix, resource
 ID, or failed request as ownership evidence.
 
 All REST commands use the unified SDK `Client` with its typed `events`,
-`webhooks`, `webhookDeliveries`, and `operations` resources. `listen` is
+`webhooks`, and `webhookDeliveries` resources. API contract
+`1600403db9dcf7996dbbb882375b1165859829d3` serves developer operations only
+under `/console/*` with a dashboard session and marks them unavailable to
+machine credentials, and SDK `08452992a32a392de5fc3d0fa3954ba6addd7f32` has no
+`operations` resource. The CLI therefore ships no `operation` commands; mutation
+envelopes report only `operation.id`. `listen` is
 different by design: the CLI requests a one-use, short-lived listener
 authorization from the configured trusted API origin and opens the Hono SSE
 stream itself. No public SDK listener or raw-request workaround is introduced.
@@ -55,10 +59,9 @@ context, request metadata, and final-page metadata. Mutations add resource,
 operation, and idempotency receipts; inapplicable values are explicit `null`.
 Errors are stderr-only, typed, and retain their symbolic condition.
 
-`operation watch --json` is JSONL: ordered, deduplicated transitions followed
-by exactly one terminal record. Empty polls emit nothing. Wait and watch never
-cancel remote work on a local timeout, signal, transport error, or MCP process
-exit.
+API contract 1600403 adds a nullable, redacted `response` excerpt to delivery
+attempts. The pinned SDK passes it through untyped; JSON output keeps it and
+human attempt output prints it with control characters escaped.
 
 List collection requires both `--paginate` and `--max-items`; the maximum is
 10,000. Each page request shrinks to the remaining budget. Cursors are opaque,
@@ -66,7 +69,7 @@ owner- and filter-bound, and cannot be combined with new filters.
 
 ## Safety and secret delivery
 
-Delete, rotation, replay, delivery retry, and operation cancellation require a
+Delete, rotation, replay, and delivery retry require a
 TTY confirmation or `--yes`. Validation and confirmation happen before the
 idempotency key is generated or the transport begins. Every mutation accepts a
 caller key up to 255 UTF-8 bytes and preserves its receipt.

@@ -16,7 +16,7 @@ Use `polymorfa --help` and `polymorfa <topic> --help` as the installed command a
 
 Organization API keys and exact-project tokens are durable principals. Browser client tokens and listener credentials are not general CLI credentials. Do not print, log, persist in project files, or pass credentials in command arguments.
 
-Use `polymorfa quicklink create --project PROJECT` for standard number pairing. Treat the returned hosted URL as short-lived credential material; do not request direct session QR payloads or pairing codes.
+Use `polymorfa quicklink create --project PROJECT --input request.json` with an organization API key for standard number pairing. Treat the returned hosted URL as credential material; do not request direct session QR payloads or pairing codes.
 
 ## Choose an interface
 
@@ -31,7 +31,7 @@ Use `--json` when another program consumes the result. Treat `schemaVersion`, `c
 1. Validate input locally before calling the API.
 2. Pass a stable `--idempotency-key` when a workflow may retry.
 3. Use `--yes` only after the exact target has been resolved and displayed or recorded.
-4. Never interpret a returned operation ID as completion. Use `polymorfa operation wait` or `watch` when the workflow needs a terminal result.
+4. Never interpret a returned operation ID as completion. The CLI cannot poll operations; inspect the affected resource, such as the webhook delivery, to confirm the outcome.
 5. A local timeout or interruption must not cancel remote work unless an explicit cancel command is issued.
 
 When a command fails, preserve the symbolic error condition and stderr envelope. Do not reduce failures to an exit code alone.

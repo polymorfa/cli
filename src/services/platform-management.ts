@@ -15,7 +15,12 @@ import {
   type SessionBatchRemoveResult,
   type SessionBatchRequest,
   type SessionBatchStopResult,
+  type UpdateQuickLinkSettingsInput,
+  type OrganizationQuickLinkSettings,
+  type ProjectQuickLinkSettings,
 } from '@polymorfa/sdk'
+
+type WidgetSettings = OrganizationQuickLinkSettings | ProjectQuickLinkSettings
 
 export interface PlatformResult<T> {
   readonly data: T
@@ -204,6 +209,54 @@ export function renderProjectTokens(tokens: readonly ProjectToken[]): string {
     .join('\n')
 }
 
+export async function viewWidgetSettings(
+  client: ClientInstance<'organization'>,
+  projectId?: string,
+): Promise<PlatformResult<WidgetSettings | null>> {
+  const response = await (
+    projectId === undefined ? client : client.project(projectId)
+  ).quickLinkSettings.retrieve()
+  return result(response.data, response.metadata)
+}
+
+export async function updateWidgetSettings(
+  client: ClientInstance<'organization'>,
+  input: unknown,
+  projectId?: string,
+  options: RequestOptions = {},
+): Promise<PlatformResult<WidgetSettings>> {
+  const response = await (
+    projectId === undefined ? client : client.project(projectId)
+  ).quickLinkSettings.update(widgetUpdate(input), options)
+  return result(response.data, response.metadata)
+}
+
+export function renderWidgetSettings(
+  settings: WidgetSettings | null,
+  requestedProjectId?: string,
+): string {
+  if (settings === null) {
+    return requestedProjectId === undefined
+      ? 'No saved organization-default widget settings found.'
+      : `No saved widget settings found for project ${requestedProjectId}.`
+  }
+
+  return [
+    `ID\t${settings.id}`,
+    `Scope\t${settings.projectId ?? 'organization defaults'}`,
+    `Enabled\t${settings.enabled}`,
+    `Methods\t${settings.methods?.join(', ') ?? 'default'}`,
+    `Theme\t${settings.theme}`,
+    `Business name\t${settings.businessName ?? ''}`,
+    `Redirect URIs\t${settings.allowedRedirectUris.join(', ')}`,
+    `Hide watermark\t${settings.hideWatermark}`,
+    `Shape\t${settings.shape ?? 'default'}`,
+    `Radius\t${settings.radiusPx ?? 'default'}`,
+    `Logo\t${settings.logoMode}`,
+    `History sync\t${settings.historySync}`,
+  ].join('\n')
+}
+
 export function renderSessionStops(stopping: number): string {
   return `Requested stops for ${stopping} matching ${plural(stopping, 'session')}. This does not wait for completion.`
 }
@@ -231,6 +284,25 @@ function result<T>(data: T, metadata: ResponseMetadata): PlatformResult<T> {
 function timestamp(value: number): string {
   const milliseconds = value < 10_000_000_000 ? value * 1000 : value
   return new Date(milliseconds).toISOString()
+}
+
+function widgetUpdate(input: unknown): UpdateQuickLinkSettingsInput {
+  if (!isRecord(input)) {
+    throw new PolymorfaValidationError(
+      'Widget input must contain one JSON object.',
+      {code: 'invalid_widget_input'},
+    )
+  }
+  if (Object.hasOwn(input, 'projectId')) {
+    throw new PolymorfaValidationError(
+      'Widget input cannot contain projectId; use --project to select the target.',
+      {code: 'widget_project_in_input'},
+    )
+  }
+
+  return {
+    ...input,
+  }
 }
 
 function sessionBatch(
@@ -268,4 +340,8 @@ function sessionBatch(
 
 function plural(count: number, singular: string): string {
   return count === 1 ? singular : `${singular}s`
+}
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }

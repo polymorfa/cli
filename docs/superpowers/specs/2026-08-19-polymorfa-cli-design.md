@@ -105,12 +105,12 @@ same TypeScript application services used by commands; they never execute the
 ### Current SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `1b99aef26f2b726ecdb00707d5d6a70beb6dc3cd`. It is ESM-only, requires Node.js
+commit `08452992a32a392de5fc3d0fa3954ba6addd7f32`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#1b99aef26f2b726ecdb00707d5d6a70beb6dc3cd
+npm install github:polymorfa/sdks#08452992a32a392de5fc3d0fa3954ba6addd7f32
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -119,19 +119,17 @@ with a compatible npm semver dependency on `@polymorfa/sdk` and verify the
 packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
-`6918c56135e28ba64557e344cb72889f1f517eb5`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 34207720527](https://github.com/polymorfa/sdks/actions/runs/34207720527).
-The run exercised 66 test files and 400 tests across the repository, built the
-root and every workspace, passed package dry-runs, and reported zero production
-dependency vulnerabilities.
+`1600403db9dcf7996dbbb882375b1165859829d3`. Hosted CI passed for the pinned SDK
+revision in [GitHub Actions run 34971283972](https://github.com/polymorfa/sdks/actions/runs/34971283972).
 
-The handwritten coverage ledger contains 402 Messaging and Management
-operations: 274 curated typed methods and 128 deliberately excluded operations
-outside the public server-SDK boundary. It contains no unresolved compatible
-operation. Graph-compatible APIs remain outside this baseline, and the CLI
-does not claim support for excluded dashboard, staff, or browser-only routes.
+The ledger contains 403 Messaging and Management operations: 262 covered by
+typed methods, 106 deliberately excluded (including every console-only
+operation route), and 35 missing. The missing entries are account-health and
+safe-mode routes that the CLI does not expose. Graph-compatible APIs remain
+outside this baseline, and the CLI does not claim support for excluded
+dashboard, staff, or browser-only routes.
 
-The curated resources cover Messaging sessions, QuickLinks, operation polling,
+The curated resources cover Messaging sessions, QuickLinks,
 messages, contacts, chats, channels, groups, labels, presence, calls,
 LID resolution, user security codes, business profiles, catalogs, products,
 collections, orders, compliance, observation policies, webhooks, client tokens,
@@ -139,8 +137,8 @@ project templates, project-scoped campaigns, and all 33 signed event payload
 schemas plus Platform
 organizations, projects, sessions, billing, campaigns, audiences, opt-outs,
 media, organization API keys, members, audit logs, session bans, security
-incidents, management operations, project-token metadata, QuickLink settings,
-and batch session stop/delete. Curated commands do not use the SDK's raw escape
+incidents, project-token metadata, saved QuickLink (widget) settings, and batch
+session stop/delete. Curated commands do not use the SDK's raw escape
 hatch to paper over a missing public contract. The explicit `api` command is
 the user-directed low-level escape hatch and keeps the SDK's authentication,
 transport, retry, pagination, and error behavior.
@@ -411,9 +409,6 @@ quicklink
   create
   view
   cancel
-  settings
-    view
-    update
 
 message
   list
@@ -573,12 +568,15 @@ group
   leave
 ```
 
-Number pairing uses a hosted QuickLink. `quicklink create` returns the short-lived
-URL once, `quicklink view` polls its status, and `quicklink cancel` invalidates a
-pending link. The CLI does not retrieve or render direct QR payloads or pairing
-codes from session routes. `session status` uses `sessions.retrieve`, while
-start, stop, restart, logout, and delete return operation IDs that are followed
-through `operations.retrieve`. The source contract has no separate
+Number pairing uses a persistent hosted QuickLink. `quicklink create` accepts a
+JSON request with an organization API key and returns the link URL,
+`quicklink view` reads its status, and `quicklink cancel` invalidates a link that
+has not connected. View and cancel also accept an exact-project token. Saved
+QuickLink settings are managed with `widget view` and `widget update`; the CLI
+ships no separate `quicklink settings` commands. The CLI does not retrieve or render
+direct QR payloads or pairing codes from session routes. `session status` uses
+`sessions.retrieve`. Operation inspection is console-only at the pinned API
+contract, so the CLI does not poll operation IDs. The source contract has no separate
 connection-status or session-log route. `session logs` therefore remains
 reserved and unshipped; `/api/info/status` is unauthenticated API runtime health
 and is not presented as session state.
@@ -806,8 +804,8 @@ Campaign creation accepts one bounded JSON object. Launch accepts epoch
 milliseconds or a timezone-qualified ISO instant, then returns a durable
 operation ID. Launch, pause, resume, and terminal stop report accepted work and
 do not imply that the transition completed. These Messaging campaign operation
-IDs are not developer-operation resources and are not accepted by the unified
-`operation` command family. Stop requires `--yes`. Requeue is a direct
+IDs cannot be polled with machine credentials; check campaign state with
+`campaign view`. Stop requires `--yes`. Requeue is a direct
 transaction and reports its moved-recipient count. The source exposes no
 campaign update, delete, validation, archive, duplicate, recipient, event,
 history, replay, watch, or cancel route, so those commands remain reserved.
@@ -816,8 +814,10 @@ Webhook tests generate a synthetic event and a traceable delivery. Event replay
 creates a new delivery for a retained event; delivery retry creates a new
 immutable attempt on the same delivery. Neither operation rewrites history.
 General event history, webhook ownership, delivery and attempt inspection,
-secret rotation, test delivery, replay, retry, and durable operations are now
-typed developer resources. The CLI uses only those typed SDK resources and
+secret rotation, test delivery, replay, and retry are now typed developer
+resources. Their receipts report an operation ID, but operation inspection is
+console-only at the pinned API contract, so the CLI exposes no operation
+commands. The CLI uses only those typed SDK resources and
 never reaches dashboard or staff routes through raw requests.
 
 Commands remain hidden or clearly unavailable until their underlying API
@@ -883,8 +883,8 @@ registry and schemas; it is not a prerequisite for the local server.
 
 Tools are curated and typed rather than mechanically generated from OpenAPI.
 They are registered from the same application services as commands and grouped
-into selectable toolsets such as `core`, `messaging`, `webhooks`, `campaigns`,
-and `operations`. The default toolset stays small enough for reliable tool
+into selectable toolsets such as `core`, `messaging`, `webhooks`, and
+`campaigns`. The default toolset stays small enough for reliable tool
 selection; clients can request broader sets explicitly.
 
 The server also exposes non-secret resources for active context, capabilities,
@@ -913,7 +913,6 @@ polymorfa
 polymorfa-messaging
 polymorfa-webhooks
 polymorfa-campaigns
-polymorfa-operations
 ```
 
 The core skill teaches authentication, context, output, safe mutation, and when
@@ -1047,16 +1046,15 @@ slices:
 - complete incoming-call rejection, singular LID resolution, and no-store user
   security-code inspection commands;
 - organization-key API-key list/revocation, member and audit lists, session-ban
-  filtering, security-incident list/acknowledgement, operation inspection, and
-  project-token metadata commands;
+  filtering, security-incident list/acknowledgement, and project-token metadata
+  commands;
 - bounded batch session stop and confirmed management deletion commands;
 - complete Messaging campaign list/create/view/analytics and lifecycle
-  commands, with explicit accepted-operation polling and direct requeue;
+  commands, with accepted-work receipts and direct requeue;
 - explicit owner-scoped event list/view/replay, webhook CRUD/test/secret
-  rotation, delivery and attempt inspection, retry, and durable operation
-  list/view/wait/watch/cancel commands;
-- hosted QuickLink create/view/cancel with organization keys or exact-project
-  tokens and no direct session QR fallback;
+  rotation, delivery and attempt inspection, and retry commands;
+- persistent QuickLink create with organization keys, view/cancel with
+  organization keys or exact-project tokens, and no direct session QR fallback;
 - the bounded SSE listener with JSONL and human sinks, fail-closed gap handling,
   cumulative acknowledgement, checkpointed reconnects, exact-byte local
   signing, and redirect-safe forwarding;

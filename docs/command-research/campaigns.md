@@ -62,7 +62,7 @@ a terminal transition and requires `--yes`.
 Launch, pause, resume, and stop append durable commands and return an operation
 ID plus the campaign's present state. Human output says “Accepted” and does not
 say the transition completed. The returned IDs belong to the Messaging campaign
-API and are not accepted by the developer `operation` command family. The
+API. Operation inspection is console-only, so the CLI cannot poll them. The
 unpublished `--surface messaging` selector was removed rather than retained as
 a compatibility alias.
 

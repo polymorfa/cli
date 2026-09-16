@@ -1,9 +1,9 @@
 # Platform management command research
 
 - **Status:** Organization-key management commands reconciled with the unified
-  developer operation surface
-- **Reviewed:** 2026-08-20
-- **SDK baseline:** `1b99aef26f2b726ecdb00707d5d6a70beb6dc3cd`
+  client; operation inspection is console-only
+- **Reviewed:** 2026-09-16
+- **SDK baseline:** `08452992a32a392de5fc3d0fa3954ba6addd7f32`
 
 ## Sources reviewed
 
@@ -87,11 +87,10 @@ SDK's distinct active-only operation. Incident acknowledgement is repeatable,
 has no confirmation gate, and sends no body. `acknowledgedBy` may be empty when
 an organization key performed the acknowledgement.
 
-The original singular Platform operation view has been replaced by the unified
-developer `operation list|view|wait|watch|cancel` family with explicit owner and
-project context. The unpublished `--surface` selector was removed. Messaging
-campaign operation IDs remain a separate API contract and are not passed to the
-developer operation resource.
+The original singular Platform operation view was removed. Operation
+inspection is console-only at API contract 1600403, and the pinned SDK has no
+operations resource, so the CLI ships no operation commands. The unpublished
+`--surface` selector was removed.
 Project-token listing requires an explicit project because the live
 organization-key handler rejects an absent project even though its OpenAPI
 query field is optional. Only metadata is returned.
@@ -114,14 +113,12 @@ without claiming stronger server behavior.
 There is no organization-key member mutation, API-key creation or rotation,
 project-token minting or revocation, raw bearer material, cross-project token
 aggregate, incident detail, management-list pagination, security-state
-aggregation, or batch per-item result in this slice. Unified developer
-operations provide list, view, transition polling, wait, watch, and explicit
-cancellation under their own scopes and owner contract; they are not a hidden
-extension of the session batch endpoints.
+aggregation, batch per-item result, or machine-credential operation inspection
+in this slice. Operation list, view, transitions, and cancellation are
+console-only routes.
 The CLI does not invent those workflows or use the SDK raw escape hatch to cross
 dashboard/staff boundaries.
 
-At this exact baseline the SDK ledger records 402 total / 274 curated typed /
-128 deliberately excluded operations. The unified client does not leave a
-credential-compatible operation in the pinned Messaging and Management
-contracts unmapped.
+At this exact baseline the SDK ledger records 403 total / 262 covered typed /
+106 deliberately excluded / 35 missing operations. The missing entries are
+account-health and safe-mode routes outside this command family.
