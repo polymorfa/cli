@@ -122,6 +122,54 @@ describe('BanSafe commands', () => {
     })
   })
 
+  test('prints fractional claim credit quantities as credits', async () => {
+    server = await startHttpServer({
+      body: {
+        data: {
+          amountCents: 12.345678,
+          capCents: 50.5,
+          createdAt: '2026-09-08T00:00:00Z',
+          decidedAt: null,
+          evidence: {
+            attributionRuleVersion: 1,
+            criticalFindingDays: 0,
+            deviceEvidence: true,
+            measuredHours: 24,
+            otherDevices: 0,
+            restrictedInWindow: true,
+            sharedConnection: false,
+            windowDays: 7,
+          },
+          id: 'claim_1',
+          incidentId: 'incident_1',
+          measuredCents: 0.000001,
+          paidAt: null,
+          phoneNumber: '+1',
+          projectId: 'p1',
+          reason: 'Attributed to Polymorfa.',
+          session: 's1',
+          sessionId: 'id1',
+          status: 'under_review',
+          summary: 'Restricted inside the claim window.',
+          verdict: 'ours',
+          windowEnd: '2026-09-08T00:00:00Z',
+          windowStart: '2026-09-01T00:00:00Z',
+        },
+      },
+    })
+
+    const result = await platformEnvironment(() =>
+      runCommand('bansafe claim view claim_1'),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(server.requests[0]?.url).toBe('/platform/bansafe/claims/claim_1')
+    expect(result.stdout).toContain('Amount credits\t12.345678')
+    expect(result.stdout).toContain('Measured credits\t0.000001')
+    expect(result.stdout).toContain('Cap credits\t50.5')
+    expect(result.stdout).not.toContain('cents')
+  })
+
   test('requires idempotency for Health policy updates', async () => {
     server = await startHttpServer({body: {data: policy()}})
     const input = await jsonInput('policy.json', policy())
@@ -401,7 +449,6 @@ function policy() {
     sessionAction: 'slow_down',
     slowDownMps: 0.5,
     threshold: 30,
-    updatedAt: '2026-09-08T00:00:00.000Z',
     version: 4,
     webhookNotification: false,
   }

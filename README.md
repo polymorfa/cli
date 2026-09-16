@@ -556,7 +556,9 @@ the request. Health policy, Safe Mode, warmup, and insurance-evidence updates
 require an idempotency key. Safe Mode and warmup updates accept bounded JSON
 patches. Customer incident reports and retractions also require an idempotency key. Finding
 acknowledgement and enforcement appeals remain dashboard-only and are not
-available through server-key commands. Use `--json` to retain explanations,
+available through server-key commands. Claim `amountCents`, `measuredCents`, and
+`capCents` are credit quantities with up to six decimal places, not cash minor
+units; text output labels them as credits. Use `--json` to retain explanations,
 observed account state, collection metadata, action outcomes, cursors, and
 request metadata.
 

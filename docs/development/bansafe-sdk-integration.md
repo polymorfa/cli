@@ -4,8 +4,11 @@ The BanSafe CLI commands depend on the matching typed SDK revision pinned in
 `package.json`. During coordinated SDK and CLI development, verify both
 worktrees without replacing that immutable dependency in either manifest:
 
-The verified integrated Platform contract SHA-256 is
-`d529a62ddcc8e5b661b90db7ca9a36dddc30ca48a6a016c4f6b46e0fd471b9df`.
+The pinned SDK revision is `polymorfa/sdks@289c921793a71f52c7fa85e941f36c45fa72e653`.
+Its coverage ledger is reconciled against the merged API contracts at
+`polymorfa/polymorfa@1600403db9dcf7996dbbb882375b1165859829d3` (Platform
+snapshot SHA-256
+`c3c0d1107e8403c1ddc28649ca397eef35d82cd40be1674b3dc2ba5525a3590e`).
 
 ```shell
 export POLYMORFA_SDK_CHECKOUT=/absolute/path/to/bansafe-health-sdk
@@ -30,8 +33,10 @@ available, run `npm ci`, and run `npm run verify` from a fresh checkout. A
 local-path install is integration evidence only; it is not a publishable
 dependency.
 
-The CLI mapping covers all 25 machine-permitted BanSafe operations in the SDK
-coverage ledger:
+The CLI mapping covers all 25 Platform BanSafe operations in the SDK coverage
+ledger. The SDK also covers the 10 equivalent Messaging settings routes through
+`MessagingClient.banSafe`; the CLI uses the Platform routes for those settings
+because BanSafe commands authenticate with an organization server API key.
 
 | SDK operations                                               | CLI commands                                               |
 | ------------------------------------------------------------ | ---------------------------------------------------------- |
