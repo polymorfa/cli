@@ -447,7 +447,10 @@ never answers or declines on its own.
   end, invite, watch, and carry audio when the session's client rules allow
   it. The API decides; the CLI reports its errors unchanged.
 - **Settings.** `calls settings` uses the Platform API and requires a server
-  API key. `--include-self-audio` controls whether the merged audio a
+  API key. `--calls-enabled=false` turns calling off for the session: placing,
+  answering and joining calls then exit with code 3 (`calls_disabled`),
+  incoming calls are declined, and calls in progress continue.
+  `--include-self-audio` controls whether the merged audio a
   connection receives includes its own audio. It is off by default.
   `--inbound-route sip_trunk` with `--sip-trunk` also sends incoming calls to a
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the

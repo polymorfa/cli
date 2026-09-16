@@ -252,6 +252,7 @@ export async function viewCallSettings(
 }
 
 export interface CallSettingsChanges {
+  readonly callsEnabled?: boolean
   readonly includeSelfAudio?: boolean
   readonly inboundRoute?: CallInboundRoute
   readonly sipClaim?: boolean
@@ -271,7 +272,7 @@ export async function updateCallSettings(
   if (Object.values(changes).every((value) => value === undefined)) {
     throw new PolymorfaConfigurationError(
       'Provide at least one setting to change.',
-      'include-self-audio',
+      'calls-enabled',
     )
   }
   if (changes.inboundRoute === 'clients' && changes.sipTrunkId !== undefined) {
@@ -285,6 +286,9 @@ export async function updateCallSettings(
     changes.inboundRoute ??
     (changes.sipTrunkId === undefined ? undefined : 'sip_trunk')
   const response = await client.voip.updateCallSettings(name, {
+    ...(changes.callsEnabled === undefined
+      ? {}
+      : {callsEnabled: changes.callsEnabled}),
     ...(changes.includeSelfAudio === undefined
       ? {}
       : {includeSelfAudio: changes.includeSelfAudio}),
@@ -381,6 +385,7 @@ export function renderCallSettings(
 ): string {
   return [
     `Session\t${session}`,
+    `Calls\t${settings.callsEnabled === false ? 'off' : 'on'}`,
     `Include self audio\t${yesNo(settings.includeSelfAudio)}`,
     `Incoming calls\t${settings.inboundRoute === 'sip_trunk' ? 'clients and SIP trunk' : 'clients'}`,
     ...(settings.inboundRoute === 'sip_trunk'

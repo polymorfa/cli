@@ -2,6 +2,7 @@ import {runCommand} from '@oclif/test'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {
+  startHttpSequenceServer,
   startHttpServer,
   withEnvironment,
   type ResponseFixture,
@@ -328,7 +329,7 @@ describe('unified calls commands', () => {
 
     expect(viewed.error).toBeUndefined()
     expect(viewed.stdout).toBe(
-      'Session\tsupport/main\nInclude self audio\tyes\nIncoming calls\tclients\nUpdated\t2026-09-16T10:00:00.000Z\n',
+      'Session\tsupport/main\nCalls\ton\nInclude self audio\tyes\nIncoming calls\tclients\nUpdated\t2026-09-16T10:00:00.000Z\n',
     )
     expect(updated.error).toBeUndefined()
     expect(jsonData(updated.stdout)).toEqual({
@@ -406,6 +407,41 @@ describe('unified calls commands', () => {
     ])
     expect(exitCode(conflicting.error)).toBe(2)
     expect(exitCode(empty.error)).toBe(2)
+  })
+
+  test('turns calling off and reports calls_disabled refusals', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          data: {
+            callsEnabled: false,
+            includeSelfAudio: false,
+            inboundRoute: 'clients',
+            revision: 1,
+            sipClaim: true,
+            sipTrunkId: null,
+            updatedAt: '2026-09-17T10:00:00.000Z',
+          },
+          success: true,
+        },
+      },
+      apiError(403, 'calls_disabled', 'Calling is turned off for this number.'),
+    ])
+
+    const off = await apiKey(() =>
+      runCommand('calls settings set --session support --calls-enabled=false'),
+    )
+    const place = await apiKey(() =>
+      runCommand('calls place +15550100 --session support'),
+    )
+
+    expect(off.error).toBeUndefined()
+    expect(off.stdout).toContain('Calls\toff')
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+      callsEnabled: false,
+    })
+    expect(exitCode(place.error)).toBe(3)
+    expect(place.stderr).toContain('Calling is turned off for this number.')
   })
 
   test('reports an API refusal of the change', async () => {
