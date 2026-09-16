@@ -138,7 +138,8 @@ test('cancels a QuickLink only after confirmation', async () => {
         const unsupported = await runCommand(
           `quicklink cancel ql_123 --project ${projectId} --yes --idempotency-key cancel_1 --json`,
         )
-        expect(unsupported.error?.message).toContain('Nonexistent flag')
+        expect(exitCode(unsupported.error)).toBe(2)
+        expect(unsupported.stderr).toContain('Nonexistent flag')
         expect(server.requests).toHaveLength(0)
 
         const cancelled = await runCommand(

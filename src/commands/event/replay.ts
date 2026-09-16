@@ -40,7 +40,6 @@ export default class EventReplay extends BaseCommand {
     const deliveryId = stringField(receipt, 'deliveryId')
     this.writeValue(
       developerMutation({
-        baseUrl: session.baseUrl,
         context: session.context,
         metadata: response.metadata,
         receipt,

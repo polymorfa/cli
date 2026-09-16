@@ -167,14 +167,12 @@ describe('event commands', () => {
         values: ['evt_1', {webhookId: 'wh_1'}, {idempotencyKey: 'replay_1'}],
       },
     ])
-    expect(JSON.parse(String(output.mock.calls[0]?.[0]))).toMatchObject({
+    const replayed = JSON.parse(String(output.mock.calls[0]?.[0]))
+    expect(replayed.operation).toEqual({id: 'operation_1'})
+    expect(replayed).toMatchObject({
       schemaVersion: 1,
       resource: {id: 'delivery_1', type: 'webhook_delivery'},
-      operation: {
-        id: 'operation_1',
-        statusUrl:
-          'https://api.example.test/v1/projects/11111111-1111-4111-8111-111111111111/operations/operation_1',
-      },
+      operation: {id: 'operation_1'},
       idempotency: {key: 'replay_1', receiptId: 'receipt_1', replayed: false},
       result: {deliveryId: 'delivery_1', eventId: 'evt_1'},
       context: {

@@ -37,7 +37,6 @@ export default class WebhookUpdate extends BaseCommand {
     const receipt = record(response.data, 'Webhook mutation receipt')
     const webhook = record(receipt.webhook, 'Webhook')
     const output = developerMutation({
-      baseUrl: session.baseUrl,
       context: session.context,
       metadata: response.metadata,
       receipt,

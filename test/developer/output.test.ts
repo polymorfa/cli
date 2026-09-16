@@ -3,7 +3,6 @@ import {describe, expect, test} from 'vitest'
 import {developerMutation} from '../../src/developer/output.js'
 
 const base = {
-  baseUrl: 'https://api.example.test',
   context: {
     owner: 'organization' as const,
     principalType: 'organization_key' as const,

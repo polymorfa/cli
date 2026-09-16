@@ -62,7 +62,6 @@ export default class WebhookSecretRotate extends BaseCommand {
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
       const output = developerMutation({
-        baseUrl: session.baseUrl,
         context: session.context,
         metadata: response.metadata,
         receipt,
@@ -88,7 +87,6 @@ export default class WebhookSecretRotate extends BaseCommand {
       )
     }
     const output = developerMutation({
-      baseUrl: session.baseUrl,
       context: session.context,
       metadata: response.metadata,
       receipt,

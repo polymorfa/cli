@@ -40,7 +40,6 @@ export default class WebhookTest extends BaseCommand {
     const receipt = record(response.data, 'Webhook test receipt')
     const deliveryId = stringField(receipt, 'deliveryId')
     const output = developerMutation({
-      baseUrl: session.baseUrl,
       context: session.context,
       metadata: response.metadata,
       receipt,

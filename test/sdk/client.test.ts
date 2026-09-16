@@ -140,7 +140,7 @@ describe('createRawClient', () => {
       expect(server.requests).toHaveLength(1)
       expect(server.requests[0]).toMatchObject({
         method: 'GET',
-        url: '/v1/projects/11111111-1111-4111-8111-111111111111/events?limit=25',
+        url: '/platform/projects/11111111-1111-4111-8111-111111111111/events?limit=25',
       })
       expect(server.requests[0]?.headers.authorization).toBe(
         'Bearer pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',

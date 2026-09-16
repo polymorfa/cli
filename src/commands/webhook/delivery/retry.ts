@@ -38,7 +38,6 @@ export default class WebhookDeliveryRetry extends BaseCommand {
     const receipt = record(response.data, 'Webhook delivery retry receipt')
     const deliveryId = stringField(receipt, 'deliveryId')
     const output = developerMutation({
-      baseUrl: session.baseUrl,
       context: session.context,
       metadata: response.metadata,
       receipt,

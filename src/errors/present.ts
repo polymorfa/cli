@@ -43,7 +43,6 @@ export interface PresentedError {
   readonly exitCode: number
   readonly message: string
   readonly requestId?: string
-  readonly code: string
   readonly retryable: boolean
 }
 

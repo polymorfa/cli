@@ -64,10 +64,13 @@ describe('api', () => {
     )
     expect(exitCode(result.error)).toBe(4)
     expect(JSON.parse(result.stderr)).toMatchObject({
-      category: 'payment_required',
-      code: 'entitlement_required',
-      retryable: false,
-      requestId: 'req_billing',
+      schemaVersion: 1,
+      error: {
+        category: 'payment_required',
+        code: 'entitlement_required',
+        retryable: false,
+        requestId: 'req_billing',
+      },
     })
     expect(server.requests).toHaveLength(1)
   })

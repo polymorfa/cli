@@ -1,6 +1,6 @@
 import type {ApiResponseLike, MetadataLike} from './client.js'
 import {record, stringField} from './support.js'
-import {operationStatusUrl, outputRequest} from '../output/adapters.js'
+import {outputRequest} from '../output/adapters.js'
 import {
   mutationEnvelope,
   readEnvelope,
@@ -31,7 +31,6 @@ export function developerResponse<T>(
 }
 
 export function developerMutation(input: {
-  readonly baseUrl: string
   readonly context: OutputContext
   readonly metadata: MetadataLike
   readonly receipt: Readonly<Record<string, unknown>>
@@ -40,18 +39,7 @@ export function developerMutation(input: {
 }) {
   const idempotency = idempotencyOutput(input.receipt.idempotency)
   const operationId = input.receipt.operationId
-  const operation =
-    typeof operationId === 'string'
-      ? {
-          id: operationId,
-          statusUrl: operationStatusUrl(
-            input.baseUrl,
-            input.context.owner,
-            input.context.projectId ?? undefined,
-            operationId,
-          ),
-        }
-      : null
+  const operation = typeof operationId === 'string' ? {id: operationId} : null
   return mutationEnvelope({
     context: input.context,
     idempotency,

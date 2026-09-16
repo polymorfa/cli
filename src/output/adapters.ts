@@ -1,4 +1,4 @@
-import type {OutputRequest, ResourceOwner} from './contracts.js'
+import type {OutputRequest} from './contracts.js'
 
 interface MetadataLike {
   readonly attempts?: number
@@ -14,28 +14,4 @@ export function outputRequest(metadata: MetadataLike): OutputRequest {
     id: metadata.requestId ?? null,
     status: metadata.status,
   }
-}
-
-export function operationStatusUrl(
-  baseUrl: string,
-  owner: ResourceOwner,
-  projectId: string | undefined,
-  operationId: string,
-): string {
-  const root = new URL(baseUrl)
-  const prefix =
-    owner === 'project'
-      ? `/v1/projects/${encodeURIComponent(requiredProject(projectId))}`
-      : '/v1'
-  root.pathname = `${prefix}/operations/${encodeURIComponent(operationId)}`
-  root.username = ''
-  root.password = ''
-  root.search = ''
-  root.hash = ''
-  return root.toString().replace(/\/$/, '')
-}
-
-function requiredProject(projectId: string | undefined): string {
-  if (projectId) return projectId
-  throw new Error('Project-owned operation URLs require a project ID.')
 }

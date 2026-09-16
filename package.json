@@ -155,9 +155,6 @@
       "member": {
         "description": "Inspect organization members."
       },
-      "operation": {
-        "description": "Inspect and manage durable developer operations."
-      },
       "profile": {
         "description": "View and manage the connected account profile."
       },
@@ -189,7 +186,7 @@
         "description": "Manage observed business quick replies."
       },
       "quicklink": {
-        "description": "Create, inspect, and cancel hosted number-pairing links."
+        "description": "Create, inspect, and cancel persistent onboarding QuickLinks."
       },
       "security-incident": {
         "description": "Inspect and acknowledge organization security incidents."

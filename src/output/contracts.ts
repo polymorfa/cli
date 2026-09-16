@@ -27,7 +27,6 @@ export interface OutputResource {
 
 export interface OutputOperation {
   readonly id: string
-  readonly statusUrl: string
 }
 
 export interface OutputIdempotency {

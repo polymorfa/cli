@@ -33,7 +33,6 @@ export default class WebhookDelete extends BaseCommand {
     const receipt = record(response.data, 'Webhook deletion receipt')
     const webhookId = stringField(receipt, 'webhookId')
     const output = developerMutation({
-      baseUrl: session.baseUrl,
       context: session.context,
       metadata: response.metadata,
       receipt,
