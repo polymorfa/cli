@@ -1,6 +1,7 @@
 import type {
   EncodedEventPayload,
   PayloadAvailability,
+  WebhookDeliveryAttemptResponse,
   WebhookDeliveryStatus,
 } from '@polymorfa/sdk'
 
@@ -103,6 +104,7 @@ export function renderAttemptDetail(attempt: {
   readonly statusCode: number | null
   readonly errorCode: string | null
   readonly nextRetryAt: string | null
+  readonly response: WebhookDeliveryAttemptResponse | null
 }): string {
   const rows: Row[] = [
     ['ID', attempt.id],
@@ -116,11 +118,10 @@ export function renderAttemptDetail(attempt: {
     ['Error code', attempt.errorCode],
     ['Next retry', attempt.nextRetryAt],
   ]
-  // API 1600403 adds a redacted failure excerpt that SDK 0845299 does not type.
-  const response = responseExcerpt(
-    (attempt as {readonly response?: unknown}).response,
-  )
-  if (response !== undefined) {
+  // Deployments before the excerpt field was added omit it entirely.
+  const response = attempt.response as
+    WebhookDeliveryAttemptResponse | null | undefined
+  if (response) {
     rows.push(
       ['Response content type', response.contentType],
       [
@@ -130,25 +131,6 @@ export function renderAttemptDetail(attempt: {
     )
   }
   return table(rows)
-}
-
-function responseExcerpt(value: unknown):
-  | {
-      readonly contentType: string
-      readonly excerpt: string
-      readonly truncated: boolean
-    }
-  | undefined {
-  if (typeof value !== 'object' || value === null) return undefined
-  const {contentType, excerpt, truncated} = value as Record<string, unknown>
-  if (
-    typeof contentType !== 'string' ||
-    typeof excerpt !== 'string' ||
-    typeof truncated !== 'boolean'
-  ) {
-    return undefined
-  }
-  return {contentType, excerpt, truncated}
 }
 
 function payloadText(payload: EncodedEventPayload | null): string {

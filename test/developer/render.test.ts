@@ -95,6 +95,7 @@ describe('developer detail renderers', () => {
       id: 'attempt_1',
       nextRetryAt: null,
       number: 1,
+      response: null,
       startedAt: '2026-09-08T00:00:00Z',
       status: 'failed',
       statusCode: 500,
@@ -105,7 +106,7 @@ describe('developer detail renderers', () => {
     const text = renderAttemptDetail({
       ...attempt,
       response: {contentType: 'text/plain', excerpt, truncated: true},
-    } as typeof attempt)
+    })
     expect(text).toContain('Response content type\ttext/plain')
     expect(text).toContain(
       'Response excerpt\tboom\\u000a\\u001b]8;;x\\u0007 (truncated)',

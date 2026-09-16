@@ -457,12 +457,30 @@ describe('Platform management commands', () => {
     )
   })
 
+  test('renders saved QuickLink callbacks and phone-change policy', async () => {
+    server = await startHttpServer({body: {data: widgetSettings()}})
+
+    const result = await platformEnvironment(() =>
+      runCommand('widget view --project project_1'),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toContain(
+      'Success callback URL\thttps://app.example.com/connected',
+    )
+    expect(result.stdout).toContain('Failure callback URL\t\n')
+    expect(result.stdout).toContain('Allow phone change\tfalse')
+    expect(result.stdout).not.toContain('Redirect')
+  })
+
   test('updates a widget patch with separate project scope and idempotency', async () => {
     const input = await jsonInput('widget.json', {
-      allowedRedirectUris: ['https://app.example.com/connected'],
+      allowPhoneChange: true,
       businessName: 'Example',
       enabled: true,
+      failureCallbackUrl: null,
       methods: ['qr'],
+      successCallbackUrl: 'https://app.example.com/connected',
       theme: 'dark',
     })
     server = await startHttpServer({body: {data: widgetSettings()}})
@@ -475,11 +493,13 @@ describe('Platform management commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      allowedRedirectUris: ['https://app.example.com/connected'],
+      allowPhoneChange: true,
       businessName: 'Example',
       enabled: true,
+      failureCallbackUrl: null,
       methods: ['qr'],
       projectId: 'project_1',
+      successCallbackUrl: 'https://app.example.com/connected',
       theme: 'dark',
     })
     expect(server.requests[0]).toMatchObject({
@@ -531,23 +551,30 @@ describe('Platform management commands', () => {
 function widgetSettings() {
   return {
     accent: null,
-    allowedOrigins: ['https://app.example.com'],
-    allowedRedirectUris: [],
+    allowPhoneChange: false,
     businessName: 'Example',
-    colors: null,
     createdAt: 1_723_000_000_000,
+    defaultMethod: null,
+    description: null,
     enabled: true,
+    failureCallbackUrl: null,
+    headline: null,
     hideWatermark: false,
     historySync: 'ask',
     id: 'widget_1',
+    logoMode: 'none',
+    logoSourceStorageId: null,
+    logoStorageId: null,
+    logoUrl: null,
     methods: ['qr'],
-    modesAllowed: ['embedded'],
+    privacyUrl: null,
     projectId: 'project_1',
-    qrLogoMode: 'none',
-    qrLogoSourceStorageId: null,
-    qrLogoStorageId: null,
     radiusPx: null,
     shape: null,
+    successCallbackUrl: 'https://app.example.com/connected',
+    successMessage: null,
+    supportUrl: null,
+    termsUrl: null,
     theme: 'dark',
     updatedAt: 1_723_000_000_000,
   }

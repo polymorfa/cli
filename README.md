@@ -111,7 +111,6 @@ polymorfa customer enable \
 polymorfa customer create \
   --project project_123 \
   --name Ada \
-  --phone +15551234567 \
   --external-id crm_456 \
   --idempotency-key create-customer-crm-456
 
@@ -119,8 +118,15 @@ polymorfa customer pairing-link create customer_123 \
   --project project_123 \
   --method qr \
   --method phone \
+  --expected-phone +15551234567 \
   --idempotency-key pair-customer-123
 ```
+
+Customer profiles hold a name and an external ID; they have no phone field. To
+reserve an invitation for one number, pass `--expected-phone` to
+`customer pairing-link create`. Pairing links accept `--method`,
+`--expected-phone`, and `--expires-in`; page language and theme are not
+per-link options.
 
 The `customer` commands cover project enablement, list filters and cursors,
 profile creation and updates, archive and restore, assigned Numbers, recent
@@ -573,12 +579,28 @@ API-key creation, token mint/revoke, incident detail, or cross-project token
 aggregate in this typed slice. The raw API command is not a credential-boundary
 bypass.
 
-Widget view returns `null` in JSON when no settings row has been saved. Update
+`widget view` and `widget update` manage saved QuickLink settings. View
+returns `null` in JSON when no settings row has been saved. Update
 accepts one bounded JSON object from `--input`; the target project is selected
 separately with `--project` and cannot be hidden in that input. Omitting the
 project targets organization defaults. Widget logo fields are existing storage
 identifiers, not file, URL, base64, upload, or download operations. Widget
 access requires the `quicklink:manage` scope.
+
+Settings accept `successCallbackUrl` and `failureCallbackUrl`: project-only
+HTTPS destinations that the API copies into each link when it is issued. Set
+`allowPhoneChange` to `true` to let recipients replace a prefilled number; the
+default is `false`. `hideWatermark: true` requires Premium team access. Settings
+have no redirect-URI allowlist. Human output shows both callback URLs and the
+phone-change policy.
+
+```json
+{
+  "successCallbackUrl": "https://app.example.com/whatsapp/connected",
+  "failureCallbackUrl": "https://app.example.com/whatsapp/cancelled",
+  "allowPhoneChange": false
+}
+```
 
 Session stop and delete accept 1 through 100 unique UUIDs or stable slugs. The
 CLI trims IDs and rejects duplicates or oversized batches before transport.

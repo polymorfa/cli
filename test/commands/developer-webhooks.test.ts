@@ -598,7 +598,9 @@ function resource(
             )
           }
           if (method === 'webhookDeliveries.retrieveAttempt') {
-            return Promise.resolve(response({deliveryId: args[0], id: args[1]}))
+            return Promise.resolve(
+              response({deliveryId: args[0], id: args[1], response: null}),
+            )
           }
           const first = args[0]
           const id =
