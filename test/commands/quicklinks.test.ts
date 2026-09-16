@@ -38,6 +38,7 @@ test('creates a QuickLink and uploads separate test history with exact project s
         POLYMORFA_API_KEY: `pmfa_${'A'.repeat(72)}`,
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: undefined,
       },
       async () => {
         const created = await runCommand(
@@ -66,3 +67,97 @@ test('creates a QuickLink and uploads separate test history with exact project s
     await rm(directory, {recursive: true, force: true})
   }
 })
+
+const projectId = '11111111-1111-4111-8111-111111111111'
+const apiKey = `pmfa_${'A'.repeat(72)}`
+const projectToken = `pmfa_pt_${'A'.repeat(94)}`
+
+test('retrieves QuickLink status with an exact-project token and encoded ID', async () => {
+  const server = await startHttpSequenceServer([
+    {
+      body: {
+        success: true,
+        data: {
+          connectedAt: null,
+          errorCode: null,
+          expiresAt: null,
+          id: 'ql/123',
+          openedAt: null,
+          phone: null,
+          session: 'quicklink-123',
+          status: 'pending',
+        },
+      },
+    },
+  ])
+  try {
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: projectToken,
+      },
+      () => runCommand(`quicklink view ql/123 --project ${projectId} --json`),
+    )
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      data: {data: {id: 'ql/123', status: 'pending', expiresAt: null}},
+    })
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/messaging/quicklinks/ql%2F123',
+    })
+    expect(server.requests[0]?.headers.authorization).toBe(
+      `Bearer ${projectToken}`,
+    )
+  } finally {
+    await server.close()
+  }
+})
+
+test('cancels a QuickLink only after confirmation', async () => {
+  const server = await startHttpSequenceServer([
+    {body: {message: 'QuickLink cancelled', success: true}},
+  ])
+  try {
+    await withEnvironment(
+      {
+        POLYMORFA_API_KEY: apiKey,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: undefined,
+      },
+      async () => {
+        const refused = await runCommand(
+          `quicklink cancel ql_123 --project ${projectId} --json`,
+        )
+        expect(exitCode(refused.error)).toBe(2)
+        expect(server.requests).toHaveLength(0)
+
+        const unsupported = await runCommand(
+          `quicklink cancel ql_123 --project ${projectId} --yes --idempotency-key cancel_1 --json`,
+        )
+        expect(exitCode(unsupported.error)).toBe(2)
+        expect(unsupported.stderr).toContain('Nonexistent flag')
+        expect(server.requests).toHaveLength(0)
+
+        const cancelled = await runCommand(
+          `quicklink cancel ql_123 --project ${projectId} --yes --json`,
+        )
+        expect(cancelled.error, cancelled.stderr).toBeUndefined()
+      },
+    )
+    expect(server.requests[0]).toMatchObject({
+      method: 'DELETE',
+      url: '/messaging/quicklinks/ql_123',
+    })
+    expect(server.requests[0]?.headers['idempotency-key']).toBeUndefined()
+  } finally {
+    await server.close()
+  }
+})
+
+function exitCode(error: unknown): number | undefined {
+  return (error as {oclif?: {exit?: number}} | undefined)?.oclif?.exit
+}

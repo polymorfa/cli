@@ -14,6 +14,10 @@ import {
   PolymorfaValidationError,
 } from '@polymorfa/sdk'
 
+import {CliConditionError} from './conditions.js'
+import {CheckpointError, EventFilterError} from '../listener/checkpoint.js'
+import {ListenerProtocolError} from '../listener/sse.js'
+
 export type ErrorCategory =
   | 'authentication'
   | 'authorization'
@@ -28,14 +32,18 @@ export type ErrorCategory =
   | 'server'
   | 'timeout'
   | 'validation'
+  | 'stream'
+  | 'forwarding'
+  | 'operation'
+  | 'partial_success'
 
 export interface PresentedError {
   readonly category: ErrorCategory
+  readonly code: string
   readonly exitCode: number
   readonly message: string
   readonly requestId?: string
-  readonly code?: string
-  readonly retryable?: boolean
+  readonly retryable: boolean
 }
 
 export function presentError(
@@ -45,19 +53,30 @@ export function presentError(
   const message = redact(errorMessage(error), secrets)
   const classified = classifyError(error)
   const requestId =
-    error instanceof PolymorfaError ? error.requestId : undefined
+    error instanceof PolymorfaError || error instanceof ListenerProtocolError
+      ? error.requestId
+      : undefined
 
   return {
     ...classified,
-    ...(error instanceof PolymorfaPaymentRequiredError
-      ? {
-          retryable: false,
-          ...(error.code === undefined
-            ? {}
-            : {code: redact(error.code, secrets)}),
-        }
-      : {}),
+    code:
+      error instanceof PolymorfaPaymentRequiredError && error.code
+        ? redact(error.code, secrets)
+        : error instanceof CliConditionError
+          ? error.condition
+          : error instanceof ListenerProtocolError ||
+              error instanceof CheckpointError ||
+              error instanceof EventFilterError
+            ? error.code
+            : error instanceof PolymorfaError && error.code
+              ? error.code
+              : `${classified.category}_error`,
     message,
+    retryable:
+      (error instanceof ListenerProtocolError && error.retryable) ||
+      ['network', 'rate_limit', 'server', 'timeout'].includes(
+        classified.category,
+      ),
     ...(requestId === undefined ? {} : {requestId}),
   }
 }
@@ -69,6 +88,31 @@ function classifyError(
     return {category: 'payment_required', exitCode: 4}
   }
 
+  if (error instanceof CliConditionError) {
+    const category = error.condition.startsWith('stream_')
+      ? 'stream'
+      : error.condition === 'forwarding_failed'
+        ? 'forwarding'
+        : error.condition === 'partial_success'
+          ? 'partial_success'
+          : error.condition === 'authorization'
+            ? 'authorization'
+            : 'operation'
+    return {category, exitCode: error.exitCode}
+  }
+  if (error instanceof CheckpointError || error instanceof EventFilterError) {
+    return {category: 'validation', exitCode: 2}
+  }
+  if (error instanceof ListenerProtocolError) {
+    if (error.status === 401 || error.status === 403) {
+      return {category: 'authorization', exitCode: 3}
+    }
+    if (error.status === 429) return {category: 'rate_limit', exitCode: 5}
+    if (error.status !== undefined && error.status >= 500) {
+      return {category: 'server', exitCode: 5}
+    }
+    return {category: 'stream', exitCode: 1}
+  }
   if (error instanceof PolymorfaConfigurationError) {
     return {category: 'configuration', exitCode: 2}
   }

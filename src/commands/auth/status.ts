@@ -1,5 +1,6 @@
 import {BaseCommand} from '../../base-command.js'
 import {createAuthService} from '../../config/auth-service.js'
+import {validateProjectToken} from '../../config/credentials.js'
 import {
   PolymorfaConfigurationError,
   validateMessagingCredential,
@@ -41,7 +42,7 @@ function environmentStatus(
   | {
       readonly result: {
         readonly credentialFormatValid: true
-        readonly credentialKind: 'apiKey' | 'clientToken'
+        readonly credentialKind: 'apiKey' | 'clientToken' | 'projectToken'
         readonly credentialPresent: true
         readonly remoteIdentityValidated: false
         readonly source: 'environment'
@@ -52,9 +53,10 @@ function environmentStatus(
   if (requestedProfile !== undefined) return undefined
   const apiKey = nonEmpty(env.POLYMORFA_API_KEY)
   const clientToken = nonEmpty(env.POLYMORFA_CLIENT_TOKEN)
-  if (apiKey !== undefined && clientToken !== undefined) {
+  const projectToken = nonEmpty(env.POLYMORFA_PROJECT_TOKEN)
+  if ([apiKey, clientToken, projectToken].filter(Boolean).length > 1) {
     throw new PolymorfaConfigurationError(
-      'Authentication status is ambiguous; set only POLYMORFA_API_KEY or POLYMORFA_CLIENT_TOKEN, or select --profile <name>.',
+      'Authentication status is ambiguous; set only one of POLYMORFA_API_KEY, POLYMORFA_CLIENT_TOKEN, or POLYMORFA_PROJECT_TOKEN, or select --profile <name>.',
       'credential',
     )
   }
@@ -63,13 +65,19 @@ function environmentStatus(
   if (clientToken !== undefined) {
     validateMessagingCredential({type: 'clientToken', value: clientToken})
   }
-  const secret = apiKey ?? clientToken
+  if (projectToken !== undefined) validateProjectToken(projectToken)
+  const secret = apiKey ?? clientToken ?? projectToken
   if (secret === undefined) return undefined
   return {
     secret,
     result: {
       credentialFormatValid: true,
-      credentialKind: apiKey === undefined ? 'clientToken' : 'apiKey',
+      credentialKind:
+        apiKey !== undefined
+          ? 'apiKey'
+          : projectToken !== undefined
+            ? 'projectToken'
+            : 'clientToken',
       credentialPresent: true,
       remoteIdentityValidated: false,
       source: 'environment',

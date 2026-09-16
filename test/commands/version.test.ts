@@ -34,8 +34,8 @@ describe('version', () => {
 
     expect(exitCode(result.error)).toBe(2)
     expect(JSON.parse(result.stderr)).toMatchObject({
-      category: 'validation',
-      exitCode: 2,
+      error: {category: 'validation', code: 'validation_error'},
+      schemaVersion: 1,
     })
     expect(result.stdout).toBe('')
   })

@@ -341,6 +341,84 @@ describe('Platform management commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test('requests asynchronous stops for a bounded session batch', async () => {
+    server = await startHttpServer({body: {data: {stopping: 1}}})
+
+    const result = await platformEnvironment(() =>
+      runCommand(
+        'session stop session_1 " session_2 " --project project_1 --idempotency-key stop_batch',
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toContain('Requested stops for 1 matching session.')
+    expect(result.stdout).toContain('This does not wait for completion.')
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+      projectId: 'project_1',
+      sessionIds: ['session_1', 'session_2'],
+    })
+    expect(server.requests[0]).toMatchObject({
+      method: 'POST',
+      url: '/platform/sessions/stop',
+    })
+    expect(server.requests[0]?.headers['idempotency-key']).toBe('stop_batch')
+  })
+
+  test('rejects duplicate and oversized session batches before transport', async () => {
+    server = await startHttpServer({body: {data: {stopping: 0}}})
+
+    const duplicate = await platformEnvironment(() =>
+      runCommand('session stop session_1 session_1 --json'),
+    )
+    const oversizedIds = Array.from(
+      {length: 101},
+      (_, index) => `session_${index}`,
+    ).join(' ')
+    const oversized = await platformEnvironment(() =>
+      runCommand(`session stop ${oversizedIds} --json`),
+    )
+
+    expect(exitCode(duplicate.error)).toBe(2)
+    expect(duplicate.stderr).toContain('Session IDs must be unique')
+    expect(exitCode(oversized.error)).toBe(2)
+    expect(oversized.stderr).toContain('Session batches cannot exceed 100 IDs')
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('permanently removes matching sessions only with confirmation', async () => {
+    server = await startHttpServer({body: {data: {removed: 2}}})
+
+    const result = await platformEnvironment(() =>
+      runCommand(
+        'session delete session_1 session_2 --project project_1 --yes --idempotency-key delete_batch',
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toContain(
+      'Removed 2 matching sessions from management.',
+    )
+    expect(result.stdout).toContain('Device termination is best effort.')
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+      projectId: 'project_1',
+      sessionIds: ['session_1', 'session_2'],
+    })
+    expect(server.requests[0]?.url).toBe('/platform/sessions/delete')
+    expect(server.requests[0]?.headers['idempotency-key']).toBe('delete_batch')
+  })
+
+  test('refuses batch session deletion without --yes before transport', async () => {
+    server = await startHttpServer({body: {data: {removed: 1}}})
+
+    const result = await platformEnvironment(() =>
+      runCommand('session delete session_1 --json'),
+    )
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(result.stderr).toContain('Missing required flag yes')
+    expect(server.requests).toHaveLength(0)
+  })
+
   test('represents absent organization-default widget settings as null', async () => {
     server = await startHttpServer({
       body: {data: null},
@@ -446,84 +524,6 @@ describe('Platform management commands', () => {
     expect(result.stderr).toContain(
       'Widget input cannot contain projectId; use --project',
     )
-    expect(server.requests).toHaveLength(0)
-  })
-
-  test('requests asynchronous stops for a bounded session batch', async () => {
-    server = await startHttpServer({body: {data: {stopping: 1}}})
-
-    const result = await platformEnvironment(() =>
-      runCommand(
-        'session stop session_1 " session_2 " --project project_1 --idempotency-key stop_batch',
-      ),
-    )
-
-    expect(result.error).toBeUndefined()
-    expect(result.stdout).toContain('Requested stops for 1 matching session.')
-    expect(result.stdout).toContain('This does not wait for completion.')
-    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      projectId: 'project_1',
-      sessionIds: ['session_1', 'session_2'],
-    })
-    expect(server.requests[0]).toMatchObject({
-      method: 'POST',
-      url: '/platform/sessions/stop',
-    })
-    expect(server.requests[0]?.headers['idempotency-key']).toBe('stop_batch')
-  })
-
-  test('rejects duplicate and oversized session batches before transport', async () => {
-    server = await startHttpServer({body: {data: {stopping: 0}}})
-
-    const duplicate = await platformEnvironment(() =>
-      runCommand('session stop session_1 session_1 --json'),
-    )
-    const oversizedIds = Array.from(
-      {length: 101},
-      (_, index) => `session_${index}`,
-    ).join(' ')
-    const oversized = await platformEnvironment(() =>
-      runCommand(`session stop ${oversizedIds} --json`),
-    )
-
-    expect(exitCode(duplicate.error)).toBe(2)
-    expect(duplicate.stderr).toContain('Session IDs must be unique')
-    expect(exitCode(oversized.error)).toBe(2)
-    expect(oversized.stderr).toContain('Session batches cannot exceed 100 IDs')
-    expect(server.requests).toHaveLength(0)
-  })
-
-  test('permanently removes matching sessions only with confirmation', async () => {
-    server = await startHttpServer({body: {data: {removed: 2}}})
-
-    const result = await platformEnvironment(() =>
-      runCommand(
-        'session delete session_1 session_2 --project project_1 --yes --idempotency-key delete_batch',
-      ),
-    )
-
-    expect(result.error).toBeUndefined()
-    expect(result.stdout).toContain(
-      'Removed 2 matching sessions from management.',
-    )
-    expect(result.stdout).toContain('Device termination is best effort.')
-    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      projectId: 'project_1',
-      sessionIds: ['session_1', 'session_2'],
-    })
-    expect(server.requests[0]?.url).toBe('/platform/sessions/delete')
-    expect(server.requests[0]?.headers['idempotency-key']).toBe('delete_batch')
-  })
-
-  test('refuses batch session deletion without --yes before transport', async () => {
-    server = await startHttpServer({body: {data: {removed: 1}}})
-
-    const result = await platformEnvironment(() =>
-      runCommand('session delete session_1 --json'),
-    )
-
-    expect(exitCode(result.error)).toBe(2)
-    expect(result.stderr).toContain('Missing required flag yes')
     expect(server.requests).toHaveLength(0)
   })
 

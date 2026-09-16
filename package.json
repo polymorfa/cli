@@ -13,12 +13,14 @@
   "files": [
     "bin/run.js",
     "dist",
+    "skills",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
     "audit:prod": "npm audit --omit=dev",
-    "build": "tsc -p tsconfig.build.json",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "clean": "node scripts/clean-dist.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
@@ -28,9 +30,11 @@
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm pack --dry-run --ignore-scripts && npm run audit:prod"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0",
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "github:polymorfa/sdks#8803f0554314214519971cb3306e0c0efe21cb76"
+    "@polymorfa/sdk": "github:polymorfa/sdks#8803f0554314214519971cb3306e0c0efe21cb76",
+    "zod": "4.2.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -121,6 +125,9 @@
       "customer:pairing-link": {
         "description": "Create, inspect, and revoke Customer pairing links."
       },
+      "event": {
+        "description": "Inspect and replay durable developer events."
+      },
       "group": {
         "description": "Inspect and manage Messaging groups."
       },
@@ -147,9 +154,6 @@
       },
       "member": {
         "description": "Inspect organization members."
-      },
-      "operation": {
-        "description": "Inspect durable Platform and Messaging operations."
       },
       "profile": {
         "description": "View and manage the connected account profile."
@@ -181,6 +185,9 @@
       "quick-reply": {
         "description": "Manage observed business quick replies."
       },
+      "quicklink": {
+        "description": "Create, inspect, and cancel persistent onboarding QuickLinks."
+      },
       "security-incident": {
         "description": "Inspect and acknowledge organization security incidents."
       },
@@ -194,10 +201,7 @@
         "description": "Inspect Linked Device user identity data."
       },
       "widget": {
-        "description": "Inspect and update saved Connect widget settings."
-      },
-      "quicklink": {
-        "description": "Create persistent onboarding invitations."
+        "description": "Inspect and update saved QuickLink widget settings."
       },
       "session:configuration": {
         "description": "Inspect and update inherited session configuration."
@@ -207,6 +211,18 @@
       },
       "testing:history-fixture": {
         "description": "Upload project-scoped test history."
+      },
+      "webhook": {
+        "description": "Inspect and manage developer webhooks."
+      },
+      "webhook:delivery": {
+        "description": "Inspect webhook deliveries and request explicit retries."
+      },
+      "webhook:delivery:attempt": {
+        "description": "Inspect immutable webhook delivery attempts."
+      },
+      "webhook:secret": {
+        "description": "Manage one-time webhook signing-secret rotation."
       }
     }
   },

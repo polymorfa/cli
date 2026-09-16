@@ -1,5 +1,8 @@
 import {AsyncEntry} from '@napi-rs/keyring'
-import {PolymorfaConfigurationError} from '@polymorfa/sdk'
+import {
+  PolymorfaConfigurationError,
+  validateClientCredential,
+} from '@polymorfa/sdk'
 
 const KEYRING_SERVICE = 'com.polymorfa.cli.credentials'
 
@@ -56,8 +59,16 @@ export class SecureCredentialStore implements CredentialStore {
   }
 }
 
-export function profileCredentialAccount(profile: string): string {
-  return `profile:${profile}:apiKey`
+export function profileCredentialAccount(
+  profile: string,
+  kind: 'apiKey' | 'projectToken' = 'apiKey',
+): string {
+  return `profile:${profile}:${kind}`
+}
+
+export function validateProjectToken(value: string): string {
+  const token = value.trim()
+  return validateClientCredential({type: 'projectToken', value: token}).value
 }
 
 function keyringError(
