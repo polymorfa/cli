@@ -451,10 +451,8 @@ never answers or declines on its own.
   connection receives includes its own audio. It is off by default.
   `--inbound-route sip_trunk` with `--sip-trunk` also sends incoming calls to a
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
-  call. `calls settings set` reads the current settings and sends them back
-  with your changes and the revision it read, so a flag you omit keeps its
-  value. If the settings change in between, the command exits with code 4;
-  run it again.
+  call. `calls settings set` sends only the flags you pass; the other
+  settings keep their values.
 
 ### SIP trunks
 

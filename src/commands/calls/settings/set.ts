@@ -9,7 +9,7 @@ import {
 
 export default class CallsSettingsSet extends BaseCommand {
   static override description =
-    'Change a session’s call settings through the Platform API. Settings you do not pass keep their current values. --include-self-audio controls whether the merged audio a connection receives includes its own audio (off by default); WhatsApp never hears its own audio. --inbound-route sip_trunk also sends incoming calls to --sip-trunk (SIP trunks are a beta), and --sip-claim controls whether the trunk’s answer claims the call. Requires a server API key.'
+    'Change a session’s call settings through the Platform API. Settings you do not pass keep their current values; --inbound-route sip_trunk without --sip-trunk keeps the stored trunk. --include-self-audio controls whether the merged audio a connection receives includes its own audio (off by default); WhatsApp never hears its own audio. --inbound-route sip_trunk also sends incoming calls to --sip-trunk (SIP trunks are a beta), and --sip-claim controls whether the trunk’s answer claims the call. Requires a server API key.'
 
   static override examples = [
     '<%= config.bin %> calls settings set --session support --include-self-audio=true',

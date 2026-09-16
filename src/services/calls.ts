@@ -259,9 +259,8 @@ export interface CallSettingsChanges {
 }
 
 /**
- * Apply the given changes to the session's current settings. The API replaces
- * every field on update, so unchanged fields are read first and sent back
- * with the revision they were read at.
+ * Change the given settings. The API keeps every setting that is not sent,
+ * so no read is needed first.
  */
 export async function updateCallSettings(
   client: MessagingClient,
@@ -281,29 +280,19 @@ export async function updateCallSettings(
       'sip-trunk',
     )
   }
-  const current = (await client.voip.retrieveCallSettings(name)).data.data
+  // A trunk alone switches the route to it.
   const inboundRoute =
     changes.inboundRoute ??
-    (changes.sipTrunkId === undefined ? current.inboundRoute : 'sip_trunk')
-  const sipTrunkId =
-    inboundRoute === 'sip_trunk'
-      ? (changes.sipTrunkId ?? current.sipTrunkId)
-      : null
-  if (inboundRoute === 'sip_trunk' && sipTrunkId === null) {
-    throw new PolymorfaConfigurationError(
-      'Provide --sip-trunk with the trunk that receives incoming calls.',
-      'sip-trunk',
-    )
-  }
+    (changes.sipTrunkId === undefined ? undefined : 'sip_trunk')
   const response = await client.voip.updateCallSettings(name, {
-    includeSelfAudio: changes.includeSelfAudio ?? current.includeSelfAudio,
-    inboundRoute,
-    sipClaim: changes.sipClaim ?? current.sipClaim,
-    ...(sipTrunkId === null ? {} : {sipTrunkId}),
-    // Fails with a conflict if the settings changed after they were read.
-    ...(current.revision === undefined
+    ...(changes.includeSelfAudio === undefined
       ? {}
-      : {expectedRevision: current.revision}),
+      : {includeSelfAudio: changes.includeSelfAudio}),
+    ...(inboundRoute === undefined ? {} : {inboundRoute}),
+    ...(changes.sipTrunkId === undefined
+      ? {}
+      : {sipTrunkId: changes.sipTrunkId}),
+    ...(changes.sipClaim === undefined ? {} : {sipClaim: changes.sipClaim}),
   })
   return result(response.data.data, response.metadata)
 }
