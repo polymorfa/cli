@@ -46,6 +46,28 @@ describe('mcp status', () => {
     expect(output).not.toHaveBeenCalled()
   })
 
+  test('reports a client whose executable is missing as not configured', async () => {
+    const missing = Object.assign(new Error('spawn claude ENOENT'), {
+      code: 'ENOENT',
+      errno: -2,
+      path: 'claude',
+      syscall: 'spawn claude',
+    })
+    clientCommand.run
+      .mockResolvedValueOnce({action: 'status', client: 'codex', output: 'ok'})
+      .mockRejectedValueOnce(missing)
+    const output = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true)
+
+    await McpStatus.run(['--json'])
+
+    expect(JSON.parse(String(output.mock.calls[0]?.[0]))).toEqual([
+      {client: 'codex', configured: true, output: 'ok'},
+      {client: 'claude', configured: false, reason: 'client_not_found'},
+    ])
+  })
+
   test('recognizes the Claude CLI missing-server result', async () => {
     clientCommand.run.mockRejectedValueOnce(
       new Error('No MCP server named "polymorfa". Configured servers: example'),

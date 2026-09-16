@@ -117,6 +117,33 @@ describe('event commands', () => {
     })
   })
 
+  test('prints event details and the decoded payload in human output', async () => {
+    sdk.responses.push({
+      data: {
+        ...event(),
+        payload: {
+          contentType: 'application/json',
+          data: Buffer.from('{"text":"hello"}').toString('base64'),
+          encoding: 'base64',
+        },
+        payloadAvailability: 'available',
+      },
+      metadata: metadata(),
+    })
+    const output = vi
+      .spyOn(process.stdout, 'write')
+      .mockImplementation(() => true)
+
+    await environment(() =>
+      EventView.run(['evt_1', '--owner', 'organization', '--include-payload']),
+    )
+
+    const text = output.mock.calls.map(([chunk]) => String(chunk)).join('')
+    expect(text).toContain('ID\tevt_1')
+    expect(text).toContain('Payload availability\tavailable')
+    expect(text).toContain('Payload\t{"text":"hello"}')
+  })
+
   test('rejects cursor and filter combinations before calling the SDK', async () => {
     vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
 
@@ -167,7 +194,9 @@ describe('event commands', () => {
         values: ['evt_1', {webhookId: 'wh_1'}, {idempotencyKey: 'replay_1'}],
       },
     ])
-    const replayed = JSON.parse(String(output.mock.calls[0]?.[0]))
+    const replayed = JSON.parse(String(output.mock.calls[0]?.[0])) as {
+      operation: unknown
+    }
     expect(replayed.operation).toEqual({id: 'operation_1'})
     expect(replayed).toMatchObject({
       schemaVersion: 1,

@@ -1,3 +1,5 @@
+import {assertCursorAdvanced} from '../developer/support.js'
+
 export interface CursorPage {
   readonly nextCursor: string | null
   readonly hasMore: boolean
@@ -35,6 +37,7 @@ export async function collectPages<T>(input: {
     }
     page = result.page
     if (!page.hasMore || !page.nextCursor || result.items.length === 0) break
+    assertCursorAdvanced(cursor, page.nextCursor)
     cursor = page.nextCursor
   }
   return {items, page}

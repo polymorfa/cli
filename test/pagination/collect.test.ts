@@ -42,4 +42,15 @@ describe('collectPages', () => {
     })
     expect(fetchPage).toHaveBeenCalledTimes(1)
   })
+
+  test('rejects an unchanged continuation cursor instead of refetching a page', async () => {
+    const fetchPage = vi.fn(() =>
+      Promise.resolve({items: [1], page: {hasMore: true, nextCursor: 'same'}}),
+    )
+
+    await expect(
+      collectPages({cursor: 'same', fetchPage, limit: 1, maxItems: 5}),
+    ).rejects.toThrow('same continuation cursor')
+    expect(fetchPage).toHaveBeenCalledTimes(1)
+  })
 })

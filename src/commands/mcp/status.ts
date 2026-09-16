@@ -26,6 +26,9 @@ export default class McpStatus extends BaseCommand {
         return {client, configured: true, output: result.value.output}
       }
       const reason = result.reason as unknown
+      if (isMissingClient(client, reason)) {
+        return {client, configured: false, reason: 'client_not_found'}
+      }
       if (isNotConfigured(client, reason)) {
         return {client, configured: false}
       }
@@ -36,12 +39,24 @@ export default class McpStatus extends BaseCommand {
       status
         .map(
           (item) =>
-            `${item.client}: ${item.configured ? 'configured' : 'not configured'}`,
+            `${item.client}: ${
+              item.configured
+                ? 'configured'
+                : 'reason' in item
+                  ? `not configured (${item.client} command not found)`
+                  : 'not configured'
+            }`,
         )
         .join('\n'),
       flags,
     )
   }
+}
+
+function isMissingClient(client: 'codex' | 'claude', error: unknown): boolean {
+  if (!(error instanceof Error)) return false
+  const {code, syscall} = error as NodeJS.ErrnoException
+  return code === 'ENOENT' && syscall === `spawn ${client}`
 }
 
 function isNotConfigured(client: 'codex' | 'claude', error: unknown): boolean {

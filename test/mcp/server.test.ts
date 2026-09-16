@@ -57,6 +57,22 @@ describe('MCP stdio server', () => {
       'polymorfa_listen_status',
       'polymorfa_listen_stop',
     ])
+    const start = (
+      messages[1] as {
+        result: {
+          tools: Array<{
+            name: string
+            inputSchema: {properties: Record<string, {pattern?: string}>}
+          }>
+        }
+      }
+    ).result.tools.find(({name}) => name === 'polymorfa_listen_start')
+    const pattern = new RegExp(
+      start?.inputSchema.properties.projectId?.pattern ?? '',
+    )
+    expect(pattern.test('11111111-1111-4111-8111-111111111111')).toBe(true)
+    expect(pattern.test('project_123')).toBe(false)
+    expect(pattern.test('11111111-1111-4111-8111-11111111111G')).toBe(false)
   })
 })
 

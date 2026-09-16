@@ -307,6 +307,20 @@ describe('ListenerProtocolClient', () => {
         }),
     ).toThrow('origin')
   })
+
+  test('describes the loopback-only plaintext exception for unsupported schemes', () => {
+    expect(
+      () =>
+        new ListenerProtocolClient({
+          apiOrigin: 'ftp://api.example.test',
+          credential: 'primary',
+          fetch: vi.fn<typeof globalThis.fetch>(),
+          version: '0.1.0-dev.0',
+        }),
+    ).toThrow(
+      'must use HTTPS, or HTTP with a host that resolves only to loopback addresses',
+    )
+  })
 })
 
 const PROJECT = '11111111-1111-4111-8111-111111111111'

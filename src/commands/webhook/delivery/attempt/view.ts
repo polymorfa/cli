@@ -2,6 +2,7 @@ import {Args} from '@oclif/core'
 
 import {BaseCommand} from '../../../../base-command.js'
 import {developerResponse} from '../../../../developer/output.js'
+import {renderAttemptDetail} from '../../../../developer/render.js'
 
 export default class WebhookDeliveryAttemptView extends BaseCommand {
   static override args = {
@@ -21,7 +22,7 @@ export default class WebhookDeliveryAttemptView extends BaseCommand {
     )
     this.writeValue(
       developerResponse(response, session.context),
-      `Delivery attempt ${args.attempt}.`,
+      renderAttemptDetail(response.data),
       flags,
     )
   }

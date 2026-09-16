@@ -2,6 +2,7 @@ import {Args, Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
 import {developerResponse} from '../../developer/output.js'
+import {renderEventDetail} from '../../developer/render.js'
 
 export default class EventView extends BaseCommand {
   static override args = {
@@ -26,15 +27,8 @@ export default class EventView extends BaseCommand {
     )
     this.writeValue(
       developerResponse(response, session.context),
-      renderEvent(response.data),
+      renderEventDetail(response.data, flags['include-payload']),
       flags,
     )
   }
-}
-
-function renderEvent(event: {
-  readonly id: string
-  readonly type: string
-}): string {
-  return `${event.id}\t${event.type}`
 }

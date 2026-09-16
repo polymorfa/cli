@@ -15,7 +15,7 @@ export const paginationFlags = {
   }),
   paginate: Flags.boolean({
     description:
-      'Request all pages, or stop at --max-items when it is provided.',
+      'Request consecutive pages until --max-items resources are collected or no pages remain. Requires --max-items.',
   }),
 }
 

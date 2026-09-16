@@ -83,9 +83,14 @@ export function signLocalPayload(
   return `t=${timestamp},v1=${digest}`
 }
 
+export type DestinationResolver = (
+  hostname: string,
+) => Promise<Array<{address: string; family: 4 | 6}>>
+
 export async function validateForwardDestination(
   value: string,
   allowRemote: boolean,
+  resolveHost: DestinationResolver = resolve,
 ): Promise<{address: string; family: 4 | 6; url: URL}> {
   let url: URL
   try {
@@ -106,7 +111,7 @@ export async function validateForwardDestination(
     throw new ForwardingError('Forwarding destinations must use HTTP or HTTPS.')
   }
 
-  const addresses = await resolve(hostname(url))
+  const addresses = await resolveHost(hostname(url))
   const allLoopback = addresses.every(({address}) => isLoopback(address))
   if (!allLoopback && !allowRemote) {
     throw new ForwardingError(

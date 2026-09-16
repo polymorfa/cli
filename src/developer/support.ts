@@ -1,4 +1,4 @@
-import {PolymorfaValidationError} from '@polymorfa/sdk'
+import {PolymorfaServerError, PolymorfaValidationError} from '@polymorfa/sdk'
 
 import type {CursorPageLike, MetadataLike} from './client.js'
 import type {OutputPage} from '../output/contracts.js'
@@ -69,12 +69,22 @@ export async function listResources<T>(
   let cursor = flags.cursor
   let last: CursorPageLike<T> | undefined
   while (items.length < maxItems) {
+    const remaining = maxItems - items.length
     last = await fetchPage({
-      limit: Math.min(limit, maxItems - items.length),
+      limit: Math.min(limit, remaining),
       ...(cursor === undefined ? {} : {cursor}),
     })
-    items.push(...last.items)
+    items.push(...last.items.slice(0, remaining))
+    if (last.items.length > remaining) {
+      // The page cursor would skip the truncated items, so do not offer it.
+      return {
+        items,
+        metadata: last.response.metadata,
+        page: {hasMore: true, nextCursor: null},
+      }
+    }
     if (!last.hasMore || !last.nextCursor || last.items.length === 0) break
+    assertCursorAdvanced(cursor, last.nextCursor)
     cursor = last.nextCursor
   }
   if (!last) throw new Error('Pagination did not request a page.')
@@ -82,6 +92,18 @@ export async function listResources<T>(
     items,
     metadata: last.response.metadata,
     page: {hasMore: last.hasMore, nextCursor: last.nextCursor ?? null},
+  }
+}
+
+export function assertCursorAdvanced(
+  current: string | undefined,
+  next: string,
+): void {
+  if (next === current) {
+    throw new PolymorfaServerError(
+      'The API returned the same continuation cursor for the next page.',
+      {code: 'pagination_cursor_unchanged'},
+    )
   }
 }
 

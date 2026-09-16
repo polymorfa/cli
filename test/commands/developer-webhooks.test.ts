@@ -29,7 +29,6 @@ vi.mock('@polymorfa/sdk', async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown>>()
   class Client {
     events = resource('events')
-    operations = resource('operations')
     webhookDeliveries = resource('webhookDeliveries')
     webhooks = resource('webhooks')
     constructor(options: unknown) {
@@ -165,6 +164,21 @@ describe('developer webhook commands', () => {
 
     expect(findCall('webhooks.retrieve').args).toEqual(['wh_1', {}])
     expect(json(output)).toMatchObject({data: {id: 'wh_1'}, schemaVersion: 1})
+  })
+
+  test('prints webhook and delivery details in human output', async () => {
+    const output = stdout()
+
+    await developerEnvironment(async () => {
+      await WebhookView.run(['wh_1', '--owner', 'organization'])
+      await WebhookDeliveryView.run(['delivery_1', '--owner', 'organization'])
+    })
+
+    const text = output.mock.calls.map(([chunk]) => String(chunk)).join('')
+    expect(text).toContain('URL\thttps://hooks.example.test/polymorfa')
+    expect(text).toContain('Event types\tmessage.received')
+    expect(text).toContain('Status\tsucceeded')
+    expect(text).toContain('Last status code\t204')
   })
 
   test('deletes only after confirmation and preserves the receipt', async () => {
@@ -547,6 +561,39 @@ function resource(
                 deliveryId: String(args[0]),
                 idempotency: receipt('retry_1'),
                 operationId: 'operation_1',
+              }),
+            )
+          }
+          if (method === 'webhooks.retrieve') {
+            return Promise.resolve(
+              response({
+                createdAt: '2026-09-08T00:00:00Z',
+                enabled: true,
+                eventTypes: ['message.received'],
+                format: 'native',
+                headers: [],
+                id: String(args[0]),
+                owner: 'organization',
+                projectId: null,
+                updatedAt: '2026-09-08T00:00:00Z',
+                url: 'https://hooks.example.test/polymorfa',
+              }),
+            )
+          }
+          if (method === 'webhookDeliveries.retrieve') {
+            return Promise.resolve(
+              response({
+                attemptCount: 1,
+                capabilities: {retryable: false},
+                completedAt: '2026-09-08T00:00:01Z',
+                createdAt: '2026-09-08T00:00:00Z',
+                eventId: 'event_1',
+                id: String(args[0]),
+                lastAttemptAt: '2026-09-08T00:00:00Z',
+                lastOutcome: {errorCode: null, statusCode: 204},
+                nextAttemptAt: null,
+                status: 'succeeded',
+                webhookId: 'wh_1',
               }),
             )
           }

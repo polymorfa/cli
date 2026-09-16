@@ -5,6 +5,7 @@ import {
 } from '@modelcontextprotocol/server/stdio'
 import {z} from 'zod'
 
+import {LISTENER_PROJECT_ID_PATTERN} from '../listener/protocol.js'
 import type {ListenerManager} from './listener-manager.js'
 
 export const MCP_TOOL_NAMES = [
@@ -39,7 +40,7 @@ export function createMcpServer(
         from: z.string().optional(),
         maxBuffer: z.number().int().min(1).max(4096).optional(),
         onGap: z.enum(['stop', 'continue']).optional(),
-        projectId: z.string().min(1),
+        projectId: z.string().regex(LISTENER_PROJECT_ID_PATTERN),
       }),
       title: 'Start Polymorfa listener',
     },

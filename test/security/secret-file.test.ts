@@ -6,8 +6,10 @@ import {describe, expect, test} from 'vitest'
 import {prepareSecretFile} from '../../src/security/secret-file.js'
 import {temporaryDirectory} from '../support/fs.js'
 
+const posixOnly = test.skipIf(process.platform === 'win32')
+
 describe('prepareSecretFile', () => {
-  test('writes once to a regular private file', async () => {
+  posixOnly('writes once to a regular private file', async () => {
     const path = join(await temporaryDirectory(), 'secret')
     const destination = await prepareSecretFile(path)
     await destination.write('private-value')

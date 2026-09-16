@@ -2,6 +2,7 @@ import {Args} from '@oclif/core'
 
 import {BaseCommand} from '../../../base-command.js'
 import {developerResponse} from '../../../developer/output.js'
+import {renderDeliveryDetail} from '../../../developer/render.js'
 
 export default class WebhookDeliveryView extends BaseCommand {
   static override args = {
@@ -19,7 +20,7 @@ export default class WebhookDeliveryView extends BaseCommand {
     )
     this.writeValue(
       developerResponse(response, session.context),
-      `Webhook delivery ${args.delivery}.`,
+      renderDeliveryDetail(response.data),
       flags,
     )
   }

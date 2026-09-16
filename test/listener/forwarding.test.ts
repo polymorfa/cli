@@ -84,12 +84,32 @@ describe('local event forwarding', () => {
   })
 
   test('requires explicit remote HTTPS and rejects unsafe destination syntax', async () => {
+    const publicHost = vi.fn((hostname: string) => {
+      expect(hostname).toBe('hooks.example.test')
+      return Promise.resolve([{address: '203.0.114.10', family: 4 as const}])
+    })
     await expect(
-      validateForwardDestination('https://example.com/hook', false),
+      validateForwardDestination(
+        'https://hooks.example.test/hook',
+        false,
+        publicHost,
+      ),
     ).rejects.toThrow('allow-remote-forward')
     await expect(
-      validateForwardDestination('http://example.com/hook', true),
+      validateForwardDestination(
+        'http://hooks.example.test/hook',
+        true,
+        publicHost,
+      ),
     ).rejects.toThrow('HTTPS')
+    await expect(
+      validateForwardDestination(
+        'https://hooks.example.test/hook',
+        true,
+        publicHost,
+      ),
+    ).resolves.toMatchObject({address: '203.0.114.10', family: 4})
+    expect(publicHost).toHaveBeenCalledTimes(3)
     await expect(
       validateForwardDestination('http://user@127.0.0.1/hook', false),
     ).rejects.toThrow('userinfo')

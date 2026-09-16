@@ -12,8 +12,9 @@ export const LISTENER_PROTOCOL_VERSION = '1' as const
 export const LISTENER_PROTOCOL_SHA256 =
   '0f324f0ce4aa6b39e9af9f4aed51fcce42aa818abae00f9e3e03eb551f35d1ee' as const
 
-const UUID =
+export const LISTENER_PROJECT_ID_PATTERN =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+const UUID = LISTENER_PROJECT_ID_PATTERN
 
 export interface ListenerAuthorization {
   readonly authorizationId: string
@@ -341,7 +342,7 @@ function trustedOrigin(value: string): URL {
   if (url.protocol !== 'https:' && url.protocol !== 'http:') {
     throw protocol(
       'listener_origin_invalid',
-      'The configured API origin must use HTTPS.',
+      'The configured API origin must use HTTPS, or HTTP with a host that resolves only to loopback addresses.',
     )
   }
   return new URL(url.origin)

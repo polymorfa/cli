@@ -10,7 +10,14 @@ export default class McpServe extends BaseCommand {
     await this.parse(McpServe)
     const manager = createListenerManager(this.config.version)
     const handle = serveMcp(manager, this.config.version)
-    const stop = () => void handle.close()
+    const stop = () => {
+      handle.close().catch((error: unknown) => {
+        process.exitCode = 1
+        process.stderr.write(
+          `MCP shutdown error: ${error instanceof Error ? error.message : String(error)}\n`,
+        )
+      })
+    }
     process.once('SIGINT', stop)
     process.once('SIGTERM', stop)
   }

@@ -10,51 +10,64 @@ import {
 } from '../../src/listener/checkpoint.js'
 import {temporaryDirectory} from '../support/fs.js'
 
+const posixOnly = test.skipIf(process.platform === 'win32')
+
 describe('listener checkpoints', () => {
-  test('creates and atomically updates a private normalized checkpoint', async () => {
-    const directory = await temporaryDirectory()
-    const path = join(directory, 'listen.json')
-    const first = checkpoint({
-      events: ['message.*', 'call.received', 'message.*'],
-    })
+  posixOnly(
+    'creates and atomically updates a private normalized checkpoint',
+    async () => {
+      const directory = await temporaryDirectory()
+      const path = join(directory, 'listen.json')
+      const first = checkpoint({
+        events: ['message.*', 'call.received', 'message.*'],
+      })
 
-    await writeCheckpoint(path, first)
+      await writeCheckpoint(path, first)
 
-    expect((await lstat(path)).mode & 0o777).toBe(0o600)
-    expect(JSON.parse(await readFile(path, 'utf8'))).toEqual({
-      ...first,
-      filters: {events: ['call.received', 'message.*']},
-    })
-    await expect(
-      loadCheckpoint(path, 'project_1', ['message.*', 'call.received']),
-    ).resolves.toMatchObject({lastAcknowledgedCursor: 'cursor_1'})
+      expect((await lstat(path)).mode & 0o777).toBe(0o600)
+      expect(JSON.parse(await readFile(path, 'utf8'))).toEqual({
+        ...first,
+        filters: {events: ['call.received', 'message.*']},
+      })
+      await expect(
+        loadCheckpoint(path, 'project_1', ['message.*', 'call.received']),
+      ).resolves.toMatchObject({lastAcknowledgedCursor: 'cursor_1'})
 
-    await writeCheckpoint(path, {...first, lastAcknowledgedCursor: 'cursor_2'})
-    await expect(
-      loadCheckpoint(path, 'project_1', first.filters.events),
-    ).resolves.toMatchObject({lastAcknowledgedCursor: 'cursor_2'})
-  })
+      await writeCheckpoint(path, {
+        ...first,
+        lastAcknowledgedCursor: 'cursor_2',
+      })
+      await expect(
+        loadCheckpoint(path, 'project_1', first.filters.events),
+      ).resolves.toMatchObject({lastAcknowledgedCursor: 'cursor_2'})
+    },
+  )
 
-  test('rejects unsafe files and mismatched context before use', async () => {
-    const directory = await temporaryDirectory()
-    const path = join(directory, 'listen.json')
-    await writeFile(path, JSON.stringify(checkpoint()))
-    await chmod(path, 0o644)
-    await expect(loadCheckpoint(path, 'project_1', [])).rejects.toThrow('0600')
+  posixOnly(
+    'rejects unsafe files and mismatched context before use',
+    async () => {
+      const directory = await temporaryDirectory()
+      const path = join(directory, 'listen.json')
+      await writeFile(path, JSON.stringify(checkpoint()))
+      await chmod(path, 0o644)
+      await expect(loadCheckpoint(path, 'project_1', [])).rejects.toThrow(
+        '0600',
+      )
 
-    await chmod(path, 0o600)
-    await expect(loadCheckpoint(path, 'different', [])).rejects.toThrow(
-      'project',
-    )
+      await chmod(path, 0o600)
+      await expect(loadCheckpoint(path, 'different', [])).rejects.toThrow(
+        'project',
+      )
 
-    const target = join(directory, 'target')
-    const link = join(directory, 'link')
-    await writeFile(target, '{}', {mode: 0o600})
-    await symlink(target, link)
-    await expect(loadCheckpoint(link, 'project_1', [])).rejects.toThrow(
-      'regular',
-    )
-  })
+      const target = join(directory, 'target')
+      const link = join(directory, 'link')
+      await writeFile(target, '{}', {mode: 0o600})
+      await symlink(target, link)
+      await expect(loadCheckpoint(link, 'project_1', [])).rejects.toThrow(
+        'regular',
+      )
+    },
+  )
 
   test('does not apply POSIX mode bits on Windows', async () => {
     const directory = await temporaryDirectory()
