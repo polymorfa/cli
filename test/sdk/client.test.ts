@@ -79,7 +79,10 @@ describe('createRawClient', () => {
     expect(client.billing).toHaveProperty('usage')
     expect(client.billing).toHaveProperty('listTransactions')
     expect(client.billing).toHaveProperty('listPricing')
-    expect(client.billing).toHaveProperty('updateReminderSettings')
+    expect(client.billing).not.toHaveProperty('updateReminderSettings')
+    expect(client.sessions).toHaveProperty('retrieve')
+    expect(client.sessions).toHaveProperty('update')
+    expect(client.sessions).toHaveProperty('quoteTierChange')
     expect(client.organizations).not.toHaveProperty('update')
 
     expect(() =>

@@ -23,6 +23,103 @@ describe('Platform management commands', () => {
     directory = undefined
   })
 
+  test('reads and updates session configuration using Platform authority', async () => {
+    server = await startHttpServer({
+      body: {success: true, data: {name: 'support', configuration: {}}},
+    })
+    const input = await jsonInput('configuration.json', {
+      revision: 2,
+      configuration: {reset: ['historySync.mode']},
+    })
+    const read = await platformEnvironment(() =>
+      runCommand('session configuration get support --json'),
+    )
+    expect(read.error).toBeUndefined()
+    const update = await platformEnvironment(() =>
+      runCommand(
+        `session configuration update support --input ${input} --json`,
+      ),
+    )
+    expect(update.error).toBeUndefined()
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/sessions/support',
+      'PUT /platform/sessions/support',
+    ])
+    expect(JSON.parse(server.requests[1]!.body)).toEqual({
+      revision: 2,
+      configuration: {reset: ['historySync.mode']},
+    })
+  })
+
+  test.each([
+    [],
+    {},
+    {unknown: true},
+    {set: []},
+    {set: {unknown: true}},
+    {set: {historySync: []}},
+    {set: {historySync: {mode: ['deliver']}}},
+    {set: {historySync: {requestFull: 'yes'}}},
+    {set: {observation: {presenceMode: 'project'}}},
+    {set: {observation: {unknown: 'off'}}},
+    {set: {hms: {enabled: false, region: 'br'}}},
+    {set: {hms: {enabled: true, region: 'BR', policy: 'short'}}},
+    {
+      set: {
+        hms: {enabled: true, region: 'br', policy: 'short', retentionDays: 90},
+      },
+    },
+    {set: {hms: {enabled: true, region: 'br', policy: 'enterprise_archive'}}},
+    {reset: 'hms'},
+    {reset: ['unknown']},
+    {reset: [{}]},
+    {set: {historySync: {mode: 'deliver'}}, reset: ['historySync']},
+    {
+      set: {observation: {labelMode: 'project'}},
+      reset: ['observation.labelMode'],
+    },
+  ])(
+    'rejects invalid nested configuration before HTTP: %j',
+    async (configuration) => {
+      server = await startHttpServer({body: {success: true, data: {}}})
+      const input = await jsonInput('invalid-configuration.json', {
+        revision: 0,
+        configuration,
+      })
+      const result = await platformEnvironment(() =>
+        runCommand(
+          `session configuration update support --input ${input} --json`,
+        ),
+      )
+      expect(result.error).toBeDefined()
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
+  test('sends validated nested overrides and non-overlapping resets unchanged', async () => {
+    server = await startHttpServer({body: {success: true, data: {}}})
+    const payload = {
+      revision: 3,
+      configuration: {
+        set: {
+          historySync: {mode: 'deliver'},
+          hms: {enabled: false},
+          observation: {presenceMode: 'cache', labelMode: 'project'},
+        },
+        reset: ['historySync.requestFull', 'observation.typingMode'],
+      },
+    }
+    const input = await jsonInput('configuration.json', payload)
+    const result = await platformEnvironment(() =>
+      runCommand(
+        `session configuration update support --input ${input} --json`,
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(server.requests).toHaveLength(1)
+    expect(JSON.parse(server.requests[0]!.body)).toEqual(payload)
+  })
+
   test('lists API-key metadata without implying that the scope mask is authoritative', async () => {
     server = await startHttpServer({
       body: {
