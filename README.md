@@ -686,3 +686,22 @@ The file contains `messages`, with up to 100 entries specifying `id`,
 `senderPhone`, `text`, `timestamp` (Unix seconds), and `fromMe`. Senders must be
 existing simulated numbers in the selected project. This command does not enable
 hosted message storage.
+
+## Prepaid billing responses
+
+`polymorfa api /platform/billing --surface platform --json` preserves fractional
+credit quantities. Fields ending in `Cents` in the prepaid balance and usage
+responses are credits, not cash minor units.
+
+A request denied for insufficient funding returns `payment_required`, preserves
+the API error code and request ID, and exits with code 4. This is not a retryable
+server error. Add credit or resolve the billing restriction in the Console before
+retrying. HTTP 409 from an expired tier quote also requires reviewing a new quote;
+the CLI never creates or confirms a replacement purchase automatically.
+
+For a tier change, use the raw API command to create a quote with
+`POST /platform/sessions/{sessionId}/tier-quotes`, review the returned charge,
+then explicitly submit its `quoteId` with `PATCH /platform/sessions/{sessionId}`.
+Read `GET /platform/sessions/{sessionId}/tier-quotes/{quoteId}` until the result is
+applied or rejected. Store the full JSON request in a file and pass `--input` when
+it contains numeric values or `null`; `--field` creates string values.

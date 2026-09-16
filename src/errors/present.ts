@@ -7,6 +7,7 @@ import {
   PolymorfaConnectionError,
   PolymorfaError,
   PolymorfaNotFoundError,
+  PolymorfaPaymentRequiredError,
   PolymorfaRateLimitError,
   PolymorfaServerError,
   PolymorfaTimeoutError,
@@ -22,6 +23,7 @@ export type ErrorCategory =
   | 'internal'
   | 'network'
   | 'not_found'
+  | 'payment_required'
   | 'rate_limit'
   | 'server'
   | 'timeout'
@@ -32,6 +34,8 @@ export interface PresentedError {
   readonly exitCode: number
   readonly message: string
   readonly requestId?: string
+  readonly code?: string
+  readonly retryable?: boolean
 }
 
 export function presentError(
@@ -45,6 +49,14 @@ export function presentError(
 
   return {
     ...classified,
+    ...(error instanceof PolymorfaPaymentRequiredError
+      ? {
+          retryable: false,
+          ...(error.code === undefined
+            ? {}
+            : {code: redact(error.code, secrets)}),
+        }
+      : {}),
     message,
     ...(requestId === undefined ? {} : {requestId}),
   }
@@ -53,6 +65,10 @@ export function presentError(
 function classifyError(
   error: unknown,
 ): Pick<PresentedError, 'category' | 'exitCode'> {
+  if (error instanceof PolymorfaPaymentRequiredError) {
+    return {category: 'payment_required', exitCode: 4}
+  }
+
   if (error instanceof PolymorfaConfigurationError) {
     return {category: 'configuration', exitCode: 2}
   }
