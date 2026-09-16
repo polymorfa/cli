@@ -2,6 +2,7 @@ import {runCommand} from '@oclif/test'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {
+  startHttpSequenceServer,
   startHttpServer,
   withEnvironment,
   type ResponseFixture,
@@ -11,6 +12,7 @@ import {
 const API_KEY =
   'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const CLIENT_TOKEN = 'pmfa_ct_browser_token'
+const TRUNK_ID = '6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10'
 
 describe('unified calls commands', () => {
   let server: TestHttpServer | undefined
@@ -327,7 +329,7 @@ describe('unified calls commands', () => {
 
     expect(viewed.error).toBeUndefined()
     expect(viewed.stdout).toBe(
-      'Session\tsupport/main\nInclude self audio\tyes\nUpdated\t2026-09-16T10:00:00.000Z\n',
+      'Session\tsupport/main\nInclude self audio\tyes\nIncoming calls\tclients\nUpdated\t2026-09-16T10:00:00.000Z\n',
     )
     expect(updated.error).toBeUndefined()
     expect(jsonData(updated.stdout)).toEqual({
@@ -336,11 +338,107 @@ describe('unified calls commands', () => {
     })
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
       'GET /platform/sessions/support%2Fmain/call-settings',
+      'GET /platform/sessions/support%2Fmain/call-settings',
       'PUT /platform/sessions/support%2Fmain/call-settings',
     ])
-    expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
+    expect(JSON.parse(server.requests[2]?.body ?? '')).toEqual({
       includeSelfAudio: true,
     })
+  })
+
+  test('keeps the SIP route when only self audio changes', async () => {
+    const routed = {
+      includeSelfAudio: false,
+      inboundRoute: 'sip_trunk',
+      sipClaim: false,
+      sipTrunkId: TRUNK_ID,
+      updatedAt: '2026-09-16T10:00:00.000Z',
+    }
+    server = await startHttpSequenceServer([
+      {body: {data: routed, success: true}},
+      {body: {data: {...routed, includeSelfAudio: true}, success: true}},
+    ])
+
+    const updated = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --include-self-audio=true',
+      ),
+    )
+
+    expect(updated.error).toBeUndefined()
+    expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
+      includeSelfAudio: true,
+      inboundRoute: 'sip_trunk',
+      sipClaim: false,
+      sipTrunkId: TRUNK_ID,
+    })
+    expect(updated.stdout).toContain('Incoming calls\tclients and SIP trunk')
+    expect(updated.stdout).toContain(`SIP trunk\t${TRUNK_ID}`)
+    expect(updated.stdout).toContain('SIP answer claims call\tno')
+  })
+
+  test('routes incoming calls to a trunk and back to clients', async () => {
+    const defaults = {
+      includeSelfAudio: true,
+      inboundRoute: 'clients',
+      sipClaim: true,
+      sipTrunkId: null,
+      updatedAt: null,
+    }
+    server = await startHttpSequenceServer([
+      {body: {data: defaults, success: true}},
+      {body: {data: defaults, success: true}},
+    ])
+
+    const routed = await apiKey(() =>
+      runCommand(
+        `calls settings set --session support --sip-trunk ${TRUNK_ID}`,
+      ),
+    )
+    const back = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --inbound-route clients --sip-claim=false',
+      ),
+    )
+    const missing = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --inbound-route sip_trunk',
+      ),
+    )
+    const conflicting = await apiKey(() =>
+      runCommand(
+        `calls settings set --session support --inbound-route clients --sip-trunk ${TRUNK_ID}`,
+      ),
+    )
+    const empty = await apiKey(() =>
+      runCommand('calls settings set --session support'),
+    )
+
+    expect(routed.error).toBeUndefined()
+    expect(back.error).toBeUndefined()
+    expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
+      includeSelfAudio: true,
+      inboundRoute: 'sip_trunk',
+      sipClaim: true,
+      sipTrunkId: TRUNK_ID,
+    })
+    expect(JSON.parse(server.requests[3]?.body ?? '')).toEqual({
+      includeSelfAudio: true,
+      inboundRoute: 'clients',
+      sipClaim: false,
+    })
+    expect(exitCode(missing.error)).toBe(2)
+    expect(missing.stderr).toContain('--sip-trunk')
+    expect(exitCode(conflicting.error)).toBe(2)
+    expect(exitCode(empty.error)).toBe(2)
+    // The missing-trunk check reads first; the other refusals send nothing.
+    expect(server.requests.map(({method}) => method)).toEqual([
+      'GET',
+      'PUT',
+      'GET',
+      'PUT',
+      'GET',
+    ])
   })
 
   test('rejects client tokens and invalid values for call settings', async () => {

@@ -23,6 +23,7 @@ import {
   PolymorfaServerError,
   PolymorfaValidationError,
   type MessagingClient,
+  type CallInboundRoute,
   type MessagingCredential,
   type ResponseMetadata,
   type SessionCallSettings,
@@ -250,15 +251,55 @@ export async function viewCallSettings(
   return result(response.data.data, response.metadata)
 }
 
+export interface CallSettingsChanges {
+  readonly includeSelfAudio?: boolean
+  readonly inboundRoute?: CallInboundRoute
+  readonly sipClaim?: boolean
+  readonly sipTrunkId?: string
+}
+
+/**
+ * Apply the given changes to the session's current settings. The API replaces
+ * every field on update, so unchanged fields are read first and sent back.
+ */
 export async function updateCallSettings(
   client: MessagingClient,
   session: string,
-  includeSelfAudio: boolean,
+  changes: CallSettingsChanges,
 ): Promise<CallsResult<SessionCallSettings>> {
-  const response = await client.voip.updateCallSettings(
-    validateSession(session),
-    {includeSelfAudio},
-  )
+  const name = validateSession(session)
+  if (Object.values(changes).every((value) => value === undefined)) {
+    throw new PolymorfaConfigurationError(
+      'Provide at least one setting to change.',
+      'include-self-audio',
+    )
+  }
+  if (changes.inboundRoute === 'clients' && changes.sipTrunkId !== undefined) {
+    throw new PolymorfaConfigurationError(
+      '--sip-trunk requires --inbound-route sip_trunk.',
+      'sip-trunk',
+    )
+  }
+  const current = (await client.voip.retrieveCallSettings(name)).data.data
+  const inboundRoute =
+    changes.inboundRoute ??
+    (changes.sipTrunkId === undefined ? current.inboundRoute : 'sip_trunk')
+  const sipTrunkId =
+    inboundRoute === 'sip_trunk'
+      ? (changes.sipTrunkId ?? current.sipTrunkId)
+      : null
+  if (inboundRoute === 'sip_trunk' && sipTrunkId === null) {
+    throw new PolymorfaConfigurationError(
+      'Provide --sip-trunk with the trunk that receives incoming calls.',
+      'sip-trunk',
+    )
+  }
+  const response = await client.voip.updateCallSettings(name, {
+    includeSelfAudio: changes.includeSelfAudio ?? current.includeSelfAudio,
+    inboundRoute,
+    sipClaim: changes.sipClaim ?? current.sipClaim,
+    ...(sipTrunkId === null ? {} : {sipTrunkId}),
+  })
   return result(response.data.data, response.metadata)
 }
 
@@ -347,6 +388,13 @@ export function renderCallSettings(
   return [
     `Session\t${session}`,
     `Include self audio\t${yesNo(settings.includeSelfAudio)}`,
+    `Incoming calls\t${settings.inboundRoute === 'sip_trunk' ? 'clients and SIP trunk' : 'clients'}`,
+    ...(settings.inboundRoute === 'sip_trunk'
+      ? [
+          `SIP trunk\t${settings.sipTrunkId ?? '-'}`,
+          `SIP answer claims call\t${yesNo(settings.sipClaim)}`,
+        ]
+      : []),
     `Updated\t${settings.updatedAt ?? 'never (defaults)'}`,
   ].join('\n')
 }

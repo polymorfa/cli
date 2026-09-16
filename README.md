@@ -418,6 +418,8 @@ polymorfa calls media --session support --place +15550100 \
 
 polymorfa calls settings get --session support
 polymorfa calls settings set --session support --include-self-audio=true
+polymorfa calls settings set --session support \
+  --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
 ```
 
 Every inbound call rings until a participant answers or declines it. The CLI
@@ -445,8 +447,35 @@ never answers or declines on its own.
   end, invite, watch, and carry audio when the session's client rules allow
   it. The API decides; the CLI reports its errors unchanged.
 - **Settings.** `calls settings` uses the Platform API and requires a server
-  API key. `includeSelfAudio` controls whether the merged audio a connection
-  receives includes its own audio. It is off by default.
+  API key. `--include-self-audio` controls whether the merged audio a
+  connection receives includes its own audio. It is off by default.
+  `--inbound-route sip_trunk` with `--sip-trunk` also sends incoming calls to a
+  SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
+  call. `calls settings set` reads the current settings and sends them back
+  with your changes, so a flag you omit keeps its value.
+
+### SIP trunks
+
+SIP trunks connect a PBX to WhatsApp calls. They are a beta: changes fail with
+exit code 3 until your team is enrolled. Commands require a server API key.
+
+```shell
+polymorfa sip-trunk list --project project_123
+polymorfa sip-trunk view 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+polymorfa sip-trunk create --project project_123 --input trunk.json
+polymorfa sip-trunk update 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 \
+  --disable --expected-revision 3
+polymorfa sip-trunk update 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --input changes.json
+polymorfa sip-trunk rotate-credentials 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --yes
+polymorfa sip-trunk delete 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --yes
+```
+
+`create` and `update` read the request body from a file or stdin (`-`), so
+passwords never appear in the command line. `create` refuses a body that names
+`projectId`; use `--project`. A trunk that accepts calls from your PBX, and
+`rotate-credentials`, print the password once. `update --expected-revision`
+exits with code 4 when the trunk changed; `delete` exits with code 4 while a
+session routes calls to the trunk.
 
 `calls watch` streams inbound calls and their progress: `incoming`, `claim`,
 `state`, `participant_joined`, `participant_state`, `participant_left`, and

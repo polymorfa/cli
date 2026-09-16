@@ -40,18 +40,24 @@ calls
 
 ## Operation mapping
 
-| Command              | Operation                                        | SDK surface                         |
-| -------------------- | ------------------------------------------------ | ----------------------------------- |
-| `calls place`        | `POST /messaging/voip/calls`                     | `voip.place`                        |
-| `calls accept`       | `POST /messaging/voip/calls/{id}/accept`         | `voip.accept`                       |
-| `calls reject`       | `POST /messaging/voip/calls/{id}/reject`         | `voip.reject`                       |
-| `calls leave`        | `POST /messaging/voip/calls/{id}/leave`          | `voip.leave`                        |
-| `calls end`          | `DELETE /messaging/voip/calls/{id}`              | `voip.end`                          |
-| `calls invite`       | `POST /messaging/voip/calls/{id}/participants`   | `voip.addParticipant`               |
-| `calls settings get` | `GET /platform/sessions/{session}/call-settings` | `voip.retrieveCallSettings`         |
-| `calls settings set` | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
-| `calls watch`        | Lifecycle socket                                 | `CallsClient` events                |
-| `calls media`        | Place or accept, then the media socket           | `CallsClient`, `Call`, `call.audio` |
+| Command                        | Operation                                        | SDK surface                         |
+| ------------------------------ | ------------------------------------------------ | ----------------------------------- |
+| `calls place`                  | `POST /messaging/voip/calls`                     | `voip.place`                        |
+| `calls accept`                 | `POST /messaging/voip/calls/{id}/accept`         | `voip.accept`                       |
+| `calls reject`                 | `POST /messaging/voip/calls/{id}/reject`         | `voip.reject`                       |
+| `calls leave`                  | `POST /messaging/voip/calls/{id}/leave`          | `voip.leave`                        |
+| `calls end`                    | `DELETE /messaging/voip/calls/{id}`              | `voip.end`                          |
+| `calls invite`                 | `POST /messaging/voip/calls/{id}/participants`   | `voip.addParticipant`               |
+| `calls settings get`           | `GET /platform/sessions/{session}/call-settings` | `voip.retrieveCallSettings`         |
+| `calls settings set`           | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
+| `sip-trunk list`               | `GET /platform/sip-trunks`                       | `sipTrunks.list`                    |
+| `sip-trunk view`               | `GET /platform/sip-trunks/{id}`                  | `sipTrunks.retrieve`                |
+| `sip-trunk create`             | `POST /platform/sip-trunks`                      | `sipTrunks.create`                  |
+| `sip-trunk update`             | `PATCH /platform/sip-trunks/{id}`                | `sipTrunks.update`                  |
+| `sip-trunk delete`             | `DELETE /platform/sip-trunks/{id}`               | `sipTrunks.delete`                  |
+| `sip-trunk rotate-credentials` | `POST /platform/sip-trunks/{id}/credentials`     | `sipTrunks.rotateCredentials`       |
+| `calls watch`                  | Lifecycle socket                                 | `CallsClient` events                |
+| `calls media`                  | Place or accept, then the media socket           | `CallsClient`, `Call`, `call.audio` |
 
 The CLI uses only the neutral public calling surface. It does not expose
 offers, candidates, session descriptions, or media framing, and it imports no
