@@ -77,11 +77,30 @@ describe('Customer commands', () => {
     expect(server.requests[0]?.url).toBe(
       '/platform/customers?projectId=project%2F1&cursor=cursor%2F1&limit=20&search=Ada&status=active&isDefault=false&hasNumbers=true&needsAttention=false',
     )
-    expect(JSON.parse(result.stdout)).toMatchObject({
+    expect(JSON.parse(result.stdout)).toEqual({
       data: {
-        data: [customerSummary()],
+        data: [
+          {
+            activePairingLinkState: 'active',
+            archivedAt: null,
+            connectedNumberCount: 1,
+            createdAt: 1_725_000_000_000,
+            externalCustomerId: 'crm/1',
+            id: 'customer/1',
+            isDefault: false,
+            lastActivityAt: 1_725_000_000_000,
+            name: 'Ada',
+            needsAttention: false,
+            numberCount: 1,
+            orgId: 'org_1',
+            projectId: 'project/1',
+            status: 'active',
+            updatedAt: 1_725_000_000_000,
+          },
+        ],
         page: {hasMore: true, nextCursor: 'cursor_2'},
       },
+      metadata: {attempts: 1, status: 200},
     })
   })
 
