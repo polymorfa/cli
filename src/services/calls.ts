@@ -260,7 +260,8 @@ export interface CallSettingsChanges {
 
 /**
  * Apply the given changes to the session's current settings. The API replaces
- * every field on update, so unchanged fields are read first and sent back.
+ * every field on update, so unchanged fields are read first and sent back
+ * with the revision they were read at.
  */
 export async function updateCallSettings(
   client: MessagingClient,
@@ -299,6 +300,10 @@ export async function updateCallSettings(
     inboundRoute,
     sipClaim: changes.sipClaim ?? current.sipClaim,
     ...(sipTrunkId === null ? {} : {sipTrunkId}),
+    // Fails with a conflict if the settings changed after they were read.
+    ...(current.revision === undefined
+      ? {}
+      : {expectedRevision: current.revision}),
   })
   return result(response.data.data, response.metadata)
 }

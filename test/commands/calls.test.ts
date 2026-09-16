@@ -350,6 +350,7 @@ describe('unified calls commands', () => {
     const routed = {
       includeSelfAudio: false,
       inboundRoute: 'sip_trunk',
+      revision: 5,
       sipClaim: false,
       sipTrunkId: TRUNK_ID,
       updatedAt: '2026-09-16T10:00:00.000Z',
@@ -367,6 +368,7 @@ describe('unified calls commands', () => {
 
     expect(updated.error).toBeUndefined()
     expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
+      expectedRevision: 5,
       includeSelfAudio: true,
       inboundRoute: 'sip_trunk',
       sipClaim: false,
@@ -381,6 +383,7 @@ describe('unified calls commands', () => {
     const defaults = {
       includeSelfAudio: true,
       inboundRoute: 'clients',
+      revision: 0,
       sipClaim: true,
       sipTrunkId: null,
       updatedAt: null,
@@ -417,12 +420,14 @@ describe('unified calls commands', () => {
     expect(routed.error).toBeUndefined()
     expect(back.error).toBeUndefined()
     expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
+      expectedRevision: 0,
       includeSelfAudio: true,
       inboundRoute: 'sip_trunk',
       sipClaim: true,
       sipTrunkId: TRUNK_ID,
     })
     expect(JSON.parse(server.requests[3]?.body ?? '')).toEqual({
+      expectedRevision: 0,
       includeSelfAudio: true,
       inboundRoute: 'clients',
       sipClaim: false,
@@ -439,6 +444,30 @@ describe('unified calls commands', () => {
       'PUT',
       'GET',
     ])
+  })
+
+  test('exits with a conflict when the settings changed after the read', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          data: {includeSelfAudio: false, revision: 2, updatedAt: null},
+          success: true,
+        },
+      },
+      apiError(409, 'state_conflict', 'The call settings changed.'),
+    ])
+
+    const result = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --include-self-audio=true',
+      ),
+    )
+
+    expect(exitCode(result.error)).toBe(4)
+    expect(result.stderr).toContain('The call settings changed.')
+    expect(JSON.parse(server.requests[1]?.body ?? '')).toMatchObject({
+      expectedRevision: 2,
+    })
   })
 
   test('rejects client tokens and invalid values for call settings', async () => {

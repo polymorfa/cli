@@ -452,7 +452,9 @@ never answers or declines on its own.
   `--inbound-route sip_trunk` with `--sip-trunk` also sends incoming calls to a
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
   call. `calls settings set` reads the current settings and sends them back
-  with your changes, so a flag you omit keeps its value.
+  with your changes and the revision it read, so a flag you omit keeps its
+  value. If the settings change in between, the command exits with code 4;
+  run it again.
 
 ### SIP trunks
 
