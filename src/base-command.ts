@@ -1,20 +1,28 @@
 import {Command, Flags, type Interfaces} from '@oclif/core'
 import {
   PolymorfaConfigurationError,
+  type ClientInstance,
   type MessagingClient,
-  type Client as PlatformClient,
 } from '@polymorfa/sdk'
 
-import {resolveCommandEnvironment} from './context/environment.js'
+import {
+  resolveCommandEnvironment,
+  resolveListenerEnvironment,
+} from './context/environment.js'
 import {presentError} from './errors/present.js'
+import {errorEnvelope, type OutputContext} from './output/contracts.js'
 import {renderValue, type OutputMode} from './output/render.js'
 import {createMessagingClient, createPlatformClient} from './sdk/client.js'
+import {
+  createDeveloperSession,
+  type DeveloperSession,
+} from './developer/client.js'
 
 export interface GlobalFlags {
   readonly 'api-version'?: string | undefined
   readonly json?: boolean | undefined
   readonly 'no-color'?: boolean | undefined
-  readonly organization?: string | undefined
+  readonly owner?: string | undefined
   readonly profile?: string | undefined
   readonly project?: string | undefined
   readonly quiet?: boolean | undefined
@@ -23,6 +31,7 @@ export interface GlobalFlags {
 }
 
 export abstract class BaseCommand extends Command {
+  private errorContext: Partial<OutputContext> = {}
   private readonly registeredSecrets: string[] = []
 
   static override baseFlags = {
@@ -39,9 +48,10 @@ export abstract class BaseCommand extends Command {
       description: 'Disable color output.',
       helpGroup: 'GLOBAL',
     }),
-    organization: Flags.string({
-      description: 'Use an organization other than the active context.',
+    owner: Flags.string({
+      description: 'Select project-owned or organization-owned resources.',
       helpGroup: 'GLOBAL',
+      options: ['project', 'organization'],
     }),
     profile: Flags.string({
       description: 'Use a named authentication profile.',
@@ -73,6 +83,16 @@ export abstract class BaseCommand extends Command {
     return 'human'
   }
 
+  protected async developerSession(
+    flags: GlobalFlags,
+  ): Promise<DeveloperSession> {
+    const session = await createDeveloperSession(flags, (secret) =>
+      this.registerSecret(secret),
+    )
+    this.errorContext = session.context
+    return session
+  }
+
   protected async messagingClient(
     flags: GlobalFlags,
     options: {readonly serverApiKeyOnly?: string} = {},
@@ -99,7 +119,45 @@ export abstract class BaseCommand extends Command {
     return createMessagingClient(environment)
   }
 
-  protected async platformClient(flags: GlobalFlags): Promise<PlatformClient> {
+  protected async quickLinksClient(flags: GlobalFlags): Promise<{
+    client: MessagingClient
+    projectId: string
+  }> {
+    const environment = await resolveListenerEnvironment({
+      env: process.env,
+      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
+      ...(flags.project === undefined ? {} : {project: flags.project}),
+      ...(flags['api-version'] === undefined
+        ? {}
+        : {apiVersion: flags['api-version']}),
+      ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
+    })
+    this.registerSecret(environment.credential)
+    return {
+      client: createMessagingClient({
+        ...(environment.apiVersion === undefined
+          ? {}
+          : {apiVersion: environment.apiVersion}),
+        baseUrl: environment.baseUrl,
+        credential: {
+          type:
+            environment.principalType === 'project_token'
+              ? 'projectToken'
+              : 'apiKey',
+          value: environment.credential,
+        },
+        surface: 'messaging',
+        ...(environment.timeoutMs === undefined
+          ? {}
+          : {timeoutMs: environment.timeoutMs}),
+      }),
+      projectId: environment.projectId,
+    }
+  }
+
+  protected async platformClient(
+    flags: GlobalFlags,
+  ): Promise<ClientInstance<'organization'>> {
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface: 'platform',
@@ -121,11 +179,25 @@ export abstract class BaseCommand extends Command {
     const presented = presentError(error, [
       process.env.POLYMORFA_API_KEY ?? '',
       process.env.POLYMORFA_CLIENT_TOKEN ?? '',
+      process.env.POLYMORFA_PROJECT_TOKEN ?? '',
       ...this.registeredSecrets,
     ])
 
     if (this.argv.includes('--json')) {
-      process.stderr.write(`${JSON.stringify(presented)}\n`)
+      process.stderr.write(
+        `${JSON.stringify(
+          errorEnvelope({
+            category: presented.category,
+            code: presented.code,
+            context: this.errorContext,
+            message: presented.message,
+            ...(presented.requestId === undefined
+              ? {}
+              : {requestId: presented.requestId}),
+            retryable: presented.retryable,
+          }),
+        )}\n`,
+      )
     } else {
       process.stderr.write(`Error: ${presented.message}\n`)
       if (presented.requestId !== undefined) {

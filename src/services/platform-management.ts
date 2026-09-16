@@ -2,9 +2,9 @@ import {
   type ApiKey,
   type ApiKeyDeactivation,
   type AuditLog,
+  type ClientInstance,
   type ListAuditLogsParams,
   type OrganizationMember,
-  type Client as PlatformClient,
   PolymorfaValidationError,
   type ProjectToken,
   type RequestOptions,
@@ -15,12 +15,7 @@ import {
   type SessionBatchRemoveResult,
   type SessionBatchRequest,
   type SessionBatchStopResult,
-  type UpdateQuickLinkSettingsInput,
-  type OrganizationQuickLinkSettings,
-  type ProjectQuickLinkSettings,
 } from '@polymorfa/sdk'
-
-type WidgetSettings = OrganizationQuickLinkSettings | ProjectQuickLinkSettings
 
 export interface PlatformResult<T> {
   readonly data: T
@@ -33,14 +28,14 @@ export interface PlatformResult<T> {
 }
 
 export async function listApiKeys(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
 ): Promise<PlatformResult<readonly ApiKey[]>> {
   const response = await client.apiKeys.list()
   return result(response.data.data, response.metadata)
 }
 
 export async function revokeApiKey(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   keyId: string,
   options: RequestOptions = {},
 ): Promise<PlatformResult<ApiKeyDeactivation>> {
@@ -49,14 +44,14 @@ export async function revokeApiKey(
 }
 
 export async function listMembers(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
 ): Promise<PlatformResult<readonly OrganizationMember[]>> {
   const response = await client.members.list()
   return result(response.data.data, response.metadata)
 }
 
 export async function listAuditLogs(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   params: ListAuditLogsParams = {},
 ): Promise<PlatformResult<readonly AuditLog[]>> {
   const response = await client.auditLogs.list(params)
@@ -64,7 +59,7 @@ export async function listAuditLogs(
 }
 
 export async function listSessionBans(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   activeOnly: boolean,
 ): Promise<PlatformResult<readonly SessionBan[]>> {
   const response = activeOnly
@@ -74,14 +69,14 @@ export async function listSessionBans(
 }
 
 export async function listSecurityIncidents(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
 ): Promise<PlatformResult<readonly SecurityIncident[]>> {
   const response = await client.securityIncidents.list()
   return result(response.data.data, response.metadata)
 }
 
 export async function acknowledgeSecurityIncident(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   incidentId: string,
   options: RequestOptions = {},
 ): Promise<PlatformResult<SecurityIncidentAcknowledgement>> {
@@ -93,37 +88,15 @@ export async function acknowledgeSecurityIncident(
 }
 
 export async function listProjectTokens(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   projectId: string,
 ): Promise<PlatformResult<readonly ProjectToken[]>> {
   const response = await client.projectTokens.list(projectId)
   return result(response.data.data, response.metadata)
 }
 
-export async function viewWidgetSettings(
-  client: PlatformClient,
-  projectId?: string,
-): Promise<PlatformResult<WidgetSettings | null>> {
-  const response = await (
-    projectId === undefined ? client : client.project(projectId)
-  ).quickLinkSettings.retrieve()
-  return result(response.data, response.metadata)
-}
-
-export async function updateWidgetSettings(
-  client: PlatformClient,
-  input: unknown,
-  projectId?: string,
-  options: RequestOptions = {},
-): Promise<PlatformResult<WidgetSettings>> {
-  const response = await (
-    projectId === undefined ? client : client.project(projectId)
-  ).quickLinkSettings.update(widgetUpdate(input), options)
-  return result(response.data, response.metadata)
-}
-
 export async function stopSessions(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   sessionIds: readonly string[],
   projectId?: string,
   options: RequestOptions = {},
@@ -136,7 +109,7 @@ export async function stopSessions(
 }
 
 export async function deleteSessions(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   sessionIds: readonly string[],
   projectId?: string,
   options: RequestOptions = {},
@@ -231,32 +204,6 @@ export function renderProjectTokens(tokens: readonly ProjectToken[]): string {
     .join('\n')
 }
 
-export function renderWidgetSettings(
-  settings: WidgetSettings | null,
-  requestedProjectId?: string,
-): string {
-  if (settings === null) {
-    return requestedProjectId === undefined
-      ? 'No saved organization-default widget settings found.'
-      : `No saved widget settings found for project ${requestedProjectId}.`
-  }
-
-  return [
-    `ID\t${settings.id}`,
-    `Scope\t${settings.projectId ?? 'organization defaults'}`,
-    `Enabled\t${settings.enabled}`,
-    `Methods\t${settings.methods?.join(', ') ?? 'default'}`,
-    `Theme\t${settings.theme}`,
-    `Business name\t${settings.businessName ?? ''}`,
-    `Redirect URIs\t${settings.allowedRedirectUris.join(', ')}`,
-    `Hide watermark\t${settings.hideWatermark}`,
-    `Shape\t${settings.shape ?? 'default'}`,
-    `Radius\t${settings.radiusPx ?? 'default'}`,
-    `Logo\t${settings.logoMode}`,
-    `History sync\t${settings.historySync}`,
-  ].join('\n')
-}
-
 export function renderSessionStops(stopping: number): string {
   return `Requested stops for ${stopping} matching ${plural(stopping, 'session')}. This does not wait for completion.`
 }
@@ -284,25 +231,6 @@ function result<T>(data: T, metadata: ResponseMetadata): PlatformResult<T> {
 function timestamp(value: number): string {
   const milliseconds = value < 10_000_000_000 ? value * 1000 : value
   return new Date(milliseconds).toISOString()
-}
-
-function widgetUpdate(input: unknown): UpdateQuickLinkSettingsInput {
-  if (!isRecord(input)) {
-    throw new PolymorfaValidationError(
-      'Widget input must contain one JSON object.',
-      {code: 'invalid_widget_input'},
-    )
-  }
-  if (Object.hasOwn(input, 'projectId')) {
-    throw new PolymorfaValidationError(
-      'Widget input cannot contain projectId; use --project to select the target.',
-      {code: 'widget_project_in_input'},
-    )
-  }
-
-  return {
-    ...input,
-  }
 }
 
 function sessionBatch(
@@ -336,10 +264,6 @@ function sessionBatch(
     sessionIds,
     ...(projectId === undefined ? {} : {projectId}),
   }
-}
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function plural(count: number, singular: string): string {

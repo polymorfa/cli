@@ -1,13 +1,270 @@
 import {describe, expect, test, vi} from 'vitest'
+import type {ProjectWithStats} from '@polymorfa/sdk'
 
 import type {CredentialStore} from '../../src/config/credentials.js'
 import type {ProfileConfig} from '../../src/config/profiles.js'
 import {
+  resolveDeveloperEnvironment,
+  resolveListenerEnvironment,
   resolveCommandEnvironment,
   resolveEnvironment,
 } from '../../src/context/environment.js'
 
 describe('resolveEnvironment', () => {
+  test('resolves an exact-project listener token without treating it as a browser token', async () => {
+    await expect(
+      resolveListenerEnvironment({
+        env: {
+          POLYMORFA_BASE_URL: 'http://127.0.0.1:4567',
+          POLYMORFA_PROJECT_TOKEN:
+            'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        },
+        apiVersion: '2026-09-01',
+        project: PROJECT,
+        timeoutMs: 4321,
+      }),
+    ).resolves.toMatchObject({
+      apiVersion: '2026-09-01',
+      baseUrl: 'http://127.0.0.1:4567',
+      credential:
+        'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      principalType: 'project_token',
+      projectId: PROJECT,
+      timeoutMs: 4321,
+    })
+  })
+
+  test('rejects ambiguous durable listener credentials', async () => {
+    await expect(
+      resolveListenerEnvironment({
+        env: {
+          POLYMORFA_API_KEY:
+            'pmfa_DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+          POLYMORFA_PROJECT_TOKEN: 'pmfa_pt',
+        },
+        project: 'project_1',
+      }),
+    ).rejects.toThrow('ambiguous')
+  })
+
+  test('resolves explicit project ownership from a project-token profile', async () => {
+    const profile: ProfileConfig = {
+      activeProfile: 'project',
+      profiles: {
+        project: {
+          credential: {
+            account: 'profile:project:projectToken',
+            kind: 'projectToken',
+          },
+          owner: 'project',
+          project: PROJECT,
+        },
+      },
+      version: 2,
+    }
+
+    await expect(
+      resolveDeveloperEnvironment(
+        {env: {}, profile: 'project'},
+        {load: () => Promise.resolve(profile), save: () => Promise.resolve()},
+        fakeCredentials(
+          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        ),
+      ),
+    ).resolves.toMatchObject({
+      context: {
+        owner: 'project',
+        principalType: 'project_token',
+        profile: 'project',
+        projectId: PROJECT,
+      },
+      credential:
+        'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    })
+  })
+
+  test('uses an explicit developer profile without evaluating ambient credentials', async () => {
+    await expect(
+      resolveDeveloperEnvironment(
+        {
+          env: {
+            POLYMORFA_API_KEY: 'ambient_key',
+            POLYMORFA_CLIENT_TOKEN: 'ambient_client',
+          },
+          owner: 'organization',
+          profile: 'work',
+        },
+        fakeProfiles(),
+        fakeCredentials(
+          'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+        ),
+      ),
+    ).resolves.toMatchObject({
+      context: {owner: 'organization', profile: 'work'},
+      credential:
+        'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+    })
+  })
+
+  test('uses an explicit listener profile without evaluating ambient credentials', async () => {
+    const profile: ProfileConfig = {
+      profiles: {
+        project: {
+          credential: {
+            account: 'profile:project:projectToken',
+            kind: 'projectToken',
+          },
+          owner: 'project',
+          project: '11111111-1111-4111-8111-111111111111',
+        },
+      },
+      version: 2,
+    }
+    await expect(
+      resolveListenerEnvironment(
+        {
+          env: {
+            POLYMORFA_API_KEY: 'ambient_key',
+            POLYMORFA_CLIENT_TOKEN: 'ambient_client',
+          },
+          profile: 'project',
+        },
+        {load: () => Promise.resolve(profile), save: () => Promise.resolve()},
+        fakeCredentials(
+          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        ),
+      ),
+    ).resolves.toMatchObject({
+      credential:
+        'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      profile: 'project',
+      projectId: '11111111-1111-4111-8111-111111111111',
+    })
+  })
+
+  test('prefers an environment API key over the active listener profile', async () => {
+    const credentials = fakeCredentials(
+      'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+    )
+
+    await expect(
+      resolveListenerEnvironment(
+        {
+          env: {
+            POLYMORFA_API_KEY:
+              'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+          },
+          project: '11111111-1111-4111-8111-111111111111',
+        },
+        fakeProfiles(),
+        credentials,
+      ),
+    ).resolves.toMatchObject({
+      credential:
+        'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+      principalType: 'organization_key',
+    })
+    expect(credentials.get).not.toHaveBeenCalled()
+  })
+
+  test('resolves an organization project slug to its canonical UUID', async () => {
+    const lookup = vi.fn(() => Promise.resolve([fakeProject('checkout')]))
+
+    await expect(
+      resolveListenerEnvironment(
+        {
+          env: {
+            POLYMORFA_API_KEY:
+              'pmfa_DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+          },
+          project: 'checkout',
+        },
+        fakeProfiles(),
+        fakeCredentials('unused'),
+        lookup,
+      ),
+    ).resolves.toMatchObject({
+      principalType: 'organization_key',
+      projectId: PROJECT,
+    })
+    expect(lookup).toHaveBeenCalledOnce()
+  })
+
+  test('shares canonical slug resolution with developer commands', async () => {
+    await expect(
+      resolveDeveloperEnvironment(
+        {
+          env: {
+            POLYMORFA_API_KEY:
+              'pmfa_DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+          },
+          owner: 'project',
+          project: 'checkout',
+        },
+        fakeProfiles(),
+        fakeCredentials('unused'),
+        () => Promise.resolve([fakeProject('checkout')]),
+      ),
+    ).resolves.toMatchObject({
+      context: {owner: 'project', projectId: PROJECT},
+    })
+  })
+
+  test.each([
+    {expected: 'not found', projects: []},
+    {
+      expected: 'ambiguous',
+      projects: [
+        fakeProject('checkout'),
+        fakeProject('checkout', OTHER_PROJECT),
+      ],
+    },
+  ])(
+    'rejects an organization slug that is $expected',
+    async ({expected, projects}) => {
+      await expect(
+        resolveListenerEnvironment(
+          {
+            env: {
+              POLYMORFA_API_KEY:
+                'pmfa_DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+            },
+            project: 'checkout',
+          },
+          fakeProfiles(),
+          fakeCredentials('unused'),
+          () => Promise.resolve(projects),
+        ),
+      ).rejects.toThrow(expected)
+    },
+  )
+
+  test('rejects a project-token slug without attempting project discovery', async () => {
+    const lookup = vi.fn(() => Promise.resolve([fakeProject('checkout')]))
+
+    await expect(
+      resolveListenerEnvironment(
+        {env: {POLYMORFA_PROJECT_TOKEN: 'pmfa_pt'}, project: 'checkout'},
+        fakeProfiles(),
+        fakeCredentials('unused'),
+        lookup,
+      ),
+    ).rejects.toThrow('exact project UUID')
+    expect(lookup).not.toHaveBeenCalled()
+  })
+
+  test('requires an owner before developer transport and never infers it from a token', async () => {
+    await expect(
+      resolveDeveloperEnvironment({
+        env: {
+          POLYMORFA_PROJECT_TOKEN:
+            'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        },
+        project: PROJECT,
+      }),
+    ).rejects.toThrow('--owner')
+  })
+
   test('resolves a platform server key without returning unrelated environment values', () => {
     expect(
       resolveEnvironment({
@@ -88,19 +345,28 @@ describe('resolveEnvironment', () => {
   })
 
   test('prefers an environment credential over the active profile', async () => {
-    const credentials = fakeCredentials('pmfa_profile-key')
+    const credentials = fakeCredentials(
+      'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+    )
 
     await expect(
       resolveCommandEnvironment(
         {
-          env: {POLYMORFA_API_KEY: 'pmfa_environment-key'},
+          env: {
+            POLYMORFA_API_KEY:
+              'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+          },
           surface: 'platform',
         },
         fakeProfiles(),
         credentials,
       ),
     ).resolves.toMatchObject({
-      credential: {type: 'apiKey', value: 'pmfa_environment-key'},
+      credential: {
+        type: 'apiKey',
+        value:
+          'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+      },
       source: 'environment',
     })
     expect(credentials.get).not.toHaveBeenCalled()
@@ -111,10 +377,16 @@ describe('resolveEnvironment', () => {
       resolveCommandEnvironment(
         {env: {}, surface: 'platform'},
         fakeProfiles(),
-        fakeCredentials('pmfa_profile-key'),
+        fakeCredentials(
+          'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+        ),
       ),
     ).resolves.toMatchObject({
-      credential: {type: 'apiKey', value: 'pmfa_profile-key'},
+      credential: {
+        type: 'apiKey',
+        value:
+          'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+      },
       profile: 'work',
       source: 'profile',
     })
@@ -124,20 +396,51 @@ describe('resolveEnvironment', () => {
     await expect(
       resolveCommandEnvironment(
         {
-          env: {POLYMORFA_API_KEY: 'pmfa_environment-key'},
+          env: {
+            POLYMORFA_API_KEY:
+              'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+          },
           profile: 'work',
           surface: 'messaging',
         },
         fakeProfiles(),
-        fakeCredentials('pmfa_profile-key'),
+        fakeCredentials(
+          'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+        ),
       ),
     ).resolves.toMatchObject({
-      credential: {type: 'apiKey', value: 'pmfa_profile-key'},
+      credential: {
+        type: 'apiKey',
+        value:
+          'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+      },
       profile: 'work',
       source: 'profile',
     })
   })
 })
+
+const PROJECT = '11111111-1111-4111-8111-111111111111'
+const OTHER_PROJECT = '22222222-2222-4222-8222-222222222222'
+
+function fakeProject(slug: string, id: string = PROJECT): ProjectWithStats {
+  return {
+    _creationTime: 0,
+    _id: id,
+    activeSessions: 0,
+    defaultTier: 'free',
+    icon: {type: 'emoji', value: 'x'},
+    iconUrl: null,
+    isActive: true,
+    lastActivity: null,
+    name: slug,
+    orgId: '33333333-3333-4333-8333-333333333333',
+    slug,
+    stage: 'development',
+    totalMessages: 0,
+    totalSessions: 0,
+  }
+}
 
 function fakeProfiles() {
   const config: ProfileConfig = {
@@ -147,7 +450,7 @@ function fakeProfiles() {
         credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
       },
     },
-    version: 1,
+    version: 2,
   }
   return {
     load: () => Promise.resolve(config),

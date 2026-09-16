@@ -18,7 +18,7 @@ describe('readSecretFromStdin', () => {
 
   test('rejects empty and oversized input', async () => {
     await expect(readSecretFromStdin(Readable.from(['\n']))).rejects.toThrow(
-      'Standard input did not contain an API key.',
+      'Standard input did not contain a credential.',
     )
     await expect(
       readSecretFromStdin(Readable.from(['x'.repeat(65 * 1024)])),

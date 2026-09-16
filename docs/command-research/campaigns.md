@@ -33,13 +33,9 @@ campaign
   resume <campaign> --project-slug <slug>
   stop <campaign> --project-slug <slug> --yes
   requeue <campaign> --project-slug <slug> [--include-skipped-error]
-
-operation
-  view <operation> --surface messaging
 ```
 
-The CLI uses only `MessagingClient.campaigns` and
-`MessagingClient.operations.retrieve`. Every campaign command requires an
+The CLI uses only `MessagingClient.campaigns`. Every campaign command requires an
 organization Messaging API key. Reads require `campaigns:read`; creation and
 lifecycle mutations require `campaigns:manage`. The CLI rejects browser client
 tokens before transport. It does not broaden the SDK to project tokens even
@@ -64,12 +60,11 @@ distinct commands because the server enforces different source states. Stop is
 a terminal transition and requires `--yes`.
 
 Launch, pause, resume, and stop append durable commands and return an operation
-ID plus the campaign's present state. Human output says “Accepted”, does not say
-the transition completed, and gives the exact follow-up command:
-`polymorfa operation view <operation> --surface messaging`. The existing
-Platform operation lookup remains the default when `--surface` is omitted.
-Polymorfa exposes a singular operation read, not a wait or watch API, so the CLI
-does not reproduce `gh run watch` with hidden polling semantics.
+ID plus the campaign's present state. Human output says “Accepted” and does not
+say the transition completed. The returned IDs belong to the Messaging campaign
+API and are not accepted by the developer `operation` command family. The
+unpublished `--surface messaging` selector was removed rather than retained as
+a compatibility alias.
 
 Requeue is different: it is a direct transaction and returns only the number
 of recipients moved. Failed recipients are always considered;
@@ -95,11 +90,9 @@ or operation cancel route. It also exposes no response cursor. The CLI does not
 substitute similarly named Platform campaign operations or use `raw.request` to
 invent those workflows.
 
-Stripe `listen` and Wrangler `tail` are valuable models for the later
-Polymorfa event-development workflow, but both are backed by a real connected
-stream. A campaign `watch`, general `listen`, or webhook forwarder remains
-reserved until Polymorfa exposes the corresponding listener/session or event
-history API.
+Stripe `listen` and Wrangler `tail` informed the separate Polymorfa developer
+event listener. It is not a campaign watch command and does not change the
+campaign API gaps above.
 
 At this exact baseline the SDK ledger records 331 total / 207 covered / 58
 missing / 66 excluded / 0 partial / 0 changed operations.

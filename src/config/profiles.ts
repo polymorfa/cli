@@ -14,13 +14,14 @@ import {defaultConfigDirectory} from './paths.js'
 
 export interface CredentialReference {
   readonly account: string
-  readonly kind: 'apiKey'
+  readonly kind: 'apiKey' | 'projectToken'
 }
 
 export interface ProfileMetadata {
   readonly apiVersion?: string
   readonly baseUrl?: string
   readonly credential: CredentialReference
+  readonly owner?: 'organization' | 'project'
   readonly organization?: string
   readonly project?: string
 }
@@ -28,10 +29,10 @@ export interface ProfileMetadata {
 export interface ProfileConfig {
   readonly activeProfile?: string
   readonly profiles: Readonly<Record<string, ProfileMetadata>>
-  readonly version: 1
+  readonly version: 2
 }
 
-const EMPTY_CONFIG: ProfileConfig = {profiles: {}, version: 1}
+const EMPTY_CONFIG: ProfileConfig = {profiles: {}, version: 2}
 
 export class ProfileRepository {
   readonly path: string
@@ -94,7 +95,7 @@ export class ProfileRepository {
 function validateConfig(value: unknown, path: string): ProfileConfig {
   if (!isRecord(value)) return malformed(path)
 
-  if (value.version !== 1) {
+  if (value.version !== 1 && value.version !== 2) {
     const version =
       typeof value.version === 'number' || typeof value.version === 'string'
         ? String(value.version)
@@ -108,7 +109,8 @@ function validateConfig(value: unknown, path: string): ProfileConfig {
   if (!isRecord(value.profiles)) return malformed(path)
   const profiles: Record<string, ProfileMetadata> = {}
   for (const [name, profile] of Object.entries(value.profiles)) {
-    if (!validProfileName(name) || !isProfile(profile)) return malformed(path)
+    if (!validProfileName(name) || !isProfile(profile, value.version))
+      return malformed(path)
     profiles[name] = profile
   }
 
@@ -121,7 +123,7 @@ function validateConfig(value: unknown, path: string): ProfileConfig {
   }
 
   return {
-    version: 1,
+    version: 2,
     profiles,
     ...(value.activeProfile === undefined
       ? {}
@@ -129,12 +131,13 @@ function validateConfig(value: unknown, path: string): ProfileConfig {
   }
 }
 
-function isProfile(value: unknown): value is ProfileMetadata {
+function isProfile(value: unknown, version: 1 | 2): value is ProfileMetadata {
   if (!isRecord(value) || !isRecord(value.credential)) return false
   const profileKeys = new Set([
     'apiVersion',
     'baseUrl',
     'credential',
+    'owner',
     'organization',
     'project',
   ])
@@ -147,11 +150,30 @@ function isProfile(value: unknown): value is ProfileMetadata {
     return false
   }
   if (
-    value.credential.kind !== 'apiKey' ||
+    (value.credential.kind !== 'apiKey' &&
+      (version === 1 || value.credential.kind !== 'projectToken')) ||
     typeof value.credential.account !== 'string'
   ) {
     return false
   }
+
+  if (
+    value.owner !== undefined &&
+    value.owner !== 'organization' &&
+    value.owner !== 'project'
+  ) {
+    return false
+  }
+  if (
+    value.credential.kind === 'projectToken' &&
+    (value.owner !== 'project' ||
+      typeof value.project !== 'string' ||
+      value.project.length === 0)
+  ) {
+    return false
+  }
+  if (value.owner === 'organization' && value.project !== undefined)
+    return false
 
   return ['apiVersion', 'baseUrl', 'organization', 'project'].every(
     (key) => value[key] === undefined || typeof value[key] === 'string',

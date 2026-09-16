@@ -1,6 +1,8 @@
 # Polymorfa CLI design
 
-- **Status:** Draft for user review
+- **Status:** Living design; the accepted 2026-08-20 developer API RFC supersedes
+  this document for events, webhooks, deliveries, attempts, operations, local
+  listening, forwarding, and MCP listener controls
 - **Repository:** `polymorfa/cli`
 - **Package:** `@polymorfa/cli`
 - **Primary executable:** `polymorfa`
@@ -100,15 +102,15 @@ event forwarding, MCP presentation, and skill installation. MCP tools call the
 same TypeScript application services used by commands; they never execute the
 `polymorfa` binary or parse terminal output.
 
-### Initial SDK baseline
+### Current SDK baseline
 
 The development SDK gate is satisfied by `@polymorfa/sdk@0.1.0-dev.0` at exact
-commit `b4d5f3c8ce51bb0c171264eec8961797314cb172`. It is ESM-only, requires Node.js
+commit `1b99aef26f2b726ecdb00707d5d6a70beb6dc3cd`. It is ESM-only, requires Node.js
 20 or newer, and has no runtime dependencies. Until the SDK is published to npm,
 development installs pin the exact Git revision:
 
 ```shell
-npm install github:polymorfa/sdks#b4d5f3c8ce51bb0c171264eec8961797314cb172
+npm install github:polymorfa/sdks#1b99aef26f2b726ecdb00707d5d6a70beb6dc3cd
 ```
 
 The CLI must not publish an npm release against a moving Git branch or an
@@ -117,32 +119,31 @@ with a compatible npm semver dependency on `@polymorfa/sdk` and verify the
 packed CLI installs without private or Git-only runtime dependencies.
 
 The SDK's committed coverage ledger records Polymorfa monorepo source commit
-`f156af2dda13e62b6b106a542fdedb39524bdb66`. Hosted Node.js 20 and 22 CI passed
-for the pinned SDK revision in [GitHub Actions run 32313662730](https://github.com/polymorfa/sdks/actions/runs/32313662730).
-The run exercised 46 test files and 195 tests across the repository, built the
+`6918c56135e28ba64557e344cb72889f1f517eb5`. Hosted Node.js 20 and 22 CI passed
+for the pinned SDK revision in [GitHub Actions run 34207720527](https://github.com/polymorfa/sdks/actions/runs/34207720527).
+The run exercised 66 test files and 400 tests across the repository, built the
 root and every workspace, passed package dry-runs, and reported zero production
 dependency vulnerabilities.
 
-The handwritten coverage ledger contains 331 Messaging and Platform operations:
-207 curated typed methods, 58 explicitly missing operations available through
-`raw.request` or `raw.paginate`, and 66 deliberately excluded dashboard or staff
-routes. It records zero structurally changed signatures. Graph-compatible APIs
-are outside this baseline, and the CLI must not claim typed API parity.
+The handwritten coverage ledger contains 402 Messaging and Management
+operations: 274 curated typed methods and 128 deliberately excluded operations
+outside the public server-SDK boundary. It contains no unresolved compatible
+operation. Graph-compatible APIs remain outside this baseline, and the CLI
+does not claim support for excluded dashboard, staff, or browser-only routes.
 
-The curated resources cover Messaging sessions, pairing QR and codes, operation
-polling, messages, contacts, chats, channels, groups, labels, presence, calls,
+The curated resources cover Messaging sessions, QuickLinks, operation polling,
+messages, contacts, chats, channels, groups, labels, presence, calls,
 LID resolution, user security codes, business profiles, catalogs, products,
 collections, orders, compliance, observation policies, webhooks, client tokens,
 project templates, project-scoped campaigns, and all 33 signed event payload
 schemas plus Platform
 organizations, projects, sessions, billing, campaigns, audiences, opt-outs,
 media, organization API keys, members, audit logs, session bans, security
-incidents, management operations, project-token metadata, widget settings, and
-batch session stop/delete. A CLI command outside that set uses
-the SDK's raw escape hatch rather than recreating authentication, transport,
-retry, pagination, or error behavior. Its command-research record must identify
-the exact raw operation and track promotion to a curated SDK method when the
-workflow benefits from one.
+incidents, management operations, project-token metadata, QuickLink settings,
+and batch session stop/delete. Curated commands do not use the SDK's raw escape
+hatch to paper over a missing public contract. The explicit `api` command is
+the user-directed low-level escape hatch and keeps the SDK's authentication,
+transport, retry, pagination, and error behavior.
 
 The CLI depends only on the root server package. Browser, React, Next.js, UI,
 Elements, and Devtools SDK workspaces are not CLI runtime dependencies.
@@ -190,7 +191,9 @@ choosing the first result.
 ### Global context flags
 
 - `--profile <name>` selects stored authentication and defaults.
-- `--organization <id-or-slug>` overrides the active organization.
+- Organization-owned API requests use the organization bound to the selected
+  key. The CLI does not accept an organization override that could relabel a
+  request without changing its authorization.
 - `--project <id-or-slug>` overrides the linked or profile project.
 - `--api-version <version>` overrides the SDK default when the API permits it.
 - `--no-interactive` forbids prompts and interactive selection.
@@ -361,10 +364,6 @@ billing
   reminders
     set
   portal
-
-widget
-  view
-  update
 ```
 
 Key and client-token creation print secret material once and never include it
@@ -401,15 +400,20 @@ session
   list
   view
   create
-  connect
   reconnect
   disconnect
   stop
   delete
-  qr
-  pairing-code
   status
   logs
+
+quicklink
+  create
+  view
+  cancel
+  settings
+    view
+    update
 
 message
   list
@@ -569,19 +573,15 @@ group
   leave
 ```
 
-`session connect` chooses QR or pairing-code presentation based on explicit
-flags and terminal capability. QR output has terminal, plain-text URL, and JSON
-forms. Pairing state is streamed with a timeout and cancellable cleanly.
-
-The typed pairing source returns the JSON QR representation; the SDK does not
-claim binary `image/png` transport. The CLI may render that data in a terminal
-or hand it to another renderer without downloading an undocumented binary
-response. `session status` uses `sessions.retrieve`, while start, stop, restart,
-logout, and delete return operation IDs that are followed through
-`operations.retrieve`. The source contract has no separate connection-status or
-session-log route. `session logs` therefore remains reserved and unshipped;
-`/api/info/status` is unauthenticated API runtime health and is not presented as
-session state.
+Number pairing uses a hosted QuickLink. `quicklink create` returns the short-lived
+URL once, `quicklink view` polls its status, and `quicklink cancel` invalidates a
+pending link. The CLI does not retrieve or render direct QR payloads or pairing
+codes from session routes. `session status` uses `sessions.retrieve`, while
+start, stop, restart, logout, and delete return operation IDs that are followed
+through `operations.retrieve`. The source contract has no separate
+connection-status or session-log route. `session logs` therefore remains
+reserved and unshipped; `/api/info/status` is unauthenticated API runtime health
+and is not presented as session state.
 
 Message content uses typed subcommands instead of a single flag-heavy command.
 Each type validates mutually exclusive content locally, then relies on the SDK
@@ -805,24 +805,20 @@ separate Messaging send operation.
 Campaign creation accepts one bounded JSON object. Launch accepts epoch
 milliseconds or a timezone-qualified ISO instant, then returns a durable
 operation ID. Launch, pause, resume, and terminal stop report accepted work and
-direct the user to `operation view --surface messaging`; they do not imply that
-the transition completed. Stop requires `--yes`. Requeue is a direct
+do not imply that the transition completed. These Messaging campaign operation
+IDs are not developer-operation resources and are not accepted by the unified
+`operation` command family. Stop requires `--yes`. Requeue is a direct
 transaction and reports its moved-recipient count. The source exposes no
 campaign update, delete, validation, archive, duplicate, recipient, event,
 history, replay, watch, or cancel route, so those commands remain reserved.
 
-Webhook tests generate a traceable test event. Event replay creates a new
-delivery attempt linked to the original event and does not rewrite event
-history. Logs and event payloads apply redaction before rendering.
-
-The pinned credential-compatible contract does not yet support those webhook
-test and event replay workflows. Messaging webhook subscription management is
-typed and uses `webhooks:manage`; inbound raw-body verification and all 33
-signed event payload schemas are typed. Platform organization keys can inspect
-campaign events only. General event history, webhook delivery-attempt
-inspection, replay/redrive, and test-delivery operations remain reserved and
-unshipped. Dashboard and staff webhook routes are excluded and must not be
-reached with `raw.request`.
+Webhook tests generate a synthetic event and a traceable delivery. Event replay
+creates a new delivery for a retained event; delivery retry creates a new
+immutable attempt on the same delivery. Neither operation rewrites history.
+General event history, webhook ownership, delivery and attempt inspection,
+secret rotation, test delivery, replay, retry, and durable operations are now
+typed developer resources. The CLI uses only those typed SDK resources and
+never reaches dashboard or staff routes through raw requests.
 
 Commands remain hidden or clearly unavailable until their underlying API
 contract exists. The CLI must never advertise a command that only fails with a
@@ -1015,7 +1011,8 @@ maintenance work.
 
 ## Development implementation status
 
-The private `dev` branch now contains working, unpublished vertical slices:
+The current implementation branch contains working, unpublished vertical
+slices:
 
 - the installable `polymorfa` ESM executable on Node.js 20 or newer;
 - `polymorfa version` with human, JSON, and quiet output;
@@ -1052,17 +1049,27 @@ The private `dev` branch now contains working, unpublished vertical slices:
 - organization-key API-key list/revocation, member and audit lists, session-ban
   filtering, security-incident list/acknowledgement, operation inspection, and
   project-token metadata commands;
-- organization/project widget settings inspection and JSON patching, plus
-  bounded batch session stop and confirmed management deletion commands; and
+- bounded batch session stop and confirmed management deletion commands;
 - complete Messaging campaign list/create/view/analytics and lifecycle
-  commands, with explicit accepted-operation polling and direct requeue; and
-- real local HTTP integration tests that exercise the SDK transport.
+  commands, with explicit accepted-operation polling and direct requeue;
+- explicit owner-scoped event list/view/replay, webhook CRUD/test/secret
+  rotation, delivery and attempt inspection, retry, and durable operation
+  list/view/wait/watch/cancel commands;
+- hosted QuickLink create/view/cancel with organization keys or exact-project
+  tokens and no direct session QR fallback;
+- the bounded SSE listener with JSONL and human sinks, fail-closed gap handling,
+  cumulative acknowledgement, checkpointed reconnects, exact-byte local
+  signing, and redirect-safe forwarding;
+- the stdio MCP server with in-process listener start/status/stop controls and
+  install, status, doctor, and uninstall helpers;
+- packaged CLI, webhook, and operations skills; and
+- real local HTTP integration tests that exercise the SDK and listener
+  transports.
 
 This status does not claim an npm release, browser/device authorization, a real
 operating-system keyring smoke test, remote identity validation from `auth
-status`, project linking, the remaining curated resource commands, MCP, skills,
-or `listen`.
-Those remain planned work in the delivery phases above.
+status`, project linking, unimplemented commands in the broader command map, or
+deployed Staging acceptance. Those remain later delivery gates.
 
 ## Verification
 

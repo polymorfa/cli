@@ -1,5 +1,6 @@
 import {
   type CreateCustomerPairingLinkRequest,
+  type ClientInstance,
   type CreateCustomerRequest,
   type CreatedCustomerPairingLink,
   type Customer,
@@ -12,7 +13,6 @@ import {
   type CustomersStatus,
   type ListCustomerEventsParams,
   type ListCustomersParams,
-  type Client as PlatformClient,
   PolymorfaConfigurationError,
   PolymorfaValidationError,
   type RequestOptions,
@@ -42,7 +42,7 @@ export function requireCustomerProject(projectId?: string): string {
 }
 
 export async function customerStatus(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   projectId: string,
 ): Promise<CustomerResult<CustomersStatus>> {
   const response = await client.customers.status(projectId)
@@ -50,7 +50,7 @@ export async function customerStatus(
 }
 
 export async function enableCustomers(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   projectId: string,
   options: RequestOptions,
 ): Promise<CustomerResult<CustomersEnablement>> {
@@ -59,7 +59,7 @@ export async function enableCustomers(
 }
 
 export async function listCustomers(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   params: ListCustomersParams,
 ): Promise<CustomerResult<CustomerListEnvelope>> {
   const response = await client.customers.list(params)
@@ -67,7 +67,7 @@ export async function listCustomers(
 }
 
 export async function createCustomer(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   body: CreateCustomerRequest,
   options: RequestOptions,
 ): Promise<CustomerResult<Customer>> {
@@ -76,7 +76,7 @@ export async function createCustomer(
 }
 
 export async function viewCustomer(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   customerId: string,
   projectId: string,
 ): Promise<CustomerResult<Customer>> {
@@ -85,7 +85,7 @@ export async function viewCustomer(
 }
 
 export async function updateCustomer(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   customerId: string,
   body: UpdateCustomerRequest,
 ): Promise<CustomerResult<Customer>> {
@@ -104,7 +104,7 @@ export async function updateCustomer(
 }
 
 export async function archiveCustomer(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   customerId: string,
   body: CustomerProjectRequest,
   options: RequestOptions,
@@ -114,7 +114,7 @@ export async function archiveCustomer(
 }
 
 export async function restoreCustomer(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   customerId: string,
   body: CustomerProjectRequest,
   options: RequestOptions,
@@ -124,7 +124,7 @@ export async function restoreCustomer(
 }
 
 export async function listCustomerNumbers(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   customerId: string,
   projectId: string,
 ): Promise<CustomerResult<readonly CustomerNumber[]>> {
@@ -133,7 +133,7 @@ export async function listCustomerNumbers(
 }
 
 export async function listCustomerEvents(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   customerId: string,
   params: ListCustomerEventsParams,
 ): Promise<CustomerResult<readonly CustomerEvent[]>> {
@@ -142,7 +142,7 @@ export async function listCustomerEvents(
 }
 
 export async function createCustomerPairingLink(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   customerId: string,
   body: CreateCustomerPairingLinkRequest,
   options: RequestOptions,
@@ -156,7 +156,7 @@ export async function createCustomerPairingLink(
 }
 
 export async function listCustomerPairingLinks(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   customerId: string,
   projectId: string,
 ): Promise<CustomerResult<readonly CustomerPairingLink[]>> {
@@ -168,7 +168,7 @@ export async function listCustomerPairingLinks(
 }
 
 export async function revokeCustomerPairingLink(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   customerId: string,
   pairingLinkId: string,
   projectId: string,
@@ -182,7 +182,7 @@ export async function revokeCustomerPairingLink(
 }
 
 export async function transferCustomerNumber(
-  client: PlatformClient,
+  client: ClientInstance<'organization'>,
   customerId: string,
   sessionId: string,
   body: TransferCustomerNumberRequest,

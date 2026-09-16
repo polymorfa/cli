@@ -30,7 +30,7 @@ describe('AuthService', () => {
           credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
         },
       },
-      version: 1,
+      version: 2,
     })
     expect(JSON.stringify(fixture.saved())).not.toContain(
       'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
@@ -59,6 +59,127 @@ describe('AuthService', () => {
     expect(fixture.credentials.set).not.toHaveBeenCalled()
   })
 
+  test('stores an exact-project token only with explicit project ownership', async () => {
+    const fixture = createFixture()
+    const token = `pmfa_pt_${'A'.repeat(94)}`
+
+    await expect(
+      fixture.service.loginProjectToken({
+        profile: 'project',
+        project: 'project_1',
+        projectToken: token,
+      }),
+    ).resolves.toEqual({
+      active: true,
+      credentialKind: 'projectToken',
+      name: 'project',
+      owner: 'project',
+      project: 'project_1',
+    })
+    expect(fixture.credentials.set).toHaveBeenCalledWith(
+      'profile:project:projectToken',
+      token,
+    )
+  })
+
+  test('delegates project-token format validation to the public SDK', async () => {
+    const fixture = createFixture()
+
+    await fixture.service.loginProjectToken({
+      profile: 'project',
+      project: 'project_1',
+      projectToken:
+        '  pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA  ',
+    })
+
+    expect(fixture.credentials.set).toHaveBeenCalledWith(
+      'profile:project:projectToken',
+      'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+    )
+    await expect(
+      fixture.service.loginProjectToken({
+        profile: 'invalid',
+        project: 'project_1',
+        projectToken: 'pmfa_pt_',
+      }),
+    ).rejects.toThrow('canonical pmfa_pt_ v1 format')
+  })
+
+  test('removes the previous project-token keyring entry after switching a profile to an API key', async () => {
+    const fixture = createFixture({
+      profiles: {
+        work: {
+          credential: {
+            account: 'profile:work:projectToken',
+            kind: 'projectToken',
+          },
+          owner: 'project',
+          project: 'project_1',
+        },
+      },
+      version: 2,
+    })
+    vi.mocked(fixture.credentials.get).mockResolvedValue(
+      `pmfa_pt_${'A'.repeat(94)}`,
+    )
+
+    await fixture.service.login({
+      apiKey:
+        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      profile: 'work',
+    })
+
+    expect(fixture.credentials.delete).toHaveBeenCalledWith(
+      'profile:work:projectToken',
+    )
+    expect(fixture.saved()).toEqual({
+      activeProfile: 'work',
+      profiles: {
+        work: {
+          credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
+        },
+      },
+      version: 2,
+    })
+  })
+
+  test('removes a newly written API-key entry when a credential-kind switch cannot save its profile', async () => {
+    const fixture = createFixture({
+      profiles: {
+        work: {
+          credential: {
+            account: 'profile:work:projectToken',
+            kind: 'projectToken',
+          },
+          owner: 'project',
+          project: 'project_1',
+        },
+      },
+      version: 2,
+    })
+    const oldToken = `pmfa_pt_${'A'.repeat(94)}`
+    vi.mocked(fixture.credentials.get).mockResolvedValue(oldToken)
+    vi.mocked(fixture.repository.save).mockRejectedValue(
+      new Error('profile save failed'),
+    )
+
+    await expect(
+      fixture.service.login({
+        apiKey:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        profile: 'work',
+      }),
+    ).rejects.toThrow('profile save failed')
+
+    expect(fixture.credentials.delete).toHaveBeenCalledWith(
+      'profile:work:apiKey',
+    )
+    expect(fixture.credentials.set).toHaveBeenLastCalledWith(
+      'profile:work:projectToken',
+      oldToken,
+    )
+  })
+
   test('lists profiles without reading secure credentials', async () => {
     const fixture = createFixture({
       activeProfile: 'work',
@@ -72,7 +193,7 @@ describe('AuthService', () => {
           organization: 'org_work',
         },
       },
-      version: 1,
+      version: 2,
     })
 
     await expect(fixture.service.list()).resolves.toEqual([
@@ -113,6 +234,33 @@ describe('AuthService', () => {
     })
   })
 
+  test('validates a stored project token with its own credential format', async () => {
+    const fixture = createFixture({
+      activeProfile: 'project',
+      profiles: {
+        project: {
+          credential: {
+            account: 'profile:project:projectToken',
+            kind: 'projectToken',
+          },
+          owner: 'project',
+          project: 'project_1',
+        },
+      },
+      version: 2,
+    })
+    vi.mocked(fixture.credentials.get).mockResolvedValue(
+      `pmfa_pt_${'A'.repeat(94)}`,
+    )
+
+    await expect(fixture.service.status('project')).resolves.toMatchObject({
+      credentialFormatValid: true,
+      credentialKind: 'projectToken',
+      owner: 'project',
+      project: 'project_1',
+    })
+  })
+
   test('logs out the selected profile and preserves unrelated profiles', async () => {
     const fixture = createFixture({
       activeProfile: 'work',
@@ -124,7 +272,7 @@ describe('AuthService', () => {
           credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
         },
       },
-      version: 1,
+      version: 2,
     })
 
     await expect(fixture.service.logout('work')).resolves.toEqual({
@@ -140,7 +288,7 @@ describe('AuthService', () => {
           credential: {account: 'profile:personal:apiKey', kind: 'apiKey'},
         },
       },
-      version: 1,
+      version: 2,
     })
   })
 })
@@ -152,11 +300,11 @@ function profileConfig(): ProfileConfig {
         credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
       },
     },
-    version: 1,
+    version: 2,
   }
 }
 
-function createFixture(initial: ProfileConfig = {profiles: {}, version: 1}) {
+function createFixture(initial: ProfileConfig = {profiles: {}, version: 2}) {
   let config = initial
   const repository = {
     load: vi.fn(() => Promise.resolve(config)),
@@ -173,6 +321,7 @@ function createFixture(initial: ProfileConfig = {profiles: {}, version: 1}) {
 
   return {
     credentials,
+    repository,
     saved: () => config,
     service: new AuthService(repository, credentials),
   }

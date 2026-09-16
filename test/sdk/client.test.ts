@@ -1,7 +1,7 @@
 import {
+  Client,
   isEvent,
   MessagingClient,
-  Client as PlatformClient,
   RawClient,
   type WebhookEvent,
 } from '@polymorfa/sdk'
@@ -12,6 +12,7 @@ import {
   createPlatformClient,
   createRawClient,
 } from '../../src/sdk/client.js'
+import {startHttpServer} from '../helpers/http-server.js'
 
 describe('createRawClient', () => {
   test('returns the public Platform raw client', () => {
@@ -47,7 +48,7 @@ describe('createRawClient', () => {
     )
   })
 
-  test('creates a typed Messaging client with session pairing and operation polling', () => {
+  test('creates a typed Messaging client with session and operation resources', () => {
     const client = createMessagingClient({
       surface: 'messaging',
       credential: {
@@ -61,10 +62,27 @@ describe('createRawClient', () => {
     expect(client).toBeInstanceOf(MessagingClient)
     expect(client.sessions).toHaveProperty('qr')
     expect(client.sessions).toHaveProperty('requestPairingCode')
+    expect(client.quickLinks).toHaveProperty('create')
+    expect(client.quickLinks).toHaveProperty('retrieve')
+    expect(client.quickLinks).toHaveProperty('cancel')
     expect(client).not.toHaveProperty('operations')
   })
 
-  test('creates a typed Platform client and rejects the wrong surface', () => {
+  test('creates a server-only Messaging client from a project token', () => {
+    const client = createMessagingClient({
+      credential: {
+        type: 'projectToken',
+        value:
+          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+      surface: 'messaging',
+    })
+
+    expect(client).toBeInstanceOf(MessagingClient)
+    expect(client.quickLinks).toHaveProperty('create')
+  })
+
+  test('creates the unified organization client and rejects the wrong surface', () => {
     const client = createPlatformClient({
       surface: 'platform',
       credential: {
@@ -74,7 +92,8 @@ describe('createRawClient', () => {
       },
     })
 
-    expect(client).toBeInstanceOf(PlatformClient)
+    expect(client).toBeInstanceOf(Client)
+    expect(client.owner).toBe('organization')
     expect(client.billing).toHaveProperty('retrieve')
     expect(client.billing).toHaveProperty('usage')
     expect(client.billing).toHaveProperty('listTransactions')
@@ -96,6 +115,39 @@ describe('createRawClient', () => {
         },
       }),
     ).toThrow('requires the Platform API surface')
+  })
+
+  test('uses the unified project view for typed developer resources', async () => {
+    const server = await startHttpServer({
+      body: {data: [], page: {nextCursor: null}},
+      headers: {'x-request-id': 'req_project_events'},
+    })
+    try {
+      const client = createPlatformClient({
+        baseUrl: server.baseUrl,
+        credential: {
+          type: 'apiKey',
+          value:
+            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        },
+        surface: 'platform',
+      }).project('11111111-1111-4111-8111-111111111111')
+
+      const page = await client.events.list({limit: 25})
+
+      expect(page.items).toEqual([])
+      expect(page.response.metadata.requestId).toBe('req_project_events')
+      expect(server.requests).toHaveLength(1)
+      expect(server.requests[0]).toMatchObject({
+        method: 'GET',
+        url: '/v1/projects/11111111-1111-4111-8111-111111111111/events?limit=25',
+      })
+      expect(server.requests[0]?.headers.authorization).toBe(
+        'Bearer pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      )
+    } finally {
+      await server.close()
+    }
   })
 })
 
