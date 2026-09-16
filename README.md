@@ -460,9 +460,9 @@ SIP trunks connect a PBX to WhatsApp calls. They are a beta: changes fail with
 exit code 3 until your team is enrolled. Commands require a server API key.
 
 ```shell
-polymorfa sip-trunk list --project project_123
+polymorfa sip-trunk list --project 018f0000-0000-7000-8000-000000000002
 polymorfa sip-trunk view 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
-polymorfa sip-trunk create --project project_123 --input trunk.json
+polymorfa sip-trunk create --project 018f0000-0000-7000-8000-000000000002 --input trunk.json
 polymorfa sip-trunk update 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 \
   --disable --expected-revision 3
 polymorfa sip-trunk update 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --input changes.json
