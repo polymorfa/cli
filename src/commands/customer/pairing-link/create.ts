@@ -27,18 +27,10 @@ export default class CustomerPairingLinkCreate extends BaseCommand {
       description: 'Identify this pairing-link attempt for safe retries.',
       required: true,
     }),
-    locale: Flags.string({
-      description: 'Pairing page locale.',
-      options: ['en', 'pt-BR'],
-    }),
     method: Flags.string({
       description: 'Allowed pairing method.',
       multiple: true,
       options: ['qr', 'phone'],
-    }),
-    theme: Flags.string({
-      description: 'Pairing page theme.',
-      options: ['light', 'dark', 'system'],
     }),
   }
 
@@ -55,15 +47,9 @@ export default class CustomerPairingLinkCreate extends BaseCommand {
         ...(flags['expires-in'] === undefined
           ? {}
           : {expiresInSeconds: flags['expires-in']}),
-        ...(flags.locale === undefined
-          ? {}
-          : {locale: flags.locale as 'en' | 'pt-BR'}),
         ...(flags.method === undefined
           ? {}
           : {methods: flags.method as Array<'qr' | 'phone'>}),
-        ...(flags.theme === undefined
-          ? {}
-          : {theme: flags.theme as 'light' | 'dark' | 'system'}),
       },
       {idempotencyKey: flags['idempotency-key']},
     )

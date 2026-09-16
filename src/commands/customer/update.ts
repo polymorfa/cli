@@ -23,17 +23,10 @@ export default class CustomerUpdate extends BaseCommand {
       description: 'Clear the Customer name.',
       exclusive: ['name'],
     }),
-    'clear-phone': Flags.boolean({
-      description: 'Clear the Customer phone number.',
-      exclusive: ['phone'],
-    }),
     'external-id': Flags.string({
       description: 'New caller-defined Customer ID.',
     }),
     name: Flags.string({description: 'New Customer name.'}),
-    phone: Flags.string({
-      description: 'New Customer phone number in E.164 format.',
-    }),
   }
 
   async run(): Promise<void> {
@@ -46,9 +39,6 @@ export default class CustomerUpdate extends BaseCommand {
         ...(flags.name === undefined && flags['clear-name'] !== true
           ? {}
           : {name: flags.name ?? null}),
-        ...(flags.phone === undefined && flags['clear-phone'] !== true
-          ? {}
-          : {phone: flags.phone ?? null}),
         ...(flags['external-id'] === undefined &&
         flags['clear-external-id'] !== true
           ? {}
