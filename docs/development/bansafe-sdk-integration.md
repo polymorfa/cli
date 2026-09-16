@@ -4,7 +4,7 @@ The BanSafe CLI commands depend on the matching typed SDK revision pinned in
 `package.json`. During coordinated SDK and CLI development, verify both
 worktrees without replacing that immutable dependency in either manifest:
 
-The pinned SDK revision is `polymorfa/sdks@07b6a8abd774b7d103af465baa299bbb05295d8e`.
+The pinned SDK revision is `polymorfa/sdks@8803f0554314214519971cb3306e0c0efe21cb76`.
 Its coverage ledger is reconciled against the API contracts at
 `polymorfa/polymorfa@aca849cda44ad8582d7ae87489404d2483173a53` (Platform
 snapshot SHA-256
