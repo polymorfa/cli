@@ -502,6 +502,66 @@ order-history command. The source exposes no catalog-independent list, product
 or collection search/history, binary upload, resumability, or Business App
 support for project credentials, client tokens, or Cloud API sessions.
 
+## BanSafe
+
+Inspect current and historical Health, the bounded signal catalogue, collected
+telemetry, collection evidence, and durable Health actions with a Platform
+server API key:
+
+```shell
+polymorfa bansafe health list --project project_123
+polymorfa bansafe health view session_123
+polymorfa bansafe health history session_123 --since 2026-09-01T00:00:00Z
+polymorfa bansafe signal list
+polymorfa bansafe telemetry view session_123
+polymorfa bansafe telemetry history session_123 --limit 20
+polymorfa bansafe collection list --project project_123
+polymorfa bansafe health-action list --project project_123 --status failed
+polymorfa bansafe health-policy view --project project_123
+polymorfa bansafe health-policy update \
+  --project project_123 \
+  --input health-policy.json \
+  --idempotency-key health-policy-v4
+polymorfa bansafe finding list --project project_123 --status open
+polymorfa bansafe enforcement list --project project_123
+polymorfa bansafe incident list --project project_123
+polymorfa bansafe incident report \
+  --session session_123 \
+  --idempotency-key customer-incident-123
+polymorfa bansafe incident retract incident_123 \
+  --idempotency-key retract-incident-123
+polymorfa bansafe claim list --project project_123
+polymorfa bansafe claim view claim_123
+polymorfa bansafe safe-mode view --project project_123
+polymorfa bansafe safe-mode view session_123
+polymorfa bansafe safe-mode update --project project_123 \
+  --input safe-mode.json --idempotency-key safe-mode-v2
+polymorfa bansafe warmup view --project project_123
+polymorfa bansafe warmup update --project project_123 \
+  --input warmup.json --idempotency-key warmup-v2
+polymorfa bansafe insurance-evidence view --project project_123
+polymorfa bansafe insurance-evidence update --project project_123 \
+  --input insurance-evidence.json --idempotency-key insurance-evidence-v2
+```
+
+Collection output reports observed ingestion state: `fresh`, `stale`,
+`not_collected`, or `unsupported`. It does not infer whether collection is
+configured. Telemetry history returns bounded snapshots and explicit
+per-signal measurement state. Missing signals are not reported as healthy
+measurements.
+
+Health policy updates replace the complete policy and require its current
+version. The CLI validates action and notification combinations before sending
+the request. Health policy, Safe Mode, warmup, and insurance-evidence updates
+require an idempotency key. Safe Mode and warmup updates accept bounded JSON
+patches. Customer incident reports and retractions also require an idempotency key. Finding
+acknowledgement and enforcement appeals remain dashboard-only and are not
+available through server-key commands. Claim `amountCents`, `measuredCents`, and
+`capCents` are credit quantities with up to six decimal places, not cash minor
+units; text output labels them as credits. Use `--json` to retain explanations,
+observed account state, collection metadata, action outcomes, cursors, and
+request metadata.
+
 ## Platform access and security
 
 Organization server API keys can inspect the credential, membership, audit,
