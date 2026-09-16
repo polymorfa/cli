@@ -415,6 +415,55 @@ describe('calls watch and media', () => {
     })
   })
 
+  test('exits with an authorization error when calling is turned off for the session', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'polymorfa-calls-off-'))
+    const outputPath = join(directory, 'out.pcm')
+    try {
+      server = await startCallsServer({
+        onSocket: async (socket) => {
+          await socket.next()
+          if (socket.path.startsWith('/voip/ws')) {
+            socket.sendJson({participant: 'server:default', type: 'ready'})
+            sendEvent(socket, 'call.received', 'call_4', {from: '+15550100'})
+            return
+          }
+          socket.sendJson({code: 'calls_disabled', type: 'error'})
+          socket.close(4403, 'calls disabled')
+        },
+        rest: () => ({
+          body: {
+            data: {
+              answered: true,
+              answeredBy: 'server:default',
+              exclusive: false,
+            },
+            success: true,
+          },
+        }),
+      })
+
+      const result = await apiKey(() =>
+        runCommand(
+          `calls media call_4 --session support --output ${outputPath} --json`,
+        ),
+      )
+
+      expect(exitCode(result.error)).toBe(3)
+      const lines = result.stderr.trim().split('\n')
+      expect(JSON.parse(lines.at(-1)!)).toMatchObject({
+        category: 'authorization',
+        exitCode: 3,
+        message: 'Calling is turned off for this number.',
+      })
+      // A refused connection is not retried.
+      expect(
+        server.sockets.filter((s) => !s.path.startsWith('/voip/ws')),
+      ).toHaveLength(1)
+    } finally {
+      await rm(directory, {force: true, recursive: true})
+    }
+  })
+
   test('paces input audio in real time and leaves when interrupted', async () => {
     const controller = new AbortController()
     let received = 0
