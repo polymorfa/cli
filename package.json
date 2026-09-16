@@ -203,9 +203,6 @@
       "widget": {
         "description": "Inspect and update saved QuickLink widget settings."
       },
-      "quicklink": {
-        "description": "Create persistent onboarding invitations."
-      },
       "session:configuration": {
         "description": "Inspect and update inherited session configuration."
       },
