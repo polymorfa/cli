@@ -83,8 +83,9 @@ export function renderProfile(data: unknown): string {
     field('Status', data.status),
     field('Push name', data.pushName),
     field('Business name', data.businessName),
-    field('Platform', data.platform),
-    field('JID', data.jid),
+    field('Phone number', data.phoneNumber),
+    field('Phone platform', data.phonePlatform),
+    field('Account type', data.accountType),
     field('Picture', data.profilePicUrl),
   ].filter((value): value is string => value !== undefined)
 

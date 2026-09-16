@@ -48,9 +48,11 @@ describe('profile commands', () => {
     server = await startHttpServer({
       body: {
         data: {
+          accountType: 'business_app',
           businessName: 'Polymorfa',
-          jid: '15551234567@s.whatsapp.net',
-          platform: 'android',
+          id: '9007199254740993',
+          phoneNumber: '+15551234567',
+          phonePlatform: 'android',
           profilePicUrl: 'https://example.test/profile.jpg',
           pushName: 'Raje',
         },
@@ -64,8 +66,12 @@ describe('profile commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain('Raje')
+    expect(result.stdout).toContain('Phone platform')
     expect(result.stdout).toContain('android')
-    expect(result.stdout).toContain('15551234567@s.whatsapp.net')
+    expect(result.stdout).toContain('Account type')
+    expect(result.stdout).toContain('business_app')
+    expect(result.stdout).toContain('+15551234567')
+    expect(result.stdout).not.toContain('JID')
   })
 
   test('rejects a client token before a Profile request', async () => {
