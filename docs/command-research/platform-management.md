@@ -104,6 +104,9 @@ its mutation target. A missing saved row remains `null` in JSON and has explicit
 human output. Empty patches remain representable because bodyless PUT is a live
 compatibility no-op. Logo fields are storage identifiers only; the CLI does not
 invent file, URL, base64, multipart, upload, attach, or download behavior.
+Human output shows the success and failure callback URLs and whether
+recipients can change a prefilled phone number. Those fields replaced the
+redirect URI allowlist in the pinned contract.
 
 Batch session commands use positional IDs because they are the primary action
 targets. The CLI trims and validates 1..100 unique IDs before transport instead

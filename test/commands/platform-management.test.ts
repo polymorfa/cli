@@ -381,7 +381,7 @@ describe('Platform management commands', () => {
 
   test('updates a widget patch with separate project scope and idempotency', async () => {
     const input = await jsonInput('widget.json', {
-      allowedRedirectUris: ['https://app.example.com/connected'],
+      successCallbackUrl: 'https://app.example.com/connected',
       businessName: 'Example',
       enabled: true,
       methods: ['qr'],
@@ -397,7 +397,7 @@ describe('Platform management commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      allowedRedirectUris: ['https://app.example.com/connected'],
+      successCallbackUrl: 'https://app.example.com/connected',
       businessName: 'Example',
       enabled: true,
       methods: ['qr'],
@@ -532,7 +532,9 @@ function widgetSettings() {
   return {
     accent: null,
     allowedOrigins: ['https://app.example.com'],
-    allowedRedirectUris: [],
+    allowPhoneChange: false,
+    failureCallbackUrl: null,
+    successCallbackUrl: null,
     businessName: 'Example',
     colors: null,
     createdAt: 1_723_000_000_000,

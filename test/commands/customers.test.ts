@@ -94,7 +94,7 @@ describe('Customer commands', () => {
 
     const created = await environment(() =>
       runCommand(
-        'customer create --project project/1 --name Ada --phone +15551234567 --external-id crm/1 --idempotency-key create_1 --json',
+        'customer create --project project/1 --name Ada --external-id crm/1 --idempotency-key create_1 --json',
       ),
     )
     const viewed = await environment(() =>
@@ -102,7 +102,7 @@ describe('Customer commands', () => {
     )
     const updated = await environment(() =>
       runCommand(
-        'customer update customer/1 --project project/1 --clear-name --phone +15557654321 --json',
+        'customer update customer/1 --project project/1 --clear-name --json',
       ),
     )
 
@@ -117,12 +117,10 @@ describe('Customer commands', () => {
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       externalCustomerId: 'crm/1',
       name: 'Ada',
-      phone: '+15551234567',
       projectId: 'project/1',
     })
     expect(JSON.parse(server.requests[2]?.body ?? '')).toEqual({
       name: null,
-      phone: '+15557654321',
       projectId: 'project/1',
     })
   })
@@ -195,7 +193,7 @@ describe('Customer commands', () => {
 
     const created = await environment(() =>
       runCommand(
-        'customer pairing-link create customer/1 --project project/1 --expected-phone +15551234567 --method qr --method phone --expires-in 3600 --locale en --theme system --idempotency-key link_1 --json',
+        'customer pairing-link create customer/1 --project project/1 --expected-phone +15551234567 --method qr --method phone --expires-in 3600 --idempotency-key link_1 --json',
       ),
     )
     const revoked = await environment(() =>
@@ -220,10 +218,8 @@ describe('Customer commands', () => {
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       expectedPhone: '+15551234567',
       expiresInSeconds: 3600,
-      locale: 'en',
       methods: ['qr', 'phone'],
       projectId: 'project/1',
-      theme: 'system',
     })
     expect(JSON.parse(server.requests[2]?.body ?? '')).toEqual({
       confirm: true,
@@ -275,7 +271,6 @@ function customer() {
     isDefault: false,
     name: 'Ada',
     orgId: 'org_1',
-    phone: '+15551234567',
     projectId: 'project/1',
     status: 'active',
     updatedAt: 1_725_000_000_000,
@@ -283,16 +278,13 @@ function customer() {
 }
 
 function customerSummary() {
-  const {phone: _phone, ...value} = customer()
-  void _phone
   return {
-    ...value,
+    ...customer(),
     activePairingLinkState: 'active',
     connectedNumberCount: 1,
     lastActivityAt: 1_725_000_000_000,
     needsAttention: false,
     numberCount: 1,
-    phoneMasked: '+1•••4567',
   }
 }
 

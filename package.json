@@ -30,7 +30,8 @@
   "dependencies": {
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "github:polymorfa/sdks#08452992a32a392de5fc3d0fa3954ba6addd7f32"
+    "@polymorfa/calls": "0.1.0-dev.0",
+    "@polymorfa/sdk": "github:polymorfa/sdks#a65291cf6de0574b655affdcab5e6fe44c517b53"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
@@ -92,7 +93,13 @@
         "description": "Manage the business profile cover photo."
       },
       "call": {
-        "description": "Manage incoming Linked Device calls."
+        "description": "Reject incoming calls through the Linked Device session route."
+      },
+      "calls": {
+        "description": "Place, answer, join, decline, leave, end, and watch calls, and carry call audio."
+      },
+      "calls:settings": {
+        "description": "Inspect and replace session call settings."
       },
       "campaign": {
         "description": "Inspect and manage Messaging campaigns."

@@ -2,6 +2,7 @@ import {
   PolymorfaAuthenticationError,
   PolymorfaCancelledError,
   PolymorfaConfigurationError,
+  PolymorfaConflictError,
 } from '@polymorfa/sdk'
 import {describe, expect, test} from 'vitest'
 
@@ -49,6 +50,24 @@ describe('presentError', () => {
       exitCode: 3,
       message: 'Invalid API key.',
       requestId: 'req_123',
+    })
+  })
+
+  test('keeps the stable API code of a conflict', () => {
+    const error = new PolymorfaConflictError(
+      'Another participant claimed it.',
+      {
+        code: 'call_claimed',
+        requestId: 'req_409',
+      },
+    )
+
+    expect(presentError(error)).toEqual({
+      category: 'conflict',
+      code: 'call_claimed',
+      exitCode: 4,
+      message: 'Another participant claimed it.',
+      requestId: 'req_409',
     })
   })
 })

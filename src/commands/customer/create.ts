@@ -17,9 +17,6 @@ export default class CustomerCreate extends BaseCommand {
       required: true,
     }),
     name: Flags.string({description: 'Customer name.'}),
-    phone: Flags.string({
-      description: 'Customer phone number in E.164 format.',
-    }),
   }
 
   async run(): Promise<void> {
@@ -29,7 +26,6 @@ export default class CustomerCreate extends BaseCommand {
       {
         projectId: requireCustomerProject(flags.project),
         ...(flags.name === undefined ? {} : {name: flags.name}),
-        ...(flags.phone === undefined ? {} : {phone: flags.phone}),
         ...(flags['external-id'] === undefined
           ? {}
           : {externalCustomerId: flags['external-id']}),

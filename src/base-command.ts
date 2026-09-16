@@ -5,7 +5,10 @@ import {
   type Client as PlatformClient,
 } from '@polymorfa/sdk'
 
-import {resolveCommandEnvironment} from './context/environment.js'
+import {
+  resolveCommandEnvironment,
+  type ResolvedEnvironment,
+} from './context/environment.js'
 import {presentError} from './errors/present.js'
 import {renderValue, type OutputMode} from './output/render.js'
 import {createMessagingClient, createPlatformClient} from './sdk/client.js'
@@ -77,15 +80,7 @@ export abstract class BaseCommand extends Command {
     flags: GlobalFlags,
     options: {readonly serverApiKeyOnly?: string} = {},
   ): Promise<MessagingClient> {
-    const environment = await resolveCommandEnvironment({
-      env: process.env,
-      surface: 'messaging',
-      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
-      ...(flags['api-version'] === undefined
-        ? {}
-        : {apiVersion: flags['api-version']}),
-      ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
-    })
+    const environment = await this.messagingEnvironment(flags)
     if (
       options.serverApiKeyOnly !== undefined &&
       environment.credential.type !== 'apiKey'
@@ -95,14 +90,34 @@ export abstract class BaseCommand extends Command {
         'credential',
       )
     }
-    this.registerSecret(environment.credential.value)
     return createMessagingClient(environment)
   }
 
+  /** Resolve Messaging credentials once, for commands that also open sockets. */
+  protected async messagingEnvironment(
+    flags: GlobalFlags,
+  ): Promise<ResolvedEnvironment> {
+    return this.resolveEnvironment(flags, 'messaging')
+  }
+
   protected async platformClient(flags: GlobalFlags): Promise<PlatformClient> {
+    return createPlatformClient(await this.platformEnvironment(flags))
+  }
+
+  /** Resolve Platform credentials: server API keys only. */
+  protected async platformEnvironment(
+    flags: GlobalFlags,
+  ): Promise<ResolvedEnvironment> {
+    return this.resolveEnvironment(flags, 'platform')
+  }
+
+  private async resolveEnvironment(
+    flags: GlobalFlags,
+    surface: ResolvedEnvironment['surface'],
+  ): Promise<ResolvedEnvironment> {
     const environment = await resolveCommandEnvironment({
       env: process.env,
-      surface: 'platform',
+      surface,
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags['api-version'] === undefined
         ? {}
@@ -110,7 +125,7 @@ export abstract class BaseCommand extends Command {
       ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
     })
     this.registerSecret(environment.credential.value)
-    return createPlatformClient(environment)
+    return environment
   }
 
   protected registerSecret(secret: string): void {

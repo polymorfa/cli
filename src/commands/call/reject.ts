@@ -11,7 +11,10 @@ export default class CallReject extends BaseCommand {
     call: Args.string({description: 'Incoming call ID.', required: true}),
   }
 
-  static override description = 'Reject an incoming Linked Device call.'
+  static override description =
+    'Reject an incoming call through the Linked Device session route, identified by session, call ID, and caller ID. Requires a server API key. To decline a call on the unified Calls API, use calls reject.'
+
+  static override summary = 'Reject an incoming call by session and caller.'
 
   static override flags = {
     from: Flags.string({

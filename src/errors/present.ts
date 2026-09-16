@@ -57,6 +57,9 @@ export function presentError(
             : {code: redact(error.code, secrets)}),
         }
       : {}),
+    ...(error instanceof PolymorfaConflictError && error.code !== undefined
+      ? {code: redact(error.code, secrets)}
+      : {}),
     message,
     ...(requestId === undefined ? {} : {requestId}),
   }

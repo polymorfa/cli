@@ -89,11 +89,7 @@ export async function updateCustomer(
   customerId: string,
   body: UpdateCustomerRequest,
 ): Promise<CustomerResult<Customer>> {
-  if (
-    body.name === undefined &&
-    body.phone === undefined &&
-    body.externalCustomerId === undefined
-  ) {
+  if (body.name === undefined && body.externalCustomerId === undefined) {
     throw new PolymorfaValidationError(
       'Provide at least one Customer profile field to update.',
       {code: 'missing_customer_update'},
@@ -204,7 +200,6 @@ export function renderCustomers(customers: CustomerListEnvelope): string {
       [
         customer.id,
         customer.name ?? '',
-        customer.phoneMasked ?? '',
         customer.status,
         `${customer.connectedNumberCount}/${customer.numberCount} connected`,
         customer.needsAttention ? 'needs attention' : '',
@@ -217,7 +212,6 @@ export function renderCustomer(customer: Customer): string {
   return [
     `ID\t${customer.id}`,
     `Name\t${customer.name ?? ''}`,
-    `Phone\t${customer.phone ?? ''}`,
     `External ID\t${customer.externalCustomerId ?? ''}`,
     `Status\t${customer.status}`,
     `Default\t${customer.isDefault}`,

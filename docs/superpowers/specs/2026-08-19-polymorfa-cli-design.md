@@ -144,8 +144,13 @@ retry, pagination, or error behavior. Its command-research record must identify
 the exact raw operation and track promotion to a curated SDK method when the
 workflow benefits from one.
 
-The CLI depends only on the root server package. Browser, React, Next.js, UI,
-Elements, and Devtools SDK workspaces are not CLI runtime dependencies.
+The CLI depends on the root server package and on `@polymorfa/calls`, the
+programmatic Calls client, for the call event stream and call audio. It uses
+only the public, neutral entry point of `@polymorfa/calls`, never its internal
+module. Browser, React, Next.js, UI, Elements, and Devtools SDK workspaces are
+not CLI runtime dependencies. npm cannot install a Git subdirectory, so
+`@polymorfa/calls` resolves only after it is published; until then development
+installs unpack the packed workspace locally.
 
 ## Internal boundaries
 
@@ -542,6 +547,19 @@ business
 call
   reject
 
+calls
+  place
+  accept
+  reject
+  leave
+  end
+  invite
+  watch
+  media
+  settings
+    get
+    set
+
 lid
   resolve
 
@@ -706,7 +724,14 @@ phone number, stable ID, deprecated LID alias, or username and optional four-
 digit key. Security-code lookup requires a stable `digits@lid` user ID; human
 output favors the 60-digit code and does not dump display-QR base64, while JSON
 retains the complete no-store response. No command claims bulk identity lookup,
-call history/acceptance/streaming, or security-code verification submission.
+call history, or security-code verification submission through that session
+route. The unified Calls API is a separate `calls` family: place, accept (with
+an optional exclusive claim) or join, decline, leave one connection, end,
+invite, watch session call updates as JSON Lines, carry call audio as raw PCM,
+and read or replace session call settings. It never exposes offers,
+candidates, or media framing. Client tokens act as their own participant and
+cannot name `--participant` or use call settings; server API keys name the
+session and may name a participant. See `docs/command-research/calls.md`.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -1049,6 +1074,9 @@ The private `dev` branch now contains working, unpublished vertical slices:
   collection, order, compliance, linked-account, and eligibility commands;
 - complete incoming-call rejection, singular LID resolution, and no-store user
   security-code inspection commands;
+- unified Calls commands for placement, answering and joining with exclusive
+  claims, declining, leaving, ending, inviting, session call updates, raw PCM
+  call audio, and session call settings, pinned to an unpushed SDK revision;
 - organization-key API-key list/revocation, member and audit lists, session-ban
   filtering, security-incident list/acknowledgement, operation inspection, and
   project-token metadata commands;
