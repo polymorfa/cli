@@ -4,11 +4,11 @@ The BanSafe CLI commands depend on the matching typed SDK revision pinned in
 `package.json`. During coordinated SDK and CLI development, verify both
 worktrees without replacing that immutable dependency in either manifest:
 
-The pinned SDK revision is `polymorfa/sdks@289c921793a71f52c7fa85e941f36c45fa72e653`.
-Its coverage ledger is reconciled against the merged API contracts at
-`polymorfa/polymorfa@1600403db9dcf7996dbbb882375b1165859829d3` (Platform
+The pinned SDK revision is `polymorfa/sdks@0eeae656e129907fa0b6b87f7c2199279530f22a`.
+Its coverage ledger is reconciled against the API contracts at
+`polymorfa/polymorfa@aca849cda44ad8582d7ae87489404d2483173a53` (Platform
 snapshot SHA-256
-`c3c0d1107e8403c1ddc28649ca397eef35d82cd40be1674b3dc2ba5525a3590e`).
+`2a30e8e0af8902703609f8ed0f5bb2c108b39c5c11863d5ebd8907e56a9f25d2`).
 
 ```shell
 export POLYMORFA_SDK_CHECKOUT=/absolute/path/to/bansafe-health-sdk
