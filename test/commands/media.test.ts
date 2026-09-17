@@ -1,9 +1,10 @@
-import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises'
+import {createCipheriv, createHash, createHmac, hkdfSync} from 'node:crypto'
+import {mkdtemp, readFile, readdir, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
 import {runCommand} from '@oclif/test'
-import {afterEach, beforeEach, describe, expect, test} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {
   startHttpSequenceServer,
@@ -138,8 +139,9 @@ describe('media commands', () => {
     )
 
     expect(exitCode(result.error)).toBe(2)
-    expect(result.stderr).toContain('is 5 bytes')
+    expect(result.stderr).toContain('exceeds the 4 byte download limit')
     await expect(readFile(output)).rejects.toMatchObject({code: 'ENOENT'})
+    await expect(readdir(directory)).resolves.toEqual([])
   })
 
   test('refuses to overwrite a local file unless force is explicit', async () => {
@@ -201,6 +203,213 @@ describe('media commands', () => {
     expect(server.requests[0]?.headers['idempotency-key']).toBe('persist_1')
   })
 
+  test('rejects a declared Content-Length above the limit before writing', async () => {
+    const output = join(directory, 'declared.bin')
+    server = await startHttpSequenceServer([
+      {body: {data: mediaInfo(), success: true}},
+      {
+        headers: {'content-length': '5'},
+        rawBody: new Uint8Array([1, 2, 3, 4, 5]),
+      },
+    ])
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(`media download media_1 -o ${output} --max-bytes 4 --json`),
+    )
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(result.stderr).toContain('is 5 bytes')
+    await expect(readdir(directory)).resolves.toEqual([])
+  })
+
+  test('follows a storage redirect without forwarding the API key', async () => {
+    const output = join(directory, 'redirected.bin')
+    server = await startHttpSequenceServer([
+      {body: {data: mediaInfo(), success: true}},
+      {
+        headers: {
+          location: '/storage/object?sig=abc',
+          'request-id': 'req_redirect',
+        },
+        rawBody: '',
+        status: 302,
+      },
+      {rawBody: new Uint8Array([7, 7, 7, 7])},
+    ])
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(`media download media_1 --output ${output} --json`),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      data: {bytes: 4, path: output},
+      metadata: {requestId: 'req_redirect', status: 302},
+    })
+    await expect(readFile(output)).resolves.toEqual(Buffer.from([7, 7, 7, 7]))
+    expect(server.requests[1]?.headers.authorization).toMatch(/^Bearer /)
+    expect(server.requests[2]?.url).toBe('/storage/object?sig=abc')
+    expect(server.requests[2]?.headers.authorization).toBeUndefined()
+  })
+
+  test('prints the signed link only with --url and warns on stderr', async () => {
+    server = await startHttpServer({
+      headers: {
+        location:
+          'https://storage.example.com/o?X-Amz-Date=20260917T100000Z&X-Amz-Expires=300&X-Amz-Signature=s',
+        'request-id': 'req_url',
+      },
+      rawBody: '',
+      status: 302,
+    })
+
+    const human = await apiKeyEnvironment(() =>
+      runCommand('media download media/1 --url'),
+    )
+    expect(human.error).toBeUndefined()
+    expect(human.stdout.trim()).toBe(
+      'https://storage.example.com/o?X-Amz-Date=20260917T100000Z&X-Amz-Expires=300&X-Amz-Signature=s',
+    )
+    expect(human.stderr).toContain('expires within minutes')
+
+    const json = await apiKeyEnvironment(() =>
+      runCommand('media download media/1 --url --json'),
+    )
+    expect(JSON.parse(json.stdout)).toEqual({
+      data: {
+        expiresAt: '2026-09-17T10:05:00.000Z',
+        mediaId: 'media/1',
+        requestId: 'req_url',
+        url: 'https://storage.example.com/o?X-Amz-Date=20260917T100000Z&X-Amz-Expires=300&X-Amz-Signature=s',
+      },
+    })
+    expect(server.requests.map(({url}) => url)).toEqual([
+      '/messaging/media/media%2F1',
+      '/messaging/media/media%2F1',
+    ])
+  })
+
+  test('explains when the API streams instead of issuing a link', async () => {
+    server = await startHttpServer({rawBody: new Uint8Array([1])})
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand('media download media_1 --url --json'),
+    )
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(result.stderr).toContain('issued no signed link')
+    expect(result.stdout).toBe('')
+  })
+
+  test('requires an output path or --url, and rejects conflicting flags', async () => {
+    server = await startHttpServer({body: {data: mediaInfo(), success: true}})
+
+    const missing = await apiKeyEnvironment(() =>
+      runCommand('media download media_1 --json'),
+    )
+    expect(exitCode(missing.error)).toBe(2)
+    expect(missing.stderr).toContain('--output')
+
+    const conflicting = await apiKeyEnvironment(() =>
+      runCommand(`media download media_1 --url -o ${join(directory, 'x')}`),
+    )
+    expect(exitCode(conflicting.error)).toBe(2)
+    expect(server.requests).toHaveLength(0)
+  })
+
+  describe('--from-event', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals()
+    })
+
+    test('decrypts media from a stored webhook event without credentials', async () => {
+      const fixture = whatsAppFixture(Buffer.from('decrypted image bytes'))
+      const fetch = vi.fn<(input: unknown) => Promise<Response>>(() =>
+        Promise.resolve(
+          new Response(new Blob([new Uint8Array(fixture.encrypted)])),
+        ),
+      )
+      vi.stubGlobal('fetch', fetch)
+      const eventFile = join(directory, 'event.json')
+      await writeFile(
+        eventFile,
+        JSON.stringify({
+          event: 'message.received',
+          payload: {id: 'm1', media: fixture.media, type: 'image'},
+        }),
+      )
+      const output = join(directory, 'photo.jpg')
+
+      const result = await withEnvironment(
+        {POLYMORFA_API_KEY: undefined, POLYMORFA_CLIENT_TOKEN: undefined},
+        () =>
+          runCommand(
+            `media download --from-event ${eventFile} -o ${output} --json`,
+          ),
+      )
+
+      expect(result.error).toBeUndefined()
+      expect(JSON.parse(result.stdout)).toEqual({
+        data: {
+          bytes: 21,
+          mediaKind: 'image',
+          mimeType: 'image/jpeg',
+          path: output,
+        },
+      })
+      await expect(readFile(output, 'utf8')).resolves.toBe(
+        'decrypted image bytes',
+      )
+      expect(String(fetch.mock.calls[0]?.[0])).toBe(fixture.url)
+      expect(result.stdout).not.toContain(fixture.media)
+    })
+
+    test('fails without output when the MAC does not match', async () => {
+      const fixture = whatsAppFixture(Buffer.from('tampered payload'))
+      const tampered = Buffer.from(fixture.encrypted)
+      tampered[tampered.length - 1] = tampered[tampered.length - 1]! ^ 1
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve(new Response(new Blob([new Uint8Array(tampered)]))),
+        ),
+      )
+      const eventFile = join(directory, 'event.json')
+      await writeFile(
+        eventFile,
+        JSON.stringify({media: fixture.media, type: 'image'}),
+      )
+
+      const result = await runCommand(
+        `media download --from-event ${eventFile} -o ${join(directory, 'out.jpg')} --json`,
+      )
+
+      expect(exitCode(result.error)).toBe(2)
+      expect(result.stderr).toContain('media_enc_hash_mismatch')
+      expect(result.stderr).not.toContain(fixture.media)
+      await expect(readdir(directory)).resolves.toEqual(['event.json'])
+    })
+
+    test('rejects events without an encrypted media descriptor', async () => {
+      const eventFile = join(directory, 'event.json')
+      await writeFile(
+        eventFile,
+        JSON.stringify({payload: {mediaUrl: 'https://s3/x', type: 'image'}}),
+      )
+
+      const result = await runCommand(
+        `media download --from-event ${eventFile} -o ${join(directory, 'o')} --json`,
+      )
+      expect(exitCode(result.error)).toBe(2)
+      expect(result.stderr).toContain('downloaded by media ID')
+
+      const both = await runCommand(
+        `media download media_1 --from-event ${eventFile} -o ${join(directory, 'o')}`,
+      )
+      expect(exitCode(both.error)).toBe(2)
+    })
+  })
+
   async function apiKeyEnvironment<T>(run: () => Promise<T>): Promise<T> {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
@@ -229,4 +438,35 @@ function mediaInfo() {
 
 function exitCode(error: unknown): number | undefined {
   return (error as {oclif?: {exit?: number}} | undefined)?.oclif?.exit
+}
+
+function whatsAppFixture(plaintext: Buffer): {
+  readonly encrypted: Buffer
+  readonly media: string
+  readonly url: string
+} {
+  const mediaKey = Buffer.alloc(32, 7)
+  const expanded = Buffer.from(
+    hkdfSync('sha256', mediaKey, Buffer.alloc(0), 'WhatsApp Image Keys', 112),
+  )
+  const iv = expanded.subarray(0, 16)
+  const cipher = createCipheriv('aes-256-cbc', expanded.subarray(16, 48), iv)
+  const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()])
+  const mac = createHmac('sha256', expanded.subarray(48, 80))
+    .update(iv)
+    .update(ciphertext)
+    .digest()
+    .subarray(0, 10)
+  const encrypted = Buffer.concat([ciphertext, mac])
+  const url = 'https://mmg.whatsapp.net/v/t62.7118-24/fixture.enc?ccb=11-4'
+  // ImageMessage field numbers: URL 1, fileSHA256 4, mediaKey 8, fileEncSHA256 9.
+  const field = (number: number, value: Buffer): Buffer =>
+    Buffer.concat([Buffer.from([(number << 3) | 2, value.length]), value])
+  const media = Buffer.concat([
+    field(1, Buffer.from(url)),
+    field(4, createHash('sha256').update(plaintext).digest()),
+    field(8, mediaKey),
+    field(9, createHash('sha256').update(encrypted).digest()),
+  ]).toString('base64')
+  return {encrypted, media, url}
 }

@@ -6,6 +6,7 @@ import {
   PolymorfaConflictError,
   PolymorfaConnectionError,
   PolymorfaError,
+  PolymorfaMediaIntegrityError,
   PolymorfaNotFoundError,
   PolymorfaPaymentRequiredError,
   PolymorfaRateLimitError,
@@ -118,6 +119,11 @@ function classifyError(
   }
 
   if (error instanceof PolymorfaValidationError) {
+    return {category: 'validation', exitCode: 2}
+  }
+
+  // Media that fails its MAC, hash, or size checks is not retryable.
+  if (error instanceof PolymorfaMediaIntegrityError) {
     return {category: 'validation', exitCode: 2}
   }
 
