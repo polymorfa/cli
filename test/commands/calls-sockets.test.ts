@@ -9,7 +9,10 @@ import {
 } from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
+import {spawn} from 'node:child_process'
+import {once} from 'node:events'
 import {Readable} from 'node:stream'
+import {fileURLToPath} from 'node:url'
 
 import {runCommand} from '@oclif/test'
 import {afterEach, beforeEach, describe, expect, test} from 'vitest'
@@ -418,6 +421,128 @@ describe('calls watch and media', () => {
       server.sockets.filter((s) => !s.path.startsWith('/voip/ws')),
     ).toHaveLength(0)
   })
+
+  test('ends a call whose placement returns after an interrupt', async () => {
+    const controller = new AbortController()
+    server = await startCallsServer({
+      onSocket: async (socket) => {
+        await socket.next()
+        socket.sendJson({participant: 'server:default', type: 'ready'})
+      },
+      rest: async (request) => {
+        if (request.method === 'POST') {
+          // Ctrl-C arrives while the placement is still in flight.
+          controller.abort()
+          await delay(100)
+          return {
+            body: {
+              data: {callId: 'call_7', session: 'support', video: false},
+              success: true,
+            },
+            status: 201,
+          }
+        }
+        return {body: {data: null, success: true}}
+      },
+    })
+    const statuses: string[] = []
+
+    const summary = await bridgeCallMedia(
+      {
+        baseUrl: server.baseUrl,
+        credential: {type: 'apiKey', value: API_KEY},
+        output: () => undefined,
+        place: '+15550100',
+        session: 'support',
+        signal: controller.signal,
+      },
+      (status) => statuses.push(status.type),
+    )
+
+    expect(summary.reason).toBe('cancelled')
+    expect(statuses).not.toContain('placed')
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'POST /messaging/voip/calls',
+      'DELETE /messaging/voip/calls/call_7',
+    ])
+  })
+
+  test('exits after the call ends while standard input stays open', async () => {
+    server = await startCallsServer({
+      onSocket: async (socket) => {
+        await socket.next()
+        if (socket.path.startsWith('/voip/ws')) {
+          socket.sendJson({participant: 'server:default', type: 'ready'})
+          sendEvent(socket, 'call.received', 'call_2', {from: '+15550100'})
+          await delay(300)
+          sendEvent(socket, 'call.ended', 'call_2', {reason: 'remote_hangup'})
+          return
+        }
+        socket.sendJson({sampleRate: 16000, type: 'ready', video: false})
+        for (;;) await socket.next()
+      },
+      rest: () => ({
+        body: {
+          data: {
+            answered: true,
+            answeredBy: 'server:default',
+            exclusive: false,
+          },
+          success: true,
+        },
+      }),
+    })
+
+    // A producer that never closes standard input, like a microphone.
+    const child = spawn(
+      process.execPath,
+      [
+        '--import',
+        'tsx',
+        fileURLToPath(new URL('../../bin/dev.js', import.meta.url)),
+        'calls',
+        'media',
+        'call_2',
+        '--session',
+        'support',
+        '--input',
+        '-',
+        '--output',
+        join(directory, 'out.pcm'),
+        '--json',
+      ],
+      {
+        env: {
+          ...process.env,
+          POLYMORFA_API_KEY: API_KEY,
+          POLYMORFA_BASE_URL: server.baseUrl,
+          POLYMORFA_CLIENT_TOKEN: '',
+        },
+        stdio: ['pipe', 'pipe', 'pipe'],
+      },
+    )
+    let stderr = ''
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderr += String(chunk)
+    })
+    child.stdin.on('error', () => undefined)
+    child.stdin.write(pcm(160))
+    let timer: NodeJS.Timeout | undefined
+    try {
+      const exited = once(child, 'exit') as Promise<[number | null]>
+      const timeout = new Promise<'timeout'>((resolve) => {
+        timer = setTimeout(() => resolve('timeout'), 15_000)
+      })
+      const outcome = await Promise.race([exited, timeout])
+
+      expect(outcome, stderr).not.toBe('timeout')
+      expect(outcome).toEqual([0, null])
+      expect(stderr).toContain('"reason":"remote_hangup"')
+    } finally {
+      clearTimeout(timer)
+      child.kill()
+    }
+  }, 30_000)
 
   test('waits for an answer in flight before leaving on interrupt', async () => {
     const controller = new AbortController()

@@ -1001,6 +1001,11 @@ export async function bridgeCallMedia(
           exclusive: input.exclusive === true,
           ...(input.video === undefined ? {} : {video: input.video}),
         })
+        if (finished) {
+          // Cancelled while placing: stop the callee's phone ringing.
+          await call.end().catch(() => undefined)
+          return await done
+        }
         status({type: 'placed', callId: call.id})
         attach(call)
         // Events that arrived before place() returned are already applied,

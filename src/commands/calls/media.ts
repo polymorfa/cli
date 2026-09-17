@@ -189,7 +189,9 @@ export default class CallsMedia extends BaseCommand {
       stop.signal.removeEventListener('abort', onStop)
       stop.dispose()
       if (input !== undefined && input !== process.stdin) input.destroy()
-      if (input === process.stdin) process.stdin.pause()
+      // Reading standard input stays blocked on a producer that never closes
+      // it (a microphone, tail -f), which would keep the process alive.
+      if (input === process.stdin) process.stdin.destroy()
       await closeOutput()
     }
     if (fileError !== undefined) throw outputFailed(flags.output, fileError)
