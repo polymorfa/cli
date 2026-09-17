@@ -329,7 +329,7 @@ describe('unified calls commands', () => {
 
     expect(viewed.error).toBeUndefined()
     expect(viewed.stdout).toBe(
-      'Session\tsupport/main\nCalls\ton\nInclude self audio\tyes\nIncoming calls\tclients\nRevision\t0\nUpdated\t2026-09-16T10:00:00.000Z\n',
+      'Session\tsupport/main\nCalls\ton\nInclude self audio\tyes\nIncoming calls\tclients\nCloud API calls answered by\tyour Graph API integration\nRevision\t0\nUpdated\t2026-09-16T10:00:00.000Z\n',
     )
     expect(updated.error).toBeUndefined()
     expect(jsonData(updated.stdout)).toEqual({
@@ -376,6 +376,11 @@ describe('unified calls commands', () => {
         'calls settings set --session support --inbound-route sip_trunk',
       ),
     )
+    const hosting = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --host-cloud-api-calls=true',
+      ),
+    )
     const conflicting = await apiKey(() =>
       runCommand(
         `calls settings set --session support --inbound-route clients --sip-trunk ${TRUNK_ID}`,
@@ -385,13 +390,17 @@ describe('unified calls commands', () => {
       runCommand('calls settings set --session support'),
     )
 
-    for (const ok of [selfAudio, trunk, back, keepTrunk]) {
+    for (const ok of [selfAudio, trunk, back, keepTrunk, hosting]) {
       expect(ok.error).toBeUndefined()
     }
     expect(selfAudio.stdout).toContain('Incoming calls\tclients and SIP trunk')
     expect(selfAudio.stdout).toContain(`SIP trunk\t${TRUNK_ID}`)
     expect(selfAudio.stdout).toContain('SIP answer claims call\tno')
+    expect(selfAudio.stdout).toContain(
+      'Cloud API calls answered by\tyour Graph API integration',
+    )
     expect(server.requests.map(({method}) => method)).toEqual([
+      'PUT',
       'PUT',
       'PUT',
       'PUT',
@@ -404,6 +413,7 @@ describe('unified calls commands', () => {
       {inboundRoute: 'sip_trunk', sipTrunkId: TRUNK_ID},
       {inboundRoute: 'clients', sipClaim: false},
       {inboundRoute: 'sip_trunk'},
+      {hostCloudApiCalls: true},
     ])
     expect(exitCode(conflicting.error)).toBe(2)
     expect(exitCode(empty.error)).toBe(2)

@@ -255,6 +255,7 @@ export interface CallSettingsChanges {
   readonly callsEnabled?: boolean
   /** Apply only if the settings still have this revision. */
   readonly expectedRevision?: number
+  readonly hostCloudApiCalls?: boolean
   readonly includeSelfAudio?: boolean
   readonly inboundRoute?: CallInboundRoute
   readonly sipClaim?: boolean
@@ -300,6 +301,9 @@ export async function updateCallSettings(
       ? {}
       : {sipTrunkId: changes.sipTrunkId}),
     ...(changes.sipClaim === undefined ? {} : {sipClaim: changes.sipClaim}),
+    ...(changes.hostCloudApiCalls === undefined
+      ? {}
+      : {hostCloudApiCalls: changes.hostCloudApiCalls}),
     ...(expectedRevision === undefined ? {} : {expectedRevision}),
   })
   return result(response.data.data, response.metadata)
@@ -398,6 +402,7 @@ export function renderCallSettings(
           `SIP answer claims call\t${yesNo(settings.sipClaim)}`,
         ]
       : []),
+    `Cloud API calls answered by\t${settings.hostCloudApiCalls === true ? 'Polymorfa Calls' : 'your Graph API integration'}`,
     `Revision\t${settings.revision ?? 0}`,
     `Updated\t${settings.updatedAt ?? 'never (defaults)'}`,
   ].join('\n')

@@ -9,7 +9,7 @@ import {
 
 export default class CallsSettingsSet extends BaseCommand {
   static override description =
-    'Change a session’s call settings through the Platform API. Settings you do not pass keep their current values; --inbound-route sip_trunk without --sip-trunk keeps the stored trunk. --calls-enabled=false turns calling off for the session: placing, answering and joining calls fail, incoming calls are declined and SIP trunks cannot call through it, while calls in progress continue. --expected-revision applies the change only if the settings still have that revision (see `calls settings get`); otherwise the command fails with state_conflict (exit code 4) and changes nothing. --include-self-audio controls whether the merged audio a connection receives includes its own audio (off by default); WhatsApp never hears its own audio. --inbound-route sip_trunk also sends incoming calls to --sip-trunk (SIP trunks are a beta), and --sip-claim controls whether the trunk’s answer claims the call. Requires a server API key.'
+    'Change a session’s call settings through the Platform API. Settings you do not pass keep their current values; --inbound-route sip_trunk without --sip-trunk keeps the stored trunk. --calls-enabled=false turns calling off for the session: placing, answering and joining calls fail, incoming calls are declined and SIP trunks cannot call through it, while calls in progress continue. --expected-revision applies the change only if the settings still have that revision (see `calls settings get`); otherwise the command fails with state_conflict (exit code 4) and changes nothing. --include-self-audio controls whether the merged audio a connection receives includes its own audio (off by default); WhatsApp never hears its own audio. --inbound-route sip_trunk also sends incoming calls to --sip-trunk (SIP trunks are a beta), and --sip-claim controls whether the trunk’s answer claims the call. --host-cloud-api-calls=true has Polymorfa Calls answer a Cloud API session’s incoming calls instead of your Graph API integration. Requires a server API key.'
 
   static override examples = [
     '<%= config.bin %> calls settings set --session support --calls-enabled=false',
@@ -28,6 +28,11 @@ export default class CallsSettingsSet extends BaseCommand {
       description:
         'Apply the change only if the settings still have this revision.',
       min: 0,
+    }),
+    'host-cloud-api-calls': Flags.string({
+      description:
+        'On a Cloud API session, answer incoming calls with Polymorfa Calls (false leaves them to your Graph API integration).',
+      options: ['true', 'false'],
     }),
     'include-self-audio': Flags.string({
       description:
@@ -64,6 +69,9 @@ export default class CallsSettingsSet extends BaseCommand {
         ...(flags['expected-revision'] === undefined
           ? {}
           : {expectedRevision: flags['expected-revision']}),
+        ...(flags['host-cloud-api-calls'] === undefined
+          ? {}
+          : {hostCloudApiCalls: flags['host-cloud-api-calls'] === 'true'}),
         ...(flags['include-self-audio'] === undefined
           ? {}
           : {includeSelfAudio: flags['include-self-audio'] === 'true'}),

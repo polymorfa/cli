@@ -501,7 +501,9 @@ never answers or declines on its own.
   connection receives includes its own audio. It is off by default.
   `--inbound-route sip_trunk` with `--sip-trunk` also sends incoming calls to a
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
-  call. `calls settings set` sends only the flags you pass; the other
+  call. On a Cloud API session, `--host-cloud-api-calls=true` has Polymorfa
+  Calls answer incoming calls; with the default `false`, your Graph API
+  integration answers them. `calls settings set` sends only the flags you pass; the other
   settings keep their values. `calls settings get` and `set` print the
   settings `revision`, which increases on every change and is `0` while the
   session uses the defaults. Pass `--expected-revision <n>` to apply the
