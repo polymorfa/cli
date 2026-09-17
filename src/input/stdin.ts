@@ -25,7 +25,7 @@ export async function readSecretFromStdin(
   const credential = Buffer.concat(chunks).toString('utf8').trim()
   if (credential.length === 0) {
     throw new PolymorfaConfigurationError(
-      'Standard input did not contain an API key.',
+      'Standard input did not contain a credential.',
       'stdin',
     )
   }

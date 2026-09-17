@@ -14,7 +14,7 @@
 
 - The source repository remains private while the npm package name is public: `@polymorfa/cli` with binary `polymorfa`.
 - Runtime is ESM on Node.js 20 or newer.
-- Development pins `@polymorfa/sdk` to `github:polymorfa/sdks#3324a1d5ae840ed96d1a5f987880587cab2312fb`.
+- Development pins `@polymorfa/sdk` to `github:polymorfa/sdks#08452992a32a392de5fc3d0fa3954ba6addd7f32`.
 - The first npm release is blocked until the SDK is available as a public npm semver dependency.
 - The CLI imports only the SDK package root and never duplicates its HTTP transport, authentication validation, retries, cancellation, metadata, pagination, or typed errors.
 - Secrets are never accepted as command-line arguments, written to project files, printed in verbose logs, or included in error context.
@@ -103,7 +103,7 @@ Run: `npm install`
 
 Run: `npm run typecheck`
 
-Expected: PASS with no TypeScript diagnostics and a lockfile whose SDK resolution ends at commit `b6a808366e84eb049c396a524b563ac600284826`.
+Expected: PASS with no TypeScript diagnostics and a lockfile whose SDK resolution ends at commit `08452992a32a392de5fc3d0fa3954ba6addd7f32`.
 
 - [ ] **Step 3: Write the failing version command test**
 
@@ -229,7 +229,7 @@ export function renderValue(
 }
 ```
 
-Define `BaseCommand` with inherited flags `--json`, `--quiet`, `--no-color`, `--profile`, `--organization`, `--project`, `--api-version`, `--timeout`, and `--verbose`. Make `--json` and `--quiet` mutually exclusive. Add `outputMode(flags)` and `writeValue(value, human)` helpers that write only to stdout.
+Define `BaseCommand` with inherited flags `--json`, `--quiet`, `--no-color`, `--profile`, `--project`, `--api-version`, `--timeout`, and `--verbose`. Make `--json` and `--quiet` mutually exclusive. Organization-owned requests use the organization bound to the selected key; do not expose a cosmetic organization override. Add `outputMode(flags)` and `writeValue(value, human)` helpers that write only to stdout.
 
 Change `version` to extend `BaseCommand`, parse its flags, and render `{cli, sdk}` in JSON or the existing literal in human mode.
 
@@ -332,7 +332,7 @@ git commit -m "Standardize CLI output and errors"
 
 **Interfaces:**
 
-- Consumes: public `MessagingClient`, `PlatformClient`, `RawClient`, `MessagingCredential`, and SDK validation.
+- Consumes: public unified `Client`, `MessagingClient`, `RawClient`, `MessagingCredential`, and SDK validation.
 - Produces: `ApiSurface`, `ResolvedEnvironment`, `resolveEnvironment(input)`, and `createRawClient(environment)`.
 
 - [ ] **Step 1: Write failing environment-resolution tests**
@@ -406,7 +406,7 @@ Expected: PASS.
 
 - [ ] **Step 5: Write failing raw-client boundary tests**
 
-Create a real `PlatformClient` and `MessagingClient` through `createRawClient`, then assert each return value is an SDK `RawClient`. Add a negative test proving the SDK rejects `pmfa_ct_` when passed to Platform; do not mock constructors.
+Create a real unified `Client` and `MessagingClient` through `createRawClient`, then assert each return value is an SDK `RawClient`. Add a negative test proving the SDK rejects `pmfa_ct_` on the Platform surface; do not mock constructors.
 
 - [ ] **Step 6: Run the raw-client tests and verify RED**
 
@@ -431,8 +431,13 @@ export function createRawClient(environment: ResolvedEnvironment): RawClient {
   }
 
   if (environment.surface === 'platform') {
-    return new PlatformClient({apiKey: environment.credential.value, ...shared})
-      .raw
+    return new Client({
+      credential: {
+        type: 'organizationApiKey',
+        value: environment.credential.value,
+      },
+      ...shared,
+    }).raw
   }
 
   return new MessagingClient({credential: environment.credential, ...shared})

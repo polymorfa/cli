@@ -77,11 +77,30 @@ describe('Customer commands', () => {
     expect(server.requests[0]?.url).toBe(
       '/platform/customers?projectId=project%2F1&cursor=cursor%2F1&limit=20&search=Ada&status=active&isDefault=false&hasNumbers=true&needsAttention=false',
     )
-    expect(JSON.parse(result.stdout)).toMatchObject({
+    expect(JSON.parse(result.stdout)).toEqual({
       data: {
-        data: [customerSummary()],
+        data: [
+          {
+            activePairingLinkState: 'active',
+            archivedAt: null,
+            connectedNumberCount: 1,
+            createdAt: 1_725_000_000_000,
+            externalCustomerId: 'crm/1',
+            id: 'customer/1',
+            isDefault: false,
+            lastActivityAt: 1_725_000_000_000,
+            name: 'Ada',
+            needsAttention: false,
+            numberCount: 1,
+            orgId: 'org_1',
+            projectId: 'project/1',
+            status: 'active',
+            updatedAt: 1_725_000_000_000,
+          },
+        ],
         page: {hasMore: true, nextCursor: 'cursor_2'},
       },
+      metadata: {attempts: 1, status: 200},
     })
   })
 
@@ -102,7 +121,7 @@ describe('Customer commands', () => {
     )
     const updated = await environment(() =>
       runCommand(
-        'customer update customer/1 --project project/1 --clear-name --json',
+        'customer update customer/1 --project project/1 --clear-name --external-id crm/2 --json',
       ),
     )
 
@@ -120,6 +139,7 @@ describe('Customer commands', () => {
       projectId: 'project/1',
     })
     expect(JSON.parse(server.requests[2]?.body ?? '')).toEqual({
+      externalCustomerId: 'crm/2',
       name: null,
       projectId: 'project/1',
     })
@@ -227,6 +247,36 @@ describe('Customer commands', () => {
       sourceCustomerId: 'customer/source',
     })
     expect(server.requests[2]?.headers['idempotency-key']).toBe('transfer_1')
+  })
+
+  test('renders Customer profiles without a phone field', async () => {
+    server = await startHttpServer({body: {data: customer()}})
+
+    const viewed = await environment(() =>
+      runCommand('customer view customer/1 --project project/1'),
+    )
+
+    expect(viewed.error).toBeUndefined()
+    expect(viewed.stdout).toContain('External ID\tcrm/1')
+    expect(viewed.stdout).not.toMatch(/phone/i)
+  })
+
+  test('rejects retired Customer phone and invitation presentation flags before transport', async () => {
+    server = await startHttpServer({body: {data: customer()}})
+
+    const commands = [
+      'customer create --project project/1 --phone +15551234567 --idempotency-key create_2 --json',
+      'customer update customer/1 --project project/1 --phone +15551234567 --json',
+      'customer update customer/1 --project project/1 --clear-phone --json',
+      'customer pairing-link create customer/1 --project project/1 --locale en --idempotency-key link_2 --json',
+      'customer pairing-link create customer/1 --project project/1 --theme dark --idempotency-key link_3 --json',
+    ]
+    for (const command of commands) {
+      const result = await environment(() => runCommand(command))
+      expect(exitCode(result.error), command).toBe(2)
+      expect(result.stderr, command).toMatch(/Nonexistent flag/)
+    }
+    expect(server.requests).toHaveLength(0)
   })
 
   test('rejects missing project context and empty updates before transport', async () => {

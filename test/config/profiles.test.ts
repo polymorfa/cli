@@ -52,7 +52,7 @@ describe('ProfileRepository', () => {
     const directory = await temporaryDirectory()
     const repository = new ProfileRepository(join(directory, 'config.json'))
 
-    await expect(repository.load()).resolves.toEqual({profiles: {}, version: 1})
+    await expect(repository.load()).resolves.toEqual({profiles: {}, version: 2})
   })
 
   test('writes non-secret profile metadata atomically with restricted permissions', async () => {
@@ -68,7 +68,7 @@ describe('ProfileRepository', () => {
           organization: 'org_123',
         },
       },
-      version: 1,
+      version: 2,
     })
 
     const serialized = await readFile(path, 'utf8')
@@ -80,21 +80,77 @@ describe('ProfileRepository', () => {
           organization: 'org_123',
         },
       },
-      version: 1,
+      version: 2,
     })
     expect(serialized).not.toContain('pmfa_')
     expect((await stat(path)).mode & 0o777).toBe(0o600)
     expect((await stat(join(directory, 'nested'))).mode & 0o777).toBe(0o700)
   })
 
+  test('migrates version 1 metadata without inventing an owner', async () => {
+    const directory = await temporaryDirectory()
+    const path = join(directory, 'config.json')
+    const repository = new ProfileRepository(path)
+    await writeFile(
+      path,
+      JSON.stringify({
+        activeProfile: 'work',
+        profiles: {
+          work: {
+            credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
+            project: 'project_1',
+          },
+        },
+        version: 1,
+      }),
+      'utf8',
+    )
+
+    await expect(repository.load()).resolves.toEqual({
+      activeProfile: 'work',
+      profiles: {
+        work: {
+          credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
+          project: 'project_1',
+        },
+      },
+      version: 2,
+    })
+  })
+
+  test('requires project-token profiles to declare exact project ownership', async () => {
+    const directory = await temporaryDirectory()
+    const path = join(directory, 'config.json')
+    const repository = new ProfileRepository(path)
+    await writeFile(
+      path,
+      JSON.stringify({
+        profiles: {
+          project: {
+            credential: {
+              account: 'profile:project:projectToken',
+              kind: 'projectToken',
+            },
+            owner: 'organization',
+            project: 'project_1',
+          },
+        },
+        version: 2,
+      }),
+      'utf8',
+    )
+
+    await expect(repository.load()).rejects.toThrow('invalid shape')
+  })
+
   test('rejects unsupported or malformed configuration', async () => {
     const directory = await temporaryDirectory()
     const path = join(directory, 'config.json')
     const repository = new ProfileRepository(path)
-    await writeFile(path, '{"version":2,"profiles":{}}', 'utf8')
+    await writeFile(path, '{"version":3,"profiles":{}}', 'utf8')
 
     await expect(repository.load()).rejects.toThrow(
-      'Unsupported Polymorfa config version 2.',
+      'Unsupported Polymorfa config version 3.',
     )
   })
 
@@ -111,7 +167,7 @@ describe('ProfileRepository', () => {
             credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
           },
         },
-        version: 1,
+        version: 2,
       }),
       'utf8',
     )

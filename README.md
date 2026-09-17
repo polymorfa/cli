@@ -10,7 +10,7 @@ access until `@polymorfa/cli` is released publicly.
 
 - Node.js 20 or newer; `calls watch` and `calls media` require Node.js 22 or
   newer
-- A Polymorfa server API key for Platform requests
+- A Polymorfa organization API key or exact-project token for developer requests
 - A server API key or short-lived client token for Messaging requests
 
 ## Development installation
@@ -40,7 +40,7 @@ polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.0
 ## Authentication profiles
 
 Until the backend exposes a revocable CLI device-authorization flow, login
-accepts a server API key only through standard input:
+accepts an organization API key or exact-project token through standard input:
 
 ```shell
 printf '%s' "$POLYMORFA_API_KEY" | \
@@ -49,9 +49,12 @@ printf '%s' "$POLYMORFA_API_KEY" | \
 polymorfa auth list
 polymorfa auth status --profile work
 polymorfa auth use work
+
+printf '%s' "$POLYMORFA_PROJECT_TOKEN" | \
+  polymorfa auth login --with-project-token --project project_123 --profile project-work
 ```
 
-Profile metadata is written to the platform configuration directory. API keys
+Profile metadata records its explicit project or organization owner. Credentials
 are stored separately in macOS Keychain, Windows Credential Manager, or Linux
 Secret Service. A keyring failure stops the command; the CLI never silently
 falls back to plaintext. `auth status` reports local secure-store availability
@@ -59,6 +62,41 @@ in this development slice and does not yet claim remote identity validation.
 
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
+
+## QuickLinks
+
+A QuickLink is a persistent hosted link that connects one WhatsApp number to a
+new session in a project. Create one from a JSON request with an organization
+API key that has `quicklink:manage`:
+
+```shell
+polymorfa quicklink create \
+  --project 11111111-1111-4111-8111-111111111111 \
+  --input quicklink.json
+```
+
+The request accepts `customerId`, `externalId`, and `configuration`. See
+[Guided session creation and configuration](#guided-session-creation-and-configuration)
+for the configuration fields.
+
+Inspect or cancel a link with an organization API key or an exact-project
+token that has `quicklink:manage`:
+
+```shell
+polymorfa quicklink view ql_123 \
+  --project 11111111-1111-4111-8111-111111111111
+
+polymorfa quicklink cancel ql_123 \
+  --project 11111111-1111-4111-8111-111111111111 \
+  --yes
+```
+
+Creation prints the hosted URL. Treat it as a credential and share it only with
+the person holding the phone. The CLI never retrieves direct session QR payloads
+or pairing codes. Cancel requires `--yes`, removes the pending session, and
+fails for a link that has already connected. The API does not accept an
+idempotency key for cancellation. The API exposes no QuickLink list, recovery,
+or history operation, so the CLI does not synthesize them.
 
 ## Customers
 
@@ -81,8 +119,15 @@ polymorfa customer pairing-link create customer_123 \
   --project project_123 \
   --method qr \
   --method phone \
+  --expected-phone +15551234567 \
   --idempotency-key pair-customer-123
 ```
+
+Customer profiles hold a name and an external ID; they have no phone field. To
+reserve an invitation for one number, pass `--expected-phone` to
+`customer pairing-link create`. Pairing links accept `--method`,
+`--expected-phone`, and `--expires-in`; page language and theme are not
+per-link options.
 
 The `customer` commands cover project enablement, list filters and cursors,
 profile creation and updates, archive and restore, assigned Numbers, recent
@@ -608,11 +653,71 @@ order-history command. The source exposes no catalog-independent list, product
 or collection search/history, binary upload, resumability, or Business App
 support for project credentials, client tokens, or Cloud API sessions.
 
+## BanSafe
+
+Inspect current and historical Health, the bounded signal catalogue, collected
+telemetry, collection evidence, and durable Health actions with a Platform
+server API key:
+
+```shell
+polymorfa bansafe health list --project project_123
+polymorfa bansafe health view session_123
+polymorfa bansafe health history session_123 --since 2026-09-01T00:00:00Z
+polymorfa bansafe signal list
+polymorfa bansafe telemetry view session_123
+polymorfa bansafe telemetry history session_123 --limit 20
+polymorfa bansafe collection list --project project_123
+polymorfa bansafe health-action list --project project_123 --status failed
+polymorfa bansafe health-policy view --project project_123
+polymorfa bansafe health-policy update \
+  --project project_123 \
+  --input health-policy.json \
+  --idempotency-key health-policy-v4
+polymorfa bansafe finding list --project project_123 --status open
+polymorfa bansafe enforcement list --project project_123
+polymorfa bansafe incident list --project project_123
+polymorfa bansafe incident report \
+  --session session_123 \
+  --idempotency-key customer-incident-123
+polymorfa bansafe incident retract incident_123 \
+  --idempotency-key retract-incident-123
+polymorfa bansafe claim list --project project_123
+polymorfa bansafe claim view claim_123
+polymorfa bansafe safe-mode view --project project_123
+polymorfa bansafe safe-mode view session_123
+polymorfa bansafe safe-mode update --project project_123 \
+  --input safe-mode.json --idempotency-key safe-mode-v2
+polymorfa bansafe warmup view --project project_123
+polymorfa bansafe warmup update --project project_123 \
+  --input warmup.json --idempotency-key warmup-v2
+polymorfa bansafe insurance-evidence view --project project_123
+polymorfa bansafe insurance-evidence update --project project_123 \
+  --input insurance-evidence.json --idempotency-key insurance-evidence-v2
+```
+
+Collection output reports observed ingestion state: `fresh`, `stale`,
+`not_collected`, or `unsupported`. It does not infer whether collection is
+configured. Telemetry history returns bounded snapshots and explicit
+per-signal measurement state. Missing signals are not reported as healthy
+measurements.
+
+Health policy updates replace the complete policy and require its current
+version. The CLI validates action and notification combinations before sending
+the request. Health policy, Safe Mode, warmup, and insurance-evidence updates
+require an idempotency key. Safe Mode and warmup updates accept bounded JSON
+patches. Customer incident reports and retractions also require an idempotency key. Finding
+acknowledgement and enforcement appeals remain dashboard-only and are not
+available through server-key commands. Claim `amountCents`, `measuredCents`, and
+`capCents` are credit quantities with up to six decimal places, not cash minor
+units; text output labels them as credits. Use `--json` to retain explanations,
+observed account state, collection metadata, action outcomes, cursors, and
+request metadata.
+
 ## Platform access and security
 
 Organization server API keys can inspect the credential, membership, audit,
-ban, incident, durable-operation, and project-token metadata made available by
-the Platform API:
+ban, incident, saved QuickLink settings, and project-token metadata made
+available by the Platform API:
 
 ```shell
 polymorfa key list
@@ -647,12 +752,28 @@ API-key creation, token mint/revoke, incident detail, or cross-project token
 aggregate in this typed slice. The raw API command is not a credential-boundary
 bypass.
 
-Widget view returns `null` in JSON when no settings row has been saved. Update
+`widget view` and `widget update` manage saved QuickLink settings. View
+returns `null` in JSON when no settings row has been saved. Update
 accepts one bounded JSON object from `--input`; the target project is selected
 separately with `--project` and cannot be hidden in that input. Omitting the
 project targets organization defaults. Widget logo fields are existing storage
 identifiers, not file, URL, base64, upload, or download operations. Widget
-access requires the source `widget:create` scope.
+access requires the `quicklink:manage` scope.
+
+Settings accept `successCallbackUrl` and `failureCallbackUrl`: project-only
+HTTPS destinations that the API copies into each link when it is issued. Set
+`allowPhoneChange` to `true` to let recipients replace a prefilled number; the
+default is `false`. `hideWatermark: true` requires Premium team access. Settings
+have no redirect-URI allowlist. Human output shows both callback URLs and the
+phone-change policy.
+
+```json
+{
+  "successCallbackUrl": "https://app.example.com/whatsapp/connected",
+  "failureCallbackUrl": "https://app.example.com/whatsapp/cancelled",
+  "allowPhoneChange": false
+}
+```
 
 Session stop and delete accept 1 through 100 unique UUIDs or stable slugs. The
 CLI trims IDs and rejects duplicates or oversized batches before transport.
@@ -698,6 +819,122 @@ treated as server-side deduplication.
 The source exposes no campaign update, delete, validate, archive, duplicate,
 recipient, event, history, replay, watch, or operation-cancel route. The CLI
 does not substitute similarly named Platform campaign methods for these gaps.
+
+## Developer events and webhooks
+
+Developer resources always have an explicit owner. Project-owned commands need
+`--owner project --project <id>`. Organization-owned commands use
+`--owner organization` and reject a project override. A stored profile can
+provide the owner, but the CLI never guesses it from a credential or retries a
+request against a different owner.
+
+```shell
+polymorfa event list \
+  --owner project \
+  --project project_123 \
+  --type message.received
+
+polymorfa event view event_123 \
+  --owner project \
+  --project project_123 \
+  --include-payload
+
+polymorfa webhook create \
+  --owner project \
+  --project project_123 \
+  --input webhook.json \
+  --secret-out ./webhook.secret
+
+polymorfa webhook test webhook_123 \
+  --owner project \
+  --project project_123 \
+  --event polymorfa.test
+
+polymorfa webhook delivery list \
+  --owner project \
+  --project project_123 \
+  --status failed
+
+polymorfa webhook delivery attempt list delivery_123 \
+  --owner project \
+  --project project_123
+```
+
+Webhook creation and secret rotation return a signing secret once. JSON and
+noninteractive runs require `--secret-out`; the CLI preflights a new path and
+writes it atomically with mode `0600`. Interactive runs can reveal the secret
+once on the terminal. The secret never appears in JSON, MCP output, debug
+messages, profiles, or command arguments. A server success followed by a local
+write failure exits with `partial_success` and retains the safe mutation
+receipt. It never retries rotation on its own.
+
+List commands return opaque cursors. `--paginate` requires `--max-items`, which
+is capped at 10,000. The CLI shrinks the last request to the remaining item
+budget instead of fetching records it will discard.
+
+Replay, delivery retry, and webhook test return an idempotency receipt and an
+operation ID in the JSON `operation.id` field. Operation inspection is
+console-only, so the CLI has no command to poll or cancel that operation. Use
+`webhook delivery view` and `webhook delivery attempt list` to follow the
+resulting delivery.
+
+`event view` prints the retained payload in human output only with
+`--include-payload`. `webhook delivery attempt view` prints the redacted
+response excerpt that the API records for a failed HTTP response. Human output
+escapes control characters in remote text.
+
+## Local event listening and forwarding
+
+`polymorfa listen` opens the project listener stream and can forward the exact
+event body to local webhook handlers:
+
+```shell
+polymorfa listen \
+  --project project_123 \
+  --event 'message.*' \
+  --forward-to http://127.0.0.1:3000/webhooks \
+  --forward-secret-out ./local-forwarding.secret \
+  --checkpoint-file ./.polymorfa-listener-checkpoint
+```
+
+The CLI signs forwarded bodies with a separate local secret. Remote forwarding
+is disabled unless `--allow-remote-forward` is set. Redirects are disabled by
+default; explicit redirect following revalidates each hop. The listener writes
+checkpoints only after stdout and every forwarding destination have accepted an
+event. A cursor gap stops with a nonzero exit unless `--on-gap continue` was
+selected.
+
+## MCP listener controls
+
+The package includes a standards-based stdio MCP server for Codex and Claude:
+
+```shell
+polymorfa mcp install codex
+polymorfa mcp install claude
+polymorfa mcp status
+polymorfa mcp tools
+polymorfa mcp doctor
+```
+
+The MCP tools `polymorfa_listen_start`, `polymorfa_listen_status`, and
+`polymorfa_listen_stop` control listeners inside that stdio server process.
+They do not create detached daemons. MCP responses contain listener IDs,
+status, and safe counters, never primary credentials, listener credentials,
+forwarding secrets, or unrestricted payloads.
+
+## Agent skills
+
+The npm package includes two portable skills under `skills/`:
+
+- `polymorfa` establishes profile, owner, project, JSON, and mutation-safety
+  conventions for CLI and MCP use.
+- `polymorfa-webhooks` covers event inspection, webhook testing, replay and
+  retry, local listening and forwarding, and one-time secret handling.
+
+Copy or link the relevant skill directory into the skills folder used by your
+agent host. The skill treats the installed command help as authoritative, so it
+stays useful as the command surface grows without teaching agents to invent
+routes or use raw requests for missing typed developer operations.
 
 ## Raw API requests
 
@@ -750,6 +987,10 @@ SDK request IDs are preserved and active credentials are redacted.
 
 `POLYMORFA_BASE_URL` exists only for development and controlled testing. It
 overrides a profile endpoint and must not be placed in project files.
+
+The raw command does not bypass owner, principal, or scope boundaries. Events,
+webhooks, deliveries, and attempts use their typed commands; the CLI does not use `api` to synthesize a missing developer
+workflow.
 
 ## Verification
 

@@ -173,10 +173,11 @@ describe('unified calls commands', () => {
     expect(human.stderr).toContain('Request ID: req_claimed')
     expect(exitCode(json.error)).toBe(4)
     expect(JSON.parse(json.stderr)).toMatchObject({
-      category: 'conflict',
-      code: 'call_claimed',
-      exitCode: 4,
-      requestId: 'req_claimed',
+      error: {
+        category: 'conflict',
+        code: 'call_claimed',
+        requestId: 'req_claimed',
+      },
     })
     expect(server.requests).toHaveLength(2)
   })
@@ -220,8 +221,7 @@ describe('unified calls commands', () => {
 
     expect(exitCode(result.error)).toBe(4)
     expect(JSON.parse(result.stderr)).toMatchObject({
-      category: 'conflict',
-      code: 'call_not_ringing',
+      error: {category: 'conflict', code: 'call_not_ringing'},
     })
     expect(result.stderr).toContain('The call is not ringing')
     expect(server.requests[0]?.body).toBe('')

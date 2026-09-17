@@ -7,6 +7,11 @@ import {
 import {describe, expect, test} from 'vitest'
 
 import {presentError} from '../../src/errors/present.js'
+import {
+  EventFilterError,
+  CheckpointError,
+} from '../../src/listener/checkpoint.js'
+import {ListenerProtocolError} from '../../src/listener/sse.js'
 
 describe('presentError', () => {
   test('preserves the SDK category without exposing a credential value', () => {
@@ -17,16 +22,20 @@ describe('presentError', () => {
 
     expect(presentError(error, ['pmfa_secret-value'])).toEqual({
       category: 'configuration',
+      code: 'configuration_error',
       exitCode: 2,
       message: 'Credential [REDACTED] is invalid.',
+      retryable: false,
     })
   })
 
   test('uses the internal category for an unknown error', () => {
     expect(presentError(new Error('socket exploded'))).toEqual({
       category: 'internal',
+      code: 'internal_error',
       exitCode: 1,
       message: 'socket exploded',
+      retryable: false,
     })
   })
 
@@ -35,8 +44,10 @@ describe('presentError', () => {
       presentError(new PolymorfaCancelledError('Request cancelled.')),
     ).toEqual({
       category: 'cancelled',
+      code: 'cancelled_error',
       exitCode: 130,
       message: 'Request cancelled.',
+      retryable: false,
     })
   })
 
@@ -47,9 +58,46 @@ describe('presentError', () => {
 
     expect(presentError(error)).toEqual({
       category: 'authentication',
+      code: 'authentication_error',
       exitCode: 3,
       message: 'Invalid API key.',
       requestId: 'req_123',
+      retryable: false,
+    })
+  })
+
+  test('preserves listener protocol codes and classifies local validation', () => {
+    expect(
+      presentError(
+        new ListenerProtocolError('listener_invalid_frame', 'Bad frame.'),
+      ),
+    ).toMatchObject({
+      category: 'stream',
+      code: 'listener_invalid_frame',
+      exitCode: 1,
+    })
+    expect(presentError(new EventFilterError('Bad filters.'))).toMatchObject({
+      category: 'validation',
+      code: 'listener_filter_invalid',
+      exitCode: 2,
+    })
+    expect(presentError(new CheckpointError('Bad checkpoint.'))).toMatchObject({
+      category: 'validation',
+      code: 'listener_checkpoint_invalid',
+      exitCode: 2,
+    })
+  })
+
+  test('keeps retryable listener response categories safe when metadata is absent', () => {
+    const error = new ListenerProtocolError(
+      'listener_state_unavailable',
+      'Listener state is unavailable.',
+      {status: 503},
+    )
+
+    expect(presentError(error)).toMatchObject({
+      category: 'server',
+      retryable: true,
     })
   })
 
@@ -68,6 +116,7 @@ describe('presentError', () => {
       exitCode: 4,
       message: 'Another participant claimed it.',
       requestId: 'req_409',
+      retryable: false,
     })
   })
 })

@@ -1,0 +1,173 @@
+import {createServer} from 'node:http'
+import {createHmac} from 'node:crypto'
+import {once} from 'node:events'
+
+import {afterEach, describe, expect, test, vi} from 'vitest'
+
+import {
+  createForwardingSecret,
+  delayForRetry,
+  forwardEvent,
+  signLocalPayload,
+  validateForwardDestination,
+} from '../../src/listener/forwarding.js'
+
+const servers: ReturnType<typeof createServer>[] = []
+
+afterEach(async () => {
+  vi.restoreAllMocks()
+  await Promise.all(
+    servers
+      .splice(0)
+      .map(
+        (server) =>
+          new Promise<void>((resolve) => server.close(() => resolve())),
+      ),
+  )
+})
+
+describe('local event forwarding', () => {
+  test('forwards exact bytes to loopback with a verifiable local signature', async () => {
+    let received:
+      | {body: Buffer; headers: Record<string, string | string[] | undefined>}
+      | undefined
+    const server = createServer((request, response) => {
+      void (async () => {
+        const parts: Uint8Array[] = []
+        for await (const part of request) {
+          parts.push(Uint8Array.from(part as Uint8Array))
+        }
+        received = {
+          body: Buffer.concat(parts.map((part) => Buffer.from(part))),
+          headers: request.headers,
+        }
+        response.writeHead(204).end()
+      })().catch((error: unknown) => {
+        response.destroy(
+          error instanceof Error ? error : new Error(String(error)),
+        )
+      })
+    })
+    servers.push(server)
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
+    const address = server.address()
+    if (!address || typeof address === 'string')
+      throw new Error('missing address')
+    const body = Uint8Array.from([0, 1, 2, 255])
+    const secret = Buffer.alloc(32, 7).toString('base64url')
+    const now = 1_700_000_000_000
+    const nowSpy = vi.spyOn(Date, 'now').mockReturnValue(now)
+
+    await forwardEvent({
+      body,
+      eventId: 'evt_1',
+      eventType: 'message.received',
+      secret,
+      targets: [`http://127.0.0.1:${address.port}/hook`],
+    })
+
+    expect(received?.body).toEqual(Buffer.from(body))
+    expect(received?.headers['polymorfa-local-event-id']).toBe('evt_1')
+    expect(received?.headers['polymorfa-local-event-type']).toBe(
+      'message.received',
+    )
+    const timestamp = Math.floor(now / 1000)
+    const digest = createHmac('sha256', Buffer.from(secret, 'base64url'))
+      .update(`${timestamp}.`)
+      .update(body)
+      .digest('hex')
+    expect(received?.headers['polymorfa-local-signature']).toBe(
+      `t=${timestamp},v1=${digest}`,
+    )
+    nowSpy.mockRestore()
+  })
+
+  test('requires explicit remote HTTPS and rejects unsafe destination syntax', async () => {
+    const publicHost = vi.fn((hostname: string) => {
+      expect(hostname).toBe('hooks.example.test')
+      return Promise.resolve([{address: '203.0.114.10', family: 4 as const}])
+    })
+    await expect(
+      validateForwardDestination(
+        'https://hooks.example.test/hook',
+        false,
+        publicHost,
+      ),
+    ).rejects.toThrow('allow-remote-forward')
+    await expect(
+      validateForwardDestination(
+        'http://hooks.example.test/hook',
+        true,
+        publicHost,
+      ),
+    ).rejects.toThrow('HTTPS')
+    await expect(
+      validateForwardDestination(
+        'https://hooks.example.test/hook',
+        true,
+        publicHost,
+      ),
+    ).resolves.toMatchObject({address: '203.0.114.10', family: 4})
+    expect(publicHost).toHaveBeenCalledTimes(3)
+    await expect(
+      validateForwardDestination('http://user@127.0.0.1/hook', false),
+    ).rejects.toThrow('userinfo')
+    await expect(
+      validateForwardDestination('https://[::ffff:a00:1]/hook', true),
+    ).rejects.toThrow('private or reserved')
+    await expect(
+      validateForwardDestination('http://[::1]/hook', false),
+    ).resolves.toMatchObject({address: '::1', family: 6})
+  })
+
+  test('creates a 32-byte secret and signs timestamp dot raw body', () => {
+    const secret = createForwardingSecret()
+    const body = Uint8Array.from([1, 2])
+    const expected = createHmac('sha256', Buffer.from(secret, 'base64url'))
+      .update('1700000000.')
+      .update(body)
+      .digest('hex')
+    expect(Buffer.from(secret, 'base64url')).toHaveLength(32)
+    expect(signLocalPayload(secret, 1_700_000_000, body)).toBe(
+      `t=1700000000,v1=${expected}`,
+    )
+  })
+
+  test('retry delay rejects an already-aborted signal and removes a settled listener', async () => {
+    const controller = new AbortController()
+    controller.abort(new Error('stopped'))
+    await expect(delayForRetry(60_000, controller.signal)).rejects.toThrow(
+      'stopped',
+    )
+
+    const active = new AbortController()
+    const remove = vi.spyOn(active.signal, 'removeEventListener')
+    await delayForRetry(1, active.signal)
+    expect(remove).toHaveBeenCalledWith('abort', expect.any(Function))
+  })
+
+  test('rejects an upstream response that aborts before the body completes', async () => {
+    const server = createServer((_request, response) => {
+      response.writeHead(200, {'Content-Length': '10'})
+      response.write('x')
+      response.destroy()
+    })
+    servers.push(server)
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
+    const address = server.address()
+    if (!address || typeof address === 'string')
+      throw new Error('missing address')
+
+    await expect(
+      forwardEvent({
+        body: new TextEncoder().encode('{}'),
+        eventId: 'evt_1',
+        eventType: 'message.received',
+        secret: Buffer.alloc(32, 7).toString('base64url'),
+        targets: [`http://127.0.0.1:${address.port}/hook`],
+      }),
+    ).rejects.toThrow('could not be reached')
+  })
+})

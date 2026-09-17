@@ -1,8 +1,9 @@
 # Platform management command research
 
-- **Status:** Complete fourteen-operation organization-key implementation slice
-- **Reviewed:** 2026-08-20
-- **SDK baseline:** `c36d151c102d7812977635e677341141721cac9a`
+- **Status:** Organization-key management commands reconciled with the unified
+  client; operation inspection is console-only
+- **Reviewed:** 2026-09-16
+- **SDK baseline:** `08452992a32a392de5fc3d0fa3954ba6addd7f32`
 
 ## Sources reviewed
 
@@ -45,26 +46,23 @@ security-incident
   acknowledge <incident>
 
 operation
-  view <operation> [--surface platform|messaging]
+  list|view|wait|watch|cancel --owner <project|organization>
 
 project-token
   list --project <project>
-
-widget
-  view [--project <project>]
-  update [--project <project>] --input <file|->
 
 session
   stop <session...> [--project <project>]
   delete <session...> [--project <project>] --yes
 ```
 
-The CLI uses the public typed `PlatformClient` resources only. All commands
-require an organization server API key. Reads require `sessions:read`; key
-revocation and incident acknowledgement require `sessions:manage`. Widget reads
-and updates require `widget:create`; batch session stop/delete require
-`sessions:manage`. Platform project tokens and Messaging browser client tokens
-are rejected before transport.
+The management commands use the public typed organization resources on the
+unified SDK `Client`. They require an organization server API key. Reads require
+`sessions:read`; key revocation and incident acknowledgement require
+`sessions:manage`; batch session stop/delete also require `sessions:manage`.
+Project tokens and Messaging browser client tokens are rejected before
+transport. Developer operations separately accept the principal allowed by
+their explicit owner and context.
 
 ## Command decisions
 
@@ -89,24 +87,13 @@ SDK's distinct active-only operation. Incident acknowledgement is repeatable,
 has no confirmation gate, and sends no body. `acknowledgedBy` may be empty when
 an organization key performed the acknowledgement.
 
-`operation view` is deliberately singular. It defaults to the Platform surface;
-the later Messaging campaign slice adds an explicit `--surface messaging`
-selection. Either form performs one durable state read and does not imply
-polling, waiting, watching, cancellation, or a list route.
+The original singular Platform operation view was removed. Operation
+inspection is console-only at API contract 1600403, and the pinned SDK has no
+operations resource, so the CLI ships no operation commands. The unpublished
+`--surface` selector was removed.
 Project-token listing requires an explicit project because the live
 organization-key handler rejects an absent project even though its OpenAPI
 query field is optional. Only metadata is returned.
-
-Widget settings keep target selection outside the JSON patch: `--project`
-selects one project row, while its omission selects organization defaults. The
-CLI rejects `projectId` inside input so a reviewed settings document cannot hide
-its mutation target. A missing saved row remains `null` in JSON and has explicit
-human output. Empty patches remain representable because bodyless PUT is a live
-compatibility no-op. Logo fields are storage identifiers only; the CLI does not
-invent file, URL, base64, multipart, upload, attach, or download behavior.
-Human output shows the success and failure callback URLs and whether
-recipients can change a prefilled phone number. Those fields replaced the
-redirect URI allowlist in the pinned contract.
 
 Batch session commands use positional IDs because they are the primary action
 targets. The CLI trims and validates 1..100 unique IDs before transport instead
@@ -125,11 +112,13 @@ without claiming stronger server behavior.
 
 There is no organization-key member mutation, API-key creation or rotation,
 project-token minting or revocation, raw bearer material, cross-project token
-aggregate, incident detail, pagination, operation list/watch/stream/cancel, or
-security-state aggregation, widget logo transfer, batch per-item result,
-operation ID, completion wait, watch, stream, cancel, or history in this slice.
+aggregate, incident detail, management-list pagination, security-state
+aggregation, batch per-item result, or machine-credential operation inspection
+in this slice. Operation list, view, transitions, and cancellation are
+console-only routes.
 The CLI does not invent those workflows or use the SDK raw escape hatch to cross
 dashboard/staff boundaries.
 
-At this exact baseline the SDK ledger records 331 total / 198 covered / 67
-missing / 66 excluded / 0 partial / 0 changed operations.
+At this exact baseline the SDK ledger records 403 total / 262 covered typed /
+106 deliberately excluded / 35 missing operations. The missing entries are
+account-health and safe-mode routes outside this command family.

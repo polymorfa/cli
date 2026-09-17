@@ -150,8 +150,7 @@ describe('calls watch and media', () => {
 
     expect(exitCode(result.error)).toBe(3)
     expect(JSON.parse(result.stderr)).toMatchObject({
-      category: 'authentication',
-      exitCode: 3,
+      error: {category: 'authentication'},
     })
     expect(result.stderr).toContain('permission_denied')
     expect(result.stderr).not.toContain(API_KEY)
@@ -402,9 +401,7 @@ describe('calls watch and media', () => {
     expect(exitCode(result.error)).toBe(4)
     const lines = result.stderr.trim().split('\n')
     expect(JSON.parse(lines.at(-1)!)).toMatchObject({
-      category: 'conflict',
-      code: 'call_claimed',
-      exitCode: 4,
+      error: {category: 'conflict', code: 'call_claimed'},
     })
     expect(server.requests).toHaveLength(1)
     expect(server.requests[0]?.url).toBe('/messaging/voip/calls/call_1/accept')
@@ -451,9 +448,11 @@ describe('calls watch and media', () => {
       expect(exitCode(result.error)).toBe(3)
       const lines = result.stderr.trim().split('\n')
       expect(JSON.parse(lines.at(-1)!)).toMatchObject({
-        category: 'authorization',
-        exitCode: 3,
-        message: 'Calling is turned off for this number.',
+        error: {
+          category: 'authorization',
+          code: 'calls_disabled',
+          message: 'Calling is turned off for this number.',
+        },
       })
       // A refused connection is not retried.
       expect(

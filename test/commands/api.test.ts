@@ -64,10 +64,13 @@ describe('api', () => {
     )
     expect(exitCode(result.error)).toBe(4)
     expect(JSON.parse(result.stderr)).toMatchObject({
-      category: 'payment_required',
-      code: 'entitlement_required',
-      retryable: false,
-      requestId: 'req_billing',
+      schemaVersion: 1,
+      error: {
+        category: 'payment_required',
+        code: 'entitlement_required',
+        retryable: false,
+        requestId: 'req_billing',
+      },
     })
     expect(server.requests).toHaveLength(1)
   })
@@ -164,9 +167,14 @@ describe('api', () => {
     expect(result.error).toBeDefined()
     expect(exitCode(result.error)).toBe(2)
     expect(JSON.parse(result.stderr)).toEqual({
-      category: 'validation',
-      exitCode: 2,
-      message: 'API endpoints must be relative and begin with a slash.',
+      context: {},
+      error: {
+        category: 'validation',
+        code: 'invalid_endpoint',
+        message: 'API endpoints must be relative and begin with a slash.',
+        retryable: false,
+      },
+      schemaVersion: 1,
     })
     expect(server.requests).toHaveLength(0)
   })
@@ -189,8 +197,8 @@ describe('api', () => {
 
     expect(exitCode(result.error)).toBe(2)
     expect(JSON.parse(result.stderr)).toMatchObject({
-      category: 'validation',
-      exitCode: 2,
+      error: {category: 'validation', code: 'conflicting_body_input'},
+      schemaVersion: 1,
     })
     expect(server.requests).toHaveLength(0)
   })
@@ -217,10 +225,15 @@ describe('api', () => {
 
     expect(exitCode(result.error)).toBe(3)
     expect(JSON.parse(result.stderr)).toEqual({
-      category: 'authentication',
-      exitCode: 3,
-      message: 'Invalid API key [REDACTED].',
-      requestId: 'req_auth',
+      context: {},
+      error: {
+        category: 'authentication',
+        code: 'authentication_error',
+        message: 'Invalid API key [REDACTED].',
+        requestId: 'req_auth',
+        retryable: false,
+      },
+      schemaVersion: 1,
     })
     expect(result.stderr).not.toContain(
       'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',

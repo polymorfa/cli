@@ -1,7 +1,8 @@
 import {
+  Client,
   MessagingClient,
-  Client as PlatformClient,
   PolymorfaConfigurationError,
+  type ClientInstance,
   type RawClient,
   type SharedClientOptions,
 } from '@polymorfa/sdk'
@@ -54,7 +55,7 @@ export function createCallSettingsClient(
 
 export function createPlatformClient(
   environment: ResolvedEnvironment,
-): PlatformClient {
+): ClientInstance<'organization'> {
   if (environment.surface !== 'platform') {
     throw new PolymorfaConfigurationError(
       'A typed Platform client requires the Platform API surface.',
@@ -62,7 +63,7 @@ export function createPlatformClient(
     )
   }
 
-  return new PlatformClient({
+  return new Client({
     credential: {
       type: 'organizationApiKey',
       value: environment.credential.value,

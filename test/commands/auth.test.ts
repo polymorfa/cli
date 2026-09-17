@@ -1,41 +1,37 @@
 import {runCommand} from '@oclif/test'
+import {AsyncEntry} from '@napi-rs/keyring'
 import {mkdtemp, rm} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {Readable} from 'node:stream'
-import {afterEach, describe, expect, test, vi} from 'vitest'
+import {afterEach, beforeEach, describe, expect, test, vi} from 'vitest'
 
 import {withEnvironment} from '../helpers/http-server.js'
 
 const secrets = new Map<string, string>()
 
-vi.mock('@napi-rs/keyring', () => ({
-  AsyncEntry: class {
-    constructor(
-      private readonly service: string,
-      private readonly account: string,
-    ) {}
-
-    deletePassword() {
-      return Promise.resolve(secrets.delete(`${this.service}:${this.account}`))
-    }
-
-    getPassword() {
-      return Promise.resolve(secrets.get(`${this.service}:${this.account}`))
-    }
-
-    setPassword(value: string) {
-      secrets.set(`${this.service}:${this.account}`, value)
-      return Promise.resolve()
-    }
-  },
-}))
-
 describe('auth commands', () => {
   const directories: string[] = []
 
+  beforeEach(() => {
+    vi.spyOn(AsyncEntry.prototype, 'deletePassword').mockImplementation(() => {
+      secrets.delete('profile:work:apiKey')
+      return Promise.resolve(true)
+    })
+    vi.spyOn(AsyncEntry.prototype, 'getPassword').mockImplementation(() =>
+      Promise.resolve(secrets.get('profile:work:apiKey')),
+    )
+    vi.spyOn(AsyncEntry.prototype, 'setPassword').mockImplementation(
+      (value) => {
+        secrets.set('profile:work:apiKey', value)
+        return Promise.resolve()
+      },
+    )
+  })
+
   afterEach(async () => {
     secrets.clear()
+    vi.restoreAllMocks()
     await Promise.all(
       directories
         .splice(0)
@@ -49,11 +45,10 @@ describe('auth commands', () => {
 
       expect(exitCode(result.error)).toBe(2)
       const error = JSON.parse(result.stderr) as {
-        category: string
-        message: string
+        error: {category: string; message: string}
       }
-      expect(error.category).toBe('configuration')
-      expect(error.message).toContain('--with-api-key')
+      expect(error.error.category).toBe('configuration')
+      expect(error.error.message).toContain('--with-api-key')
     })
   })
 
@@ -64,7 +59,7 @@ describe('auth commands', () => {
         async () =>
           runCommand('auth login --with-api-key --profile work --json'),
       )
-      expect(login.error).toBeUndefined()
+      expect(login.error, login.stderr).toBeUndefined()
       expect(JSON.parse(login.stdout)).toEqual({
         active: true,
         credentialKind: 'apiKey',
@@ -109,7 +104,8 @@ describe('auth commands', () => {
   test('reports environment credential validation separately from remote exercise', async () => {
     await withEnvironment(
       {
-        POLYMORFA_API_KEY: `pmfa_${'A'.repeat(72)}`,
+        POLYMORFA_API_KEY:
+          'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
       async () => {
@@ -123,6 +119,63 @@ describe('auth commands', () => {
           source: 'environment',
         })
       },
+    )
+  })
+
+  test('stores a project-token profile with exact project ownership', async () => {
+    await withConfig(async () => {
+      const token = `pmfa_pt_${'A'.repeat(94)}\n`
+      const login = await withStdin(token, async () =>
+        runCommand(
+          'auth login --with-project-token --profile project --project project_1 --json',
+        ),
+      )
+
+      expect(login.error, login.stderr).toBeUndefined()
+      expect(JSON.parse(login.stdout)).toEqual({
+        active: true,
+        credentialKind: 'projectToken',
+        name: 'project',
+        owner: 'project',
+        project: 'project_1',
+      })
+    })
+  })
+
+  test('validates project-token context before reading standard input', async () => {
+    await withConfig(async () => {
+      const login = await withStdin('', async () =>
+        runCommand('auth login --with-project-token --profile project --json'),
+      )
+
+      expect(exitCode(login.error)).toBe(2)
+      expect(
+        (JSON.parse(login.stderr) as {error: {message: string}}).error.message,
+      ).toContain('requires --project')
+    })
+  })
+
+  test('reports an environment project token without exposing it', async () => {
+    const token = `pmfa_pt_${'A'.repeat(94)}`
+    await withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: token,
+      },
+      () =>
+        withConfig(async () => {
+          const status = await runCommand('auth status --json')
+          expect(status.error, status.stderr).toBeUndefined()
+          expect(JSON.parse(status.stdout)).toEqual({
+            credentialFormatValid: true,
+            credentialKind: 'projectToken',
+            credentialPresent: true,
+            remoteIdentityValidated: false,
+            source: 'environment',
+          })
+          expect(status.stdout).not.toContain(token)
+        }),
     )
   })
 

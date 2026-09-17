@@ -6,6 +6,7 @@ import {
 
 import {
   profileCredentialAccount,
+  validateProjectToken,
   type CredentialStore,
 } from '../config/credentials.js'
 import {
@@ -23,8 +24,9 @@ export interface ProfileSummary {
   readonly active: boolean
   readonly apiVersion?: string
   readonly baseUrl?: string
-  readonly credentialKind: 'apiKey'
+  readonly credentialKind: 'apiKey' | 'projectToken'
   readonly name: string
+  readonly owner?: 'organization' | 'project'
   readonly organization?: string
   readonly project?: string
 }
@@ -66,11 +68,17 @@ export class AuthService {
 
     await this.credentials.set(account, apiKey)
     const metadata: ProfileMetadata = {
-      ...(previous ?? {}),
+      ...(previous?.apiVersion === undefined
+        ? {}
+        : {apiVersion: previous.apiVersion}),
+      ...(previous?.baseUrl === undefined ? {} : {baseUrl: previous.baseUrl}),
+      ...(previous?.organization === undefined
+        ? {}
+        : {organization: previous.organization}),
       credential: {account, kind: 'apiKey'},
     }
     const next: ProfileConfig = {
-      version: 1,
+      version: 2,
       activeProfile: input.profile,
       profiles: {...config.profiles, [input.profile]: metadata},
     }
@@ -78,9 +86,10 @@ export class AuthService {
     try {
       await this.profiles.save(next)
     } catch (error) {
-      if (previousCredential === undefined) {
+      if (previousAccount !== account || previousCredential === undefined) {
         await this.credentials.delete(account).catch(() => undefined)
-      } else {
+      }
+      if (previousCredential !== undefined) {
         await this.credentials
           .set(previousAccount ?? account, previousCredential)
           .catch(() => undefined)
@@ -88,6 +97,67 @@ export class AuthService {
       throw error
     }
 
+    if (previousAccount !== undefined && previousAccount !== account) {
+      await this.credentials.delete(previousAccount).catch(() => undefined)
+    }
+
+    return summary(input.profile, metadata, input.profile)
+  }
+
+  async loginProjectToken(input: {
+    readonly profile: string
+    readonly project: string
+    readonly projectToken: string
+  }): Promise<ProfileSummary> {
+    assertProfileName(input.profile)
+    const project = input.project.trim()
+    if (project.length === 0) {
+      throw new PolymorfaConfigurationError(
+        'Project-token profiles require an exact project.',
+        'project',
+      )
+    }
+    const projectToken = validateProjectToken(input.projectToken)
+    const config = await this.profiles.load()
+    const previous = config.profiles[input.profile]
+    const previousAccount = previous?.credential.account
+    const previousCredential =
+      previous === undefined
+        ? undefined
+        : await this.credentials.get(previous.credential.account)
+    const account = profileCredentialAccount(input.profile, 'projectToken')
+    const metadata: ProfileMetadata = {
+      ...(previous?.apiVersion === undefined
+        ? {}
+        : {apiVersion: previous.apiVersion}),
+      ...(previous?.baseUrl === undefined ? {} : {baseUrl: previous.baseUrl}),
+      ...(previous?.organization === undefined
+        ? {}
+        : {organization: previous.organization}),
+      credential: {account, kind: 'projectToken'},
+      owner: 'project',
+      project,
+    }
+
+    await this.credentials.set(account, projectToken)
+    try {
+      await this.profiles.save({
+        activeProfile: input.profile,
+        profiles: {...config.profiles, [input.profile]: metadata},
+        version: 2,
+      })
+    } catch (error) {
+      await this.credentials.delete(account).catch(() => undefined)
+      if (previousCredential !== undefined && previousAccount !== undefined) {
+        await this.credentials
+          .set(previousAccount, previousCredential)
+          .catch(() => undefined)
+      }
+      throw error
+    }
+    if (previousAccount !== undefined && previousAccount !== account) {
+      await this.credentials.delete(previousAccount).catch(() => undefined)
+    }
     return summary(input.profile, metadata, input.profile)
   }
 
@@ -103,7 +173,7 @@ export class AuthService {
     const remaining = {...config.profiles}
     delete remaining[selected]
     const next: ProfileConfig = {
-      version: 1,
+      version: 2,
       profiles: remaining,
       ...(config.activeProfile === selected ||
       config.activeProfile === undefined
@@ -133,7 +203,11 @@ export class AuthService {
     let credentialFormatValid = false
     if (credential !== undefined) {
       try {
-        validateOrganizationApiKey(credential)
+        if (metadata.credential.kind === 'projectToken') {
+          validateProjectToken(credential)
+        } else {
+          validateOrganizationApiKey(credential)
+        }
         credentialFormatValid = true
       } catch {
         credentialFormatValid = false
@@ -200,6 +274,7 @@ function summary(
     ...(profile.organization === undefined
       ? {}
       : {organization: profile.organization}),
+    ...(profile.owner === undefined ? {} : {owner: profile.owner}),
     ...(profile.project === undefined ? {} : {project: profile.project}),
   }
 }
