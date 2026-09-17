@@ -121,6 +121,15 @@ export default class CallsMedia extends BaseCommand {
           ? process.stdin
           : createReadStream(flags.input)
 
+    // Flush and close the output file once; its errors arrive asynchronously.
+    let outputClosed = false
+    const closeOutput = async (): Promise<void> => {
+      if (file === undefined || outputClosed) return
+      outputClosed = true
+      file.end()
+      await fileClosed
+    }
+
     try {
       const summary = await bridgeCallMedia(
         {
@@ -139,6 +148,7 @@ export default class CallsMedia extends BaseCommand {
         },
         (status) => report(status, renderMediaStatus(status, flags.session)),
       )
+      await closeOutput()
       if (fileError !== undefined) throw outputFailed(flags.output, fileError)
       report(
         {type: 'finished', ...summary},
@@ -149,10 +159,7 @@ export default class CallsMedia extends BaseCommand {
       stop.dispose()
       if (input !== undefined && input !== process.stdin) input.destroy()
       if (input === process.stdin) process.stdin.pause()
-      if (file !== undefined) {
-        file.end()
-        await fileClosed
-      }
+      await closeOutput()
     }
     if (fileError !== undefined) throw outputFailed(flags.output, fileError)
   }
