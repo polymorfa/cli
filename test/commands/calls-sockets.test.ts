@@ -463,6 +463,29 @@ describe('calls watch and media', () => {
     }
   })
 
+  test('stops and exits with a configuration error when --output cannot be written', async () => {
+    server = await startCallsServer({
+      onSocket: async (socket) => {
+        await socket.next()
+        socket.sendJson({participant: 'server:default', type: 'ready'})
+      },
+    })
+
+    const result = await apiKey(() =>
+      runCommand(
+        `calls media --session support --output ${join(tmpdir(), 'polymorfa-missing-dir', 'nested', 'out.pcm')} --json`,
+      ),
+    )
+
+    expect(exitCode(result.error)).toBe(2)
+    const lines = result.stderr.trim().split('\n')
+    expect(JSON.parse(lines.at(-1)!)).toMatchObject({
+      error: {category: 'configuration'},
+    })
+    expect(result.stderr).toContain('Could not write received audio')
+    expect(result.stderr).not.toContain('"finished"')
+  })
+
   test('paces input audio in real time and leaves when interrupted', async () => {
     const controller = new AbortController()
     let received = 0

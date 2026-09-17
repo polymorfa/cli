@@ -92,8 +92,24 @@ export default class CallsMedia extends BaseCommand {
       else if (!quiet) process.stderr.write(`${human}\n`)
     }
 
+    const stop = stopOnSignals()
+    // Ctrl-C or a failed --output file stops the call.
+    const halt = new AbortController()
+    const onStop = (): void => halt.abort()
+    stop.signal.addEventListener('abort', onStop, {once: true})
     const file: WriteStream | undefined =
       flags.output === '-' ? undefined : createWriteStream(flags.output)
+    // Listen before the stream can fail or close: its errors are asynchronous.
+    // `once` rejects on the stream's error, which is recorded below.
+    const fileClosed =
+      file === undefined
+        ? undefined
+        : once(file, 'close').catch(() => undefined)
+    let fileError: Error | undefined
+    file?.on('error', (error: Error) => {
+      fileError ??= error
+      halt.abort()
+    })
     const output = (pcm: Uint8Array): void => {
       if (file === undefined) process.stdout.write(pcm)
       else file.write(pcm)
@@ -105,7 +121,6 @@ export default class CallsMedia extends BaseCommand {
           ? process.stdin
           : createReadStream(flags.input)
 
-    const stop = stopOnSignals()
     try {
       const summary = await bridgeCallMedia(
         {
@@ -119,24 +134,27 @@ export default class CallsMedia extends BaseCommand {
           participant: flags.participant,
           place: flags.place,
           session: flags.session,
-          signal: stop.signal,
+          signal: halt.signal,
           video: flags.video,
         },
         (status) => report(status, renderMediaStatus(status, flags.session)),
       )
+      if (fileError !== undefined) throw outputFailed(flags.output, fileError)
       report(
         {type: 'finished', ...summary},
         `Finished (${summary.reason}): received ${summary.bytesReceived} bytes, sent ${summary.bytesSent} bytes.`,
       )
     } finally {
+      stop.signal.removeEventListener('abort', onStop)
       stop.dispose()
       if (input !== undefined && input !== process.stdin) input.destroy()
       if (input === process.stdin) process.stdin.pause()
       if (file !== undefined) {
         file.end()
-        await once(file, 'close')
+        await fileClosed
       }
     }
+    if (fileError !== undefined) throw outputFailed(flags.output, fileError)
   }
 }
 
@@ -159,4 +177,11 @@ function renderMediaStatus(
     default:
       return renderCallActivity(status)
   }
+}
+
+function outputFailed(path: string, error: Error): PolymorfaConfigurationError {
+  return new PolymorfaConfigurationError(
+    `Could not write received audio to ${path}: ${error.message}`,
+    'output',
+  )
 }

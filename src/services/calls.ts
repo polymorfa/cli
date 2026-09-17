@@ -799,6 +799,9 @@ export async function bridgeCallMedia(
     resolveDone = resolve
     rejectDone = reject
   })
+  // A terminal error can settle `done` before `connect()` returns and the
+  // function awaits it.
+  done.catch(() => undefined)
   const summary = (reason: CallMediaSummary['reason']): CallMediaSummary => ({
     bytesReceived,
     bytesSent,

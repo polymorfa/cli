@@ -502,6 +502,37 @@ never answers or declines on its own.
   call. `calls settings set` sends only the flags you pass; the other
   settings keep their values.
 
+`calls watch` streams inbound calls and their progress: `incoming`, `claim`,
+`state`, `participant_joined`, `participant_state`, `participant_left`, and
+`ended`. Human output prints one tab-separated line per update and status on
+standard error. `--json` prints one JSON object per line, including `ready`,
+`disconnected`, `notice`, and a final `stopped` line. `--count <n>` exits
+after `n` updates; Ctrl-C stops cleanly with exit code 0. Watching reconnects
+with backoff after network loss, and exits with code 3 when the API stops
+authorizing the credential. It reports calls that ring after it connects, not
+calls placed by other participants.
+
+`calls media` carries one call's audio as raw PCM: signed 16-bit
+little-endian, mono, at the call's sample rate (16 kHz by default). With
+`--place <target>` it places a call and connects when it is answered. Without
+it, the command waits for an inbound call that rings after it starts (the
+given call ID, or the next call), then answers it, or joins it when another
+participant answered without a claim. `--input <file|->` sends audio in real
+time, `--output <file|->` receives audio (standard output by default, never a
+terminal), and `--leave-on-eof` leaves after the input is sent. Status goes to
+standard error, as JSON lines with `--json`. Ctrl-C leaves the call, or ends a
+placed call that is still ringing. If the `--output` file cannot be written,
+the command leaves the call and exits with code 2. The command carries audio
+only.
+
+Convert audio with any tool that writes raw PCM, for example:
+
+```shell
+sox greeting.wav -t raw -r 16000 -e signed -b 16 -c 1 - | \
+  polymorfa calls media --session support --place +15550100 \
+    --input - --leave-on-eof > reply.pcm
+```
+
 ### SIP trunks
 
 SIP trunks connect a PBX to WhatsApp calls. They are a beta: changes fail with
@@ -524,35 +555,6 @@ passwords never appear in the command line. `create` refuses a body that names
 `rotate-credentials`, print the password once. `update --expected-revision`
 exits with code 4 when the trunk changed; `delete` exits with code 4 while a
 session routes calls to the trunk.
-
-`calls watch` streams inbound calls and their progress: `incoming`, `claim`,
-`state`, `participant_joined`, `participant_state`, `participant_left`, and
-`ended`. Human output prints one tab-separated line per update and status on
-standard error. `--json` prints one JSON object per line, including `ready`,
-`disconnected`, `notice`, and a final `stopped` line. `--count <n>` exits
-after `n` updates; Ctrl-C stops cleanly with exit code 0. Watching reconnects
-with backoff after network loss, and exits with code 3 when the API stops
-authorizing the credential. It reports calls that ring after it connects, not
-calls placed by other participants.
-
-`calls media` carries one call's audio as raw PCM: signed 16-bit
-little-endian, mono, at the call's sample rate (16 kHz by default). With
-`--place <target>` it places a call and connects when it is answered. Without
-it, the command waits for an inbound call that rings after it starts (the
-given call ID, or the next call), then answers it, or joins it when another
-participant answered without a claim. `--input <file|->` sends audio in real
-time, `--output <file|->` receives audio (standard output by default, never a
-terminal), and `--leave-on-eof` leaves after the input is sent. Status goes to
-standard error, as JSON lines with `--json`. Ctrl-C leaves the call, or ends a
-placed call that is still ringing. The command carries audio only.
-
-Convert audio with any tool that writes raw PCM, for example:
-
-```shell
-sox greeting.wav -t raw -r 16000 -e signed -b 16 -c 1 - | \
-  polymorfa calls media --session support --place +15550100 \
-    --input - --leave-on-eof > reply.pcm
-```
 
 ## Session call rejection and stable identities
 
