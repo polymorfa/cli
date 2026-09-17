@@ -253,6 +253,8 @@ export async function viewCallSettings(
 
 export interface CallSettingsChanges {
   readonly callsEnabled?: boolean
+  /** Apply only if the settings still have this revision. */
+  readonly expectedRevision?: number
   readonly includeSelfAudio?: boolean
   readonly inboundRoute?: CallInboundRoute
   readonly sipClaim?: boolean
@@ -269,7 +271,8 @@ export async function updateCallSettings(
   changes: CallSettingsChanges,
 ): Promise<CallsResult<SessionCallSettings>> {
   const name = validateSession(session)
-  if (Object.values(changes).every((value) => value === undefined)) {
+  const {expectedRevision, ...settings} = changes
+  if (Object.values(settings).every((value) => value === undefined)) {
     throw new PolymorfaConfigurationError(
       'Provide at least one setting to change.',
       'calls-enabled',
@@ -297,6 +300,7 @@ export async function updateCallSettings(
       ? {}
       : {sipTrunkId: changes.sipTrunkId}),
     ...(changes.sipClaim === undefined ? {} : {sipClaim: changes.sipClaim}),
+    ...(expectedRevision === undefined ? {} : {expectedRevision}),
   })
   return result(response.data.data, response.metadata)
 }
@@ -394,6 +398,7 @@ export function renderCallSettings(
           `SIP answer claims call\t${yesNo(settings.sipClaim)}`,
         ]
       : []),
+    `Revision\t${settings.revision ?? 0}`,
     `Updated\t${settings.updatedAt ?? 'never (defaults)'}`,
   ].join('\n')
 }
@@ -819,8 +824,18 @@ export async function bridgeCallMedia(
     else resolveDone(summary(outcome))
   }
   let lastCallError: CallsError | undefined
+  let stopping = false
+  /** Settles once an answer or join in flight has finished, either way. */
+  let pendingAccept: Promise<void> | undefined
   /** Stop our part: end a call still ringing that we placed, else leave. */
   const hangUp = (call: Call): void => {
+    // Leaving while the answer is in flight only ends the call locally, and
+    // the platform would keep this client as a participant (and claimant).
+    // Wait for the answer to settle so the leave reaches the platform.
+    if (pendingAccept !== undefined) {
+      void pendingAccept.then(() => hangUp(call))
+      return
+    }
     const stop =
       call.direction === 'outbound' && call.state === 'ringing'
         ? call.end()
@@ -829,6 +844,29 @@ export async function bridgeCallMedia(
       () => finish(call.endReason ?? 'left'),
       (error: unknown) => finish(callsClientError(error)),
     )
+  }
+
+  const ended = (call: Call, reason: CallEndReason): void => {
+    status({
+      type: 'ended',
+      callId: call.id,
+      reason,
+      duration: call.duration,
+    })
+    if (reason === 'claimed') {
+      finish(callsClientError(new CallClaimedError()))
+    } else if (FAILED_ENDINGS.has(reason)) {
+      finish(
+        lastCallError === undefined
+          ? new PolymorfaConnectionError(
+              `The call media connection failed (${reason}).`,
+              {code: reason},
+            )
+          : callsClientError(lastCallError),
+      )
+    } else {
+      finish(reason)
+    }
   }
 
   const attach = (call: Call): void => {
@@ -840,28 +878,7 @@ export async function bridgeCallMedia(
         status({type: 'notice', code: error.code, message: error.message})
       }
     })
-    call.once('ended', (reason) => {
-      status({
-        type: 'ended',
-        callId: call.id,
-        reason,
-        duration: call.duration,
-      })
-      if (reason === 'claimed') {
-        finish(callsClientError(new CallClaimedError()))
-      } else if (FAILED_ENDINGS.has(reason)) {
-        finish(
-          lastCallError === undefined
-            ? new PolymorfaConnectionError(
-                `The call media connection failed (${reason}).`,
-                {code: reason},
-              )
-            : callsClientError(lastCallError),
-        )
-      } else {
-        finish(reason)
-      }
-    })
+    call.once('ended', (reason) => ended(call, reason))
     call.audio.on('data', (pcm) => {
       const bytes = new Uint8Array(pcm.length * 2)
       const view = new DataView(bytes.buffer)
@@ -914,7 +931,17 @@ export async function bridgeCallMedia(
           exclusive: input.exclusive === true,
           ...(input.video === undefined ? {} : {video: input.video}),
         })
-    accepting.catch((error: unknown) => finish(callsClientError(error)))
+    const settled = accepting.then(
+      () => undefined,
+      (error: unknown) => {
+        // A refusal after Ctrl-C is not an error: the user asked to stop.
+        if (!stopping) finish(callsClientError(error))
+      },
+    )
+    const pending = settled.finally(() => {
+      if (pendingAccept === pending) pendingAccept = undefined
+    })
+    pendingAccept = pending
   }
 
   client.on('ready', () => {
@@ -953,6 +980,7 @@ export async function bridgeCallMedia(
   }
 
   const onAbort = (): void => {
+    stopping = true
     if (active === undefined || active.ended) finish('cancelled')
     else hangUp(active)
   }
@@ -970,6 +998,9 @@ export async function bridgeCallMedia(
         })
         status({type: 'placed', callId: call.id})
         attach(call)
+        // Events that arrived before place() returned are already applied,
+        // so the call may have ended without emitting to our listener.
+        if (call.ended) ended(call, call.endReason ?? 'unknown')
       } catch (error) {
         finish(callsClientError(error))
       }

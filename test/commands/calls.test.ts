@@ -329,7 +329,7 @@ describe('unified calls commands', () => {
 
     expect(viewed.error).toBeUndefined()
     expect(viewed.stdout).toBe(
-      'Session\tsupport/main\nCalls\ton\nInclude self audio\tyes\nIncoming calls\tclients\nUpdated\t2026-09-16T10:00:00.000Z\n',
+      'Session\tsupport/main\nCalls\ton\nInclude self audio\tyes\nIncoming calls\tclients\nRevision\t0\nUpdated\t2026-09-16T10:00:00.000Z\n',
     )
     expect(updated.error).toBeUndefined()
     expect(jsonData(updated.stdout)).toEqual({
@@ -407,6 +407,66 @@ describe('unified calls commands', () => {
     ])
     expect(exitCode(conflicting.error)).toBe(2)
     expect(exitCode(empty.error)).toBe(2)
+  })
+
+  test('guards a change with the expected revision and exits 4 when stale', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          data: {
+            callsEnabled: false,
+            includeSelfAudio: false,
+            inboundRoute: 'clients',
+            revision: 4,
+            sipClaim: true,
+            sipTrunkId: null,
+            updatedAt: '2026-09-17T10:00:00.000Z',
+          },
+          success: true,
+        },
+      },
+      apiError(
+        409,
+        'state_conflict',
+        'The call settings changed since revision 3.',
+        'req_stale',
+      ),
+    ])
+
+    const guarded = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --calls-enabled=false --expected-revision 3',
+      ),
+    )
+    const stale = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --calls-enabled=true --expected-revision 3 --json',
+      ),
+    )
+    const negative = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --calls-enabled=true --expected-revision -1',
+      ),
+    )
+    const alone = await apiKey(() =>
+      runCommand('calls settings set --session support --expected-revision 3'),
+    )
+
+    expect(guarded.error).toBeUndefined()
+    expect(guarded.stdout).toContain('Calls\toff')
+    expect(guarded.stdout).toContain('Revision\t4')
+    expect(exitCode(stale.error)).toBe(4)
+    expect(JSON.parse(stale.stderr.trim())).toMatchObject({
+      error: {category: 'conflict', code: 'state_conflict'},
+    })
+    expect(exitCode(negative.error)).toBe(2)
+    expect(exitCode(alone.error)).toBe(2)
+    expect(
+      server.requests.map(({body}) => JSON.parse(body) as unknown),
+    ).toEqual([
+      {callsEnabled: false, expectedRevision: 3},
+      {callsEnabled: true, expectedRevision: 3},
+    ])
   })
 
   test('turns calling off and reports calls_disabled refusals', async () => {

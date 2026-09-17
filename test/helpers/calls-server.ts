@@ -29,7 +29,9 @@ export interface CallsServer {
 
 export interface CallsServerOptions {
   readonly onSocket?: (socket: FakeSocket) => void | Promise<void>
-  readonly rest?: (request: CapturedRequest) => ResponseFixture
+  readonly rest?: (
+    request: CapturedRequest,
+  ) => ResponseFixture | Promise<ResponseFixture>
 }
 
 /**
@@ -55,7 +57,7 @@ export async function startCallsServer(
         url: request.url ?? '',
       }
       requests.push(captured)
-      const response = options.rest?.(captured) ?? {
+      const response = (await options.rest?.(captured)) ?? {
         body: {error: 'No REST fixture.'},
         status: 500,
       }

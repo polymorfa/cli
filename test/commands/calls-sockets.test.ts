@@ -370,6 +370,111 @@ describe('calls watch and media', () => {
     })
   })
 
+  test('finishes when a placed call ends before placement returns', async () => {
+    let lifecycle: FakeSocket | undefined
+    server = await startCallsServer({
+      onSocket: async (socket) => {
+        await socket.next()
+        lifecycle = socket
+        socket.sendJson({participant: 'server:default', type: 'ready'})
+      },
+      rest: async () => {
+        if (lifecycle !== undefined) {
+          sendEvent(lifecycle, 'call.ended', 'call_8', {reason: 'rejected'})
+        }
+        await delay(100)
+        return {
+          body: {
+            data: {callId: 'call_8', session: 'support', video: false},
+            success: true,
+          },
+          status: 201,
+        }
+      },
+    })
+
+    const summary = await bridgeCallMedia(
+      {
+        baseUrl: server.baseUrl,
+        credential: {type: 'apiKey', value: API_KEY},
+        output: () => undefined,
+        place: '+15550100',
+        session: 'support',
+        signal: AbortSignal.timeout(2_000),
+      },
+      () => undefined,
+    )
+
+    expect(summary).toMatchObject({callId: 'call_8', reason: 'rejected'})
+    expect(
+      server.sockets.filter((s) => !s.path.startsWith('/voip/ws')),
+    ).toHaveLength(0)
+  })
+
+  test('waits for an answer in flight before leaving on interrupt', async () => {
+    const controller = new AbortController()
+    let leaveFrame = false
+    server = await startCallsServer({
+      onSocket: async (socket) => {
+        await socket.next()
+        if (socket.path.startsWith('/voip/ws')) {
+          socket.sendJson({participant: 'server:default', type: 'ready'})
+          sendEvent(socket, 'call.received', 'call_5', {from: '+15550100'})
+          return
+        }
+        socket.sendJson({sampleRate: 16000, type: 'ready', video: false})
+        for (;;) {
+          const message = await socket.next()
+          if (
+            typeof message === 'string' &&
+            (JSON.parse(message) as {type?: string}).type === 'leave'
+          ) {
+            leaveFrame = true
+            return
+          }
+        }
+      },
+      rest: async (request) => {
+        if (request.url.endsWith('/accept')) {
+          // Ctrl-C arrives while the answer is still in flight.
+          controller.abort()
+          await delay(100)
+        }
+        return {
+          body: {
+            data: {
+              answered: true,
+              answeredBy: 'server:default',
+              exclusive: true,
+            },
+            success: true,
+          },
+        }
+      },
+    })
+
+    const summary = await bridgeCallMedia(
+      {
+        baseUrl: server.baseUrl,
+        credential: {type: 'apiKey', value: API_KEY},
+        exclusive: true,
+        output: () => undefined,
+        session: 'support',
+        signal: controller.signal,
+      },
+      () => undefined,
+    )
+
+    expect(summary).toMatchObject({callId: 'call_5', reason: 'left'})
+    await delay(50)
+    const left =
+      leaveFrame ||
+      server.requests.some(
+        ({method, url}) => method === 'POST' && url.endsWith('/leave'),
+      )
+    expect(left).toBe(true)
+  })
+
   test('answers only the requested call and exits on a claim conflict', async () => {
     const outputPath = join(directory, 'out.pcm')
     server = await startCallsServer({

@@ -463,6 +463,8 @@ polymorfa calls media --session support --place +15550100 \
 
 polymorfa calls settings get --session support
 polymorfa calls settings set --session support --include-self-audio=true
+polymorfa calls settings set --session support --calls-enabled=false \
+  --expected-revision 3
 polymorfa calls settings set --session support \
   --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
 ```
@@ -500,7 +502,12 @@ never answers or declines on its own.
   `--inbound-route sip_trunk` with `--sip-trunk` also sends incoming calls to a
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
   call. `calls settings set` sends only the flags you pass; the other
-  settings keep their values.
+  settings keep their values. `calls settings get` and `set` print the
+  settings `revision`, which increases on every change and is `0` while the
+  session uses the defaults. Pass `--expected-revision <n>` to apply the
+  change only if the settings still have that revision; if someone changed
+  them first, the command exits with code 4 (`state_conflict`) and changes
+  nothing.
 
 `calls watch` streams inbound calls and their progress: `incoming`, `claim`,
 `state`, `participant_joined`, `participant_state`, `participant_left`, and

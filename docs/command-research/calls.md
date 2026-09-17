@@ -78,6 +78,8 @@ internal SDK module.
 - `calls settings` resolves Platform credentials, so client tokens fail with
   the standard Platform credential error. The SDK exposes the operation on the
   Messaging client; the CLI builds that client from the Platform environment.
+  `calls settings set --expected-revision` sends `expectedRevision`; a stale
+  revision returns 409 `state_conflict`, which exits with code 4.
 - Sockets carry the credential in their first frame. The CLI requires an HTTPS
   base URL, or HTTP on a loopback host, before opening any Calls connection.
 
