@@ -529,8 +529,10 @@ time, `--output <file|->` receives audio (standard output by default, never a
 terminal), and `--leave-on-eof` leaves after the input is sent. Status goes to
 standard error, as JSON lines with `--json`. Ctrl-C leaves the call, or ends a
 placed call that is still ringing. If the `--output` file cannot be written,
-the command leaves the call and exits with code 2. The command carries audio
-only.
+or the `--input` file cannot be read, the command leaves the call and exits
+with code 2. It exits with code 2 before connecting when the `--input` file
+cannot be opened or when `--input` and `--output` name the same file. The
+command carries audio only.
 
 Convert audio with any tool that writes raw PCM, for example:
 

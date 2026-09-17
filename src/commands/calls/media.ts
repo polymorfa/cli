@@ -1,5 +1,7 @@
-import {createReadStream, createWriteStream, type WriteStream} from 'node:fs'
+import {createWriteStream, type ReadStream, type WriteStream} from 'node:fs'
+import {open, stat} from 'node:fs/promises'
 import {once} from 'node:events'
+import {resolve} from 'node:path'
 
 import {Args, Flags} from '@oclif/core'
 import {PolymorfaConfigurationError} from '@polymorfa/sdk'
@@ -84,7 +86,32 @@ export default class CallsMedia extends BaseCommand {
         'input',
       )
     }
+    const inputPath =
+      flags.input === undefined || flags.input === '-' ? undefined : flags.input
+    const outputPath = flags.output === '-' ? undefined : flags.output
+    // Opening --output truncates it, so the same file would lose its audio
+    // before a byte of it was read.
+    if (
+      inputPath !== undefined &&
+      outputPath !== undefined &&
+      (await sameFile(inputPath, outputPath))
+    ) {
+      throw new PolymorfaConfigurationError(
+        '--input and --output name the same file. Write received audio to a different file.',
+        'output',
+      )
+    }
     const environment = await this.messagingEnvironment(flags)
+    // Open --input before connecting, so a missing or unreadable file fails
+    // here rather than as an unhandled stream error.
+    let inputFile: ReadStream | undefined
+    if (inputPath !== undefined) {
+      try {
+        inputFile = (await open(inputPath, 'r')).createReadStream()
+      } catch (error) {
+        throw inputFailed(inputPath, error)
+      }
+    }
     const json = this.outputMode(flags) === 'json'
     const quiet = this.outputMode(flags) === 'quiet'
     const report = (value: object, human: string): void => {
@@ -98,7 +125,7 @@ export default class CallsMedia extends BaseCommand {
     const onStop = (): void => halt.abort()
     stop.signal.addEventListener('abort', onStop, {once: true})
     const file: WriteStream | undefined =
-      flags.output === '-' ? undefined : createWriteStream(flags.output)
+      outputPath === undefined ? undefined : createWriteStream(outputPath)
     // Listen before the stream can fail or close: its errors are asynchronous.
     // `once` rejects on the stream's error, which is recorded below.
     const fileClosed =
@@ -114,12 +141,13 @@ export default class CallsMedia extends BaseCommand {
       if (file === undefined) process.stdout.write(pcm)
       else file.write(pcm)
     }
-    const input =
-      flags.input === undefined
-        ? undefined
-        : flags.input === '-'
-          ? process.stdin
-          : createReadStream(flags.input)
+    // A read error can arrive before the call connects and reading starts.
+    let inputError: unknown
+    inputFile?.on('error', (error: Error) => {
+      inputError ??= error
+      halt.abort()
+    })
+    const input = flags.input === '-' ? process.stdin : inputFile
 
     // Flush and close the output file once; its errors arrive asynchronously.
     let outputClosed = false
@@ -150,6 +178,9 @@ export default class CallsMedia extends BaseCommand {
       )
       await closeOutput()
       if (fileError !== undefined) throw outputFailed(flags.output, fileError)
+      if (inputError !== undefined && inputPath !== undefined) {
+        throw inputFailed(inputPath, inputError)
+      }
       report(
         {type: 'finished', ...summary},
         `Finished (${summary.reason}): received ${summary.bytesReceived} bytes, sent ${summary.bytesSent} bytes.`,
@@ -184,6 +215,28 @@ function renderMediaStatus(
     default:
       return renderCallActivity(status)
   }
+}
+
+/** Whether two paths name one file, through links or relative spellings. */
+async function sameFile(first: string, second: string): Promise<boolean> {
+  if (resolve(first) === resolve(second)) return true
+  const [a, b] = await Promise.all([
+    stat(first).catch(() => undefined),
+    stat(second).catch(() => undefined),
+  ])
+  return (
+    a !== undefined && b !== undefined && a.dev === b.dev && a.ino === b.ino
+  )
+}
+
+function inputFailed(
+  path: string,
+  error: unknown,
+): PolymorfaConfigurationError {
+  return new PolymorfaConfigurationError(
+    `Could not read audio from ${path}: ${error instanceof Error ? error.message : String(error)}`,
+    'input',
+  )
 }
 
 function outputFailed(path: string, error: Error): PolymorfaConfigurationError {

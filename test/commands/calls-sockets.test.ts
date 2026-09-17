@@ -1,4 +1,12 @@
-import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises'
+import {
+  link,
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  symlink,
+  writeFile,
+} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {Readable} from 'node:stream'
@@ -589,6 +597,92 @@ describe('calls watch and media', () => {
     })
     expect(result.stderr).toContain('Could not write received audio')
     expect(result.stderr).not.toContain('"finished"')
+  })
+
+  test('refuses --input and --output naming the same file before opening either', async () => {
+    const inputPath = join(directory, 'in.pcm')
+    const input = pcm(160)
+    await writeFile(inputPath, input)
+    await symlink(inputPath, join(directory, 'link.pcm'))
+    await link(inputPath, join(directory, 'hard.pcm'))
+    server = await startCallsServer({})
+
+    for (const output of [
+      inputPath,
+      join(directory, '.', 'in.pcm'),
+      join(directory, 'link.pcm'),
+      join(directory, 'hard.pcm'),
+    ]) {
+      const result = await apiKey(() =>
+        runCommand(
+          `calls media --session support --input ${inputPath} --output ${output} --json`,
+        ),
+      )
+
+      expect(exitCode(result.error)).toBe(2)
+      expect(result.stderr).toContain('name the same file')
+    }
+    expect(await readFile(inputPath)).toEqual(input)
+    expect(server.sockets).toHaveLength(0)
+  })
+
+  test('refuses a missing --input file before connecting', async () => {
+    server = await startCallsServer({})
+
+    const result = await apiKey(() =>
+      runCommand(
+        `calls media --session support --input ${join(directory, 'missing.pcm')} --output ${join(directory, 'out.pcm')} --json`,
+      ),
+    )
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(JSON.parse(result.stderr.trim().split('\n').at(-1)!)).toMatchObject({
+      error: {category: 'configuration'},
+    })
+    expect(result.stderr).toContain('Could not read audio from')
+    expect(server.sockets).toHaveLength(0)
+  })
+
+  test('stops with a configuration error when --input cannot be read', async () => {
+    // A directory opens for reading but fails on the first read.
+    const unreadable = join(directory, 'folder')
+    await mkdir(unreadable)
+    server = await startCallsServer({
+      onSocket: async (socket) => {
+        await socket.next()
+        if (socket.path.startsWith('/voip/ws')) {
+          socket.sendJson({participant: 'server:default', type: 'ready'})
+          sendEvent(socket, 'call.received', 'call_6', {from: '+15550100'})
+          return
+        }
+        socket.sendJson({sampleRate: 16000, type: 'ready', video: false})
+        for (;;) {
+          if (typeof (await socket.next()) === 'string') return
+        }
+      },
+      rest: () => ({
+        body: {
+          data: {
+            answered: true,
+            answeredBy: 'server:default',
+            exclusive: false,
+          },
+          success: true,
+        },
+      }),
+    })
+
+    const result = await apiKey(() =>
+      runCommand(
+        `calls media call_6 --session support --input ${unreadable} --output ${join(directory, 'out.pcm')} --json`,
+      ),
+    )
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(JSON.parse(result.stderr.trim().split('\n').at(-1)!)).toMatchObject({
+      error: {category: 'configuration'},
+    })
+    expect(result.stderr).toContain(`Could not read audio from ${unreadable}`)
   })
 
   test('paces input audio in real time and leaves when interrupted', async () => {
