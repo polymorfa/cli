@@ -4,7 +4,7 @@
 - **Reviewed:** 2026-09-17
 - **SDK baseline:** `@polymorfa/sdk` (including the `@polymorfa/sdk/calls`
   subpath) at `polymorfa/sdks` commit
-  `70b671eb5bf9a094ec3a5c8e51afa6f425251218`
+  `589618b0ba3ac2683effcfdd5ba0dd4ec0a0fcf2`
 
 ## Sources reviewed
 
