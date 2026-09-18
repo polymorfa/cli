@@ -37,6 +37,22 @@ describe('message commands', () => {
       method: 'POST',
       url: '/messaging/session%2Fmain/messages/send',
     })
+    expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+      /^pmfa_cli_[0-9a-f-]{36}$/,
+    )
+  })
+
+  test('rejects an empty idempotency key before transport', async () => {
+    server = await messageServer()
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'message send text --session session_1 --to +15551234567 --body Hello --idempotency-key " " --json',
+      ),
+    )
+
+    expect(result.error).toBeDefined()
+    expect(server.requests).toHaveLength(0)
   })
 
   test('maps reply, forwarding, mentions, and idempotency without synthetic routes', async () => {
