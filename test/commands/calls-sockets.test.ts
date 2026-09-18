@@ -467,6 +467,113 @@ describe('calls watch and media', () => {
     ])
   })
 
+  test('reports a failure to end a call placed after an interrupt', async () => {
+    const controller = new AbortController()
+    server = await startCallsServer({
+      onSocket: async (socket) => {
+        await socket.next()
+        socket.sendJson({participant: 'server:default', type: 'ready'})
+      },
+      rest: async (request) => {
+        if (request.method === 'POST') {
+          controller.abort()
+          await delay(100)
+          return {
+            body: {
+              data: {callId: 'call_7', session: 'support', video: false},
+              success: true,
+            },
+            status: 201,
+          }
+        }
+        return {
+          body: {
+            data: null,
+            error: {
+              code: 'forbidden',
+              message: 'Ending this call is not allowed.',
+              type: 'permission_error',
+            },
+          },
+          status: 403,
+        }
+      },
+    })
+
+    const outcome = bridgeCallMedia(
+      {
+        baseUrl: server.baseUrl,
+        credential: {type: 'apiKey', value: API_KEY},
+        output: () => undefined,
+        place: '+15550100',
+        session: 'support',
+        signal: controller.signal,
+      },
+      () => undefined,
+    )
+
+    await expect(outcome).rejects.toThrow('Ending this call is not allowed.')
+    expect(server.requests[0]?.method).toBe('POST')
+    expect(server.requests[1]).toMatchObject({
+      method: 'DELETE',
+      url: '/messaging/voip/calls/call_7',
+    })
+  })
+
+  test('exits with a configuration error when standard input fails', async () => {
+    server = await startCallsServer({
+      onSocket: async (socket) => {
+        await socket.next()
+        if (socket.path.startsWith('/voip/ws')) {
+          socket.sendJson({participant: 'server:default', type: 'ready'})
+          sendEvent(socket, 'call.received', 'call_4', {from: '+15550100'})
+          return
+        }
+        socket.sendJson({sampleRate: 16000, type: 'ready', video: false})
+        for (;;) {
+          if (typeof (await socket.next()) === 'string') return
+        }
+      },
+      rest: () => ({
+        body: {
+          data: {
+            answered: true,
+            answeredBy: 'server:default',
+            exclusive: false,
+          },
+          success: true,
+        },
+      }),
+    })
+    const failing = new Readable({
+      read() {
+        this.destroy(new Error('EIO: i/o error, read'))
+      },
+    })
+    const original = Object.getOwnPropertyDescriptor(process, 'stdin')
+    Object.defineProperty(process, 'stdin', {
+      configurable: true,
+      value: failing,
+    })
+    try {
+      const result = await apiKey(() =>
+        runCommand(
+          `calls media call_4 --session support --input - --output ${join(directory, 'out.pcm')} --json`,
+        ),
+      )
+
+      expect(exitCode(result.error)).toBe(2)
+      expect(result.stderr).toContain(
+        'Could not read audio from standard input: EIO: i/o error, read',
+      )
+      expect(result.stderr).not.toContain('"finished"')
+    } finally {
+      if (original !== undefined) {
+        Object.defineProperty(process, 'stdin', original)
+      }
+    }
+  })
+
   test('exits after the call ends while standard input stays open', async () => {
     server = await startCallsServer({
       onSocket: async (socket) => {

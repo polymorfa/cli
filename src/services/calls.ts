@@ -995,6 +995,7 @@ export async function bridgeCallMedia(
   try {
     await client.connect()
     if (!finished && !client.connected) status(unreachable)
+    let cancelledCall: Call | undefined
     if (target !== undefined && !finished) {
       try {
         const call = await client.place(target, {
@@ -1002,17 +1003,26 @@ export async function bridgeCallMedia(
           ...(input.video === undefined ? {} : {video: input.video}),
         })
         if (finished) {
-          // Cancelled while placing: stop the callee's phone ringing.
-          await call.end().catch(() => undefined)
-          return await done
+          cancelledCall = call
+        } else {
+          status({type: 'placed', callId: call.id})
+          attach(call)
+          // Events that arrived before place() returned are already applied,
+          // so the call may have ended without emitting to our listener.
+          if (call.ended) ended(call, call.endReason ?? 'unknown')
         }
-        status({type: 'placed', callId: call.id})
-        attach(call)
-        // Events that arrived before place() returned are already applied,
-        // so the call may have ended without emitting to our listener.
-        if (call.ended) ended(call, call.endReason ?? 'unknown')
       } catch (error) {
         finish(callsClientError(error))
+      }
+    }
+    if (cancelledCall !== undefined) {
+      // Cancelled while placing: stop the callee's phone ringing. If that
+      // fails the call may still ring, so report the failure rather than a
+      // clean cancellation.
+      try {
+        await cancelledCall.end()
+      } catch (error) {
+        throw callsClientError(error)
       }
     }
     return await done

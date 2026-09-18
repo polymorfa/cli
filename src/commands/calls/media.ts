@@ -141,13 +141,16 @@ export default class CallsMedia extends BaseCommand {
       if (file === undefined) process.stdout.write(pcm)
       else file.write(pcm)
     }
+    const input = flags.input === '-' ? process.stdin : inputFile
+    const inputName = inputPath ?? 'standard input'
     // A read error can arrive before the call connects and reading starts.
+    // Without this, a failed read would end the call as a normal finish.
     let inputError: unknown
-    inputFile?.on('error', (error: Error) => {
+    const onInputError = (error: Error): void => {
       inputError ??= error
       halt.abort()
-    })
-    const input = flags.input === '-' ? process.stdin : inputFile
+    }
+    input?.on('error', onInputError)
 
     // Flush and close the output file once; its errors arrive asynchronously.
     let outputClosed = false
@@ -178,9 +181,7 @@ export default class CallsMedia extends BaseCommand {
       )
       await closeOutput()
       if (fileError !== undefined) throw outputFailed(flags.output, fileError)
-      if (inputError !== undefined && inputPath !== undefined) {
-        throw inputFailed(inputPath, inputError)
-      }
+      if (inputError !== undefined) throw inputFailed(inputName, inputError)
       report(
         {type: 'finished', ...summary},
         `Finished (${summary.reason}): received ${summary.bytesReceived} bytes, sent ${summary.bytesSent} bytes.`,
@@ -192,6 +193,7 @@ export default class CallsMedia extends BaseCommand {
       // Reading standard input stays blocked on a producer that never closes
       // it (a microphone, tail -f), which would keep the process alive.
       if (input === process.stdin) process.stdin.destroy()
+      input?.off('error', onInputError)
       await closeOutput()
     }
     if (fileError !== undefined) throw outputFailed(flags.output, fileError)
