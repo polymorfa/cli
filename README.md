@@ -8,7 +8,7 @@ access until `@polymorfa/cli` is released publicly.
 
 ## Requirements
 
-- Node.js 20 or newer
+- Node.js 22 or newer
 - A Polymorfa organization API key or exact-project token for developer requests
 - A server API key or short-lived client token for Messaging requests
 
@@ -443,10 +443,138 @@ request. Lists are complete arrays because the source exposes no contact
 pagination. Block and unblock are reversible actions and accept
 `--idempotency-key`; they are not available to browser client tokens.
 
-## Calls and stable identities
+## Calls
 
-Three focused Linked Device commands cover the exact Calls, LIDs, and Users
-source tags:
+The `calls` commands place, answer, join, decline, leave, and end calls, invite
+participants, follow a session's calls, and carry call audio:
+
+```shell
+polymorfa calls place +15550100 --session support --exclusive
+polymorfa calls accept call_123 --exclusive --participant agent-7
+polymorfa calls reject call_123
+polymorfa calls leave call_123 --connection-id conn_0123456789
+polymorfa calls end call_123
+polymorfa calls invite call_123 +15550101
+
+polymorfa calls watch --session support --json
+polymorfa calls media --session support --place +15550100 \
+  --input prompt.pcm --leave-on-eof --output reply.pcm
+
+polymorfa calls settings get --session support
+polymorfa calls settings set --session support --no-conference-mode
+polymorfa calls settings set --session support --calls-enabled=false \
+  --expected-revision 3
+polymorfa calls settings set --session support \
+  --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+```
+
+Every inbound call rings until a participant answers or declines it. The CLI
+never answers or declines on its own.
+
+- **Participants.** A server API key acts as `server:<participant>`. Pass
+  `--participant` (1 to 128 characters from `A-Z`, `a-z`, `0-9`, `.`, `_`, `:`,
+  `@`, and `-`) to name it; the API uses `default` otherwise. A client token
+  from `POLYMORFA_CLIENT_TOKEN` acts as its own participant, so the CLI rejects
+  `--participant` with a client token before sending a request.
+- **Sessions.** Server API keys name the session with `--session` for
+  `calls place`, `calls watch`, and `calls media`. Client tokens use the
+  session they are bound to; `calls watch` and `calls media` reject
+  `--session` with a client token.
+- **Claims.** `calls accept --exclusive` claims the call. Other participants
+  then receive `call_claimed`, and the command exits with code 4 and prints
+  `code: "call_claimed"` under `--json`. Without a claim, a later accept joins
+  the answered call. `calls reject` exits with code 4 and
+  `code: "call_not_ringing"` when the call was already answered, declined, or
+  ended. Declining ends the call for every participant.
+- **Connections.** `calls leave` closes one connection, named by an 8 to 64
+  character ID from `A-Z`, `a-z`, `0-9`, `_`, and `-`. The call continues.
+  `calls end` ends the call for everyone.
+- **Client token actions.** Client tokens can place, accept, decline, leave,
+  end, invite, watch, and carry audio when the session's client rules allow
+  it. The API decides; the CLI reports its errors unchanged.
+- **Settings.** `calls settings` uses the Platform API and requires a server
+  API key. `--calls-enabled=false` turns calling off for the session: placing,
+  answering and joining calls then exit with code 3 (`calls_disabled`),
+  incoming calls are declined, and calls in progress continue.
+  Conference mode is on by default: every participant you connect to a call
+  (apps, bots, and SIP trunk callers) hears the WhatsApp party and each other.
+  `--no-conference-mode` turns it off, so each participant hears only the
+  WhatsApp party; `--conference-mode` turns it back on. The WhatsApp party
+  always hears all of your participants, and nobody hears their own audio.
+  `--inbound-route sip_trunk` with `--sip-trunk` also sends incoming calls to a
+  SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
+  call. On a Cloud API session, `--host-cloud-api-calls=true` has Polymorfa
+  Calls answer incoming calls; with the default `false`, your Graph API
+  integration answers them. `calls settings set` sends only the flags you pass; the other
+  settings keep their values. `calls settings get` and `set` print the
+  settings `revision`, which increases on every change and is `0` while the
+  session uses the defaults. Pass `--expected-revision <n>` to apply the
+  change only if the settings still have that revision; if someone changed
+  them first, the command exits with code 4 (`state_conflict`) and changes
+  nothing.
+
+`calls watch` streams inbound calls and their progress: `incoming`, `claim`,
+`state`, `participant_joined`, `participant_state`, `participant_left`, and
+`ended`. Human output prints one tab-separated line per update and status on
+standard error. `--json` prints one JSON object per line, including `ready`,
+`disconnected`, `notice`, and a final `stopped` line. `--count <n>` exits
+after `n` updates; Ctrl-C stops cleanly with exit code 0. Watching reconnects
+with backoff after network loss, and exits with code 3 when the API stops
+authorizing the credential. It reports calls that ring after it connects, not
+calls placed by other participants.
+
+`calls media` carries one call's audio as raw PCM: signed 16-bit
+little-endian, mono, at the call's sample rate (16 kHz by default). With
+`--place <target>` it places a call and connects when it is answered. Without
+it, the command waits for an inbound call that rings after it starts (the
+given call ID, or the next call), then answers it, or joins it when another
+participant answered without a claim. `--input <file|->` sends audio in real
+time, `--output <file|->` receives audio (standard output by default, never a
+terminal), and `--leave-on-eof` leaves after the input is sent. Status goes to
+standard error, as JSON lines with `--json`. Ctrl-C leaves the call, or ends a
+placed call that is still ringing. If the `--output` file cannot be written,
+or the `--input` file cannot be read, the command leaves the call and exits
+with code 2. It exits with code 2 before connecting when the `--input` file
+cannot be opened or when `--input` and `--output` name the same file. The
+command carries audio only.
+
+Convert audio with any tool that writes raw PCM, for example:
+
+```shell
+sox greeting.wav -t raw -r 16000 -e signed -b 16 -c 1 - | \
+  polymorfa calls media --session support --place +15550100 \
+    --input - --leave-on-eof > reply.pcm
+```
+
+### SIP trunks
+
+SIP trunks connect a PBX to WhatsApp calls. They are a beta: changes fail with
+exit code 3 until your team is enrolled. Commands require a server API key.
+
+```shell
+polymorfa sip-trunk list --project 018f0000-0000-7000-8000-000000000002
+polymorfa sip-trunk view 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+polymorfa sip-trunk create --project 018f0000-0000-7000-8000-000000000002 --input trunk.json
+polymorfa sip-trunk update 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 \
+  --disable --expected-revision 3
+polymorfa sip-trunk update 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --input changes.json
+polymorfa sip-trunk rotate-credentials 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --yes
+polymorfa sip-trunk delete 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --yes
+```
+
+`create` and `update` read the request body from a file or stdin (`-`), so
+passwords never appear in the command line. `create` refuses a body that names
+`projectId`; use `--project`. A trunk that accepts calls from your PBX, and
+`rotate-credentials`, print the password once. `update --expected-revision`
+exits with code 4 when the trunk changed; `delete` exits with code 4 while a
+session routes calls to the trunk.
+
+## Session call rejection and stable identities
+
+`call reject` is a separate command for the Linked Device session route. It
+rejects an incoming call by session, call ID, and caller ID. Use
+`calls reject` for the unified Calls API. Three focused Linked Device commands
+cover the exact session call rejection, LIDs, and Users source tags:
 
 ```shell
 polymorfa call reject call_123 \
@@ -887,7 +1015,7 @@ npm run verify
 
 The verification gate checks formatting, lint, strict TypeScript, tests,
 production build, npm package contents, and the production dependency audit on
-Node.js 20 and 22 in hosted CI.
+Node.js 22 in hosted CI.
 
 ### Guided session creation and configuration
 

@@ -31,6 +31,28 @@ export function createMessagingClient(
   })
 }
 
+/**
+ * Session call settings live on the Platform API, but the SDK exposes them on
+ * the Messaging client's Calls resource. Build that client from a resolved
+ * Platform environment so the Platform credential rules (server API keys
+ * only) still apply.
+ */
+export function createCallSettingsClient(
+  environment: ResolvedEnvironment,
+): MessagingClient {
+  if (environment.surface !== 'platform') {
+    throw new PolymorfaConfigurationError(
+      'Session call settings require the Platform API surface.',
+      'surface',
+    )
+  }
+
+  return new MessagingClient({
+    credential: {type: 'apiKey', value: environment.credential.value},
+    ...sharedOptions(environment),
+  })
+}
+
 export function createPlatformClient(
   environment: ResolvedEnvironment,
 ): ClientInstance<'organization'> {

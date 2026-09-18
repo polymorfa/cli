@@ -143,8 +143,12 @@ hatch to paper over a missing public contract. The explicit `api` command is
 the user-directed low-level escape hatch and keeps the SDK's authentication,
 transport, retry, pagination, and error behavior.
 
-The CLI depends only on the root server package. Browser, React, Next.js, UI,
-Elements, and Devtools SDK workspaces are not CLI runtime dependencies.
+The CLI depends on the root server package and on its `@polymorfa/sdk/calls`
+subpath, the programmatic Calls client, for the call event stream and call
+audio. It uses only that public, neutral entry point, never the Calls internal
+module. Browser, React, Next.js, UI, Elements, and Devtools SDK workspaces are
+not CLI runtime dependencies. The Calls client ships inside `@polymorfa/sdk`,
+so the pinned Git commit installs it with no separate package.
 
 ## Internal boundaries
 
@@ -541,6 +545,19 @@ business
 call
   reject
 
+calls
+  place
+  accept
+  reject
+  leave
+  end
+  invite
+  watch
+  media
+  settings
+    get
+    set
+
 lid
   resolve
 
@@ -704,7 +721,14 @@ phone number, stable ID, deprecated LID alias, or username and optional four-
 digit key. Security-code lookup requires a stable `digits@lid` user ID; human
 output favors the 60-digit code and does not dump display-QR base64, while JSON
 retains the complete no-store response. No command claims bulk identity lookup,
-call history/acceptance/streaming, or security-code verification submission.
+call history, or security-code verification submission through that session
+route. The unified Calls API is a separate `calls` family: place, accept (with
+an optional exclusive claim) or join, decline, leave one connection, end,
+invite, watch session call updates as JSON Lines, carry call audio as raw PCM,
+and read or replace session call settings. It never exposes offers,
+candidates, or media framing. Client tokens act as their own participant and
+cannot name `--participant` or use call settings; server API keys name the
+session and may name a participant. See `docs/command-research/calls.md`.
 
 Commands for contacts, chat history, and logs state whether data comes from
 opt-in hosted storage, live session state, or another documented source. Empty
@@ -1013,7 +1037,7 @@ maintenance work.
 The current implementation branch contains working, unpublished vertical
 slices:
 
-- the installable `polymorfa` ESM executable on Node.js 20 or newer;
+- the installable `polymorfa` ESM executable on Node.js 22 or newer;
 - `polymorfa version` with human, JSON, and quiet output;
 - `polymorfa api <endpoint>` for Messaging or Platform credentials;
 - GET query fields, JSON request fields, custom headers, file or bounded stdin
@@ -1045,6 +1069,9 @@ slices:
   collection, order, compliance, linked-account, and eligibility commands;
 - complete incoming-call rejection, singular LID resolution, and no-store user
   security-code inspection commands;
+- unified Calls commands for placement, answering and joining with exclusive
+  claims, declining, leaving, ending, inviting, session call updates, raw PCM
+  call audio, and session call settings, pinned to an unpushed SDK revision;
 - organization-key API-key list/revocation, member and audit lists, session-ban
   filtering, security-incident list/acknowledgement, and project-token metadata
   commands;

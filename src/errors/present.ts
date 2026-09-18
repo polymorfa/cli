@@ -69,7 +69,7 @@ export function presentError(
               error instanceof EventFilterError
             ? error.code
             : error instanceof PolymorfaError && error.code
-              ? error.code
+              ? redact(error.code, secrets)
               : `${classified.category}_error`,
     message,
     retryable:
