@@ -1216,6 +1216,21 @@ polymorfa api /platform/customers --surface platform \
 successful output without hiding failures. Diagnostics and errors go to stderr;
 SDK request IDs are preserved and active credentials are redacted.
 
+An API failure prints the message, then the request ID, the Console request
+log link, and the documentation link for the error code when the API returned
+them:
+
+```text
+Error: WhatsApp is limiting requests from this number. Follow Retry-After when supplied.
+Request ID: 5f0c2a8e-3b1d-4c6f-9e2a-7d4b1c8f6a30
+Request log: https://www.polymorfa.com/console/acme/support-bot/logs/api?request_id=5f0c2a8e-3b1d-4c6f-9e2a-7d4b1c8f6a30
+Docs: https://docs.polymorfa.com/api/errors#whatsapp-rate-limited
+```
+
+With `--json`, the stderr error envelope carries the same values as
+`error.requestId`, `error.requestLogUrl`, and `error.docUrl`. The request log
+link is returned only for team API keys and project tokens.
+
 `POLYMORFA_BASE_URL` exists only for development and controlled testing. It
 overrides a profile endpoint and must not be placed in project files.
 

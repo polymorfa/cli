@@ -1,12 +1,13 @@
 import {
   PolymorfaAuthenticationError,
+  PolymorfaRateLimitError,
   PolymorfaCancelledError,
   PolymorfaConfigurationError,
   PolymorfaConflictError,
 } from '@polymorfa/sdk'
 import {describe, expect, test} from 'vitest'
 
-import {presentError} from '../../src/errors/present.js'
+import {presentError, renderErrorDetails} from '../../src/errors/present.js'
 import {
   EventFilterError,
   CheckpointError,
@@ -118,5 +119,45 @@ describe('presentError', () => {
       requestId: 'req_409',
       retryable: false,
     })
+  })
+
+  test('carries the request log link and doc URL from the error body', () => {
+    const error = new PolymorfaRateLimitError(
+      'WhatsApp is limiting requests.',
+      {
+        code: 'whatsapp_rate_limited',
+        requestId: 'req_body',
+        requestLogUrl:
+          'https://www.polymorfa.com/console/acme/~/logs/api?request_id=req_body',
+        docUrl: 'https://docs.polymorfa.com/api/errors#whatsapp-rate-limited',
+      },
+    )
+    const presented = presentError(error)
+    expect(presented).toEqual({
+      category: 'rate_limit',
+      code: 'whatsapp_rate_limited',
+      exitCode: 5,
+      message: 'WhatsApp is limiting requests.',
+      requestId: 'req_body',
+      requestLogUrl:
+        'https://www.polymorfa.com/console/acme/~/logs/api?request_id=req_body',
+      docUrl: 'https://docs.polymorfa.com/api/errors#whatsapp-rate-limited',
+      retryable: true,
+    })
+    expect(renderErrorDetails(presented)).toBe(
+      [
+        'Error: WhatsApp is limiting requests.',
+        'Request ID: req_body',
+        'Request log: https://www.polymorfa.com/console/acme/~/logs/api?request_id=req_body',
+        'Docs: https://docs.polymorfa.com/api/errors#whatsapp-rate-limited',
+        '',
+      ].join('\n'),
+    )
+  })
+
+  test('prints only the message when the API returned no links', () => {
+    expect(renderErrorDetails(presentError(new Error('socket exploded')))).toBe(
+      'Error: socket exploded\n',
+    )
   })
 })
