@@ -2,9 +2,9 @@
 
 - **Status:** Implemented against Calls contract revision 1, unpublished
 - **Reviewed:** 2026-09-17
-- **SDK baseline:** `@polymorfa/sdk` and `@polymorfa/calls` at
-  `polymorfa/sdks` commit `a65291cf6de0574b655affdcab5e6fe44c517b53`
-  (not yet pushed)
+- **SDK baseline:** `@polymorfa/sdk` (including the `@polymorfa/sdk/calls`
+  subpath) at `polymorfa/sdks` commit
+  `70b671eb5bf9a094ec3a5c8e51afa6f425251218`
 
 ## Sources reviewed
 
@@ -17,7 +17,7 @@
   `session` and `participant` query parameters, 60-second re-validation, and
   the 4401, 4409, 4429, 4400, and 1013 close codes.
 - The public guide for Calls.
-- `MessagingClient.voip` and the public `@polymorfa/calls` entry point
+- `MessagingClient.voip` and the public `@polymorfa/sdk/calls` entry point
   (`CallsClient`, `Call`, and the Calls error classes).
 
 ## Shipped command tree
@@ -120,7 +120,7 @@ internal SDK module.
   client generates it; status output reports it.
 - **Runtime.** Socket commands need a global `WebSocket` (Node.js 22 or
   newer). On older runtimes they fail with a configuration error before
-  connecting. REST commands keep the Node.js 20 floor.
+  connecting. The CLI as a whole requires Node.js 22 or newer.
 
 ## Explicit gaps
 
@@ -129,6 +129,6 @@ internal SDK module.
 - `calls media` does not attach to a call that was already ringing or answered
   before it started, and carries no video.
 - `calls watch` does not report outbound calls placed by other participants.
-- The `@polymorfa/calls` dependency is not published and cannot be installed
-  from a Git subdirectory with npm. The CLI cannot release until both SDK
-  packages are published with compatible semver ranges.
+- `@polymorfa/sdk` (with its `@polymorfa/sdk/calls` subpath) is not
+  published; development pins an exact Git commit. The CLI cannot release
+  until `@polymorfa/sdk` is published with a compatible semver range.

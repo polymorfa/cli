@@ -8,8 +8,7 @@ access until `@polymorfa/cli` is released publicly.
 
 ## Requirements
 
-- Node.js 20 or newer; `calls watch` and `calls media` require Node.js 22 or
-  newer
+- Node.js 22 or newer
 - A Polymorfa organization API key or exact-project token for developer requests
 - A server API key or short-lived client token for Messaging requests
 
@@ -1013,7 +1012,7 @@ npm run verify
 
 The verification gate checks formatting, lint, strict TypeScript, tests,
 production build, npm package contents, and the production dependency audit on
-Node.js 20 and 22 in hosted CI.
+Node.js 22 in hosted CI.
 
 ### Guided session creation and configuration
 

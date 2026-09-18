@@ -5,7 +5,7 @@
   "type": "module",
   "license": "MIT",
   "engines": {
-    "node": ">=20"
+    "node": ">=22"
   },
   "bin": {
     "polymorfa": "./bin/run.js"
@@ -33,8 +33,7 @@
     "@modelcontextprotocol/server": "2.0.0",
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/calls": "0.1.0-dev.0",
-    "@polymorfa/sdk": "github:polymorfa/sdks#fc6968c0a58e65c34d370b8ab4e4e8cabd9ece53",
+    "@polymorfa/sdk": "github:polymorfa/sdks#70b671eb5bf9a094ec3a5c8e51afa6f425251218",
     "zod": "4.2.0"
   },
   "devDependencies": {

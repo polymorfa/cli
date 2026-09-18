@@ -143,13 +143,12 @@ hatch to paper over a missing public contract. The explicit `api` command is
 the user-directed low-level escape hatch and keeps the SDK's authentication,
 transport, retry, pagination, and error behavior.
 
-The CLI depends on the root server package and on `@polymorfa/calls`, the
-programmatic Calls client, for the call event stream and call audio. It uses
-only the public, neutral entry point of `@polymorfa/calls`, never its internal
+The CLI depends on the root server package and on its `@polymorfa/sdk/calls`
+subpath, the programmatic Calls client, for the call event stream and call
+audio. It uses only that public, neutral entry point, never the Calls internal
 module. Browser, React, Next.js, UI, Elements, and Devtools SDK workspaces are
-not CLI runtime dependencies. npm cannot install a Git subdirectory, so
-`@polymorfa/calls` resolves only after it is published; until then development
-installs unpack the packed workspace locally.
+not CLI runtime dependencies. The Calls client ships inside `@polymorfa/sdk`,
+so the pinned Git commit installs it with no separate package.
 
 ## Internal boundaries
 
@@ -1038,7 +1037,7 @@ maintenance work.
 The current implementation branch contains working, unpublished vertical
 slices:
 
-- the installable `polymorfa` ESM executable on Node.js 20 or newer;
+- the installable `polymorfa` ESM executable on Node.js 22 or newer;
 - `polymorfa version` with human, JSON, and quiet output;
 - `polymorfa api <endpoint>` for Messaging or Platform credentials;
 - GET query fields, JSON request fields, custom headers, file or bounded stdin

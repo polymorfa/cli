@@ -10,7 +10,7 @@ import {
   type CallClaim,
   type CallEndReason,
   type CallState,
-} from '@polymorfa/calls'
+} from '@polymorfa/sdk/calls'
 import {
   PolymorfaAuthenticationError,
   PolymorfaAuthorizationError,

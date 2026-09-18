@@ -57,7 +57,15 @@ export async function startCallsServer(
         url: request.url ?? '',
       }
       requests.push(captured)
-      const response = (await options.rest?.(captured)) ?? {
+      let fixture: ResponseFixture | undefined
+      try {
+        fixture = await options.rest?.(captured)
+      } catch (error) {
+        // A rejecting fixture must not leave the client waiting on a reply.
+        reply.destroy(error instanceof Error ? error : undefined)
+        return
+      }
+      const response = fixture ?? {
         body: {error: 'No REST fixture.'},
         status: 500,
       }
