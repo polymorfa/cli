@@ -461,7 +461,7 @@ polymorfa calls media --session support --place +15550100 \
   --input prompt.pcm --leave-on-eof --output reply.pcm
 
 polymorfa calls settings get --session support
-polymorfa calls settings set --session support --include-self-audio=true
+polymorfa calls settings set --session support --no-conference-mode
 polymorfa calls settings set --session support --calls-enabled=false \
   --expected-revision 3
 polymorfa calls settings set --session support \
@@ -496,8 +496,11 @@ never answers or declines on its own.
   API key. `--calls-enabled=false` turns calling off for the session: placing,
   answering and joining calls then exit with code 3 (`calls_disabled`),
   incoming calls are declined, and calls in progress continue.
-  `--include-self-audio` controls whether the merged audio a
-  connection receives includes its own audio. It is off by default.
+  Conference mode is on by default: every participant you connect to a call
+  (apps, bots, and SIP trunk callers) hears the WhatsApp party and each other.
+  `--no-conference-mode` turns it off, so each participant hears only the
+  WhatsApp party; `--conference-mode` turns it back on. The WhatsApp party
+  always hears all of your participants, and nobody hears their own audio.
   `--inbound-route sip_trunk` with `--sip-trunk` also sends incoming calls to a
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
   call. On a Cloud API session, `--host-cloud-api-calls=true` has Polymorfa

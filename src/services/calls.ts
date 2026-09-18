@@ -256,7 +256,7 @@ export interface CallSettingsChanges {
   /** Apply only if the settings still have this revision. */
   readonly expectedRevision?: number
   readonly hostCloudApiCalls?: boolean
-  readonly includeSelfAudio?: boolean
+  readonly conferenceMode?: boolean
   readonly inboundRoute?: CallInboundRoute
   readonly sipClaim?: boolean
   readonly sipTrunkId?: string
@@ -293,9 +293,9 @@ export async function updateCallSettings(
     ...(changes.callsEnabled === undefined
       ? {}
       : {callsEnabled: changes.callsEnabled}),
-    ...(changes.includeSelfAudio === undefined
+    ...(changes.conferenceMode === undefined
       ? {}
-      : {includeSelfAudio: changes.includeSelfAudio}),
+      : {conferenceMode: changes.conferenceMode}),
     ...(inboundRoute === undefined ? {} : {inboundRoute}),
     ...(changes.sipTrunkId === undefined
       ? {}
@@ -394,7 +394,7 @@ export function renderCallSettings(
   return [
     `Session\t${session}`,
     `Calls\t${settings.callsEnabled === false ? 'off' : 'on'}`,
-    `Include self audio\t${yesNo(settings.includeSelfAudio)}`,
+    `Conference mode\t${settings.conferenceMode === false ? 'off' : 'on'}`,
     `Incoming calls\t${settings.inboundRoute === 'sip_trunk' ? 'clients and SIP trunk' : 'clients'}`,
     ...(settings.inboundRoute === 'sip_trunk'
       ? [

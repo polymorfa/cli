@@ -4,7 +4,7 @@
 - **Reviewed:** 2026-09-17
 - **SDK baseline:** `@polymorfa/sdk` (including the `@polymorfa/sdk/calls`
   subpath) at `polymorfa/sdks` commit
-  `589618b0ba3ac2683effcfdd5ba0dd4ec0a0fcf2`
+  `94bfd09825817f842434e206e6a77adb5cc0c414`
 
 ## Sources reviewed
 
@@ -35,7 +35,7 @@ calls
         [--input <file|->] [--output <file|->] [--leave-on-eof] [--video]
   settings
     get --session <id>
-    set --session <id> --include-self-audio=<true|false>
+    set --session <id> [--[no-]conference-mode] [--calls-enabled=<true|false>] ...
 ```
 
 ## Operation mapping

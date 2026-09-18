@@ -313,7 +313,7 @@ describe('unified calls commands', () => {
   test('reads and replaces session call settings with a server API key', async () => {
     server = await startHttpServer({
       body: {
-        data: {includeSelfAudio: true, updatedAt: '2026-09-16T10:00:00.000Z'},
+        data: {conferenceMode: false, updatedAt: '2026-09-16T10:00:00.000Z'},
         success: true,
       },
     })
@@ -323,17 +323,17 @@ describe('unified calls commands', () => {
     )
     const updated = await apiKey(() =>
       runCommand(
-        'calls settings set --session support/main --include-self-audio=true --json',
+        'calls settings set --session support/main --no-conference-mode --json',
       ),
     )
 
     expect(viewed.error).toBeUndefined()
     expect(viewed.stdout).toBe(
-      'Session\tsupport/main\nCalls\ton\nInclude self audio\tyes\nIncoming calls\tclients\nCloud API calls answered by\tyour Graph API integration\nRevision\t0\nUpdated\t2026-09-16T10:00:00.000Z\n',
+      'Session\tsupport/main\nCalls\ton\nConference mode\toff\nIncoming calls\tclients\nCloud API calls answered by\tyour Graph API integration\nRevision\t0\nUpdated\t2026-09-16T10:00:00.000Z\n',
     )
     expect(updated.error).toBeUndefined()
     expect(jsonData(updated.stdout)).toEqual({
-      includeSelfAudio: true,
+      conferenceMode: false,
       updatedAt: '2026-09-16T10:00:00.000Z',
     })
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
@@ -341,13 +341,13 @@ describe('unified calls commands', () => {
       'PUT /platform/sessions/support%2Fmain/call-settings',
     ])
     expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
-      includeSelfAudio: true,
+      conferenceMode: false,
     })
   })
 
   test('sends only the settings it is given', async () => {
     const routed = {
-      includeSelfAudio: true,
+      conferenceMode: true,
       inboundRoute: 'sip_trunk',
       revision: 5,
       sipClaim: false,
@@ -356,10 +356,8 @@ describe('unified calls commands', () => {
     }
     server = await startHttpServer({body: {data: routed, success: true}})
 
-    const selfAudio = await apiKey(() =>
-      runCommand(
-        'calls settings set --session support --include-self-audio=true',
-      ),
+    const conference = await apiKey(() =>
+      runCommand('calls settings set --session support --conference-mode'),
     )
     const trunk = await apiKey(() =>
       runCommand(
@@ -390,13 +388,14 @@ describe('unified calls commands', () => {
       runCommand('calls settings set --session support'),
     )
 
-    for (const ok of [selfAudio, trunk, back, keepTrunk, hosting]) {
+    for (const ok of [conference, trunk, back, keepTrunk, hosting]) {
       expect(ok.error).toBeUndefined()
     }
-    expect(selfAudio.stdout).toContain('Incoming calls\tclients and SIP trunk')
-    expect(selfAudio.stdout).toContain(`SIP trunk\t${TRUNK_ID}`)
-    expect(selfAudio.stdout).toContain('SIP answer claims call\tno')
-    expect(selfAudio.stdout).toContain(
+    expect(conference.stdout).toContain('Conference mode\ton')
+    expect(conference.stdout).toContain('Incoming calls\tclients and SIP trunk')
+    expect(conference.stdout).toContain(`SIP trunk\t${TRUNK_ID}`)
+    expect(conference.stdout).toContain('SIP answer claims call\tno')
+    expect(conference.stdout).toContain(
       'Cloud API calls answered by\tyour Graph API integration',
     )
     expect(server.requests.map(({method}) => method)).toEqual([
@@ -409,7 +408,7 @@ describe('unified calls commands', () => {
     expect(
       server.requests.map(({body}) => JSON.parse(body) as unknown),
     ).toEqual([
-      {includeSelfAudio: true},
+      {conferenceMode: true},
       {inboundRoute: 'sip_trunk', sipTrunkId: TRUNK_ID},
       {inboundRoute: 'clients', sipClaim: false},
       {inboundRoute: 'sip_trunk'},
@@ -425,7 +424,7 @@ describe('unified calls commands', () => {
         body: {
           data: {
             callsEnabled: false,
-            includeSelfAudio: false,
+            conferenceMode: true,
             inboundRoute: 'clients',
             revision: 4,
             sipClaim: true,
@@ -485,7 +484,7 @@ describe('unified calls commands', () => {
         body: {
           data: {
             callsEnabled: false,
-            includeSelfAudio: false,
+            conferenceMode: true,
             inboundRoute: 'clients',
             revision: 1,
             sipClaim: true,
@@ -541,7 +540,12 @@ describe('unified calls commands', () => {
     )
     const value = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --include-self-audio=yes --json',
+        'calls settings set --session support --conference-mode=yes --json',
+      ),
+    )
+    const retired = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --include-self-audio=true --json',
       ),
     )
 
@@ -550,6 +554,7 @@ describe('unified calls commands', () => {
       'Platform API requests require POLYMORFA_API_KEY',
     )
     expect(exitCode(value.error)).toBe(2)
+    expect(exitCode(retired.error)).toBe(2)
     expect(server.requests).toHaveLength(0)
   })
 
