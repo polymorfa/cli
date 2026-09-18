@@ -1085,6 +1085,46 @@ checkpoints only after stdout and every forwarding destination have accepted an
 event. A cursor gap stops with a nonzero exit unless `--on-gap continue` was
 selected.
 
+## Trigger test events
+
+`polymorfa trigger` sends a signed test event for a Test number. The event
+reaches your webhooks, event history, and a running `polymorfa listen` with
+`source: "test"`, and does not change the Test number. Real numbers are
+refused. Each project can trigger 30 test events per minute. It requires a
+server API key with `sandbox:write` (`sandbox:read` for `--list`) and Test
+numbers access.
+
+Run a listener in one terminal:
+
+```shell
+polymorfa listen --project PROJECT_ID --forward-to http://127.0.0.1:3000/webhooks
+```
+
+Trigger events in another:
+
+```shell
+polymorfa trigger --list --project PROJECT_ID
+polymorfa trigger message.received --project PROJECT_ID --session my-test-number --text "hi"
+polymorfa trigger message.received --project PROJECT_ID --session my-test-number \
+  --override mediaType=image --override caption=look
+polymorfa trigger message.ack --project PROJECT_ID --session my-test-number --override ackStatus=read
+polymorfa trigger message.failed --project PROJECT_ID --session my-test-number
+polymorfa trigger call.received --project PROJECT_ID --session my-test-number --override video=true
+polymorfa trigger template.status --project PROJECT_ID --session my-test-number \
+  --override templateStatus=REJECTED --override reason=INVALID_FORMAT
+polymorfa trigger bansafe.enforcement --project PROJECT_ID --session my-test-number
+```
+
+The trigger prints the event ID; the listener prints the same line
+(`message.received <eventId>`) when the event arrives. Fixtures are
+`message.received`, `message.ack`, `message.failed`, `call.received`,
+`call.missed`, `call.ended`, `session.status`, `template.status`,
+`bansafe.enforcement`, and `bansafe.risk_changed`. `--override key=value`
+sets one payload field and can be repeated; `--text` and `--from` are
+shortcuts. `--from-session OTHER_TEST_NUMBER` sends a real simulated text from
+another Test number in the project instead, producing an ordinary
+`message.received` event you can reply to. Use `--json` for one JSON document.
+
 ## MCP listener controls
 
 The package includes a standards-based stdio MCP server for Codex and Claude:
