@@ -268,9 +268,12 @@ Add `--remove` to `message star` to unstar. Text sends accept repeatable
 `--mention` with a Polymorfa user ID, `--reply-to` with a Polymorfa message ID,
 and `--forwarded`. `--to` and `--chat` accept a conversation ID, E.164 phone
 number, or BSUID. The API resolves message direction and sender identity.
-Every mutation accepts `--idempotency-key` for safe retry identity. Server API
-keys require `messages:write`; client tokens remain subject to their live
-recipient rules, allowed actions, and rate limits.
+Every mutation accepts `--idempotency-key` for safe retry identity. `message
+send text` and `message react` generate a key when you omit it and send it as
+`Idempotency-Key`; the API replays the first result for 24 hours instead of
+sending again. Pass your own key to make a retried script invocation safe.
+Server API keys require `messages:write`; client tokens remain subject to their
+live recipient rules, allowed actions, and rate limits.
 
 ### Typed sends
 
@@ -964,8 +967,10 @@ Follow the returned operation with `polymorfa operation wait` or
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
 is synchronous and reports only the number moved. Every mutation accepts
-`--idempotency-key`, but the API does not persist the header, so it must not be
-treated as server-side deduplication.
+`--idempotency-key`. `campaign create` and `campaign launch` generate one when
+you omit it, and the API deduplicates those two for 24 hours. Pause, resume,
+stop, and requeue do not persist the header, so it is not server-side
+deduplication for them.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
 recipient, event, history, or replay route. The CLI does not substitute

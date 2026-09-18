@@ -2,6 +2,7 @@ import {Flags} from '@oclif/core'
 
 import {readJsonInput} from '../../api/request.js'
 import {BaseCommand} from '../../base-command.js'
+import {idempotencyKey} from '../../input/idempotency.js'
 import {createCampaign, renderCampaign} from '../../services/campaigns.js'
 
 export default class CampaignCreate extends BaseCommand {
@@ -10,7 +11,7 @@ export default class CampaignCreate extends BaseCommand {
   static override flags = {
     'idempotency-key': Flags.string({
       description:
-        'Identify this attempt (the API does not deduplicate campaign creation).',
+        'Key that makes retries of this write safe for 24 hours. Generated when omitted.',
     }),
     input: Flags.string({
       description: 'Read the campaign JSON object from a file or stdin (-).',
@@ -28,9 +29,7 @@ export default class CampaignCreate extends BaseCommand {
       await this.messagingClient(flags, {serverApiKeyOnly: 'Campaign'}),
       flags['project-slug'],
       await readJsonInput(flags.input),
-      flags['idempotency-key'] === undefined
-        ? {}
-        : {idempotencyKey: flags['idempotency-key']},
+      {idempotencyKey: idempotencyKey(flags['idempotency-key'])},
     )
     this.writeValue(result, renderCampaign(result.data), flags)
   }
