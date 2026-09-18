@@ -191,9 +191,39 @@ Every mutation accepts `--idempotency-key` for safe retry identity. Server API
 keys require `messages:write`; client tokens remain subject to their live
 recipient rules, allowed actions, and rate limits.
 
-The API does not expose message history, list, or search operations. Those
-commands are not synthesized by the CLI. Additional typed send kinds will be
-added as focused subcommands instead of a generic JSON payload interface.
+Additional typed send kinds will be added as focused subcommands instead of a
+generic JSON payload interface. The API has no message search operation.
+
+## Message history (beta)
+
+For Numbers with hosted message storage, and teams enrolled in the message
+history beta, read stored conversations and messages with a server API key.
+Conversation commands need `chats:read`; message commands need
+`messages:read`. Client tokens are rejected before any request.
+
+```shell
+polymorfa chat list --session session_123 --kind direct
+polymorfa chat get +15551234567 --session session_123
+
+polymorfa message list \
+  --session session_123 \
+  --conversation +15551234567 \
+  --direction inbound \
+  --type text,image \
+  --since 2026-09-01T00:00:00Z \
+  --json
+
+polymorfa message get 740000000001 \
+  --session session_123 \
+  --conversation +15551234567
+```
+
+Lists return one page (default 50, `--limit` up to 100). `--max-items` follows
+later pages until that many items are collected. `--json` output includes
+`page.nextCursor` and `page.previousCursor`; pass one back with `--cursor` and
+the same filters. `message list` orders newest first; use `--order asc` for
+oldest first. Media appears as media IDs for `polymorfa media download`.
+A Number without hosted message storage fails with `hms_not_enabled`.
 
 ## Media
 
