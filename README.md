@@ -152,7 +152,32 @@ polymorfa group invite-link 750000000001 --session session_123
 
 Add `--json` for complete resource data and response metadata. Group and
 participant lists are unpaged because the source API does not expose cursors.
-Mutating group commands remain under implementation.
+
+Create and change groups with a server API key that has `groups:manage`:
+
+```shell
+polymorfa group create --session session_123 \
+  --name 'Launch team' \
+  --participant 750000000001 --participant 750000000002
+
+polymorfa group participants add 750000000009 --session session_123 --participant 750000000003
+polymorfa group participants promote 750000000009 --session session_123 --participant 750000000003
+polymorfa group participants demote 750000000009 --session session_123 --participant 750000000003
+polymorfa group participants remove 750000000009 --session session_123 --participant 750000000003 --yes
+
+polymorfa group subject 750000000009 --session session_123 --value 'Launch crew'
+polymorfa group description 750000000009 --session session_123 --value ''
+
+polymorfa group settings 750000000009 --session session_123 \
+  --messaging admins --info-editing admins --member-add all --join-approval on
+```
+
+Participants are Polymorfa user IDs. Resolve phone numbers with
+`polymorfa identity resolve` first. An empty `--value` clears the description.
+`group settings` applies each requested setting with its own API call, in the
+order info editing, messaging, member add, join approval. If one fails, the
+error names the settings that were already applied. Removing participants
+requires `--yes`.
 
 ## Messages
 
@@ -191,9 +216,63 @@ Every mutation accepts `--idempotency-key` for safe retry identity. Server API
 keys require `messages:write`; client tokens remain subject to their live
 recipient rules, allowed actions, and rate limits.
 
+### Typed sends
+
+Every `message send <kind>` command accepts the same `--session`, `--to`,
+`--reply-to`, `--mention`, `--forwarded`, and `--idempotency-key` flags as
+`message send text`:
+
+```shell
+# Media from a local file (sent inline as base64) or a public URL
+polymorfa message send image --session session_123 --to +15551234567 --file ./photo.jpg --caption 'Today'
+polymorfa message send video --session session_123 --to +15551234567 --url https://example.com/clip.mp4
+polymorfa message send audio --session session_123 --to +15551234567 --file ./note.ogg --voice
+polymorfa message send document --session session_123 --to +15551234567 --file ./invoice.pdf
+
+polymorfa message send template --session session_123 --to +15551234567 \
+  --name order_update --language en_US --components components.json
+polymorfa message send location --session session_123 --to +15551234567 \
+  --lat 51.5007 --long=-0.1246 --address 'Westminster'
+polymorfa message send contact --session session_123 --to +15551234567 \
+  --name 'Ada Lovelace' --phone +15557654321
+polymorfa message send poll --session session_123 --to 730000000001 \
+  --title 'Lunch?' --option Pizza --option Sushi --multi-select
+polymorfa message send buttons --session session_123 --to +15551234567 \
+  --body 'Confirm your order?' --button reply:yes=Yes --button reply:no=No
+polymorfa message send list --session session_123 --to +15551234567 \
+  --title 'Pick a slot' --button-text Choose \
+  --row 'Morning/am9=9:00' --row 'Afternoon/pm2=14:00|Near the office'
+```
+
+- Media commands take exactly one of `--file` or `--url`. Local files are
+  limited by `--max-bytes` (100 MiB by default) and the MIME type is inferred
+  from the extension unless `--mime-type` is set. `document` sends the local
+  file name unless `--filename` overrides it. `audio --voice` sends a
+  push-to-talk voice note.
+- `template --components` reads a JSON array from a file or `-` for stdin.
+- Pass negative coordinates as `--lat=-33.86` so they are not read as flags.
+- `contact` builds a vCard 3.0 from `--name`, repeatable `--phone`, and
+  `--organization`, or sends the vCard file given by `--vcard`.
+- `poll` takes 2 to 12 unique `--option` values.
+- `buttons` takes repeatable `--button` values: `reply:<id>=<text>`,
+  `url:<text>=<url>`, `call:<text>=<+E.164>`, or `copy:<text>=<code>`.
+- `list` takes repeatable `--row` values `[<section>/]<id>=<title>[|<description>]`.
+  Rows with the same section are grouped in order.
+
+The API has no sticker send kind, so the CLI has no `message send sticker`.
+
+### Edit and delete
+
+```shell
+polymorfa message edit 740000000001 --session session_123 --chat 730000000001 --body 'Corrected text'
+polymorfa message delete 740000000001 --session session_123 --chat 730000000001 --yes
+```
+
+Edit and delete require `chats:manage`. Delete asks for confirmation; pass
+`--yes` in scripts.
+
 The API does not expose message history, list, or search operations. Those
-commands are not synthesized by the CLI. Additional typed send kinds will be
-added as focused subcommands instead of a generic JSON payload interface.
+commands are not synthesized by the CLI.
 
 ## Media
 
