@@ -63,9 +63,7 @@ describe('link and project commands', () => {
     expect(link.error, link.stderr).toBeUndefined()
     expect(JSON.parse(link.stdout)).toMatchObject({project: APP, slug: 'app'})
     expect(
-      JSON.parse(
-        await readFile(join(directory, '.polymorfa', 'project.json'), 'utf8'),
-      ),
+      JSON.parse(await readFile(join(directory, 'polymorfa.json'), 'utf8')),
     ).toEqual({project: APP, version: 1})
 
     const current = await withEnvironment(env, () =>

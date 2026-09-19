@@ -71,12 +71,12 @@ inside it uses one project:
 polymorfa project list               # projects for the current credential; * marks the current one
 polymorfa project use my-app         # store the project on the active profile
 polymorfa project use my-app --profile work
-polymorfa link --project my-app      # write .polymorfa/project.json here
+polymorfa link --project my-app      # write polymorfa.json here
 polymorfa project current            # show the project and where it comes from
 ```
 
 Commands resolve the project in this order: `--project`, the nearest
-`.polymorfa/project.json` in the current directory or a parent, then the
+`polymorfa.json` in the current directory or a parent, then the
 profile's stored project. Organization-owned commands ignore linked and profile
 projects. `--verbose` prints the link file in use.
 

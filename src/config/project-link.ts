@@ -1,12 +1,11 @@
-import {mkdir, readFile, rename, unlink, writeFile} from 'node:fs/promises'
+import {readFile, rename, unlink, writeFile} from 'node:fs/promises'
 import {randomUUID} from 'node:crypto'
 import {dirname, join, parse, resolve} from 'node:path'
 
 import {PolymorfaConfigurationError} from '@polymorfa/sdk'
 
 /** Directory-scoped project link. It never holds credentials. */
-export const LINK_DIRECTORY = '.polymorfa'
-export const LINK_FILE = 'project.json'
+export const LINK_FILE = 'polymorfa.json'
 
 export interface ProjectLink {
   readonly project: string
@@ -18,7 +17,7 @@ export interface FoundProjectLink extends ProjectLink {
 }
 
 export function linkPath(directory: string): string {
-  return join(resolve(directory), LINK_DIRECTORY, LINK_FILE)
+  return join(resolve(directory), LINK_FILE)
 }
 
 /** Find the nearest link file in `start` or one of its ancestors. */
@@ -75,8 +74,7 @@ export async function writeProjectLink(
   project: string,
 ): Promise<string> {
   const path = linkPath(directory)
-  await mkdir(dirname(path), {recursive: true})
-  const temporary = join(dirname(path), `.project-${randomUUID()}.tmp`)
+  const temporary = join(dirname(path), `.polymorfa-${randomUUID()}.tmp`)
   const link: ProjectLink = {project, version: 1}
   try {
     await writeFile(temporary, `${JSON.stringify(link, undefined, 2)}\n`, {

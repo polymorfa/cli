@@ -125,10 +125,7 @@ describe('project context', () => {
     const result = await service().link({force: false, project: 'web'})
 
     expect(result.project).toBe(WEB)
-    const contents = await readFile(
-      join(directory, '.polymorfa', 'project.json'),
-      'utf8',
-    )
+    const contents = await readFile(join(directory, 'polymorfa.json'), 'utf8')
     expect(JSON.parse(contents)).toEqual({project: WEB, version: 1})
     expect(contents).not.toContain('pmfa_')
 
@@ -200,9 +197,8 @@ describe('project context', () => {
   })
 
   test('rejects malformed link files', async () => {
-    await mkdir(join(directory, '.polymorfa'))
     await writeFile(
-      join(directory, '.polymorfa', 'project.json'),
+      join(directory, 'polymorfa.json'),
       JSON.stringify({project: APP, token: 'secret', version: 1}),
     )
     await expect(findProjectLink(directory)).rejects.toThrow('is invalid')

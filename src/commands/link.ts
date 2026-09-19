@@ -5,7 +5,7 @@ import {createProjectContextService} from '../config/project-service.js'
 
 export default class Link extends BaseCommand {
   static override description =
-    'Link the current directory to a project by writing .polymorfa/project.json.'
+    'Link the current directory to a project by writing polymorfa.json.'
 
   static override examples = [
     '<%= config.bin %> link --project my-app',

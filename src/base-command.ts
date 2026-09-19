@@ -153,7 +153,7 @@ export abstract class BaseCommand extends Command {
   }
 
   /**
-   * Project from the nearest `.polymorfa/project.json`, used only when
+   * Project from the nearest `polymorfa.json`, used only when
    * --project is absent. It ranks above the profile's stored project.
    */
   protected async linkedProject(
