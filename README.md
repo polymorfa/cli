@@ -552,6 +552,7 @@ SIP trunks connect a PBX to WhatsApp calls. They are part of Calls and need no
 enrollment. Commands require a server API key.
 
 ```shell
+polymorfa sip-trunk endpoint
 polymorfa sip-trunk list --project 018f0000-0000-7000-8000-000000000002
 polymorfa sip-trunk view 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
 polymorfa sip-trunk create --project 018f0000-0000-7000-8000-000000000002 --input trunk.json
@@ -568,6 +569,16 @@ passwords never appear in the command line. `create` refuses a body that names
 `rotate-credentials`, print the password once. `update --expected-revision`
 exits with code 4 when the trunk changed; `delete` exits with code 4 while a
 session routes calls to the trunk.
+
+`endpoint` prints the host your PBX sends SIP to, each transport with its port
+and whether it requires SRTP, and the UDP port range call audio uses. The
+address is the same for every trunk. Allow SIP and RTP in both directions
+between your PBX and the addresses the host resolves to. When the environment
+does not host SIP, `endpoint` prints `This environment has no SIP address.`
+and exits with code 0; `--json` returns the `sip_not_hosted` status with a null
+host and RTP range and no transports. `create` and `rotate-credentials` also
+print the SIP address after a new password in human output; if the address
+cannot be read, they still print the password.
 
 ## Session call rejection and stable identities
 

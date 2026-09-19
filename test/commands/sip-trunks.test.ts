@@ -43,6 +43,24 @@ const trunk = {
   updatedAt: '2026-09-17T10:00:00.000Z',
 }
 
+const hostedEndpoint = {
+  status: 'hosted',
+  host: 'sip.example.test',
+  transports: [
+    {transport: 'udp', port: 5060, srtp: 'not_supported'},
+    {transport: 'tcp', port: 5060, srtp: 'not_supported'},
+    {transport: 'tls', port: 5061, srtp: 'required'},
+  ],
+  rtp: {protocol: 'udp', portMin: 20000, portMax: 20999},
+}
+
+const notHostedEndpoint = {
+  status: 'sip_not_hosted',
+  host: null,
+  transports: [],
+  rtp: null,
+}
+
 describe('sip-trunk commands', () => {
   let server: TestHttpServer | undefined
   let directory: string | undefined
@@ -83,20 +101,23 @@ describe('sip-trunk commands', () => {
   })
 
   test('creates a trunk from a file and prints the one-time password', async () => {
-    server = await startHttpServer({
-      body: {
-        data: {
-          inboundCredentials: {
-            password: 'one-time-secret',
-            realm: 'sip.example.test',
-            username: 'pmfa_abc',
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          data: {
+            inboundCredentials: {
+              password: 'one-time-secret',
+              realm: 'sip.example.test',
+              username: 'pmfa_abc',
+            },
+            trunk,
           },
-          trunk,
+          success: true,
         },
-        success: true,
+        status: 201,
       },
-      status: 201,
-    })
+      {body: {data: hostedEndpoint, success: true}},
+    ])
     directory = await mkdtemp(join(tmpdir(), 'polymorfa-sip-'))
     const input = join(directory, 'trunk.json')
     const body = {
@@ -126,12 +147,153 @@ describe('sip-trunk commands', () => {
     expect(created.error).toBeUndefined()
     expect(created.stdout).toContain('Password\tone-time-secret')
     expect(created.stdout).toContain('cannot be shown again')
+    expect(created.stdout).toContain(
+      'SIP address\nHost\tsip.example.test\nTransport\tUDP 5060, SRTP not supported',
+    )
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       ...body,
       projectId: PROJECT,
     })
     expect(exitCode(refused.error)).toBe(2)
-    expect(server.requests).toHaveLength(1)
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'POST /platform/sip-trunks',
+      'GET /platform/sip/endpoint',
+    ])
+  })
+
+  test('shows the SIP address of the environment', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: hostedEndpoint, success: true}},
+      {body: {data: hostedEndpoint, success: true}},
+      {body: {data: notHostedEndpoint, success: true}},
+    ])
+
+    const hosted = await apiKey(() => runCommand('sip-trunk endpoint'))
+    const json = await apiKey(() => runCommand('sip-trunk endpoint --json'))
+    const notHosted = await apiKey(() => runCommand('sip-trunk endpoint'))
+
+    expect(hosted.error).toBeUndefined()
+    expect(hosted.stdout).toBe(
+      [
+        'Host\tsip.example.test',
+        'Transport\tUDP 5060, SRTP not supported',
+        'Transport\tTCP 5060, SRTP not supported',
+        'Transport\tTLS 5061, SRTP required',
+        'RTP\tUDP 20000-20999',
+        'Allow SIP and RTP in both directions between your PBX and the addresses sip.example.test resolves to.',
+        '',
+      ].join('\n'),
+    )
+    expect(json.error).toBeUndefined()
+    expect((JSON.parse(json.stdout) as {data: unknown}).data).toEqual(
+      hostedEndpoint,
+    )
+    expect(notHosted.error).toBeUndefined()
+    expect(notHosted.stdout).toBe('This environment has no SIP address.\n')
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/sip/endpoint',
+      'GET /platform/sip/endpoint',
+      'GET /platform/sip/endpoint',
+    ])
+  })
+
+  test('reports sip_not_hosted as data in JSON output', async () => {
+    server = await startHttpServer({
+      body: {data: notHostedEndpoint, success: true},
+    })
+
+    const json = await apiKey(() => runCommand('sip-trunk endpoint --json'))
+
+    expect(json.error).toBeUndefined()
+    expect((JSON.parse(json.stdout) as {data: unknown}).data).toEqual(
+      notHostedEndpoint,
+    )
+  })
+
+  test('fails on an API error or an invalid SIP address response', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          error: {
+            code: 'permission_denied',
+            message: 'The credential does not have access to this resource.',
+            type: 'permission_error',
+          },
+          success: false,
+        },
+        status: 403,
+      },
+      {
+        body: {
+          data: {...notHostedEndpoint, host: 'made-up.example.test'},
+          success: true,
+        },
+      },
+    ])
+
+    const denied = await apiKey(() => runCommand('sip-trunk endpoint'))
+    const invalid = await apiKey(() => runCommand('sip-trunk endpoint'))
+
+    expect(exitCode(denied.error)).toBe(3)
+    expect(denied.stderr).toContain('does not have access')
+    expect(denied.stdout).toBe('')
+    expect(invalid.error).toBeDefined()
+    expect(invalid.stdout).not.toContain('made-up.example.test')
+  })
+
+  test('still prints rotated credentials when the SIP address is unavailable', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          data: {
+            password: 'rotated',
+            realm: 'sip.example.test',
+            username: 'pmfa_abc',
+          },
+          success: true,
+        },
+      },
+      {
+        body: {
+          error: {code: 'permission_denied', message: 'Denied.'},
+          success: false,
+        },
+        status: 403,
+      },
+      {
+        body: {
+          data: {
+            password: 'rotated-again',
+            realm: 'sip.example.test',
+            username: 'pmfa_abc',
+          },
+          success: true,
+        },
+      },
+      {body: {data: notHostedEndpoint, success: true}},
+    ])
+
+    const failed = await apiKey(() =>
+      runCommand(`sip-trunk rotate-credentials ${TRUNK_ID} --yes`),
+    )
+    const notHosted = await apiKey(() =>
+      runCommand(`sip-trunk rotate-credentials ${TRUNK_ID} --yes`),
+    )
+
+    expect(failed.error).toBeUndefined()
+    expect(failed.stdout).toContain('Password\trotated\n')
+    expect(failed.stdout).not.toContain('SIP address')
+    expect(notHosted.error).toBeUndefined()
+    expect(notHosted.stdout).toContain('Password\trotated-again')
+    expect(notHosted.stdout).toContain(
+      'SIP address\nThis environment has no SIP address.',
+    )
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      `POST /platform/sip-trunks/${TRUNK_ID}/credentials`,
+      'GET /platform/sip/endpoint',
+      `POST /platform/sip-trunks/${TRUNK_ID}/credentials`,
+      'GET /platform/sip/endpoint',
+    ])
   })
 
   test('disables a trunk with a revision guard and reports conflicts', async () => {

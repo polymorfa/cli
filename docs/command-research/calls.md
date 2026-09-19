@@ -50,6 +50,7 @@ calls
 | `calls invite`                 | `POST /messaging/voip/calls/{id}/participants`   | `voip.addParticipant`               |
 | `calls settings get`           | `GET /platform/sessions/{session}/call-settings` | `voip.retrieveCallSettings`         |
 | `calls settings set`           | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
+| `sip-trunk endpoint`           | `GET /platform/sip/endpoint`                     | `raw.request` (see below)           |
 | `sip-trunk list`               | `GET /platform/sip-trunks`                       | `sipTrunks.list`                    |
 | `sip-trunk view`               | `GET /platform/sip-trunks/{id}`                  | `sipTrunks.retrieve`                |
 | `sip-trunk create`             | `POST /platform/sip-trunks`                      | `sipTrunks.create`                  |
@@ -58,6 +59,11 @@ calls
 | `sip-trunk rotate-credentials` | `POST /platform/sip-trunks/{id}/credentials`     | `sipTrunks.rotateCredentials`       |
 | `calls watch`                  | Lifecycle socket                                 | `CallsClient` events                |
 | `calls media`                  | Place or accept, then the media socket           | `CallsClient`, `Call`, `call.audio` |
+
+The pinned SDK has no `sipTrunks.endpoint` yet, so `sip-trunk endpoint` reads
+`GET /platform/sip/endpoint` through the SDK raw client and validates the
+response itself. Switch it to `sipTrunks.endpoint` once an SDK release with that
+method is pinned.
 
 The CLI uses only the neutral public calling surface. It does not expose
 offers, candidates, session descriptions, or media framing, and it imports no

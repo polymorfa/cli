@@ -1,5 +1,6 @@
 import {
   PolymorfaConfigurationError,
+  PolymorfaServerError,
   PolymorfaValidationError,
   type Client as PlatformClient,
   type CreateSipTrunkInput,
@@ -121,6 +122,64 @@ export async function rotateSipTrunkCredentials(
   return result(response.data, response.metadata)
 }
 
+export type SipEndpointTransportName = 'udp' | 'tcp' | 'tls'
+
+export interface SipEndpointTransport {
+  readonly transport: SipEndpointTransportName
+  readonly port: number
+  readonly srtp: 'required' | 'not_supported'
+}
+
+/**
+ * The SIP address of the environment, from `GET /platform/sip/endpoint`.
+ * `sip_not_hosted` is a normal answer: the environment has no SIP address,
+ * `host` and `rtp` are null and `transports` is empty.
+ */
+export interface SipEndpoint {
+  readonly status: 'hosted' | 'sip_not_hosted'
+  readonly host: string | null
+  readonly transports: readonly SipEndpointTransport[]
+  readonly rtp: {
+    readonly protocol: 'udp'
+    readonly portMin: number
+    readonly portMax: number
+  } | null
+}
+
+/**
+ * The pinned SDK has no `sipTrunks.endpoint()` yet, so this reads the
+ * operation through the SDK's raw client (same transport, credential, retries
+ * and error mapping) and checks the envelope here. Switch to
+ * `client.sipTrunks.endpoint()` once the SDK release that adds it is pinned.
+ */
+export async function getSipEndpoint(
+  client: PlatformClient,
+): Promise<SipTrunkResult<SipEndpoint>> {
+  const response = await client.raw.request({
+    method: 'GET',
+    path: '/platform/sip/endpoint',
+  })
+  return result(
+    decodeSipEndpoint(response.data, response.metadata),
+    response.metadata,
+  )
+}
+
+/**
+ * The SIP address to print next to new inbound credentials. A failure here
+ * must never hide a password that can be shown only once, so it yields
+ * undefined instead of throwing.
+ */
+export async function trySipEndpoint(
+  client: PlatformClient,
+): Promise<SipEndpoint | undefined> {
+  try {
+    return (await getSipEndpoint(client)).data
+  } catch {
+    return undefined
+  }
+}
+
 // ── Rendering ──────────────────────────────────────────────────────────────
 
 export function renderSipTrunks(trunks: readonly SipTrunk[]): string {
@@ -193,6 +252,38 @@ export function renderSipTrunkCredentials(
   ].join('\n')
 }
 
+export function renderSipEndpoint(endpoint: SipEndpoint): string {
+  if (endpoint.status !== 'hosted' || endpoint.host === null) {
+    return 'This environment has no SIP address.'
+  }
+  const lines = [`Host\t${endpoint.host}`]
+  for (const transport of endpoint.transports) {
+    lines.push(
+      `Transport\t${transport.transport.toUpperCase()} ${transport.port}, SRTP ${
+        transport.srtp === 'required' ? 'required' : 'not supported'
+      }`,
+    )
+  }
+  if (endpoint.rtp !== null) {
+    lines.push(
+      `RTP\t${endpoint.rtp.protocol.toUpperCase()} ${endpoint.rtp.portMin}-${endpoint.rtp.portMax}`,
+    )
+  }
+  lines.push(
+    `Allow SIP and RTP in both directions between your PBX and the addresses ${endpoint.host} resolves to.`,
+  )
+  return lines.join('\n')
+}
+
+/** Credentials followed by the SIP address the PBX registers against, when known. */
+export function withSipEndpoint(
+  human: string,
+  endpoint: SipEndpoint | undefined,
+): string {
+  if (endpoint === undefined) return human
+  return `${human}\n\nSIP address\n${renderSipEndpoint(endpoint)}`
+}
+
 export function renderSipTrunkDeleted(deleted: SipTrunkDeleted): string {
   return `Deleted SIP trunk ${deleted.id}.`
 }
@@ -212,6 +303,71 @@ function validateTrunkId(trunkId: string): string {
     )
   }
   return trimmed
+}
+
+const SIP_TRANSPORTS: ReadonlySet<string> = new Set(['udp', 'tcp', 'tls'])
+
+function decodeSipEndpoint(
+  body: unknown,
+  metadata: ResponseMetadata,
+): SipEndpoint {
+  const data = isRecord(body) ? body.data : undefined
+  if (isSipEndpoint(data)) return data
+  throw new PolymorfaServerError(
+    'The Polymorfa API returned an invalid SIP address response.',
+    {
+      code: 'invalid_response',
+      details: body,
+      metadata,
+      status: metadata.status,
+      ...(metadata.requestId === undefined
+        ? {}
+        : {requestId: metadata.requestId}),
+    },
+  )
+}
+
+function isSipEndpoint(value: unknown): value is SipEndpoint {
+  if (!isRecord(value) || !Array.isArray(value.transports)) return false
+  if (value.status === 'sip_not_hosted') {
+    return (
+      value.host === null && value.rtp === null && value.transports.length === 0
+    )
+  }
+  if (value.status !== 'hosted') return false
+  if (typeof value.host !== 'string' || value.host.length === 0) return false
+  const rtp = value.rtp
+  if (
+    rtp !== null &&
+    !(
+      isRecord(rtp) &&
+      rtp.protocol === 'udp' &&
+      isPort(rtp.portMin) &&
+      isPort(rtp.portMax)
+    )
+  ) {
+    return false
+  }
+  return value.transports.every(
+    (transport) =>
+      isRecord(transport) &&
+      typeof transport.transport === 'string' &&
+      SIP_TRANSPORTS.has(transport.transport) &&
+      isPort(transport.port) &&
+      (transport.srtp === 'required' || transport.srtp === 'not_supported'),
+  )
+}
+
+function isPort(value: unknown): value is number {
+  return (
+    Number.isInteger(value) &&
+    (value as number) > 0 &&
+    (value as number) <= 65535
+  )
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 function objectInput(input: unknown, label: string): Record<string, unknown> {
