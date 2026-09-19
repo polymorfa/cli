@@ -466,6 +466,10 @@ polymorfa calls settings set --session support --calls-enabled=false \
   --expected-revision 3
 polymorfa calls settings set --session support \
   --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+
+polymorfa calls retention get
+polymorfa calls retention set --policy compliance --expected-revision 0
+polymorfa calls retention set --policy custom --days 14 --expected-revision 1 --yes
 ```
 
 Every inbound call rings until a participant answers or declines it. The CLI
@@ -512,6 +516,24 @@ never answers or declines on its own.
   change only if the settings still have that revision; if someone changed
   them first, the command exits with code 4 (`state_conflict`) and changes
   nothing.
+- **Call data retention.** `calls retention` reads and changes how long
+  Polymorfa keeps your team's call data. It uses the Platform API; client
+  tokens fail with the Platform credential error. `--policy short`,
+  `standard`, `extended`, or `compliance` keeps call data for 7, 30, 90, or
+  365 days; `--policy custom --days <n>` keeps it for 1 to 2555 days. Teams
+  without a saved setting use `extended` (90 days) at revision `0`. Polymorfa
+  deletes call data within 24 hours after it becomes older than the period.
+  `calls retention get` prints the policy, period, the kinds of call data it
+  applies to, and the `revision`. `calls retention set` requires
+  `--expected-revision <n>`: it reads the setting first and changes it only if
+  it still has that revision; otherwise it exits with code 4
+  (`state_conflict`) and changes nothing, so read the setting again and retry.
+  A shorter period also applies to call data already stored, and deleted call
+  data cannot be recovered. The command asks you to type `yes` before it
+  shortens the period; `--yes` confirms without a prompt, and without a
+  terminal the command exits with code 2 (`confirmation_required`) unless you
+  pass `--yes`. Changing retention requires a team API key with the
+  `sessions:manage` scope; other keys exit with code 3.
 
 `calls watch` streams inbound calls and their progress: `incoming`, `claim`,
 `state`, `participant_joined`, `participant_state`, `participant_left`, and

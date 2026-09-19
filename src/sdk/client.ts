@@ -2,6 +2,7 @@ import {
   Client,
   MessagingClient,
   PolymorfaConfigurationError,
+  type ApiResponse,
   type ClientInstance,
   type RawClient,
   type SharedClientOptions,
@@ -51,6 +52,57 @@ export function createCallSettingsClient(
     credential: {type: 'apiKey', value: environment.credential.value},
     ...sharedOptions(environment),
   })
+}
+
+export type CallRetentionPolicy =
+  'short' | 'standard' | 'extended' | 'compliance' | 'custom'
+
+/** Team call data retention, as `/platform/call-retention` returns it. */
+export interface CallRetention {
+  readonly appliesTo: readonly string[]
+  readonly policy: CallRetentionPolicy
+  readonly retentionDays: number
+  readonly revision: number
+  readonly updatedAt: string | null
+}
+
+export interface UpdateCallRetentionInput {
+  readonly expectedRevision?: number
+  readonly policy: CallRetentionPolicy
+  readonly retentionDays?: number
+}
+
+export interface CallRetentionClient {
+  retrieve(): Promise<ApiResponse<{readonly data: CallRetention}>>
+  update(
+    input: UpdateCallRetentionInput,
+  ): Promise<ApiResponse<{readonly data: CallRetention}>>
+}
+
+/**
+ * Team call data retention on the Platform API. The pinned SDK has no typed
+ * resource for it yet, so this adapter sends the two documented requests
+ * through the organization client's raw transport. The SDK keeps its
+ * credential, retry, and error mapping; replace this with the SDK's
+ * `callRetention` resource once a release that includes it is pinned.
+ */
+export function createCallRetentionClient(
+  environment: ResolvedEnvironment,
+): CallRetentionClient {
+  const raw = createPlatformClient(environment).raw
+  return {
+    retrieve: () =>
+      raw.request<{readonly data: CallRetention}>({
+        method: 'GET',
+        path: '/platform/call-retention',
+      }),
+    update: (input) =>
+      raw.request<{readonly data: CallRetention}>({
+        body: input,
+        method: 'PUT',
+        path: '/platform/call-retention',
+      }),
+  }
 }
 
 export function createPlatformClient(

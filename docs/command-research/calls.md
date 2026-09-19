@@ -50,6 +50,8 @@ calls
 | `calls invite`                 | `POST /messaging/voip/calls/{id}/participants`   | `voip.addParticipant`               |
 | `calls settings get`           | `GET /platform/sessions/{session}/call-settings` | `voip.retrieveCallSettings`         |
 | `calls settings set`           | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
+| `calls retention get`          | `GET /platform/call-retention`                   | raw request (CLI adapter)           |
+| `calls retention set`          | `PUT /platform/call-retention`                   | raw request (CLI adapter)           |
 | `sip-trunk list`               | `GET /platform/sip-trunks`                       | `sipTrunks.list`                    |
 | `sip-trunk view`               | `GET /platform/sip-trunks/{id}`                  | `sipTrunks.retrieve`                |
 | `sip-trunk create`             | `POST /platform/sip-trunks`                      | `sipTrunks.create`                  |
@@ -80,6 +82,19 @@ internal SDK module.
   Messaging client; the CLI builds that client from the Platform environment.
   `calls settings set --expected-revision` sends `expectedRevision`; a stale
   revision returns 409 `state_conflict`, which exits with code 4.
+- `calls retention` resolves Platform credentials. The pinned SDK has no
+  call-retention resource, so `createCallRetentionClient` in `src/sdk/client.ts`
+  sends `GET` and `PUT /platform/call-retention` through the organization
+  client's raw transport; switch it to the SDK's `callRetention` methods once
+  a release that includes them is pinned. The API lets team API keys and
+  project tokens read the setting and only team API keys change it; the CLI
+  replaces the API's 403 text with that rule and keeps the API message.
+- `calls retention set` requires `--expected-revision`. It reads the setting,
+  fails locally with `state_conflict` (exit 4) when the revision differs, asks
+  for confirmation when the new period is shorter (`--yes`, or exit 2
+  `confirmation_required` without a terminal), then sends `policy`,
+  `retentionDays` (only when `--days` is given) and `expectedRevision`. A 409
+  from the `PUT` also exits 4 and tells the user to read the setting again.
 - Sockets carry the credential in their first frame. The CLI requires an HTTPS
   base URL, or HTTP on a loopback host, before opening any Calls connection.
 

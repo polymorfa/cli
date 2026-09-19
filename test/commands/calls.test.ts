@@ -13,6 +13,13 @@ const API_KEY =
   'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const CLIENT_TOKEN = 'pmfa_ct_browser_token'
 const TRUNK_ID = '6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10'
+const DEFAULT_RETENTION = {
+  appliesTo: ['call_records', 'call_events', 'client_reports'],
+  policy: 'extended',
+  retentionDays: 90,
+  revision: 0,
+  updatedAt: null,
+}
 
 describe('unified calls commands', () => {
   let server: TestHttpServer | undefined
@@ -556,6 +563,256 @@ describe('unified calls commands', () => {
     expect(exitCode(value.error)).toBe(2)
     expect(exitCode(retired.error)).toBe(2)
     expect(server.requests).toHaveLength(0)
+  })
+
+  test('reads team call retention in human and JSON output', async () => {
+    server = await startHttpServer({
+      body: {data: DEFAULT_RETENTION, success: true},
+      headers: {'request-id': 'req_retention'},
+    })
+
+    const human = await apiKey(() => runCommand('calls retention get'))
+    const json = await apiKey(() => runCommand('calls retention get --json'))
+
+    expect(human.error).toBeUndefined()
+    expect(human.stdout).toBe(
+      'Policy\textended\nRetention\t90 days\nApplies to\tcall_records, call_events, client_reports\nRevision\t0\nUpdated\tnever (defaults)\n',
+    )
+    expect(json.error).toBeUndefined()
+    expect(jsonData(json.stdout)).toEqual(DEFAULT_RETENTION)
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/call-retention',
+      'GET /platform/call-retention',
+    ])
+    expect(server.requests[0]?.headers.authorization).toBe(`Bearer ${API_KEY}`)
+  })
+
+  test('changes team call retention after checking the revision', async () => {
+    const saved = {
+      ...DEFAULT_RETENTION,
+      policy: 'compliance',
+      retentionDays: 365,
+      revision: 1,
+      updatedAt: '2026-09-19T10:00:00.000Z',
+    }
+    server = await startHttpSequenceServer([
+      {body: {data: DEFAULT_RETENTION, success: true}},
+      {body: {data: saved, success: true}},
+      {body: {data: DEFAULT_RETENTION, success: true}},
+      {
+        body: {
+          data: {...saved, policy: 'custom', retentionDays: 180},
+          success: true,
+        },
+      },
+    ])
+
+    const named = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy compliance --expected-revision 0',
+      ),
+    )
+    const custom = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy custom --days 180 --expected-revision 0 --json',
+      ),
+    )
+
+    expect(named.error).toBeUndefined()
+    expect(named.stdout).toBe(
+      'Policy\tcompliance\nRetention\t365 days\nApplies to\tcall_records, call_events, client_reports\nRevision\t1\nUpdated\t2026-09-19T10:00:00.000Z\n',
+    )
+    expect(custom.error).toBeUndefined()
+    expect(jsonData(custom.stdout)).toMatchObject({
+      policy: 'custom',
+      retentionDays: 180,
+    })
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/call-retention',
+      'PUT /platform/call-retention',
+      'GET /platform/call-retention',
+      'PUT /platform/call-retention',
+    ])
+    expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
+      expectedRevision: 0,
+      policy: 'compliance',
+    })
+    expect(JSON.parse(server.requests[3]?.body ?? '')).toEqual({
+      expectedRevision: 0,
+      policy: 'custom',
+      retentionDays: 180,
+    })
+  })
+
+  test('rejects invalid call retention changes before any request', async () => {
+    server = await startHttpServer({
+      body: {data: DEFAULT_RETENTION, success: true},
+    })
+
+    const customWithoutDays = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy custom --expected-revision 0 --json',
+      ),
+    )
+    const zero = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy custom --days 0 --expected-revision 0',
+      ),
+    )
+    const tooLong = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy custom --days 2556 --expected-revision 0',
+      ),
+    )
+    const mismatched = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy standard --days 45 --expected-revision 0',
+      ),
+    )
+    const noRevision = await apiKey(() =>
+      runCommand('calls retention set --policy extended'),
+    )
+    const unknownPolicy = await apiKey(() =>
+      runCommand('calls retention set --policy forever --expected-revision 0'),
+    )
+    const token = await clientToken(() =>
+      runCommand('calls retention get --json'),
+    )
+
+    expect(exitCode(customWithoutDays.error)).toBe(2)
+    expect(JSON.parse(customWithoutDays.stderr.trim())).toMatchObject({
+      error: {category: 'configuration'},
+    })
+    expect(customWithoutDays.stderr).toContain(
+      '--policy custom requires --days',
+    )
+    for (const invalid of [
+      zero,
+      tooLong,
+      mismatched,
+      noRevision,
+      unknownPolicy,
+    ]) {
+      expect(exitCode(invalid.error)).toBe(2)
+    }
+    expect(mismatched.stderr).toContain('omit --days or use --policy custom')
+    expect(exitCode(token.error)).toBe(2)
+    expect(token.stderr).toContain(
+      'Platform API requests require POLYMORFA_API_KEY',
+    )
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('requires --yes to shorten call retention without a terminal', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: DEFAULT_RETENTION, success: true}},
+      {body: {data: DEFAULT_RETENTION, success: true}},
+      {
+        body: {
+          data: {
+            ...DEFAULT_RETENTION,
+            policy: 'short',
+            retentionDays: 7,
+            revision: 1,
+          },
+          success: true,
+        },
+      },
+    ])
+
+    const refused = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy short --expected-revision 0 --json',
+      ),
+    )
+    const confirmed = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy short --expected-revision 0 --yes',
+      ),
+    )
+
+    expect(exitCode(refused.error)).toBe(2)
+    expect(JSON.parse(refused.stderr.trim())).toMatchObject({
+      error: {category: 'validation', code: 'confirmation_required'},
+    })
+    expect(refused.stderr).toContain('from 90 to 7 days')
+    expect(refused.stderr).toContain('--yes')
+    expect(confirmed.error).toBeUndefined()
+    expect(confirmed.stdout).toContain('Retention\t7 days')
+    expect(server.requests.map(({method}) => method)).toEqual([
+      'GET',
+      'GET',
+      'PUT',
+    ])
+    expect(JSON.parse(server.requests[2]?.body ?? '')).toEqual({
+      expectedRevision: 0,
+      policy: 'short',
+    })
+  })
+
+  test('reports a stale call retention revision with exit code 4', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: {...DEFAULT_RETENTION, revision: 2}, success: true}},
+      {body: {data: {...DEFAULT_RETENTION, revision: 2}, success: true}},
+      apiError(
+        409,
+        'state_conflict',
+        'The call retention changed since revision 2.',
+        'req_stale',
+      ),
+    ])
+
+    const local = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy compliance --expected-revision 1 --json',
+      ),
+    )
+    const remote = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy compliance --expected-revision 2',
+      ),
+    )
+
+    expect(exitCode(local.error)).toBe(4)
+    expect(JSON.parse(local.stderr.trim())).toMatchObject({
+      error: {category: 'conflict', code: 'state_conflict'},
+    })
+    expect(exitCode(remote.error)).toBe(4)
+    expect(remote.stderr).toContain(
+      'The call retention setting changed (state_conflict); read it again',
+    )
+    expect(remote.stderr).toContain('Request ID: req_stale')
+    expect(server.requests.map(({method}) => method)).toEqual([
+      'GET',
+      'GET',
+      'PUT',
+    ])
+  })
+
+  test('explains that call retention needs a team API key', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: DEFAULT_RETENTION, success: true}},
+      apiError(
+        403,
+        'forbidden',
+        'call retention is a team setting; use a team API key to change it',
+      ),
+    ])
+
+    const result = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy compliance --expected-revision 0 --json',
+      ),
+    )
+
+    expect(exitCode(result.error)).toBe(3)
+    const envelope = JSON.parse(result.stderr.trim()) as {
+      error: {category: string; message: string}
+    }
+    expect(envelope.error.category).toBe('authorization')
+    expect(envelope.error.message).toContain(
+      'Call retention is a team setting; use a team API key',
+    )
   })
 
   test('distinguishes the unified and session-route reject commands in help', async () => {
