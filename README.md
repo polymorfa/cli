@@ -548,8 +548,8 @@ sox greeting.wav -t raw -r 16000 -e signed -b 16 -c 1 - | \
 
 ### SIP trunks
 
-SIP trunks connect a PBX to WhatsApp calls. They are a beta: changes fail with
-exit code 3 until your team is enrolled. Commands require a server API key.
+SIP trunks connect a PBX to WhatsApp calls. They are part of Calls and need no
+enrollment. Commands require a server API key.
 
 ```shell
 polymorfa sip-trunk list --project 018f0000-0000-7000-8000-000000000002

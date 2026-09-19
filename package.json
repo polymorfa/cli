@@ -201,7 +201,7 @@
         "description": "Manage Platform sessions."
       },
       "sip-trunk": {
-        "description": "Connect a PBX to WhatsApp calls with SIP trunks (beta)."
+        "description": "Connect a PBX to WhatsApp calls with SIP trunks."
       },
       "session-ban": {
         "description": "Inspect recorded organization session bans."
