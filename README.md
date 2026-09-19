@@ -89,6 +89,26 @@ rejects any other project, and a command fails if the directory is linked to a
 different project. `polymorfa listen` falls back to the linked or profile
 project when `--project` is omitted.
 
+## Doctor
+
+```shell
+polymorfa doctor
+polymorfa doctor --profile work --json
+```
+
+`doctor` runs five checks and exits with code 1 if any fails:
+
+| Check        | What it does                                                                                                                                                                                                               |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `node`       | Requires Node.js 22 or newer.                                                                                                                                                                                              |
+| `config`     | Loads and validates the profile config and reports the active profile.                                                                                                                                                     |
+| `keyring`    | Reads the selected profile's entry from the operating-system keyring. A locked or unavailable keyring fails.                                                                                                               |
+| `api`        | Calls the unauthenticated `/ping` on the configured base URL, without retries.                                                                                                                                             |
+| `credential` | For a server API key, lists projects as an authenticated ping. `401` fails; `403` warns that the key is valid but lacks `sessions:read`. Project and client tokens are reported as present but are not validated remotely. |
+
+Environment credentials take precedence over the active profile, as for other
+commands. Output never contains credential values.
+
 ## QuickLinks
 
 A QuickLink is a persistent hosted link that connects one WhatsApp number to a
