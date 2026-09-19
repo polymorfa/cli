@@ -82,7 +82,8 @@ export async function runDoctor(
       const stored = await deps.credentials.get(profile.credential.account)
       checks.push({
         name: 'keyring',
-        status: stored === undefined ? 'fail' : 'ok',
+        // An unused profile cannot fail the run when env credentials apply.
+        status: stored !== undefined ? 'ok' : useEnv ? 'warn' : 'fail',
         detail:
           stored === undefined
             ? `Keyring is reachable but has no credential for profile ${profileName}. Run polymorfa auth login --profile ${profileName}.`
@@ -210,7 +211,7 @@ async function credentialCheck(input: {
       return {
         name: 'credential',
         status: 'warn',
-        detail: `API key from ${input.source} authenticated but lacks sessions:read, so the project list was denied.`,
+        detail: `API key from ${input.source} authenticated, but listing projects was denied (403); the key may lack the scope for that request.`,
       }
     }
     return {

@@ -147,6 +147,21 @@ describe('doctor', () => {
     )
   })
 
+  test('only warns about an empty profile entry when env credentials apply', async () => {
+    const report = await runDoctor(
+      deps({
+        credentials: {
+          delete: () => Promise.resolve(),
+          get: () => Promise.resolve(undefined),
+          set: () => Promise.resolve(),
+        },
+        env: {POLYMORFA_API_KEY: 'pmfa_env'},
+      }),
+    )
+    expect(status(report)).toMatchObject({credential: 'ok', keyring: 'warn'})
+    expect(report.ok).toBe(true)
+  })
+
   test('does not remotely validate client tokens', async () => {
     const report = await runDoctor(
       deps({env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_x'}}),
