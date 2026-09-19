@@ -209,6 +209,15 @@
       "user": {
         "description": "Inspect Linked Device user identity data."
       },
+      "voice": {
+        "description": "Voice Automation (beta): audio library and text-to-speech provider credentials."
+      },
+      "voice:audio": {
+        "description": "Upload, synthesize, inspect, preview, and delete library audio (beta)."
+      },
+      "voice:credential": {
+        "description": "Store, check, and delete your text-to-speech provider keys (beta)."
+      },
       "widget": {
         "description": "Inspect and update saved QuickLink widget settings."
       },
