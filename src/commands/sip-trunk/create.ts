@@ -10,7 +10,7 @@ import {
 
 export default class SipTrunkCreate extends BaseCommand {
   static override description =
-    'Create a SIP trunk from one JSON object with name, direction, and the outbound and inbound sections the direction needs. Keep passwords in the input file or stdin, not in arguments. A trunk that accepts calls from your PBX returns its password once. SIP trunks are a beta. Requires a server API key.'
+    'Create a SIP trunk from one JSON object with name, direction, and the outbound and inbound sections the direction needs. Keep passwords in the input file or stdin, not in arguments. A trunk that accepts calls from your PBX returns its password once. Requires a server API key.'
 
   static override examples = [
     '<%= config.bin %> sip-trunk create --project 018f0000-0000-7000-8000-000000000002 --input trunk.json',

@@ -10,7 +10,7 @@ export default class SipTrunkUpdate extends BaseCommand {
   }
 
   static override description =
-    'Change a SIP trunk. Fields you omit keep their values; omit authPassword to keep the stored password. Changes reach new calls within about a minute. SIP trunks are a beta. Requires a server API key.'
+    'Change a SIP trunk. Fields you omit keep their values; omit authPassword to keep the stored password. Changes reach new calls within about a minute. Requires a server API key.'
 
   static override examples = [
     '<%= config.bin %> sip-trunk update 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --disable --expected-revision 3',

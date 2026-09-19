@@ -12,7 +12,7 @@ export default class SipTrunkRotateCredentials extends BaseCommand {
   }
 
   static override description =
-    'Replace the password your PBX uses to place calls through the trunk and print it once. The previous password stops working within about a minute. SIP trunks are a beta. Requires a server API key.'
+    'Replace the password your PBX uses to place calls through the trunk and print it once. The previous password stops working within about a minute. Requires a server API key.'
 
   static override flags = {
     yes: Flags.boolean({
