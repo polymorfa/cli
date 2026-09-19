@@ -16,6 +16,8 @@ Use `polymorfa --help` and `polymorfa <topic> --help` as the installed command a
 
 Organization API keys and exact-project tokens are durable principals. Browser client tokens and listener credentials are not general CLI credentials. Do not print, log, persist in project files, or pass credentials in command arguments.
 
+Voice Automation commands (`polymorfa voice audio`, `polymorfa voice credential`) are a beta for enrolled teams; `voice_not_enabled` (exit 6) means the team is not enrolled and `gate_limit_reached` (exit 7) means a voice limit is reached, so do not retry either. Pass a provider key to `polymorfa voice credential add` only through standard input or the environment variable named by `--key-env`, never as an argument.
+
 Use `polymorfa quicklink create --project PROJECT --input request.json` with an organization API key for standard number pairing. Treat the returned hosted URL as credential material; do not request direct session QR payloads or pairing codes.
 
 ## Choose an interface
