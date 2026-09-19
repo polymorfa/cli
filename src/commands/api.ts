@@ -120,16 +120,6 @@ export default class Api extends BaseCommand {
         {code: 'conflicting_body_input'},
       )
     }
-    if (
-      flags.input === '-' &&
-      (flags.field ?? []).some((field) => field.includes('=@-'))
-    ) {
-      throw new PolymorfaValidationError(
-        'Standard input can be read only once.',
-        {code: 'conflicting_body_input'},
-      )
-    }
-
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface: flags.surface,

@@ -37,6 +37,7 @@ export async function paginateRawRequest(
   const maxPages = options.maxPages ?? DEFAULT_MAX_PAGES
   const pages: RawApiResult[] = []
   let cursor: string | undefined
+  const seen = new Set<string>()
   for (;;) {
     const page = await executeRawRequest(client, {
       ...request,
@@ -53,6 +54,13 @@ export async function paginateRawRequest(
       )
     }
     assertCursorAdvanced(cursor, next)
+    if (seen.has(next)) {
+      throw new PolymorfaValidationError(
+        'The API returned a cursor it had already returned; stopping to avoid a loop.',
+        {code: 'pagination_cursor_repeated'},
+      )
+    }
+    seen.add(next)
     cursor = next
   }
 }

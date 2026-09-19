@@ -77,6 +77,19 @@ describe('api fields', () => {
     ).rejects.toThrow('conflicts')
   })
 
+  test('rejects prototype keys and overwriting nested values', async () => {
+    await expect(
+      parseFields([{kind: 'raw', value: 'a[__proto__][polluted]=1'}]),
+    ).rejects.toThrow('not allowed')
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined()
+    await expect(
+      parseFields([
+        {kind: 'raw', value: 'a[b]=x'},
+        {kind: 'raw', value: 'a=y'},
+      ]),
+    ).rejects.toThrow('conflicts')
+  })
+
   test('query parameters accept scalars and arrays but not objects', () => {
     expect(queryFromFields({ids: [1, 'b'], q: 'x', flag: true})).toEqual({
       flag: true,

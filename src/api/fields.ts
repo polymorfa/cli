@@ -30,7 +30,7 @@ export async function parseFields(
   readers: FieldReaders = {},
 ): Promise<Record<string, FieldValue> | undefined> {
   if (fields.length === 0) return undefined
-  const root: Record<string, FieldValue> = {}
+  const root = Object.create(null) as Record<string, FieldValue>
   let stdinUsed = false
   for (const field of fields) {
     const separator = field.value.indexOf('=')
@@ -113,6 +113,8 @@ function typedValue(raw: string): FieldValue {
 type KeySegment = string | typeof APPEND
 const APPEND = Symbol('append')
 
+const FORBIDDEN_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
+
 function parseKey(key: string): KeySegment[] {
   const match = /^([^[\]]+)((?:\[[^[\]]*\])*)$/.exec(key)
   if (match === null) {
@@ -124,6 +126,16 @@ function parseKey(key: string): KeySegment[] {
   const segments: KeySegment[] = [match[1] as string]
   for (const [, part] of (match[2] ?? '').matchAll(/\[([^[\]]*)\]/g)) {
     segments.push(part === '' ? APPEND : (part as string))
+  }
+  if (
+    segments.some(
+      (segment) => typeof segment === 'string' && FORBIDDEN_KEYS.has(segment),
+    )
+  ) {
+    throw new PolymorfaValidationError(
+      `Invalid field name ${key}. __proto__, constructor, and prototype are not allowed.`,
+      {code: 'invalid_field'},
+    )
   }
   for (let index = 0; index < segments.length - 1; index++) {
     if (segments[index] === APPEND) {
@@ -149,6 +161,14 @@ function assign(
     const next = segments[index + 1]
     if (segment === APPEND) return // handled by the previous segment
     if (last) {
+      const existing = target[segment]
+      if (
+        existing !== undefined &&
+        existing !== null &&
+        typeof existing === 'object'
+      ) {
+        throw conflict(key)
+      }
       target[segment] = value
       return
     }
@@ -161,7 +181,7 @@ function assign(
     }
     const existing = target[segment]
     if (existing === undefined) {
-      const child: Record<string, FieldValue> = {}
+      const child = Object.create(null) as Record<string, FieldValue>
       target[segment] = child
       target = child
     } else if (
