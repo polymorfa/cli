@@ -66,6 +66,13 @@ export interface DeveloperEnvironment {
 export interface ResolveDeveloperEnvironmentInput {
   readonly apiVersion?: string | undefined
   readonly env: Readonly<Record<string, string | undefined>>
+  /**
+   * Choose the owner when neither --owner nor the profile names one: a
+   * project context (--project, or a project token) reads one project, and
+   * an organization key otherwise reads the whole organization. For commands
+   * whose results span projects rather than belong to one owner.
+   */
+  readonly inferOwner?: boolean | undefined
   readonly owner?: string | undefined
   readonly profile?: string | undefined
   readonly project?: string | undefined
@@ -94,9 +101,17 @@ export async function resolveDeveloperEnvironment(
     const baseUrl =
       nonEmpty(input.env.POLYMORFA_BASE_URL) ?? 'https://api.polymorfa.com'
     const requestedProject = nonEmpty(input.project)
+    const environmentOwner =
+      input.owner ??
+      (input.inferOwner === true
+        ? inferredOwner(
+            environmentCredential.principalType,
+            requestedProject !== undefined,
+          )
+        : undefined)
     const unresolvedContext = resolveOwnerContext({
       principalType: environmentCredential.principalType,
-      ...(input.owner === undefined ? {} : {owner: input.owner}),
+      ...(environmentOwner === undefined ? {} : {owner: environmentOwner}),
       ...(requestedProject === undefined ? {} : {projectId: requestedProject}),
     })
     const projectId = await canonicalProjectId(
@@ -157,8 +172,16 @@ export async function resolveDeveloperEnvironment(
     profile.credential.kind === 'projectToken'
       ? 'project_token'
       : 'organization_key'
-  const owner = input.owner ?? profile.owner
   const explicitProject = nonEmpty(input.project)
+  const owner =
+    input.owner ??
+    (input.inferOwner === true && explicitProject !== undefined
+      ? 'project'
+      : undefined) ??
+    profile.owner ??
+    (input.inferOwner === true
+      ? inferredOwner(principalType, profile.project !== undefined)
+      : undefined)
   if (
     principalType === 'project_token' &&
     explicitProject !== undefined &&
@@ -565,6 +588,15 @@ async function listProjects(
   })
   const response = await client.projects.list()
   return response.data.data
+}
+
+function inferredOwner(
+  principalType: 'organization_key' | 'project_token',
+  hasProject: boolean,
+): 'organization' | 'project' {
+  return principalType === 'project_token' || hasProject
+    ? 'project'
+    : 'organization'
 }
 
 function requiredProjectId(projectId: string | undefined): string {

@@ -99,7 +99,7 @@
         "description": "Reject incoming calls through the Linked Device session route."
       },
       "calls": {
-        "description": "Place, answer, join, decline, leave, end, and watch calls, and carry call audio."
+        "description": "Place, answer, join, decline, leave, end, and watch calls, carry call audio, and report on past calls."
       },
       "calls:settings": {
         "description": "Inspect and replace session call settings."

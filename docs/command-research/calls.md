@@ -1,7 +1,7 @@
 # Calls command research
 
 - **Status:** Implemented against Calls contract revision 1, unpublished
-- **Reviewed:** 2026-09-17
+- **Reviewed:** 2026-09-19
 - **SDK baseline:** `@polymorfa/sdk` (including the `@polymorfa/sdk/calls`
   subpath) at `polymorfa/sdks` commit
   `94bfd09825817f842434e206e6a77adb5cc0c414`
@@ -17,6 +17,11 @@
   `session` and `participant` query parameters, 60-second re-validation, and
   the 4401, 4409, 4429, 4400, and 1013 close codes.
 - The public guide for Calls.
+- Platform operations `getCallStats` (`GET /platform/calls/stats`) and
+  `exportCallRecords` (`GET /platform/calls/export`) from the management
+  OpenAPI document at `polymorfa/polymorfa` commit
+  `4b75534812dc25e839fda3c2ba231e46afe39534`, and the export route's
+  `Polymorfa-Next-Cursor` header and CSV encoding.
 - `MessagingClient.voip` and the public `@polymorfa/sdk/calls` entry point
   (`CallsClient`, `Call`, and the Calls error classes).
 
@@ -33,6 +38,11 @@ calls
   watch [--session] [--participant] [--count <n>]
   media [callId] [--session] [--place <to>] [--exclusive] [--participant]
         [--input <file|->] [--output <file|->] [--leave-on-eof] [--video]
+  stats [--session] [--direction] [--upstream] [--outcome] [--since] [--until]
+        [--group-by day|hour|session|outcome] [--timezone <iana>] [--heatmap]
+  export [--session] [--direction] [--upstream] [--outcome] [--since] [--until]
+         [--format csv|ndjson] [--output <file|->] [--force] [--limit <1-1000>]
+         [--cursor <cursor>] [--max-pages <n>]
   settings
     get --session <id>
     set --session <id> [--[no-]conference-mode] [--calls-enabled=<true|false>] ...
@@ -50,6 +60,8 @@ calls
 | `calls invite`                 | `POST /messaging/voip/calls/{id}/participants`   | `voip.addParticipant`               |
 | `calls settings get`           | `GET /platform/sessions/{session}/call-settings` | `voip.retrieveCallSettings`         |
 | `calls settings set`           | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
+| `calls stats`                  | `GET /platform/calls/stats`                      | raw transport (see below)           |
+| `calls export`                 | `GET /platform/calls/export`                     | raw transport (see below)           |
 | `sip-trunk list`               | `GET /platform/sip-trunks`                       | `sipTrunks.list`                    |
 | `sip-trunk view`               | `GET /platform/sip-trunks/{id}`                  | `sipTrunks.retrieve`                |
 | `sip-trunk create`             | `POST /platform/sip-trunks`                      | `sipTrunks.create`                  |
@@ -80,6 +92,11 @@ internal SDK module.
   Messaging client; the CLI builds that client from the Platform environment.
   `calls settings set --expected-revision` sends `expectedRevision`; a stale
   revision returns 409 `state_conflict`, which exits with code 4.
+- `calls stats` and `calls export` accept an organization API key or an
+  exact-project token (`sessions:read`), resolved like the developer
+  commands. `--project` (or a project token, which requires it) reads one
+  project; an organization key without `--project` reads the whole
+  organization. `--owner` still overrides the inferred owner.
 - Sockets carry the credential in their first frame. The CLI requires an HTTPS
   base URL, or HTTP on a loopback host, before opening any Calls connection.
 
@@ -122,10 +139,33 @@ internal SDK module.
   newer). On older runtimes they fail with a configuration error before
   connecting. The CLI as a whole requires Node.js 22 or newer.
 
+- **Call statistics.** Filters and range limits (366 days for `day`, 31 for
+  `hour`, IANA `--timezone`) are checked before the request; the API default
+  range of 7 days applies when `--since` or `--until` is omitted. Human output
+  prints totals, a group table, and, with `--heatmap`, a 7-by-24 grid. `--json`
+  prints the standard read envelope with the complete response.
+- **Call export.** The command follows `Polymorfa-Next-Cursor` until it is
+  absent and writes the CSV header from the first page only; a later page with
+  different columns, or a repeated cursor, stops the export with a server
+  error. Records go to standard output or `--output`, which is created on the
+  first page and refused when it exists unless `--force`. Progress, the
+  summary, and resume cursors go to standard error only (JSON lines with
+  `--json`). `--cursor` is sent with the filters because the API expects the
+  same filters on every page. A failed page keeps earlier records, reports
+  the cursor for the failed page, and exits with the API error's exit code.
+- **Interim transport.** The pinned SDK has no typed call statistics or export
+  methods, its project-token `Client` confines raw requests to project paths,
+  and its response metadata drops `Polymorfa-Next-Cursor`. Until an SDK
+  revision with typed methods is pinned, `src/services/call-analytics.ts`
+  sends both operations through `MessagingClient.raw` (which keeps the SDK's
+  authentication, retries, and error mapping) with a `fetch` wrapper that
+  reads the cursor header. Replace that class with the typed resource when the
+  SDK is released; the command contract does not change.
+
 ## Explicit gaps
 
-- No call list, retrieve, or history command: the public contract has no such
-  customer operation.
+- No call list or retrieve command. `GET /platform/calls` exists; `calls
+export --format ndjson` covers the same records for scripts.
 - `calls media` does not attach to a call that was already ringing or answered
   before it started, and carries no video.
 - `calls watch` does not report outbound calls placed by other participants.
