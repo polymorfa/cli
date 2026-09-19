@@ -1054,9 +1054,10 @@ polymorfa api /v1/projects --surface platform
 
 polymorfa api /v1/campaigns \
   --surface platform \
-  --method POST \
-  --field projectId=project_123 \
-  --field name='August launch' \
+  -X POST \
+  -f projectId=project_123 \
+  -f name='August launch' \
+  -F dryRun=true \
   --json
 
 polymorfa api /v1/campaigns \
@@ -1072,8 +1073,57 @@ cat campaign.json | polymorfa api /v1/campaigns \
 
 GET and HEAD fields become query parameters. Other methods encode fields as a
 JSON object. `--input` reads one JSON value from a file or standard input and
-is capped at 10 MiB. Use `--header name:value` for additional headers and
-`--include` to include response metadata in human output.
+is capped at 10 MiB. Use `-H/--header name:value` for additional headers and
+`-i/--include` to include response metadata in human output. `-X` is short for
+`--method`.
+
+### Fields
+
+- `-f/--raw-field name=value` always sends a string.
+- `-F/--field name=value` converts `true`, `false`, `null`, and integers to JSON
+  values. `@path` reads a file and `@-` reads standard input as a string.
+  Anything else stays a string.
+- Both accept `name[key]=value` to build nested objects and `name[]=value` to
+  append to an array. GET and HEAD query parameters accept values and `name[]`
+  arrays but not nested objects.
+
+`--field` previously sent every value as a string. Use `-f` where a value such
+as `10` or `true` must stay a string.
+
+### Pagination and output filters
+
+```shell
+# Every page, one ID per line
+polymorfa api /platform/customers --surface platform --paginate --jq '.data[].id'
+
+# All pages as one array, then one jq program over it
+polymorfa api /platform/customers --surface platform --paginate --slurp \
+  --jq 'map(.data | length) | add'
+
+# Go-style template
+polymorfa api /platform/customers --surface platform \
+  --template '{{range .data}}{{.id}}{{"\t"}}{{.name}}{{"\n"}}{{end}}'
+```
+
+- `--paginate` (GET only) follows `page.nextCursor` by sending it back as the
+  `cursor` query parameter until the cursor is null or `hasMore` is false. It
+  stops with an error after `--max-pages` pages (100 by default) and when the
+  API returns the same cursor twice. Without a filter, human output prints each
+  page as it arrives; `--json` prints one document whose `data` is the array of
+  page bodies and whose `metadata.pages` is the page count.
+- `--slurp` requires `--paginate` and combines the page bodies into one array
+  before `--jq` or `--template` runs. Without `--slurp`, filters run on each page.
+- `-q/--jq` runs a jq 1.8 program with an embedded WebAssembly jq, so no `jq`
+  binary is required. Strings print without quotes. The jq runtime has its own
+  environment, so `$ENV` does not expose your shell variables or credentials.
+- `-t/--template` renders a Go-style template: `{{.path.to.value}}`,
+  `{{range .list}}…{{else}}…{{end}}`, `{{if .value}}…{{else}}…{{end}}`,
+  `{{$.root}}` inside a range, `{{json .x}}`, `{{len .x}}`, `{{upper .x}}`,
+  `{{lower .x}}`, `{{join ", " .list}}`, string literals such as `{{"\n"}}`,
+  comments, and `{{-`/`-}}` whitespace trimming. Missing values render as an
+  empty string.
+- `--jq`, `--template`, and `--json` are mutually exclusive, as are `--include`
+  and a filter.
 
 `--json` prints exactly one JSON document on stdout. `--quiet` suppresses
 successful output without hiding failures. Diagnostics and errors go to stderr;
