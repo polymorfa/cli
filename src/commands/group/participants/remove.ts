@@ -3,7 +3,10 @@ import {Args, Flags} from '@oclif/core'
 import {BaseCommand} from '../../../base-command.js'
 import {confirmDangerous} from '../../../input/confirmation.js'
 import {idempotencyOptions} from '../../../input/message-send.js'
-import {changeGroupParticipants} from '../../../services/groups.js'
+import {
+  changeGroupParticipants,
+  participantIds,
+} from '../../../services/groups.js'
 
 export default class GroupParticipantsRemove extends BaseCommand {
   static override args = {
@@ -36,8 +39,9 @@ export default class GroupParticipantsRemove extends BaseCommand {
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(GroupParticipantsRemove)
+    const participants = participantIds(flags.participant)
     await confirmDangerous({
-      prompt: `Remove ${flags.participant.length} participant(s) from group ${args.group}?`,
+      prompt: `Remove ${participants.length} participant(s) from group ${args.group}?`,
       yes: flags.yes,
     })
     const result = await changeGroupParticipants(
@@ -45,12 +49,12 @@ export default class GroupParticipantsRemove extends BaseCommand {
       flags.session,
       args.group,
       'remove',
-      flags.participant,
+      participants,
       idempotencyOptions(flags['idempotency-key']),
     )
     this.writeValue(
       result,
-      `Removed ${flags.participant.length} participant(s) in group ${args.group}.`,
+      `Removed ${participants.length} participant(s) in group ${args.group}.`,
       flags,
     )
   }

@@ -2,7 +2,10 @@ import {Args, Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../../base-command.js'
 import {idempotencyOptions} from '../../../input/message-send.js'
-import {changeGroupParticipants} from '../../../services/groups.js'
+import {
+  changeGroupParticipants,
+  participantIds,
+} from '../../../services/groups.js'
 
 export default class GroupParticipantsAdd extends BaseCommand {
   static override args = {
@@ -32,17 +35,18 @@ export default class GroupParticipantsAdd extends BaseCommand {
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(GroupParticipantsAdd)
+    const participants = participantIds(flags.participant)
     const result = await changeGroupParticipants(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
       flags.session,
       args.group,
       'add',
-      flags.participant,
+      participants,
       idempotencyOptions(flags['idempotency-key']),
     )
     this.writeValue(
       result,
-      `Added ${flags.participant.length} participant(s) in group ${args.group}.`,
+      `Added ${participants.length} participant(s) in group ${args.group}.`,
       flags,
     )
   }
