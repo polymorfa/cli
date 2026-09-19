@@ -62,6 +62,33 @@ in this development slice and does not yet claim remote identity validation.
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
 
+## Project context
+
+Select a default project per profile, or link a directory so every command run
+inside it uses one project:
+
+```shell
+polymorfa project list               # projects for the current credential; * marks the current one
+polymorfa project use my-app         # store the project on the active profile
+polymorfa project use my-app --profile work
+polymorfa link --project my-app      # write .polymorfa/project.json here
+polymorfa project current            # show the project and where it comes from
+```
+
+Commands resolve the project in this order: `--project`, the nearest
+`.polymorfa/project.json` in the current directory or a parent, then the
+profile's stored project. Organization-owned commands ignore linked and profile
+projects. `--verbose` prints the link file in use.
+
+`project use` and `link` accept a UUID or a unique slug and store the canonical
+UUID. The link file holds only `{"version": 1, "project": "<uuid>"}`, never a
+credential, so it is safe to commit. `link` without `--project` uses the
+profile's project, and replacing a link to a different project requires
+`--force`. Project-token profiles stay bound to their one project: `project use`
+rejects any other project, and a command fails if the directory is linked to a
+different project. `polymorfa listen` falls back to the linked or profile
+project when `--project` is omitted.
+
 ## QuickLinks
 
 A QuickLink is a persistent hosted link that connects one WhatsApp number to a

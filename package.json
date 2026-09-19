@@ -188,6 +188,9 @@
       "presence:chat": {
         "description": "View and renew policy-governed chat presence observations."
       },
+      "project": {
+        "description": "Select, list, and inspect the project context."
+      },
       "project-token": {
         "description": "Inspect project-token metadata."
       },
