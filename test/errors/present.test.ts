@@ -1,8 +1,10 @@
 import {
   PolymorfaAuthenticationError,
+  PolymorfaAuthorizationError,
   PolymorfaCancelledError,
   PolymorfaConfigurationError,
   PolymorfaConflictError,
+  PolymorfaPaymentRequiredError,
 } from '@polymorfa/sdk'
 import {describe, expect, test} from 'vitest'
 
@@ -118,5 +120,37 @@ describe('presentError', () => {
       requestId: 'req_409',
       retryable: false,
     })
+  })
+
+  test('gives voice_not_enabled and gate_limit_reached their own exit codes', () => {
+    expect(
+      presentError(
+        new PolymorfaAuthorizationError('Not enrolled.', {
+          code: 'voice_not_enabled',
+          status: 403,
+        }),
+      ),
+    ).toMatchObject({
+      category: 'authorization',
+      code: 'voice_not_enabled',
+      exitCode: 6,
+    })
+    expect(
+      presentError(
+        new PolymorfaPaymentRequiredError('Limit reached.', {
+          code: 'gate_limit_reached',
+          status: 402,
+        }),
+      ),
+    ).toMatchObject({
+      category: 'payment_required',
+      code: 'gate_limit_reached',
+      exitCode: 7,
+    })
+    expect(
+      presentError(
+        new PolymorfaAuthorizationError('Denied.', {code: 'toString'}),
+      ),
+    ).toMatchObject({category: 'authorization', exitCode: 3})
   })
 })
