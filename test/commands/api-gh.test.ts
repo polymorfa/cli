@@ -121,6 +121,29 @@ describe('api gh-style options', () => {
     expect(result.stdout).toBe('')
   })
 
+  test('rejects a cursor already present in the endpoint path', async () => {
+    server = await startHttpServer({body: {data: []}})
+
+    const result = await run(
+      'api "/platform/customers?cursor=abc" --surface platform --paginate',
+    )
+
+    expect(result.stderr).toContain('--paginate manages the cursor field')
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('fails loudly when the API claims more pages but sends no cursor', async () => {
+    server = await startHttpServer({
+      body: {data: [{id: 'c1'}], page: {hasMore: true, nextCursor: null}},
+    })
+
+    const result = await run(
+      'api /platform/customers --surface platform --paginate --json',
+    )
+
+    expect(result.stderr).toContain('returned no cursor')
+  })
+
   test('applies --jq once to all pages with --slurp', async () => {
     server = await startHttpSequenceServer(pages)
 

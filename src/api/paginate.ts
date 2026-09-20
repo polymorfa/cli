@@ -28,7 +28,13 @@ export async function paginateRawRequest(
       code: 'paginate_method',
     })
   }
-  if (request.query?.cursor !== undefined) {
+  const pathQuery = request.path.includes('?')
+    ? new URLSearchParams(request.path.slice(request.path.indexOf('?') + 1))
+    : undefined
+  if (
+    request.query?.cursor !== undefined ||
+    pathQuery?.has('cursor') === true
+  ) {
     throw new PolymorfaValidationError(
       '--paginate manages the cursor field; remove it or omit --paginate.',
       {code: 'paginate_cursor'},
@@ -77,10 +83,19 @@ function nextCursor(body: unknown): string | undefined {
       ? (record.page as Record<string, unknown>)
       : undefined
   // Prefer the page envelope, then fall back to the top level.
+  let more = false
   for (const scope of nested === undefined ? [record] : [nested, record]) {
     if (scope.hasMore === false) return undefined
     const next = scope.nextCursor
     if (typeof next === 'string' && next.length > 0) return next
+    if (scope.hasMore === true) more = true
+  }
+  // Claiming more pages without a cursor would truncate the result silently.
+  if (more) {
+    throw new PolymorfaValidationError(
+      'The API reported more pages but returned no cursor; the result would be incomplete.',
+      {code: 'pagination_cursor_missing'},
+    )
   }
   return undefined
 }

@@ -116,7 +116,7 @@ export default class Api extends BaseCommand {
     ]
     if (flags.input !== undefined && fieldInputs.length > 0) {
       throw new PolymorfaValidationError(
-        'Use either --input or --field to provide a request body, not both.',
+        'Use either --input or the field flags (-f/--raw-field, -F/--field) to provide a request body, not both.',
         {code: 'conflicting_body_input'},
       )
     }
