@@ -28,7 +28,8 @@ export default class CampaignRecipientsAdd extends BaseCommand {
 
   static override flags = {
     csv: Flags.string({
-      description: 'Read recipients from this spreadsheet and send them inline.',
+      description:
+        'Read recipients from this spreadsheet and send them inline.',
       exactlyOne: ['csv', 'input'],
     }),
     'idempotency-key': Flags.string({
@@ -41,9 +42,8 @@ export default class CampaignRecipientsAdd extends BaseCommand {
       exactlyOne: ['csv', 'input'],
     }),
     'phone-column': Flags.string({
-      default: 'phone',
       dependsOn: ['csv'],
-      description: 'Header naming the phone column.',
+      description: 'Header naming the phone column. Defaults to phone.',
     }),
     'project-slug': Flags.string({
       description: 'Project slug in the Messaging API path.',
@@ -51,7 +51,8 @@ export default class CampaignRecipientsAdd extends BaseCommand {
     }),
     variable: Flags.string({
       dependsOn: ['csv'],
-      description: 'Map a template variable to a column, as name=column.',
+      description:
+        'Map a template variable to a column, as name=column. Repeatable; quote a column name that contains spaces.',
       multiple: true,
     }),
   }
@@ -62,7 +63,7 @@ export default class CampaignRecipientsAdd extends BaseCommand {
       flags.csv === undefined
         ? recipientsFromJson(await readJsonInput(flags.input!))
         : await readCsvRecipients(flags.csv, {
-            phoneColumn: flags['phone-column'],
+            phoneColumn: flags['phone-column'] ?? 'phone',
             variables: parseVariableMapping(flags.variable ?? []),
           })
     assertBatchLimit(recipients)

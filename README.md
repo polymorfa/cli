@@ -900,19 +900,110 @@ polymorfa campaign requeue campaign_123 \
   --include-skipped-error
 ```
 
-Launch, pause, resume, and stop return accepted durable work; they do not wait
-for the state transition. Check the campaign with `polymorfa campaign view`.
+Launch, pause, and resume return accepted durable work; they do not wait for
+the state transition. Check the campaign with `polymorfa campaign view`.
 Operation inspection is console-only; the CLI has no operation-polling command.
+
+Stop is terminal and requires `--yes`. A campaign that has an active delivery
+run answers with an operation ID, as the other lifecycle commands do. A
+campaign with no active run is cancelled immediately and answers without one;
+the CLI reports that outcome instead of printing an empty operation.
 
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
 is synchronous and reports only the number moved. Every mutation accepts
-`--idempotency-key`, but the API does not persist the header, so it must not be
-treated as server-side deduplication.
+`--idempotency-key`.
+
+### Campaign recipients
+
+Recipients are appended to a campaign that has not started sending, and read
+back one cursor page at a time:
+
+```shell
+polymorfa campaign recipients add campaign_123 \
+  --project-slug launch-project \
+  --csv contacts.csv \
+  --phone-column Phone \
+  --variable "firstName=First name"
+
+polymorfa campaign recipients add campaign_123 \
+  --project-slug launch-project \
+  --input recipients.json
+
+polymorfa campaign recipients list campaign_123 \
+  --project-slug launch-project \
+  --status skipped \
+  --limit 100
+```
+
+One append accepts at most 1,000 entries. `--csv` reads the file locally and
+sends the rows inline; it does not upload the file. A phone already on the
+campaign is skipped, and invalid entries are reported rather than added, so the
+result carries `added`, `duplicateCount`, `invalidCount` and up to 20
+`invalidRows`.
+
+List returns `{data, page}`. Pass `page.nextCursor` back as `--cursor` while
+`page.hasMore` is true; the CLI prints the next cursor in human output. Filter
+with `--status queued|sending|sent|delivered|read|failed|skipped`. A recipient
+suppressed by an opt-out appears as `skipped` with `lastError` `opted_out`.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
-recipient, event, history, replay, watch, or operation-cancel route. The CLI
-does not substitute similarly named Platform campaign methods for these gaps.
+event, history, replay, watch, or operation-cancel route on the Messaging
+surface. The CLI does not substitute similarly named Platform campaign methods
+for these gaps.
+
+## Campaign audiences
+
+Audience commands are organization-scoped and use the Platform API:
+
+```shell
+polymorfa audience create --name "August launch" \
+  --csv contacts.csv \
+  --phone-column Phone \
+  --variable "firstName=First name"
+
+polymorfa audience create --name "August launch" \
+  --file-id upload_1 \
+  --mapping mapping.json
+
+polymorfa audience members add list_123 --csv contacts.csv
+polymorfa audience members list list_123 --limit 100
+polymorfa audience members remove list_123 +15551234567
+```
+
+`--csv` sends up to 1,000 members inline. `--file-id` imports a file that was
+already uploaded through the API and needs `--mapping`, a JSON document naming
+the phone column and any variable columns:
+
+```json
+{"phone": "Phone", "variables": {"firstName": "First name"}}
+```
+
+Creation and appends report the same import counts as campaign recipients, so a
+caller can reconcile what was accepted. Member listing is cursor-paged like
+recipient listing.
+
+## Campaign opt-outs
+
+Opt-out suppression is organization-wide. Keyword capture has its own settings:
+
+```shell
+polymorfa optout settings view
+polymorfa optout settings update \
+  --enabled \
+  --opt-out-keyword STOP \
+  --opt-out-keyword BAJA \
+  --opt-in-keyword START
+polymorfa optout settings update --no-enabled --opt-out-keyword STOP
+```
+
+Update replaces the whole settings document, so pass the complete keyword set
+every time; the CLI refuses a partial update rather than clearing keywords the
+caller did not mention. At least one opt-out keyword is required even when
+capture is off. When capture is on, a matching reply suppresses the contact and
+the API emits `contact.opted_out`; an opt-in keyword emits `contact.opted_in`.
+A suppressed contact is skipped at dispatch, which is visible as a `skipped`
+recipient with `lastError` `opted_out`.
 
 ## Developer events and webhooks
 

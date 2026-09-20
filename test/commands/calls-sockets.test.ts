@@ -347,9 +347,12 @@ describe('calls watch and media', () => {
       .trim()
       .split('\n')
       .map((line) => (JSON.parse(line) as {type: string}).type)
+    // A placed call applies call.accepted to its own claim and emits claim.
+    // See @polymorfa/sdk d4d6c81 ("record outbound claims").
     expect(statuses).toEqual([
       'ready',
       'placed',
+      'claim',
       'state',
       'state',
       'connected',

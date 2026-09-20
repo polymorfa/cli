@@ -41,11 +41,7 @@ export async function addAudienceMembers(
   members: readonly CampaignRecipientInput[],
   options: RequestOptions = {},
 ): Promise<AudienceResult<AddAudienceMembersResult>> {
-  const response = await client.audiences.addMembers(
-    listId,
-    {members},
-    options,
-  )
+  const response = await client.audiences.addMembers(listId, {members}, options)
   return result(response.data.data, response.metadata)
 }
 

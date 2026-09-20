@@ -285,7 +285,9 @@ export function renderCampaignRecipients(
     ].join('\t'),
   )
   if (result.page.hasMore && result.page.nextCursor !== null) {
-    rows.push(`More recipients remain. Continue with --cursor ${result.page.nextCursor}.`)
+    rows.push(
+      `More recipients remain. Continue with --cursor ${result.page.nextCursor}.`,
+    )
   }
   return rows.join('\n')
 }
@@ -309,7 +311,9 @@ export function renderInvalidRows(
   return rows.map((row) => `Row ${row.row}\t${row.reason}`)
 }
 
-export function recipientStatus(value?: string): CampaignRecipientStatus | undefined {
+export function recipientStatus(
+  value?: string,
+): CampaignRecipientStatus | undefined {
   if (value === undefined) return undefined
   return value as CampaignRecipientStatus
 }

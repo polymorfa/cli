@@ -1,8 +1,10 @@
 # Messaging campaign command research
 
-- **Status:** Complete nine-operation organization-key implementation slice
-- **Reviewed:** 2026-08-20
-- **SDK baseline:** `b4d5f3c8ce51bb0c171264eec8961797314cb172`
+- **Status:** Campaigns P0 slice: nine lifecycle operations plus recipients,
+  audiences and opt-out settings
+- **Reviewed:** 2026-09-20
+- **SDK baseline:** `50c5b1f35c403dd691f72d395b299b8bb51c4801`
+- **Contract:** `polymorfa/polymorfa` `a1be7b131b098aa7a7f827094b05b65cda809eb0`
 
 ## Sources reviewed
 
@@ -33,6 +35,21 @@ campaign
   resume <campaign> --project-slug <slug>
   stop <campaign> --project-slug <slug> --yes
   requeue <campaign> --project-slug <slug> [--include-skipped-error]
+  recipients
+    add <campaign> --project-slug <slug> (--csv <file> | --input <file|->)
+    list <campaign> --project-slug <slug> [--status <status>] [--cursor] [--limit]
+
+audience
+  create --name <name> [--csv <file> | --file-id <id> --mapping <file|->]
+  members
+    add <audience> (--csv <file> | --input <file|->)
+    list <audience> [--cursor] [--limit]
+    remove <audience> <phone>
+
+optout
+  settings
+    view
+    update --enabled|--no-enabled --opt-out-keyword <word>... [--opt-in-keyword <word>...]
 ```
 
 The CLI uses only `MessagingClient.campaigns`. Every campaign command requires an
@@ -82,17 +99,61 @@ pagination. JSON output preserves complete campaign and analytics objects,
 including live counters and forward-compatible fields; human output selects
 stable operational fields.
 
+## Campaigns P0 additions
+
+Stop no longer always starts an operation. The contract answers with a nullable
+`operationId`: a campaign with no active delivery run is cancelled immediately.
+Human output distinguishes the two outcomes instead of printing
+"operation null", which is what the previous renderer would have produced.
+
+Recipient listing is the first cursor-paged campaign read. It mirrors the
+Platform response exactly (`{data, page}`) rather than collapsing it, so JSON
+consumers keep `page.nextCursor` and `page.hasMore`. Automatic multi-page
+collection was deliberately not added: the existing `--paginate`/`--max-items`
+machinery belongs to the developer-event commands and their owner semantics,
+and campaign recipient reads have no owner flag. One page per invocation keeps
+the command honest about what it fetched.
+
+Appends accept partial success. The API skips repeated phone numbers and
+reports invalid entries rather than rejecting the batch, so the CLI prints
+`added`, `duplicateCount`, `invalidCount` and the rejected rows instead of
+claiming every entry landed. The 1,000-entry cap is checked before transport so
+an oversized file fails with a specific message rather than a 400.
+
+`--csv` reads a spreadsheet locally and sends its rows inline. It does not
+implement the API's two-step file upload: that flow issues an upload URL, takes
+a POST of the bytes, and returns a storage ID. Inventing a client for it was
+out of scope, so `--file-id` accepts a storage ID the caller already obtained
+and reaches the server-side import through the documented `mapping` shape.
+
+Column matching follows the API: the exact header first, then a case-folded
+match. `--variable name=column` is repeatable. oclif splits repeated flag values
+on whitespace, so a column name containing a space must be quoted; this is a
+shell-level requirement, not a CLI limitation, and the help text says so.
+
+Opt-out settings are a replace, not a patch. The API requires `enabled`,
+`optOutKeywords` and `optInKeywords` together, so the CLI requires
+`--enabled`/`--no-enabled` and at least one `--opt-out-keyword`, and refuses a
+partial update rather than silently clearing keywords the caller omitted.
+Keywords are de-duplicated in order before transport.
+
 ## Explicit gaps
 
-The source exposes no Messaging campaign update, delete, archive, duplicate,
-validation, recipient list, event inspection, history, replay, watch, listener,
-or operation cancel route. It also exposes no response cursor. The CLI does not
-substitute similarly named Platform campaign operations or use `raw.request` to
-invent those workflows.
+The Messaging surface now exposes recipient listing and appending; the CLI
+covers both. It still exposes no campaign update, delete, archive, duplicate,
+validation, event inspection, history, replay, watch, listener, or operation
+cancel route, and the CLI does not substitute similarly named Platform campaign
+operations or use `raw.request` to invent those workflows.
+
+Audience listing, retrieval and deletion, the upload-URL route, and the
+single/batch opt-out phone routes remain uncovered by dedicated commands in
+this slice: they keep open `PlatformPayload` contracts in the SDK and are
+reachable through `polymorfa api`. Only the typed Campaigns P0 operations got
+commands.
 
 Stripe `listen` and Wrangler `tail` informed the separate Polymorfa developer
 event listener. It is not a campaign watch command and does not change the
 campaign API gaps above.
 
-At this exact baseline the SDK ledger records 331 total / 207 covered / 58
-missing / 66 excluded / 0 partial / 0 changed operations.
+At this exact baseline the SDK ledger records 432 total / 316 covered / 0
+missing / 116 excluded / 0 partial / 0 changed operations.

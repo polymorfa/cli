@@ -43,13 +43,13 @@ export default class AudienceCreate extends BaseCommand {
     }),
     name: Flags.string({description: 'Audience name.', required: true}),
     'phone-column': Flags.string({
-      default: 'phone',
       dependsOn: ['csv'],
-      description: 'Header naming the phone column.',
+      description: 'Header naming the phone column. Defaults to phone.',
     }),
     variable: Flags.string({
       dependsOn: ['csv'],
-      description: 'Map a template variable to a column, as name=column.',
+      description:
+        'Map a template variable to a column, as name=column. Repeatable; quote a column name that contains spaces.',
       multiple: true,
     }),
   }
@@ -72,7 +72,7 @@ export default class AudienceCreate extends BaseCommand {
     readonly 'file-id'?: string | undefined
     readonly mapping?: string | undefined
     readonly name: string
-    readonly 'phone-column': string
+    readonly 'phone-column'?: string | undefined
     readonly variable?: string[] | undefined
   }) {
     if (flags['file-id'] !== undefined) {
@@ -87,7 +87,7 @@ export default class AudienceCreate extends BaseCommand {
     }
     if (flags.csv !== undefined) {
       const members = await readCsvRecipients(flags.csv, {
-        phoneColumn: flags['phone-column'],
+        phoneColumn: flags['phone-column'] ?? 'phone',
         variables: parseVariableMapping(flags.variable ?? []),
       })
       assertBatchLimit(members)

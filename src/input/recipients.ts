@@ -181,7 +181,10 @@ function columnIndex(header: readonly string[], name: string): number {
 }
 
 function detectDelimiter(text: string): string {
-  const line = text.slice(0, text.search(/\r?\n/) === -1 ? undefined : text.search(/\r?\n/))
+  const line = text.slice(
+    0,
+    text.search(/\r?\n/) === -1 ? undefined : text.search(/\r?\n/),
+  )
   const counts = [',', ';', '\t'].map((candidate) => ({
     candidate,
     count: line.split(candidate).length - 1,
