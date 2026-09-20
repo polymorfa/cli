@@ -1,17 +1,15 @@
 import {Args, Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
-import {
-  renderCampaignOperation,
-  stopCampaign,
-} from '../../services/campaigns.js'
+import {renderCampaignStop, stopCampaign} from '../../services/campaigns.js'
 
 export default class CampaignStop extends BaseCommand {
   static override args = {
     campaign: Args.string({description: 'Campaign ID.', required: true}),
   }
 
-  static override description = 'Permanently stop a campaign.'
+  static override description =
+    'Permanently stop a campaign. A campaign with no active delivery run is cancelled immediately and returns no operation ID.'
 
   static override flags = {
     'idempotency-key': Flags.string({
@@ -38,6 +36,6 @@ export default class CampaignStop extends BaseCommand {
         ? {}
         : {idempotencyKey: flags['idempotency-key']},
     )
-    this.writeValue(result, renderCampaignOperation('stop', result.data), flags)
+    this.writeValue(result, renderCampaignStop(result.data), flags)
   }
 }
