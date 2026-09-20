@@ -265,11 +265,10 @@ credential references. CI normally supplies credentials through environment
 variables and receives an explicit warning if an interactive profile is being
 used unexpectedly.
 
-`polymorfa link` creates `polymorfa.json` with non-secret organization,
-project, and environment identifiers and adds the local file to `.gitignore` by
-default. `polymorfa unlink` removes only the local link. Commands always show a
-clear distinction between changing local context and changing a remote
-resource.
+`polymorfa link` creates `polymorfa.json` holding only the file version and the
+canonical project UUID. The file carries no credentials, so it is safe to
+commit. Deleting it removes the link. Commands always show a clear distinction
+between changing local context and changing a remote resource.
 
 ## Command tree
 

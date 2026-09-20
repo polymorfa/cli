@@ -174,7 +174,9 @@ export class ProjectContextService {
     readonly project?: string | undefined
   }): Promise<LinkResult> {
     const directory = input.directory ?? this.cwd
-    const principal = await this.principal(input.profile)
+    const principal = await this.principal(input.profile, {
+      project: input.project,
+    })
     const reference =
       nonEmpty(input.project) ??
       principal.metadata?.project ??
@@ -257,7 +259,10 @@ export class ProjectContextService {
 
   private async principal(
     requested: string | undefined,
-    options: {readonly requireProfile?: boolean} = {},
+    options: {
+      readonly project?: string | undefined
+      readonly requireProfile?: boolean
+    } = {},
   ): Promise<ResolvedPrincipal> {
     const explicit = nonEmpty(requested)
     if (explicit === undefined && options.requireProfile !== true) {
@@ -274,6 +279,18 @@ export class ProjectContextService {
         return {baseUrl, credential: apiKey, kind: 'apiKey'}
       }
       if (projectToken !== undefined) {
+        // The token does not name its project, so an explicit UUID is the
+        // only way to identify it locally. A slug cannot be resolved without
+        // an organization credential.
+        const declared = nonEmpty(options.project)?.trim()
+        if (declared !== undefined && PROJECT_UUID.test(declared)) {
+          return {
+            baseUrl,
+            credential: projectToken,
+            kind: 'projectToken',
+            tokenProject: declared,
+          }
+        }
         throw new PolymorfaConfigurationError(
           'POLYMORFA_PROJECT_TOKEN does not identify its project locally. Pass --project with the exact project UUID, or use a project-token profile.',
           'project',

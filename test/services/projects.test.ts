@@ -161,6 +161,27 @@ describe('project context', () => {
     })
   })
 
+  test('link accepts an explicit project UUID with an environment project token', async () => {
+    const env = {POLYMORFA_PROJECT_TOKEN: 'pmfa_pt_x'}
+
+    await expect(
+      service(env).link({force: false, project: APP}),
+    ).resolves.toMatchObject({
+      path: join(directory, 'polymorfa.json'),
+      project: APP,
+    })
+    expect(lookup).not.toHaveBeenCalled()
+
+    await expect(service(env).link({force: false})).rejects.toThrow(
+      'POLYMORFA_PROJECT_TOKEN does not identify its project locally',
+    )
+    await expect(
+      service(env).link({force: true, project: 'app'}),
+    ).rejects.toThrow(
+      'POLYMORFA_PROJECT_TOKEN does not identify its project locally',
+    )
+  })
+
   test('current prefers --project, then link, then profile', async () => {
     await service().use({project: 'app'})
     expect(await service().current({})).toMatchObject({
