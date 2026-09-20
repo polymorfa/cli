@@ -86,7 +86,7 @@ export async function runDoctor(
         status: stored !== undefined ? 'ok' : useEnv ? 'warn' : 'fail',
         detail:
           stored === undefined
-            ? `Keyring is reachable but has no credential for profile ${profileName}. Run polymorfa auth login --profile ${profileName}.`
+            ? `Keyring is reachable but has no credential for profile ${profileName}. Run polymorfa auth login --with-api-key --profile ${profileName}.`
             : `Keyring is reachable; profile ${profileName} credential is present.`,
       })
       if (!useEnv) {
@@ -109,7 +109,15 @@ export async function runDoctor(
       })
     }
   } catch (error) {
-    checks.push({name: 'keyring', status: 'fail', detail: message(error)})
+    // An unreachable keyring cannot fail the run when env credentials apply;
+    // commands resolve those before ever touching it.
+    checks.push({
+      name: 'keyring',
+      status: useEnv ? 'warn' : 'fail',
+      detail: useEnv
+        ? `${message(error)} The environment credential is in use, so commands are unaffected.`
+        : message(error),
+    })
   }
   if (useEnv) {
     credential = envKey ?? envOther
@@ -182,7 +190,7 @@ async function credentialCheck(input: {
       name: 'credential',
       status: 'warn',
       detail:
-        'No credential is configured. Set POLYMORFA_API_KEY or run polymorfa auth login.',
+        'No credential is configured. Set POLYMORFA_API_KEY or run polymorfa auth login --with-api-key.',
     }
   }
   if (!input.reachable) {

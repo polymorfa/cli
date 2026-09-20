@@ -177,6 +177,24 @@ describe('doctor', () => {
     expect(report.ok).toBe(true)
   })
 
+  test('only warns about an unreachable keyring when env credentials apply', async () => {
+    const report = await runDoctor(
+      deps({
+        credentials: {
+          delete: () => Promise.resolve(),
+          get: () =>
+            Promise.reject(
+              new PolymorfaConfigurationError('Keyring locked.', 'keyring'),
+            ),
+          set: () => Promise.resolve(),
+        },
+        env: {POLYMORFA_API_KEY: 'pmfa_env'},
+      }),
+    )
+    expect(status(report)).toMatchObject({credential: 'ok', keyring: 'warn'})
+    expect(report.ok).toBe(true)
+  })
+
   test('does not remotely validate client tokens', async () => {
     const report = await runDoctor(
       deps({env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_x'}}),
