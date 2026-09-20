@@ -13,6 +13,8 @@ const OPERATION = '00000000-0000-4000-8000-000000000099'
 const sdk = vi.hoisted(() => ({
   calls: [] as Array<{kind: string; request: Record<string, unknown>}>,
   responses: [] as unknown[],
+  slowRequest: undefined as
+    ((signal?: AbortSignal) => Promise<unknown>) | undefined,
 }))
 
 vi.mock('@polymorfa/sdk', async (importOriginal) => {
@@ -37,6 +39,9 @@ vi.mock('@polymorfa/sdk', async (importOriginal) => {
       },
       request: (request: Record<string, unknown>) => {
         sdk.calls.push({kind: 'request', request})
+        if (sdk.slowRequest !== undefined && sdk.calls.length > 1) {
+          return sdk.slowRequest(request.signal as AbortSignal | undefined)
+        }
         return Promise.resolve({data: next(), metadata: metadata()})
       },
     }
@@ -193,6 +198,33 @@ describe('operation commands', () => {
     expect(sdk.calls[1]?.request.query).toMatchObject({afterSequence: 2})
     expect(process.exitCode).toBe(1)
   })
+
+  test('stops a wait at --timeout even when the server holds the request', async () => {
+    let aborted = false
+    sdk.slowRequest = (signal?: AbortSignal) =>
+      new Promise((_resolve, reject) => {
+        signal?.addEventListener('abort', () => {
+          aborted = true
+          reject(new Error('aborted'))
+        })
+      })
+    sdk.responses.push({data: operation('running', 2)})
+    silence()
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const error = await environment(() =>
+      OperationWait.run([
+        OPERATION,
+        '--owner',
+        'organization',
+        '--timeout',
+        '1',
+        '--json',
+      ]),
+    ).catch((caught: unknown) => caught)
+    expect(aborted).toBe(true)
+    expect(exitCode(error)).toBe(8)
+    sdk.slowRequest = undefined
+  }, 20_000)
 
   test('cancels with confirmation and a caller idempotency key', async () => {
     sdk.responses.push({

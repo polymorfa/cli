@@ -113,23 +113,49 @@ export function operationsFor(session: DeveloperSession) {
       operationId: string,
       options: OperationWaitOptions = {},
     ): Promise<ApiResponse<OperationRecord>> {
-      const deadline = Date.now() + (options.maxWaitMs ?? 5 * 60_000)
+      const maxWaitMs = options.maxWaitMs ?? 5 * 60_000
+      if (!Number.isFinite(maxWaitMs) || maxWaitMs < 0) {
+        throw new Error(
+          'maxWaitMs must be a finite, non-negative number of milliseconds.',
+        )
+      }
+      const deadline = Date.now() + maxWaitMs
+      let latest: ApiResponse<OperationRecord> | undefined
       for (;;) {
         const remaining = Math.max(0, deadline - Date.now())
         const wait = Math.min(
           OPERATION_WAIT_MAX_SECONDS,
           Math.floor(remaining / 1000),
         )
-        const response = await get(
-          operationId,
-          {
-            wait,
-            ...(options.afterSequence === undefined
-              ? {}
-              : {afterSequence: options.afterSequence}),
-          },
-          options.requestOptions,
+        // Bound the request by what is left of the budget, so a server that
+        // holds the connection open cannot outlive --timeout. The final read
+        // still gets a second to answer.
+        const budget = new AbortController()
+        const timer = setTimeout(
+          () => budget.abort(),
+          Math.max(remaining, 1000),
         )
+        let response: ApiResponse<OperationRecord>
+        try {
+          response = await get(
+            operationId,
+            {
+              wait,
+              ...(options.afterSequence === undefined
+                ? {}
+                : {afterSequence: options.afterSequence}),
+            },
+            {...options.requestOptions, signal: budget.signal},
+          )
+        } catch (error) {
+          // A spent budget reports the last state this wait saw; the command
+          // then decides between success and the timeout condition.
+          if (!budget.signal.aborted || latest === undefined) throw error
+          return latest
+        } finally {
+          clearTimeout(timer)
+        }
+        latest = response
         const operation = response.data
         if (
           TERMINAL.has(operation.status) ||
