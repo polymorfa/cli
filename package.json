@@ -137,6 +137,9 @@
       "group": {
         "description": "Inspect and manage Messaging groups."
       },
+      "group:participants": {
+        "description": "List and change group participants and admins."
+      },
       "key": {
         "description": "Inspect and revoke organization API keys."
       },
