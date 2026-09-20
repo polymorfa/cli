@@ -63,6 +63,13 @@ error classes; only the resource method is missing. `src/services/call-consent.t
 declares the response types and is the single place to swap once the SDK ships
 those resources.
 
+The `polymorfa/sdks` branch `t3code/calls-consent` (commit
+`2c46d082d859e1cae657988dd3ef6890d4fec893`) does add those resources, but that
+commit cannot be pinned: the `polymorfa/sdks` repository root package is now
+the private workspace root `polymorfa-sdks` with no built `dist`, so
+`github:polymorfa/sdks#<commit>` no longer installs `@polymorfa/sdk`. Repinning
+needs a published `@polymorfa/sdk` prerelease, not a Git commit.
+
 ## Credential rules
 
 - `calls policy` and `calls opt-outs` resolve Platform credentials, so they
@@ -118,4 +125,5 @@ those resources.
   `polymorfa event` and webhook commands for that.
 - `@polymorfa/sdk` is not published, and the pinned commit predates the call
   consent surface. These commands cannot move to typed SDK resources until a
-  commit that contains them is pinned.
+  prerelease that contains them can be installed; see
+  [Transport](#transport).
