@@ -13,7 +13,7 @@ export default class CallsPlace extends BaseCommand {
   }
 
   static override description =
-    'Place a WhatsApp call from a session. The placing participant owns the call. Server API keys name the session with --session; client tokens place from the session they are bound to.'
+    'Place a WhatsApp call from a session. The placing participant owns the call. Server API keys name the session with --session; client tokens place from the session they are bound to. While WhatsApp restricts the number to people it has already chatted with, a call to anyone else exits with code 3 and number_restricted.'
 
   static override examples = [
     '<%= config.bin %> calls place +15550100 --session support',
