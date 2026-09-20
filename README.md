@@ -491,7 +491,7 @@ never answers or declines on its own.
   `code: "number_restricted"` for anyone else; calls to existing contacts still
   work. A call WhatsApp refuses for that reason ends with
   `reason: "call_restricted"` in `calls watch`. `polymorfa listen
-  --events session.restriction_updated` reports the restriction starting and
+--events session.restriction_updated` reports the restriction starting and
   ending.
 - **Connections.** `calls leave` closes one connection, named by an 8 to 64
   character ID from `A-Z`, `a-z`, `0-9`, `_`, and `-`. The call continues.
