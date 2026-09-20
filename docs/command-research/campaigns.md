@@ -3,8 +3,8 @@
 - **Status:** Campaigns P0 slice: nine lifecycle operations plus recipients,
   audiences and opt-out settings
 - **Reviewed:** 2026-09-20
-- **SDK baseline:** `d146fec7c0fa6ccf830220b41d494ab4bd5e6368`
-- **Contract:** `polymorfa/polymorfa` `d48b43c6e24a52175eba3880c1eefda1e07a3bf0`
+- **SDK baseline:** `3a8e4073281657977d0d1db520e1368d892d66bd`
+- **Contract:** `polymorfa/polymorfa` `ef1653e3c4fc7a98b9da56fffae5f2184b7e4574`
 
 ## Sources reviewed
 
@@ -147,8 +147,11 @@ already takes `--project-slug` rather than a project ID, which is the confusion
 this topic was designed to avoid.
 
 The same revision declares `projectId` as a query parameter on the
-single-campaign Platform operations. No CLI command calls them, so no flag
-changed.
+single-campaign Platform operations, and a later one declares the `409` that
+update answers after launch. No CLI command calls those operations, so no flag
+changed. `projectId` stays optional on purpose: a team API key must send it and
+a project token must not, which the CLI's Platform commands already express
+through the resolved credential rather than a flag.
 
 ## Explicit gaps
 
