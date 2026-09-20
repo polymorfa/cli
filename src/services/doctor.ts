@@ -97,11 +97,15 @@ export async function runDoctor(
       await deps.credentials.get('doctor:probe')
       checks.push({
         name: 'keyring',
-        status: profileName === undefined ? 'ok' : 'fail',
+        // A stale active profile cannot fail the run when env credentials
+        // apply, matching the branch above.
+        status: profileName === undefined ? 'ok' : useEnv ? 'warn' : 'fail',
         detail:
           profileName === undefined
             ? 'Keyring is reachable; no profile is selected.'
-            : `Profile ${profileName} does not exist.`,
+            : useEnv
+              ? `Profile ${profileName} does not exist; the environment credential is in use.`
+              : `Profile ${profileName} does not exist.`,
       })
     }
   } catch (error) {
