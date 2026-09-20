@@ -7,6 +7,13 @@ import {PolymorfaConfigurationError} from '@polymorfa/sdk'
 /** Directory-scoped project link. It never holds credentials. */
 export const LINK_FILE = 'polymorfa.json'
 
+/**
+ * The canonical project identifier. The link file is hand-editable, so both
+ * the read boundary here and the project service enforce the same shape.
+ */
+export const PROJECT_UUID =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+
 export interface ProjectLink {
   readonly project: string
   readonly version: 1
@@ -61,7 +68,7 @@ export async function readProjectLink(
     Array.isArray(parsed) ||
     (parsed as {version?: unknown}).version !== 1 ||
     typeof (parsed as {project?: unknown}).project !== 'string' ||
-    (parsed as {project: string}).project.trim().length === 0 ||
+    !PROJECT_UUID.test((parsed as {project: string}).project.trim()) ||
     Object.keys(parsed).some((key) => key !== 'version' && key !== 'project')
   ) {
     throw invalidLink(path)

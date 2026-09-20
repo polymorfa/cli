@@ -5,14 +5,13 @@ import type {ProfileMetadata} from '../config/profiles.js'
 import {
   findProjectLink,
   linkPath,
+  PROJECT_UUID,
   writeProjectLink,
 } from '../config/project-link.js'
 import {listProjects, type ProjectLookup} from '../context/environment.js'
 import type {ProfileRepositoryLike} from './auth.js'
 
 const DEFAULT_BASE_URL = 'https://api.polymorfa.com'
-const PROJECT_UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
 export type ProjectSource = 'flag' | 'link' | 'profile' | 'none'
 

@@ -225,6 +225,14 @@ describe('project context', () => {
     await expect(findProjectLink(directory)).rejects.toThrow('is invalid')
   })
 
+  test('rejects a link file whose project is not a canonical UUID', async () => {
+    await writeFile(
+      join(directory, 'polymorfa.json'),
+      JSON.stringify({project: 'project_1', version: 1}),
+    )
+    await expect(findProjectLink(directory)).rejects.toThrow('is invalid')
+  })
+
   test('developer commands use the linked project above the profile project', async () => {
     const withProject: ProfileConfig = {
       ...config,
