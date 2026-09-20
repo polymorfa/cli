@@ -4,7 +4,11 @@ import {BaseCommand} from '../../base-command.js'
 import {operationsFor} from '../../developer/operations.js'
 import {developerResponse} from '../../developer/output.js'
 import {CliConditionError} from '../../errors/conditions.js'
-import {TERMINAL_STATUSES, renderOperation, waitFlags} from './shared.js'
+import {
+  TERMINAL_STATUSES,
+  renderOperation,
+  waitFlags,
+} from '../../developer/operation-view.js'
 
 export default class OperationWait extends BaseCommand {
   static override args = {

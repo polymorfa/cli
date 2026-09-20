@@ -3,7 +3,7 @@ import {Args} from '@oclif/core'
 import {BaseCommand} from '../../base-command.js'
 import {operationsFor} from '../../developer/operations.js'
 import {developerResponse} from '../../developer/output.js'
-import {renderOperation} from './shared.js'
+import {renderOperation} from '../../developer/operation-view.js'
 
 export default class OperationView extends BaseCommand {
   static override args = {

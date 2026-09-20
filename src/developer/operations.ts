@@ -1,6 +1,6 @@
 import type {ApiResponse, CursorPage, RequestOptions} from '@polymorfa/sdk'
 
-import type {OperationLike} from '../commands/operation/shared.js'
+import type {OperationLike} from './operation-view.js'
 import type {DeveloperSession} from './client.js'
 
 /**

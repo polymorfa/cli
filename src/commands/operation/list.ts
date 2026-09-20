@@ -10,7 +10,10 @@ import {
   paginationInput,
 } from '../../developer/support.js'
 import {optionalTimeRange} from '../../input/time.js'
-import {OPERATION_STATUSES, renderOperationLine} from './shared.js'
+import {
+  OPERATION_STATUSES,
+  renderOperationLine,
+} from '../../developer/operation-view.js'
 
 export default class OperationList extends BaseCommand {
   static override description =
