@@ -48,4 +48,18 @@ describe('api template', () => {
       'unknown function',
     )
   })
+
+  test('does not resolve inherited object properties as functions', () => {
+    for (const name of ['toString', 'constructor', 'hasOwnProperty']) {
+      expect(() => renderTemplate(`{{${name} .title}}`, data)).toThrow(
+        'unknown function',
+      )
+    }
+  })
+
+  test('rejects {{else if}} instead of dropping the condition', () => {
+    expect(() =>
+      renderTemplate('{{if .missing}}a{{else if .title}}b{{end}}', data),
+    ).toThrow('takes no arguments')
+  })
 })

@@ -8,7 +8,10 @@ import {PolymorfaValidationError} from '@polymorfa/sdk'
  */
 export async function applyJq(value: unknown, filter: string): Promise<string> {
   const {raw} = await import('jq-wasm')
-  const result = await raw(value as Parameters<typeof raw>[0], filter, ['-r'])
+  // jq-wasm parses a string argument as JSON *text*, so a decoded JSON string
+  // body would be re-parsed and fail. Serialize first so every value arrives
+  // as the JSON it stands for.
+  const result = await raw(JSON.stringify(value) ?? 'null', filter, ['-r'])
   if (result.exitCode !== 0) {
     const detail = result.stderr
       .trim()

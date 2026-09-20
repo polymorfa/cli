@@ -75,6 +75,30 @@ describe('api gh-style options', () => {
     })
   })
 
+  test('follows a top-level nextCursor alongside a page envelope', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: [{id: 'c1'}], nextCursor: 'n1', page: {size: 1}}},
+      {body: {data: [{id: 'c2'}], nextCursor: null, page: {size: 1}}},
+    ])
+
+    const result = await run(
+      'api /platform/customers --surface platform --paginate --jq .data[].id',
+    )
+
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(server.requests).toHaveLength(2)
+    expect(result.stdout).toBe('c1\nc2\n')
+  })
+
+  test('applies --jq to a JSON string body', async () => {
+    server = await startHttpServer({body: 'plain text'})
+
+    const result = await run('api /v1/thing --surface platform --jq .')
+
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(result.stdout).toBe('plain text\n')
+  })
+
   test('applies --jq to each page when paginating', async () => {
     server = await startHttpSequenceServer(pages)
 

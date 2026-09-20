@@ -70,11 +70,17 @@ function nextCursor(body: unknown): string | undefined {
     return undefined
   }
   const record = body as Record<string, unknown>
-  const page =
-    record.page !== null && typeof record.page === 'object'
+  const nested =
+    record.page !== null &&
+    typeof record.page === 'object' &&
+    !Array.isArray(record.page)
       ? (record.page as Record<string, unknown>)
-      : record
-  if (page.hasMore === false) return undefined
-  const next = page.nextCursor
-  return typeof next === 'string' && next.length > 0 ? next : undefined
+      : undefined
+  // Prefer the page envelope, then fall back to the top level.
+  for (const scope of nested === undefined ? [record] : [nested, record]) {
+    if (scope.hasMore === false) return undefined
+    const next = scope.nextCursor
+    if (typeof next === 'string' && next.length > 0) return next
+  }
+  return undefined
 }

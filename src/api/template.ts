@@ -82,7 +82,16 @@ function parse(tokens: Token[]): Node[] {
       const action = token.value
       if (action.startsWith('/*') && action.endsWith('*/')) continue
       const keyword = action.split(/\s+/, 1)[0] as string
-      if (terminators.includes(keyword)) return {nodes, terminator: keyword}
+      if (terminators.includes(keyword)) {
+        // {{else if .cond}} chains are not supported; without this the
+        // condition is dropped and the else branch renders unconditionally.
+        if (action.length > keyword.length) {
+          throw templateError(
+            `{{${keyword}}} takes no arguments; nest {{if}}…{{end}} instead of "${action}"`,
+          )
+        }
+        return {nodes, terminator: keyword}
+      }
       if (keyword === 'if' || keyword === 'range') {
         const expr = action.slice(keyword.length).trim()
         if (expr.length === 0) throw templateError(`${keyword} needs a value`)
@@ -171,7 +180,9 @@ function evaluate(expression: string, dot: unknown, root: unknown): unknown {
   const words = splitWords(expression)
   if (words.length === 0) throw templateError('empty action')
   const [head, ...rest] = words as [string, ...string[]]
-  const fn = FUNCTIONS[head]
+  // Own properties only, so inherited names such as toString or constructor
+  // fall through to the unknown-function path instead of being called.
+  const fn = Object.hasOwn(FUNCTIONS, head) ? FUNCTIONS[head] : undefined
   if (fn !== undefined) {
     return fn(...rest.map((word) => operand(word, dot, root)))
   }
