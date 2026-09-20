@@ -569,6 +569,28 @@ passwords never appear in the command line. `create` refuses a body that names
 exits with code 4 when the trunk changed; `delete` exits with code 4 while a
 session routes calls to the trunk.
 
+### Call usage and limits
+
+Polymorfa measures the calls your numbers host. Usage is measured, not charged.
+Commands require a server API key with `sessions:read`; a project API key reads
+its own project.
+
+```shell
+polymorfa usage summary
+polymorfa usage summary --period 2026-09 --session support
+polymorfa usage records --call 3EB0C431C26A1916E07A
+polymorfa usage records --session support --meter call.duration --limit 50
+polymorfa usage records --session support --cursor <cursor from the last page>
+polymorfa usage gates --session support
+```
+
+`usage summary` totals one calendar month (UTC) by meter and by number, and
+defaults to the current month. `usage records` lists records newest first and
+prints the cursor for the next page. `usage gates` shows each gate's mode,
+limit, usage this month and how often an action went over the limit in the last
+30 days: in `record` mode nothing is refused, and in `enforce` mode an action
+over the limit exits with code 4 (`gate_limit_reached`).
+
 ## Session call rejection and stable identities
 
 `call reject` is a separate command for the Linked Device session route. It

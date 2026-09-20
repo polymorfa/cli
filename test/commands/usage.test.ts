@@ -1,0 +1,172 @@
+import {runCommand} from '@oclif/test'
+import {afterEach, describe, expect, test} from 'vitest'
+
+import {
+  startHttpSequenceServer,
+  withEnvironment,
+  type TestHttpServer,
+} from '../helpers/http-server.js'
+
+const API_KEY =
+  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+
+const meterTotal = {
+  keySource: 'none',
+  meter: 'call.duration',
+  quantity: 5400,
+  records: 42,
+  unit: 'second',
+}
+const summary = {
+  billingEnabled: false,
+  end: '2026-10-01T00:00:00.000Z',
+  meters: [meterTotal],
+  numbers: [{meters: [meterTotal], projectId: null, session: 'support'}],
+  numbersTruncated: false,
+  period: '2026-09',
+  projectId: null,
+  session: null,
+  start: '2026-09-01T00:00:00.000Z',
+}
+const record = {
+  dimensions: {
+    connections: 1,
+    direction: 'outbound',
+    origin: 'direct',
+    participants: 1,
+    sipLegs: 0,
+    upstream: 'linked_device',
+    video: false,
+  },
+  id: '11111111-1111-4111-8111-111111111111',
+  keySource: 'none',
+  meter: 'call.duration',
+  occurredAt: '2026-09-19T10:00:00.000Z',
+  pricedCredits: null,
+  pricingState: 'unpriced',
+  projectId: null,
+  quantity: 42,
+  revision: 1,
+  session: 'support',
+  sourceId: 'CALL-1',
+  sourceKind: 'call',
+  unit: 'second',
+}
+const gates = {
+  gates: [
+    {
+      active: true,
+      decisions: {blocked: 0, evaluationError: 0, wouldBlock: 3},
+      key: 'calls.outbound_monthly',
+      kind: 'quota',
+      limit: 50,
+      mode: 'record',
+      overLimit: false,
+      subject: 'number',
+      unit: 'call',
+      used: 4,
+    },
+    {
+      active: false,
+      decisions: {blocked: 0, evaluationError: 0, wouldBlock: 0},
+      key: 'voice.flows',
+      kind: 'capability',
+      limit: 1,
+      mode: 'record',
+      overLimit: false,
+      subject: 'team',
+      unit: null,
+      used: null,
+    },
+  ],
+  session: 'support',
+}
+
+describe('usage commands', () => {
+  let server: TestHttpServer | undefined
+
+  afterEach(async () => {
+    await server?.close()
+    server = undefined
+  })
+
+  test('summarizes a month and lists a call record page', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: summary, success: true}},
+      {
+        body: {
+          data: {nextCursor: 'cursor-2', records: [record]},
+          success: true,
+        },
+      },
+    ])
+
+    const summarized = await apiKey(() =>
+      runCommand('usage summary --period 2026-09'),
+    )
+    const listed = await apiKey(() =>
+      runCommand('usage records --call CALL-1 --limit 10'),
+    )
+
+    expect(summarized.error).toBeUndefined()
+    expect(summarized.stdout).toContain('Period\t2026-09')
+    expect(summarized.stdout).toContain('Charged\tno (measured only)')
+    expect(summarized.stdout).toContain(
+      'call.duration\t5400 second\t42 records',
+    )
+    expect(listed.stdout).toContain('call.duration\t42 second\tsupport\tCALL-1')
+    expect(listed.stdout).toContain('Next page\t--cursor cursor-2')
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/usage?period=2026-09',
+      'GET /platform/usage/records?callId=CALL-1&limit=10',
+    ])
+  })
+
+  test('lists gates with their mode and limit', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: gates, success: true}},
+    ])
+
+    const listed = await apiKey(() =>
+      runCommand('usage gates --session support'),
+    )
+
+    expect(listed.error).toBeUndefined()
+    expect(listed.stdout).toContain(
+      'calls.outbound_monthly\trecord\tchecked\tlimit 50\tused 4\tover limit last 30 days 3',
+    )
+    expect(listed.stdout).toContain('voice.flows\trecord\tnot checked yet')
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/gates?session=support',
+    ])
+  })
+
+  test('refuses a malformed period before any request', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: summary, success: true}},
+    ])
+
+    const failed = await apiKey(() =>
+      runCommand('usage summary --period 2026-9'),
+    )
+
+    expect(exitCode(failed.error)).toBe(2)
+    expect(server.requests).toHaveLength(0)
+  })
+
+  async function apiKey<T>(run: () => Promise<T>): Promise<T> {
+    if (server === undefined) throw new Error('Test server was not started.')
+    return withEnvironment(
+      {
+        POLYMORFA_API_KEY: API_KEY,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+      },
+      run,
+    )
+  }
+})
+
+function exitCode(error: unknown): number | undefined {
+  return (error as {oclif?: {exit?: number}} | undefined)?.oclif?.exit
+}
