@@ -44,14 +44,23 @@ export interface PresentedError {
   readonly message: string
   readonly requestId?: string
   readonly retryable: boolean
+  /** Seconds to wait before retrying, from the API's `Retry-After` header. */
+  readonly retryAfterSeconds?: number
 }
 
 export function presentError(
   error: unknown,
   secrets: readonly string[] = [],
 ): PresentedError {
-  const message = redact(errorMessage(error), secrets)
   const classified = classifyError(error)
+  const retryAfterSeconds =
+    classified.category === 'rate_limit' ? retryAfter(error) : undefined
+  const message = redact(
+    retryAfterSeconds === undefined
+      ? errorMessage(error)
+      : `${errorMessage(error)} Retry after ${retryAfterSeconds} seconds.`,
+    secrets,
+  )
   const requestId =
     error instanceof PolymorfaError || error instanceof ListenerProtocolError
       ? error.requestId
@@ -78,7 +87,20 @@ export function presentError(
         classified.category,
       ),
     ...(requestId === undefined ? {} : {requestId}),
+    ...(retryAfterSeconds === undefined ? {} : {retryAfterSeconds}),
   }
+}
+
+/** `Retry-After` as whole seconds from now, from delta-seconds or an HTTP-date. */
+function retryAfter(error: unknown, now = Date.now()): number | undefined {
+  if (!(error instanceof PolymorfaError)) return undefined
+  const header = error.metadata?.headers['retry-after']?.trim()
+  if (header === undefined || header.length === 0) return undefined
+  if (/^\d+$/.test(header)) return Number(header)
+  const date = Date.parse(header)
+  return Number.isFinite(date)
+    ? Math.max(0, Math.ceil((date - now) / 1000))
+    : undefined
 }
 
 function classifyError(

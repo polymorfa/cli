@@ -99,7 +99,16 @@
         "description": "Reject incoming calls through the Linked Device session route."
       },
       "calls": {
-        "description": "Place, answer, join, decline, leave, end, and watch calls, and carry call audio."
+        "description": "Place, answer, join, decline, leave, end, check, and watch calls, carry call audio, and manage call consent."
+      },
+      "calls:opt-outs": {
+        "description": "Manage the team do-not-call list."
+      },
+      "calls:permission": {
+        "description": "Inspect and request call permission on Cloud API numbers."
+      },
+      "calls:policy": {
+        "description": "Inspect and replace the team call policy."
       },
       "calls:settings": {
         "description": "Inspect and replace session call settings."

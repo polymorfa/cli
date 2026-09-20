@@ -75,6 +75,7 @@ export function errorEnvelope(input: {
   readonly message: string
   readonly requestId?: string
   readonly retryable: boolean
+  readonly retryAfterSeconds?: number
   readonly context: Partial<OutputContext>
 }): {
   readonly schemaVersion: 1

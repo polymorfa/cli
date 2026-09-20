@@ -20,6 +20,10 @@
 - `MessagingClient.voip` and the public `@polymorfa/sdk/calls` entry point
   (`CallsClient`, `Call`, and the Calls error classes).
 
+`calls check`, `calls policy`, `calls opt-outs`, and `calls permission` are
+the team call policy and Cloud API call permission commands; they are
+researched in [call-consent.md](call-consent.md).
+
 ## Shipped command tree
 
 ```text

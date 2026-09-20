@@ -546,6 +546,84 @@ sox greeting.wav -t raw -r 16000 -e signed -b 16 -c 1 - | \
     --input - --leave-on-eof > reply.pcm
 ```
 
+### Call consent
+
+Polymorfa checks every call against the team's call policy before the
+destination rings. `calls policy` and `calls opt-outs` read and change that
+policy and require an organization API key; project tokens and client tokens
+receive `403` and exit with code 3.
+
+```shell
+polymorfa calls policy get
+polymorfa calls policy set --blocked-country-codes 44,1876 --expected-revision 3
+polymorfa calls policy set --clear --expected-revision 4
+
+polymorfa calls opt-outs list --paginate --max-items 1000 --json
+polymorfa calls opt-outs list --phone-number +14155550123
+polymorfa calls opt-outs add --phone-number +14155550123 --note "Asked by phone"
+polymorfa calls opt-outs add --bsuid US.13491208655302741918
+polymorfa calls opt-outs import do-not-call.csv
+polymorfa calls opt-outs remove 0b9f6a52-8f0e-4a44-9d51-3c1f9d6f2a10 --yes
+```
+
+- **Do-not-call list.** Calls to a listed phone number or BSUID are refused
+  with `call_recipient_opted_out`, including calls a PBX places through a SIP
+  trunk. Adding someone already listed returns their entry unchanged with
+  `metadata.status` 200 instead of 201. The list holds 100,000 entries; a full
+  list fails with `call_opt_out_limit` and exit code 4. `remove` needs `--yes`.
+- **List paging.** `calls opt-outs list` returns one page. Human output ends
+  with the `--cursor` for the next page. `--paginate` follows the cursor and
+  requires `--max-items`.
+- **Blocked country codes.** `calls policy set` replaces the stored list with
+  country calling codes or longer dialing prefixes of 1 to 4 digits (`44`,
+  `1876`), at most 300; `--clear` allows every country. Calls to a number that
+  starts with a blocked code are refused with `call_destination_blocked`, and
+  while any code is blocked, so are calls to a person whose phone number is not
+  known. `--expected-revision` applies the change only if the policy still has
+  the `revision` that `calls policy get` printed; otherwise the command exits
+  with code 4 (`state_conflict`) and changes nothing.
+- **Import.** `calls opt-outs import` reads a CSV or JSON file, or `-` for
+  standard input with `--format`. CSV needs a header row naming `phoneNumber`,
+  `bsuid`, and optionally `note`. JSON is an array of
+  `{"phoneNumber" | "bsuid", "note"}` objects, or an object with that array as
+  `entries`. The CLI sends 5,000 entries per request and reports the entries
+  added, already listed, and rejected, with each rejected entry's zero-based
+  position and CSV line. Running the import again is safe. It exits with code
+  12 when entries were rejected, or when a later request failed after earlier
+  batches were stored; when nothing was stored it exits with the request's own
+  code.
+
+Call permissions apply to Cloud API sessions and need a server API key:
+
+```shell
+polymorfa calls permission get +14155550123 --session support
+polymorfa calls permission request +14155550123 --session support \
+  --body "We would like to call you about order 1522."
+polymorfa calls check +14155550123 --session support
+```
+
+- **Read.** `calls permission get` asks WhatsApp on every request and prints
+  the status (`none`, `temporary`, `permanent`, `revoked`), its expiry, and
+  WhatsApp's limits on permission requests and calls. When WhatsApp cannot be
+  reached it prints the stored state and says so. A linked-device session exits
+  with code 4 (`unsupported_for_connection`).
+- **Ask.** `calls permission request` sends `callPermissionRequest` content
+  through the messages send route, so WhatsApp shows `--body` above its allow
+  and decline buttons and charges it as a message. The answer arrives as a
+  `call.permission_changed` event. WhatsApp limits how often a number can ask
+  the same person: the command then exits with code 5
+  (`call_permission_request_limited`) and prints the `Retry-After` wait when
+  WhatsApp gives one. A person who already granted permanent permission exits
+  with code 4 (`call_permission_granted`). `--idempotency-key` identifies a
+  retry of the same send.
+- **Check.** `calls check` runs the checks a placement runs without calling:
+  the session's calling switch, the do-not-call list and blocked country codes,
+  and on Cloud API sessions the person's permission and WhatsApp's call limits.
+  It exits with code 0 whether or not the call is allowed; read `allowed` and
+  `refusal` from the output. `refusal` is `calls_disabled`,
+  `call_recipient_opted_out`, `call_destination_blocked`,
+  `call_permission_required`, or `call_limit_reached`.
+
 ### SIP trunks
 
 SIP trunks connect a PBX to WhatsApp calls. They are part of Calls and need no

@@ -3,6 +3,8 @@ import {
   PolymorfaCancelledError,
   PolymorfaConfigurationError,
   PolymorfaConflictError,
+  PolymorfaRateLimitError,
+  type ResponseMetadata,
 } from '@polymorfa/sdk'
 import {describe, expect, test} from 'vitest'
 
@@ -119,4 +121,56 @@ describe('presentError', () => {
       retryable: false,
     })
   })
+
+  test('reports the Retry-After wait of a rate-limited request', () => {
+    const error = new PolymorfaRateLimitError(
+      'WhatsApp limits how often this number can ask this person.',
+      {
+        code: 'call_permission_request_limited',
+        metadata: rateLimitMetadata({'retry-after': '3600'}),
+      },
+    )
+
+    expect(presentError(error)).toEqual({
+      category: 'rate_limit',
+      code: 'call_permission_request_limited',
+      exitCode: 5,
+      message:
+        'WhatsApp limits how often this number can ask this person. Retry after 3600 seconds.',
+      retryAfterSeconds: 3600,
+      retryable: true,
+    })
+  })
+
+  test('reads a Retry-After HTTP date and ignores an unreadable one', () => {
+    const inFiveMinutes = new Date(Date.now() + 300_000).toUTCString()
+
+    expect(
+      presentError(
+        new PolymorfaRateLimitError('Slow down.', {
+          metadata: rateLimitMetadata({'retry-after': inFiveMinutes}),
+        }),
+      ).retryAfterSeconds,
+    ).toBeGreaterThan(290)
+    expect(
+      presentError(
+        new PolymorfaRateLimitError('Slow down.', {
+          metadata: rateLimitMetadata({'retry-after': 'soon'}),
+        }),
+      ),
+    ).not.toHaveProperty('retryAfterSeconds')
+    expect(
+      presentError(
+        new PolymorfaRateLimitError('Slow down.', {
+          metadata: rateLimitMetadata({}),
+        }),
+      ),
+    ).not.toHaveProperty('retryAfterSeconds')
+  })
 })
+
+function rateLimitMetadata(
+  headers: Readonly<Record<string, string>>,
+): ResponseMetadata {
+  return {attempts: 1, headers, status: 429}
+}

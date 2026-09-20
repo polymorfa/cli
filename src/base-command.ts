@@ -208,6 +208,9 @@ export abstract class BaseCommand extends Command {
               ? {}
               : {requestId: presented.requestId}),
             retryable: presented.retryable,
+            ...(presented.retryAfterSeconds === undefined
+              ? {}
+              : {retryAfterSeconds: presented.retryAfterSeconds}),
           }),
         )}\n`,
       )
