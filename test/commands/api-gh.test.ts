@@ -110,6 +110,17 @@ describe('api gh-style options', () => {
     expect(result.stdout).toBe('c1\nc2\nc3\n')
   })
 
+  test('--quiet suppresses output without changing how --jq sees pages', async () => {
+    server = await startHttpSequenceServer(pages)
+
+    const result = await run(
+      'api /platform/customers --surface platform --paginate --jq .data[].id --quiet',
+    )
+
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(result.stdout).toBe('')
+  })
+
   test('applies --jq once to all pages with --slurp', async () => {
     server = await startHttpSequenceServer(pages)
 

@@ -158,7 +158,9 @@ export default class Api extends BaseCommand {
       return
     }
 
-    const streaming = !flags.slurp && mode === 'human'
+    // --quiet only suppresses output; it must not change how the filter sees
+    // the pages. Only --json aggregates, because it prints one document.
+    const streaming = !flags.slurp && mode !== 'json'
     const pages = await paginateRawRequest(client, request, {
       maxPages: flags['max-pages'] ?? DEFAULT_MAX_PAGES,
       ...(streaming

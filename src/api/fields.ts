@@ -1,4 +1,4 @@
-import {readFile} from 'node:fs/promises'
+import {readFile, stat} from 'node:fs/promises'
 
 import {PolymorfaValidationError} from '@polymorfa/sdk'
 
@@ -205,6 +205,15 @@ function conflict(key: string): PolymorfaValidationError {
 
 async function readFieldFile(path: string): Promise<string> {
   try {
+    // Check the size before reading so an oversized file is rejected instead
+    // of being buffered in full. The post-read check still covers a race.
+    const {size} = await stat(path)
+    if (size > MAX_FIELD_FILE_BYTES) {
+      throw new PolymorfaValidationError(
+        'Field files must not exceed 10 MiB.',
+        {code: 'input_too_large'},
+      )
+    }
     const contents = await readFile(path)
     if (contents.byteLength > MAX_FIELD_FILE_BYTES) {
       throw new PolymorfaValidationError(
