@@ -241,6 +241,29 @@ describe('sip-trunk commands', () => {
     expect(invalid.stdout).not.toContain('made-up.example.test')
   })
 
+  test('refuses a hosted address without transports or an RTP range', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {data: {...hostedEndpoint, rtp: null}, success: true},
+        status: 200,
+      },
+      {
+        body: {data: {...hostedEndpoint, transports: []}, success: true},
+        status: 200,
+      },
+    ])
+
+    const withoutRtp = await apiKey(() => runCommand('sip-trunk endpoint'))
+    const withoutTransports = await apiKey(() =>
+      runCommand('sip-trunk endpoint'),
+    )
+
+    expect(withoutRtp.error).toBeDefined()
+    expect(withoutRtp.stdout).not.toContain('sip.example.test')
+    expect(withoutTransports.error).toBeDefined()
+    expect(withoutTransports.stdout).not.toContain('sip.example.test')
+  })
+
   test('still prints rotated credentials when the SIP address is unavailable', async () => {
     server = await startHttpSequenceServer([
       {

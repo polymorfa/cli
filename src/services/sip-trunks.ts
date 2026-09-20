@@ -130,21 +130,34 @@ export interface SipEndpointTransport {
   readonly srtp: 'required' | 'not_supported'
 }
 
+export interface SipEndpointRtp {
+  readonly protocol: 'udp'
+  readonly portMin: number
+  readonly portMax: number
+}
+
+/** The environment accepts SIP at `host`. */
+export interface SipEndpointHosted {
+  readonly status: 'hosted'
+  readonly host: string
+  readonly transports: readonly SipEndpointTransport[]
+  readonly rtp: SipEndpointRtp
+}
+
+/** The environment has no SIP address. */
+export interface SipEndpointNotHosted {
+  readonly status: 'sip_not_hosted'
+  readonly host: null
+  readonly transports: readonly []
+  readonly rtp: null
+}
+
 /**
  * The SIP address of the environment, from `GET /platform/sip/endpoint`.
- * `sip_not_hosted` is a normal answer: the environment has no SIP address,
- * `host` and `rtp` are null and `transports` is empty.
+ * `sip_not_hosted` is a normal answer, not a failure. Narrow on `status`
+ * before reading `host`, `transports` or `rtp`.
  */
-export interface SipEndpoint {
-  readonly status: 'hosted' | 'sip_not_hosted'
-  readonly host: string | null
-  readonly transports: readonly SipEndpointTransport[]
-  readonly rtp: {
-    readonly protocol: 'udp'
-    readonly portMin: number
-    readonly portMax: number
-  } | null
-}
+export type SipEndpoint = SipEndpointHosted | SipEndpointNotHosted
 
 /**
  * The pinned SDK has no `sipTrunks.endpoint()` yet, so this reads the
@@ -253,7 +266,7 @@ export function renderSipTrunkCredentials(
 }
 
 export function renderSipEndpoint(endpoint: SipEndpoint): string {
-  if (endpoint.status !== 'hosted' || endpoint.host === null) {
+  if (endpoint.status !== 'hosted') {
     return 'This environment has no SIP address.'
   }
   const lines = [`Host\t${endpoint.host}`]
@@ -264,11 +277,9 @@ export function renderSipEndpoint(endpoint: SipEndpoint): string {
       }`,
     )
   }
-  if (endpoint.rtp !== null) {
-    lines.push(
-      `RTP\t${endpoint.rtp.protocol.toUpperCase()} ${endpoint.rtp.portMin}-${endpoint.rtp.portMax}`,
-    )
-  }
+  lines.push(
+    `RTP\t${endpoint.rtp.protocol.toUpperCase()} ${endpoint.rtp.portMin}-${endpoint.rtp.portMax}`,
+  )
   lines.push(
     `Allow SIP and RTP in both directions between your PBX and the addresses ${endpoint.host} resolves to.`,
   )
@@ -338,16 +349,15 @@ function isSipEndpoint(value: unknown): value is SipEndpoint {
   if (typeof value.host !== 'string' || value.host.length === 0) return false
   const rtp = value.rtp
   if (
-    rtp !== null &&
-    !(
-      isRecord(rtp) &&
-      rtp.protocol === 'udp' &&
-      isPort(rtp.portMin) &&
-      isPort(rtp.portMax)
-    )
+    !isRecord(rtp) ||
+    rtp.protocol !== 'udp' ||
+    !isPort(rtp.portMin) ||
+    !isPort(rtp.portMax) ||
+    rtp.portMin > rtp.portMax
   ) {
     return false
   }
+  if (value.transports.length === 0) return false
   return value.transports.every(
     (transport) =>
       isRecord(transport) &&
