@@ -3,8 +3,8 @@
 - **Status:** Campaigns P0 slice: nine lifecycle operations plus recipients,
   audiences and opt-out settings
 - **Reviewed:** 2026-09-20
-- **SDK baseline:** `50c5b1f35c403dd691f72d395b299b8bb51c4801`
-- **Contract:** `polymorfa/polymorfa` `a1be7b131b098aa7a7f827094b05b65cda809eb0`
+- **SDK baseline:** `d146fec7c0fa6ccf830220b41d494ab4bd5e6368`
+- **Contract:** `polymorfa/polymorfa` `d48b43c6e24a52175eba3880c1eefda1e07a3bf0`
 
 ## Sources reviewed
 
@@ -136,6 +136,19 @@ Opt-out settings are a replace, not a patch. The API requires `enabled`,
 `--enabled`/`--no-enabled` and at least one `--opt-out-keyword`, and refuses a
 partial update rather than silently clearing keywords the caller omitted.
 Keywords are de-duplicated in order before transport.
+
+The Platform campaign update route accepts `recipientListId` to point an
+unlaunched draft at another audience. The CLI exposes no campaign update
+command: the Messaging surface the `campaign` topic is built on has no update
+route, and the Platform one keeps an open request body. That operation stays
+reachable through `polymorfa api`. Adding a `campaign update` command would
+mean introducing a Platform-backed command under a Messaging-scoped topic that
+already takes `--project-slug` rather than a project ID, which is the confusion
+this topic was designed to avoid.
+
+The same revision declares `projectId` as a query parameter on the
+single-campaign Platform operations. No CLI command calls them, so no flag
+changed.
 
 ## Explicit gaps
 
