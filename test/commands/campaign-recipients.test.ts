@@ -215,6 +215,43 @@ describe('Campaign recipient commands', () => {
     },
   )
 
+  test.each([
+    ['an empty array', []],
+    ['an empty recipients array', {recipients: []}],
+  ])('refuses JSON input with %s before sending it', async (_name, body) => {
+    directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
+    const input = join(directory, 'recipients.json')
+    await writeFile(input, JSON.stringify(body), 'utf8')
+    server = await startHttpServer({body: {data: {}, success: true}})
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign recipients add campaign_1 --project-slug project_1 --input ${input}`,
+      ),
+    )
+
+    expect(result.error).toBeDefined()
+    expect(result.stderr).toContain('Recipient input has no entries')
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('refuses the reserved __proto__ variable name instead of dropping it', async () => {
+    directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
+    const csv = join(directory, 'contacts.csv')
+    await writeFile(csv, 'phone,Plan\n+15551234567,pro\n', 'utf8')
+    server = await startHttpServer({body: {data: {}, success: true}})
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign recipients add campaign_1 --project-slug project_1 --csv ${csv} --variable __proto__=Plan`,
+      ),
+    )
+
+    expect(result.error).toBeDefined()
+    expect(result.stderr).toContain('__proto__ is reserved')
+    expect(server.requests).toHaveLength(0)
+  })
+
   test('says a campaign was cancelled when stop returns no operation', async () => {
     server = await startHttpServer({
       body: {

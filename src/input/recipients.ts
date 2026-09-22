@@ -120,6 +120,14 @@ export function parseVariableMapping(
     }
     const name = pair.slice(0, separator).trim()
     const column = pair.slice(separator + 1).trim()
+    // `__proto__` passes the name pattern but a plain-object assignment would
+    // hit the prototype setter and silently drop the mapping.
+    if (name === '__proto__') {
+      throw invalid(
+        '__proto__ is reserved and cannot be a variable name.',
+        'invalid_variable_name',
+      )
+    }
     if (!VARIABLE_NAME.test(name)) {
       throw invalid(
         `${name} is not a valid variable name. Use letters, digits, _, . or -.`,
@@ -155,6 +163,13 @@ export function recipientsFromJson(input: unknown): CampaignRecipientInput[] {
   if (entries === undefined) {
     throw invalid(
       'Recipient input must be a JSON array, or an object with a recipients or members array.',
+      'invalid_recipient_input',
+    )
+  }
+  if (entries.length === 0) {
+    // Both append request schemas require at least one entry.
+    throw invalid(
+      'Recipient input has no entries; nothing was sent.',
       'invalid_recipient_input',
     )
   }

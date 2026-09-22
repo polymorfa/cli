@@ -998,7 +998,8 @@ sends the rows inline; it does not upload the file. Blank rows are ignored, but
 a row with other values and an empty phone cell stops the command before
 anything is sent, naming the row numbers (the header is row 1). `--input`
 entries with an empty phone, and any phone longer than 64 characters, are
-refused the same way, because the API would reject the whole request. Comma,
+refused the same way, as is an empty `--input` array, because the API would
+reject the whole request. `__proto__` is not accepted as a `--variable` name. Comma,
 semicolon and tab separators are detected from the header row; separators
 inside quoted fields are ignored. A phone already on the
 campaign is skipped, and invalid entries are reported rather than added, so the
