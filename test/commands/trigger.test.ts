@@ -158,3 +158,18 @@ test('parses typed overrides and rejects malformed ones', () => {
   expect(() => parseOverrides(['durationSeconds=-1'])).toThrow('whole number')
   expect(() => parseOverrides(['text=a', 'text=b'])).toThrow('more than once')
 })
+
+test('rejects a shortcut that repeats an explicit override', async () => {
+  for (const flags of [
+    '--override text=first --text second',
+    '--override from=+15550001111 --from +15550002222',
+  ]) {
+    const collision = await run(
+      `trigger message.received --project ${projectId} --session test-a ${flags}`,
+      [],
+    )
+    expect(collision.result.error).toBeDefined()
+    expect(collision.result.stderr).toContain('not both')
+    expect(collision.requests).toHaveLength(0)
+  }
+})

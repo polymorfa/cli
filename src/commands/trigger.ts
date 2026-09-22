@@ -96,8 +96,18 @@ export default class Trigger extends BaseCommand {
       )
 
     const overrides = parseOverrides(flags.override ?? [])
-    if (flags.text !== undefined) overrides.text = flags.text
-    if (flags.from !== undefined) overrides.from = flags.from
+    for (const [key, value] of [
+      ['text', flags.text],
+      ['from', flags.from],
+    ] as const) {
+      if (value === undefined) continue
+      if (key in overrides)
+        throw new PolymorfaConfigurationError(
+          `Pass ${key} once: use either --${key} or --override ${key}=..., not both.`,
+          'override',
+        )
+      overrides[key] = value
+    }
     const request: TriggerTestEventRequest = {
       session: flags.session,
       event: args.event as TestEventFixture,
