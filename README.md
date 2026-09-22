@@ -264,6 +264,10 @@ polymorfa message star 740000000001 \
   --chat +15551234567
 ```
 
+JSON message output preserves `whatsapp_ids.linked_devices` and
+`whatsapp_ids.official_api` when supplied by the API. Use the Polymorfa message
+`id` for replies and actions; provider references remain strings.
+
 Add `--remove` to `message star` to unstar. Text sends accept repeatable
 `--mention` with a Polymorfa user ID, `--reply-to` with a Polymorfa message ID,
 and `--forwarded`. `--to` and `--chat` accept a conversation ID, E.164 phone
@@ -1289,3 +1293,39 @@ then explicitly submit its `quoteId` with `PATCH /platform/sessions/{sessionId}`
 Read `GET /platform/sessions/{sessionId}/tier-quotes/{quoteId}` until the result is
 applied or rejected. Store the full JSON request in a file and pass `--input` when
 it contains numeric values or `null`; `--field` creates string values.
+
+### Hybrid Link controls
+
+These additions are under development and are not available in the published
+CLI. They are tested against the companion Hybrid Link SDK source using API
+contract `c087e3496f3fcc8977d94fcba60904158c7550cf`. The registry SDK dependency
+must be updated after that SDK artifact is published before releasing this CLI.
+
+These commands require API-authorized private-preview access. An installed CLI
+or a transport flag does not enable Hybrid Link. Use a team API key or project
+token; browser client tokens cannot control Hybrid Link or send through it.
+
+```bash
+polymorfa quicklink availability --project PROJECT_UUID --session NUMBER
+polymorfa quicklink create --project PROJECT_UUID --connection-goal hybrid
+polymorfa quicklink create --project PROJECT_UUID --purpose add_connection --session NUMBER --add-connection linked_devices
+polymorfa message send text --session NUMBER --to +14155550123 --body Hello --transport official_api
+polymorfa message operation-status OPERATION_UUID --session NUMBER
+polymorfa routing-policy get --scope session --project PROJECT_UUID --session NUMBER
+polymorfa routing-policy set --scope session --project PROJECT_UUID --session NUMBER --expected-revision REVISION --prefer linked_devices --allow linked_devices --allow official_api
+polymorfa hybrid-link state --session NUMBER
+polymorfa hybrid-link pause --session NUMBER --expected-revision REVISION
+polymorfa hybrid-link resume --session NUMBER --expected-revision REVISION
+```
+
+All message send types, reactions, edits, and deletions accept `--transport auto`,
+`linked_devices`, or `official_api`. Explicit choices never fall back. JSON output
+preserves route metadata and the operation ID. If a send reports an unknown
+outcome, inspect `message operation-status`; do not resend with a new key or change
+transport. Status reads do not send. `pending` and `unknown` are unresolved outcomes.
+
+Policy writes require the revision returned by `routing-policy get` (`default`
+for an unsaved policy). Pause/resume requires the UUID returned by
+`hybrid-link state`. A stale write fails without replacing later changes.
+`--prefer inherit` sends no local preference. `--deny-all` disallows both transports at the selected scope. Repeating `--allow` permits both
+transports within the restrictions inherited from the team and project.

@@ -228,11 +228,16 @@ export abstract class BaseCommand extends Command {
               ? {}
               : {requestId: presented.requestId}),
             retryable: presented.retryable,
+            ...(presented.operationId === undefined
+              ? {}
+              : {operationId: presented.operationId}),
           }),
         )}\n`,
       )
     } else {
       process.stderr.write(`Error: ${presented.message}\n`)
+      if (presented.operationId !== undefined)
+        process.stderr.write(`Operation ID: ${presented.operationId}\n`)
       if (presented.requestId !== undefined) {
         process.stderr.write(`Request ID: ${presented.requestId}\n`)
       }

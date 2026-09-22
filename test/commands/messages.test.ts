@@ -225,7 +225,7 @@ async function messageServer(requestId?: string): Promise<TestHttpServer> {
 function completeMessage() {
   return {
     id: '740000000001',
-    whatsapp_id: '3A000000000000000001',
+    whatsapp_ids: {linked_devices: '3A000000000000000001', official_api: 'wamid.exact-provider-reference'},
     conversation: {id: '730000000001', phoneNumber: '+15551234567'},
     type: 'text',
     timestamp: '2026-08-19T20:00:00.000Z',

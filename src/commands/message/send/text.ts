@@ -3,12 +3,14 @@ import type {SendTextMessageRequest} from '@polymorfa/sdk'
 
 import {BaseCommand} from '../../../base-command.js'
 import {sendTextMessage} from '../../../services/messages.js'
+import {transportFlag, messageTransport} from '../../../input/message-send.js'
 import {conversationReference} from '../../../services/conversation.js'
 
 export default class MessageSendText extends BaseCommand {
   static override description = 'Send a text message.'
 
   static override flags = {
+    transport: transportFlag,
     body: Flags.string({
       description: 'Text to send.',
       required: true,
@@ -42,6 +44,9 @@ export default class MessageSendText extends BaseCommand {
     const request: SendTextMessageRequest = {
       conversation: conversationReference(flags.to),
       content: {text: flags.body},
+      ...(flags.transport === undefined
+        ? {}
+        : {transport: messageTransport(flags.transport)}),
       ...(flags.forwarded ? {isForwarded: true} : {}),
       ...(flags.mention === undefined ? {} : {mentions: flags.mention}),
       ...(flags['reply-to'] === undefined
