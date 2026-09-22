@@ -1,0 +1,52 @@
+import {Args, Flags} from '@oclif/core'
+
+import {BaseCommand} from '../../base-command.js'
+import {confirmDangerous} from '../../input/confirmation.js'
+import {idempotencyOptions} from '../../input/message-send.js'
+import {deleteMessage} from '../../services/messages.js'
+
+export default class MessageDelete extends BaseCommand {
+  static override args = {
+    message: Args.string({description: 'Message ID.', required: true}),
+  }
+
+  static override description =
+    'Delete a message you sent for everyone in the conversation.'
+
+  static override examples = [
+    '<%= config.bin %> message delete 740000000001 --session session_123 --chat 730000000001 --yes',
+  ]
+
+  static override flags = {
+    chat: Flags.string({
+      description: 'Conversation that contains the message.',
+      required: true,
+    }),
+    'idempotency-key': Flags.string({
+      description: 'Safely identify retries of this deletion.',
+    }),
+    session: Flags.string({
+      description: 'Messaging session ID.',
+      required: true,
+    }),
+    yes: Flags.boolean({
+      description: 'Confirm deletion without an interactive prompt.',
+    }),
+  }
+
+  async run(): Promise<void> {
+    const {args, flags} = await this.parse(MessageDelete)
+    await confirmDangerous({
+      prompt: `Delete message ${args.message} for everyone?`,
+      yes: flags.yes,
+    })
+    const result = await deleteMessage(
+      await this.messagingClient(flags),
+      flags.session,
+      flags.chat,
+      args.message,
+      idempotencyOptions(flags['idempotency-key']),
+    )
+    this.writeValue(result, `Deleted message ${args.message}.`, flags)
+  }
+}
