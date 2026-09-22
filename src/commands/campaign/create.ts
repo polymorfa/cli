@@ -10,7 +10,7 @@ export default class CampaignCreate extends BaseCommand {
   static override flags = {
     'idempotency-key': Flags.string({
       description:
-        'Identify this attempt (the API does not deduplicate campaign creation).',
+        'Deduplicate this request for 24 hours. A completed key returns 409 idempotency_completed.',
     }),
     input: Flags.string({
       description: 'Read the campaign JSON object from a file or stdin (-).',

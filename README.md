@@ -968,8 +968,18 @@ the CLI reports that outcome instead of printing an empty operation.
 
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
-is synchronous and reports only the number moved. Every mutation accepts
-`--idempotency-key`.
+is synchronous and reports only the number moved.
+
+Create, launch, pause, resume and stop accept `--idempotency-key` to deduplicate
+the same request for 24 hours. A successful request repeated with the same key
+returns `409 idempotency_completed`, not the original response. Changed input
+returns `409 idempotency_conflict`; an in-progress or uncertain result must be
+resolved before trying a new key. The SDK generates a key for create and launch
+when the flag is omitted. Supply the flag to reuse a key across CLI invocations.
+
+Requeue also accepts the header, but the API does not deduplicate it. Each
+invocation moves recipients eligible at that time, so a retry can move newly
+failed recipients rather than returning the first result.
 
 ### Campaign recipients
 

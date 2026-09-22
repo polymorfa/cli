@@ -17,7 +17,7 @@ export default class CampaignRequeue extends BaseCommand {
   static override flags = {
     'idempotency-key': Flags.string({
       description:
-        'Identify this attempt (retries normally find no remaining recipients).',
+        'Send this request identity without replay protection. A retry can requeue newly failed recipients.',
     }),
     'include-skipped-error': Flags.boolean({
       description: 'Also requeue recipients skipped with an error.',

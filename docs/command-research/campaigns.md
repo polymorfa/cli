@@ -2,9 +2,13 @@
 
 - **Status:** Campaigns P0 slice: nine lifecycle operations plus recipients,
   audiences and opt-out settings
-- **Reviewed:** 2026-09-20
-- **SDK baseline:** `2862336f0ea660402125aeb7720ab57c17439460`
-- **Contract:** `polymorfa/polymorfa` `ef1653e3c4fc7a98b9da56fffae5f2184b7e4574`
+- **Reviewed:** 2026-09-22
+- **SDK baseline:** `c5ea8f3933687fb677ed60d682ca19ee28ea7464`
+- **Contract:** `polymorfa/polymorfa` `8067be507dc818d2418f8724a943de138678b3db`
+
+The API snapshot is provisional. SDK publication remains blocked on replacing
+its source pin with the final merged API `dev` revision; these notes do not
+claim package publication or deployed availability.
 
 ## Sources reviewed
 
@@ -78,21 +82,34 @@ a terminal transition and requires `--yes`.
 
 Launch, pause, resume, and stop append durable commands and return an operation
 ID plus the campaign's present state. Human output says “Accepted” and does not
-say the transition completed. The returned IDs belong to the Messaging campaign
-API. Operation inspection is console-only, so the CLI cannot poll them. The
-unpublished `--surface messaging` selector was removed rather than retained as
-a compatibility alias.
+say the transition completed. Use `operation view`, `operation wait`, or
+`operation watch` to inspect the returned ID through the public Platform
+operations resource; `operation cancel` requests supported cancellation.
+These commands use their own team/project credential context. The unpublished
+`--surface messaging` selector remains removed.
 
 Requeue is different: it is a direct transaction and returns only the number
 of recipients moved. Failed recipients are always considered;
 `--include-skipped-error` adds recipients skipped with an error. The CLI reports
 that count without inventing per-recipient outcomes.
 
-Every mutation accepts `--idempotency-key` as request identity, but the pinned
-handlers do not persist the header. The help text does not claim deduplication:
-an unseen successful create can duplicate, a repeated lifecycle request can
-conflict or append another intent, and a repeated requeue normally returns
-zero after the first transaction moved its eligible recipients.
+Create, launch, pause, resume and stop accept `--idempotency-key` with a 24-hour
+server deduplication window. The middleware is mounted after authentication,
+rate limits and client rules, before the campaign routes under `/messaging`.
+Its identity includes the credential, project, method, route, API version and
+key; the fingerprint includes path parameters and the canonical request body.
+A repeated successful request returns `409 idempotency_completed`, not the
+original response body. Changed input returns `409 idempotency_conflict`;
+in-flight requests return `idempotency_in_progress`, and uncertain outcomes
+remain fenced as `idempotency_outcome_unknown`. Do not switch keys merely to
+bypass an uncertain result; inspect the campaign or operation first. The SDK
+generates a key for create and launch when none is supplied; pause, resume and
+stop require the flag to opt into this protection across calls.
+
+Requeue is not in that middleware's operation list. Its handler calls
+`CampaignRepository.apiRequeue` directly, so `--idempotency-key` carries no
+replay guarantee. Each invocation moves the rows eligible at that moment; a
+retry can return zero or move recipients that failed since the first attempt.
 
 Recipient and audience-member appends have no declared replay at all. From SDK
 `b663914` the SDK generates no key for them and sends each append once unless
@@ -156,17 +173,20 @@ this topic was designed to avoid.
 The same revision declares `projectId` as a query parameter on the
 single-campaign Platform operations, and a later one declares the `409` that
 update answers after launch. No CLI command calls those operations, so no flag
-changed. `projectId` stays optional on purpose: a team API key must send it and
-a project token must not, which the CLI's Platform commands already express
-through the resolved credential rather than a flag.
+changed. The API schema permits an omitted `projectId` for project tokens;
+the SDK's organization-only campaign resource requires it. Its create method
+also requires the typed `CreatePlatformCampaignRequest` with a name and project
+ID. CLI campaign commands still use the separate Messaging resource with an
+explicit project slug.
 
 ## Explicit gaps
 
 The Messaging surface now exposes recipient listing and appending; the CLI
 covers both. It still exposes no campaign update, delete, archive, duplicate,
 validation, event inspection, history, replay, watch, listener, or operation
-cancel route, and the CLI does not substitute similarly named Platform campaign
-operations or use `raw.request` to invent those workflows.
+cancel route. The separate Platform-backed `operation` commands inspect, wait
+for and cancel supported campaign operations; they do not add those missing
+Messaging campaign routes.
 
 Audience listing, retrieval and deletion, the upload-URL route, and the
 single/batch opt-out phone routes remain uncovered by dedicated commands in
@@ -178,5 +198,5 @@ Stripe `listen` and Wrangler `tail` informed the separate Polymorfa developer
 event listener. It is not a campaign watch command and does not change the
 campaign API gaps above.
 
-At this exact baseline the SDK ledger records 432 total / 316 covered / 0
-missing / 116 excluded / 0 partial / 0 changed operations.
+At this exact baseline the SDK ledger records 441 total / 325 covered / 5
+missing / 111 excluded / 0 partial / 0 changed operations.
