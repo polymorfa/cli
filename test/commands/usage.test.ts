@@ -10,6 +10,9 @@ import {
 const API_KEY =
   'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
+const PROJECT_A = '22222222-2222-4222-8222-222222222222'
+const PROJECT_B = '33333333-3333-4333-8333-333333333333'
+
 const meterTotal = {
   keySource: 'none',
   meter: 'call.duration',
@@ -21,7 +24,10 @@ const summary = {
   billingEnabled: false,
   end: '2026-10-01T00:00:00.000Z',
   meters: [meterTotal],
-  numbers: [{meters: [meterTotal], projectId: null, session: 'support'}],
+  numbers: [
+    {meters: [meterTotal], projectId: PROJECT_A, session: 'support'},
+    {meters: [meterTotal], projectId: PROJECT_B, session: 'support'},
+  ],
   numbersTruncated: false,
   period: '2026-09',
   projectId: null,
@@ -44,7 +50,7 @@ const record = {
   occurredAt: '2026-09-19T10:00:00.000Z',
   pricedCredits: null,
   pricingState: 'unpriced',
-  projectId: null,
+  projectId: PROJECT_A,
   quantity: 42,
   revision: 1,
   session: 'support',
@@ -114,11 +120,48 @@ describe('usage commands', () => {
     expect(summarized.stdout).toContain(
       'call.duration\t5400 second\t42 records',
     )
-    expect(listed.stdout).toContain('call.duration\t42 second\tsupport\tCALL-1')
+    expect(summarized.stdout).toContain(
+      `support\t${PROJECT_A}\tcall.duration 5400 second`,
+    )
+    expect(summarized.stdout).toContain(
+      `support\t${PROJECT_B}\tcall.duration 5400 second`,
+    )
+    expect(listed.stdout).toContain(
+      `call.duration\t42 second\tsupport\t${PROJECT_A}\tCALL-1`,
+    )
     expect(listed.stdout).toContain('Next page\t--cursor cursor-2')
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
       'GET /platform/usage?period=2026-09',
       'GET /platform/usage/records?callId=CALL-1&limit=10',
+    ])
+  })
+
+  test('omits the per-number project when the summary covers one project', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          data: {
+            ...summary,
+            numbers: [
+              {meters: [meterTotal], projectId: PROJECT_A, session: 'support'},
+            ],
+            projectId: PROJECT_A,
+          },
+          success: true,
+        },
+      },
+    ])
+
+    const summarized = await apiKey(() =>
+      runCommand(`usage summary --project ${PROJECT_A}`),
+    )
+
+    expect(summarized.error).toBeUndefined()
+    expect(summarized.stdout).toContain(`Project\t${PROJECT_A}`)
+    expect(summarized.stdout).toContain('support\tcall.duration 5400 second')
+    expect(summarized.stdout).not.toContain(`support\t${PROJECT_A}`)
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      `GET /platform/usage?projectId=${PROJECT_A}`,
     ])
   })
 

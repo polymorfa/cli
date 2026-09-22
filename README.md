@@ -586,8 +586,9 @@ polymorfa usage gates --session support
 ```
 
 `usage summary` totals one calendar month (UTC) by meter and by number, and
-defaults to the current month. `usage records` lists records newest first and
-prints the cursor for the next page. `usage gates` shows each gate's mode,
+defaults to the current month; without `--project`, each number row also shows
+its project. `usage records` lists records newest first with each record's
+project, and prints the cursor for the next page. `usage gates` shows each gate's mode,
 limit, usage this month and how often an action went over the limit in the last
 30 days: in `record` mode nothing is refused, and in `enforce` mode an action
 over the limit exits with code 4 (`gate_limit_reached`).

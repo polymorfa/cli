@@ -164,13 +164,19 @@ export function renderUsageSummary(summary: UsageSummary): string {
           .join('\n'),
   )
   if (summary.numbers.length > 0) {
+    // Without a project, numbers from several projects can share a session
+    // name, so each row names its project.
+    const crossProject = summary.projectId === null
     lines.push(
       'Numbers',
-      ...summary.numbers.map(
-        (number) =>
-          `${number.session}\t${number.meters
+      ...summary.numbers.map((number) =>
+        [
+          number.session,
+          ...(crossProject ? [number.projectId ?? '-'] : []),
+          number.meters
             .map((total) => `${total.meter} ${total.quantity} ${total.unit}`)
-            .join(', ')}`,
+            .join(', '),
+        ].join('\t'),
       ),
     )
   }
@@ -186,6 +192,7 @@ export function renderUsageRecords(page: UsageRecordPage): string {
       record.meter,
       `${record.quantity} ${record.unit}`,
       record.session ?? '-',
+      record.projectId ?? '-',
       record.sourceId,
       record.pricingState,
       `rev ${record.revision}`,
