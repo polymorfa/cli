@@ -3,7 +3,7 @@
 - **Status:** Campaigns P0 slice: nine lifecycle operations plus recipients,
   audiences and opt-out settings
 - **Reviewed:** 2026-09-20
-- **SDK baseline:** `1abacf9af7e2fefeac7384a9b23a537784545d9f`
+- **SDK baseline:** `2862336f0ea660402125aeb7720ab57c17439460`
 - **Contract:** `polymorfa/polymorfa` `ef1653e3c4fc7a98b9da56fffae5f2184b7e4574`
 
 ## Sources reviewed
