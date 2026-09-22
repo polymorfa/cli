@@ -745,7 +745,9 @@ polymorfa voice audio delete 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --yes
   provider.
 - `upload --wait` and `tts --wait` wait until the asset is `ready` (exit 0) or
   `failed` (exit 13, with the failure reason). `--wait-timeout` defaults to 120
-  seconds and exits with code 5 when reached.
+  seconds and exits with code 5 when reached, including when a status request
+  stalls. This budget starts after upload or TTS submission and covers status
+  requests, response bodies, and retries.
 - `--retention-days` deletes the asset that many days after creation (1 to
   3650). `update --retention-days none` keeps it until you delete it.
 - `preview` prints a link to the transcoded audio (Opus in Ogg). The link works

@@ -7,8 +7,8 @@
   `t3code/voice-audio-library`, revision `voice-audio-v1`
 - **SDK reference:** `client.voice` in polymorfa/sdks draft PR #279 at
   `f0f3c0719ce44226aa6af896c33a69c71ef934eb`
-- **SDK pin:** unchanged, `polymorfa/sdks` commit
-  `94bfd09825817f842434e206e6a77adb5cc0c414` (see
+- **SDK pin:** `@polymorfa/sdk@0.1.0-dev.20260922102711`, inherited from
+  CLI `dev` (see
   [SDK dependency](#sdk-dependency))
 
 ## Sources reviewed
@@ -22,7 +22,7 @@
 - `packages/typescript/src/platform/voice.ts` and the upload URL transport in
   polymorfa/sdks `f0f3c07`.
 
-## Shipped command tree
+## Command tree
 
 ```text
 voice
@@ -69,8 +69,10 @@ Voice Automation phases and are not part of this revision.
 The pinned SDK has no `client.voice`. Since polymorfa/sdks `4f54b26` the SDK
 lives in the `packages/typescript` workspace of a private workspace root, so a
 `github:polymorfa/sdks#<sha>` pin installs the root, not `@polymorfa/sdk`, and
-cannot take `f0f3c07`. No `@polymorfa/sdk` prerelease is published yet (see
-the draft move to npm dev prereleases in this repository).
+cannot take `f0f3c07`. CLI `dev` now pins an npm development prerelease,
+`0.1.0-dev.20260922102711`, which still has no `client.voice`. API PR #227 and
+SDK PR #279 must merge before this CLI PR can pin the exact resulting SDK
+prerelease and replace the raw adapter with the typed resource.
 
 Until a release with `client.voice` can be pinned, `src/sdk/voice.ts` sends the
 documented requests through the organization client's raw transport, the same approach as the open
@@ -111,8 +113,11 @@ adapter with `client.voice` when the SDK pin moves.
   `.opus` `audio/ogg`, `.m4a` `audio/x-m4a`, `.mp4` `audio/mp4`.
 - **Waiting.** `--wait` reads the asset first and then every 2 seconds, like the
   SDK's `waitUntilReady`. `failed` exits with `voice_asset_failed` (13);
-  reaching `--wait-timeout` exits with `request_timeout` (5). The upload request
-  itself is not retried, matching the SDK.
+  reaching `--wait-timeout` exits with `request_timeout` (5). The budget begins
+  after upload or TTS submission. Each status request receives an abort signal
+  for the remaining budget, including body reads and SDK retries; no poll
+  starts after the deadline and a result received after it is not returned.
+  The upload request itself is not retried, matching the SDK.
 - **Preview.** Without `--output` the command prints the 5-minute URL. With it,
   the file is downloaded without a credential, limited to 32 MiB, and an
   existing file is refused unless `--force` is given.

@@ -8,6 +8,7 @@ import {
   PolymorfaValidationError,
   type ApiResponse,
   type QueryValue,
+  type RequestOptions,
   type ResponseMetadata,
 } from '@polymorfa/sdk'
 
@@ -171,7 +172,10 @@ export interface VoiceClient {
   synthesizeAudio(
     input: SynthesizeVoiceAudioInput,
   ): Promise<ApiResponse<VoiceAudioAsset>>
-  retrieveAudio(assetId: string): Promise<ApiResponse<VoiceAudioAsset>>
+  retrieveAudio(
+    assetId: string,
+    options?: RequestOptions,
+  ): Promise<ApiResponse<VoiceAudioAsset>>
   updateAudio(
     assetId: string,
     input: UpdateVoiceAudioInput,
@@ -227,9 +231,11 @@ export function createVoiceClient(
     options: {
       readonly body?: unknown
       readonly query?: Readonly<Record<string, QueryValue>>
+      readonly requestOptions?: RequestOptions
     } = {},
   ): Promise<ApiResponse<T>> {
     const response = await raw.request<DataEnvelope<T>>({
+      ...options.requestOptions,
       method,
       path,
       ...(options.body === undefined ? {} : {body: options.body}),
@@ -335,8 +341,8 @@ export function createVoiceClient(
       data<VoiceAudioAsset>('POST', `${assetPath(assetId)}/complete`),
     synthesizeAudio: (input) =>
       data<VoiceAudioAsset>('POST', `${AUDIO_PATH}/tts`, {body: input}),
-    retrieveAudio: (assetId) =>
-      data<VoiceAudioAsset>('GET', assetPath(assetId)),
+    retrieveAudio: (assetId, requestOptions = {}) =>
+      data<VoiceAudioAsset>('GET', assetPath(assetId), {requestOptions}),
     updateAudio: (assetId, input) =>
       data<VoiceAudioAsset>('PATCH', assetPath(assetId), {body: input}),
     deleteAudio: (assetId) =>

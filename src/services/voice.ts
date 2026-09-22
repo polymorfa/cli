@@ -327,21 +327,37 @@ export async function waitForAudio(
   const sleep = options.sleep ?? defaultSleep
   const deadline = Date.now() + options.timeoutSeconds * 1000
   let current = asset
+  const timedOut = () =>
+    new PolymorfaTimeoutError(
+      `Audio ${current.data.id} was still ${current.data.status} after ${options.timeoutSeconds}s. Check it later with polymorfa voice audio view ${current.data.id}.`,
+      {code: 'request_timeout'},
+    )
   // Like the SDK's waitUntilReady: read first, then sleep between reads.
   while (current.data.status !== 'ready' && current.data.status !== 'failed') {
-    const response = await client.retrieveAudio(current.data.id)
+    const remaining = deadline - Date.now()
+    if (remaining <= 0) throw timedOut()
+    // Bound the entire poll, including response-body reads and retries.
+    const expiry = new AbortController()
+    const timer = setTimeout(() => expiry.abort(), remaining)
+    let response
+    try {
+      response = await client.retrieveAudio(current.data.id, {
+        signal: expiry.signal,
+      })
+    } catch (error) {
+      if (expiry.signal.aborted) throw timedOut()
+      throw error
+    } finally {
+      clearTimeout(timer)
+    }
+    if (Date.now() >= deadline) throw timedOut()
     current = result(response.data, response.metadata)
     if (current.data.status === 'ready' || current.data.status === 'failed') {
       break
     }
-    const remaining = deadline - Date.now()
-    if (remaining <= 0) {
-      throw new PolymorfaTimeoutError(
-        `Audio ${current.data.id} was still ${current.data.status} after ${options.timeoutSeconds}s. Check it later with polymorfa voice audio view ${current.data.id}.`,
-        {code: 'request_timeout'},
-      )
-    }
-    await sleep(Math.min(intervalMs, remaining))
+    const left = deadline - Date.now()
+    if (left <= 0) throw timedOut()
+    await sleep(Math.min(intervalMs, left))
   }
   if (current.data.status === 'failed') {
     throw new CliConditionError(

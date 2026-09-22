@@ -103,7 +103,29 @@ describe('waitForAudio', () => {
           timeoutSeconds: 5,
         }),
       ).rejects.toMatchObject({code: 'request_timeout'})
-      expect(retrieveAudio).toHaveBeenCalledTimes(4)
+      // No fourth request starts after sleeping up to the deadline.
+      expect(retrieveAudio).toHaveBeenCalledTimes(3)
+    } finally {
+      vi.restoreAllMocks()
+    }
+  })
+
+  test('does not return a ready result that arrives after the wait deadline', async () => {
+    let now = 0
+    vi.spyOn(Date, 'now').mockImplementation(() => now)
+    const client = {
+      retrieveAudio: () => {
+        now = 1_001
+        return Promise.resolve({
+          data: {...asset, status: 'ready'},
+          metadata: {attempts: 1, headers: {}, status: 200},
+        })
+      },
+    } as unknown as VoiceClient
+    try {
+      await expect(
+        waitForAudio(client, submitted, {timeoutSeconds: 1}),
+      ).rejects.toMatchObject({code: 'request_timeout'})
     } finally {
       vi.restoreAllMocks()
     }
