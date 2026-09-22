@@ -1,14 +1,19 @@
+import {readdir, rm} from 'node:fs/promises'
+import {join} from 'node:path'
 import {PassThrough, Readable} from 'node:stream'
 import {describe, expect, test, vi} from 'vitest'
 
 import {createVoiceClient, type VoiceClient} from '../../src/sdk/voice.js'
 import {
+  MAX_PREVIEW_BYTES,
+  previewAudio,
   readProviderKey,
   uploadContentType,
   waitForAudio,
   type VoiceResult,
 } from '../../src/services/voice.js'
 import type {VoiceAudioAsset} from '../../src/sdk/voice.js'
+import {temporaryDirectory} from '../support/fs.js'
 
 const KEY = 'sk-provider-secret-0123456789'
 
@@ -167,5 +172,229 @@ describe('createVoiceClient', () => {
     await expect(
       client.sendToUploadUrl(upload, new Uint8Array([1])),
     ).rejects.toThrow('content type does not match')
+  })
+})
+
+describe('voice transfers', () => {
+  const ASSET_ID = '6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10'
+  const preview = {
+    contentType: 'audio/ogg',
+    expiresAt: '2026-09-19T10:05:00.000Z',
+    url: 'https://previews.example.test/p/token',
+  }
+  const upload = {
+    expiresAt: '2026-09-19T10:05:00.000Z',
+    headers: {'Content-Type': 'audio/wav'},
+    maxBytes: 16_777_216,
+    method: 'PUT',
+    url: 'https://uploads.example.test/u/token',
+  }
+
+  function environment(timeoutMs?: number) {
+    return {
+      baseUrl: 'https://api.example.test',
+      credential: {
+        type: 'apiKey' as const,
+        value:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+      surface: 'platform' as const,
+      ...(timeoutMs === undefined ? {} : {timeoutMs}),
+    }
+  }
+
+  /** Headers arrive at once; the body never produces a byte. */
+  function stalledBody() {
+    const cancel = vi.fn()
+    const body = new ReadableStream<Uint8Array>({
+      cancel,
+      pull: () => new Promise<void>(() => undefined),
+    })
+    return {body, cancel}
+  }
+
+  /** An endless body with no Content-Length that counts what it produced. */
+  function endlessBody(chunkBytes: number) {
+    const chunk = new Uint8Array(chunkBytes)
+    const state = {cancelled: false, produced: 0}
+    const body = new ReadableStream<Uint8Array>({
+      cancel() {
+        state.cancelled = true
+      },
+      pull(controller) {
+        state.produced += chunk.byteLength
+        controller.enqueue(chunk)
+      },
+    })
+    return {body, state}
+  }
+
+  // The mocked fetch ignores the abort signal, so these tests prove the
+  // client cancels the body itself rather than relying on the transport.
+  function fetchReturning(response: () => Response) {
+    return vi.fn(() => Promise.resolve(response())) as typeof fetch
+  }
+
+  test('times out a preview whose body stalls after the headers', async () => {
+    const {body, cancel} = stalledBody()
+    const client = createVoiceClient(
+      environment(50),
+      fetchReturning(() => new Response(body, {status: 200})),
+    )
+    const started = Date.now()
+
+    const download = client.downloadPreview(preview, 1024)
+
+    await expect(download).rejects.toMatchObject({code: 'request_timeout'})
+    await expect(download).rejects.toThrow(
+      'The preview download did not finish within 50ms.',
+    )
+    await expect(download).rejects.not.toThrow(/token/)
+    expect(Date.now() - started).toBeLessThan(2_000)
+    expect(cancel).toHaveBeenCalled()
+  })
+
+  test('times out an error response whose body stalls after the headers', async () => {
+    const preview500 = stalledBody()
+    const upload500 = stalledBody()
+    const previewClient = createVoiceClient(
+      environment(50),
+      fetchReturning(() => new Response(preview500.body, {status: 500})),
+    )
+    const uploadClient = createVoiceClient(
+      environment(50),
+      fetchReturning(() => new Response(upload500.body, {status: 403})),
+    )
+
+    await expect(
+      previewClient.downloadPreview(preview, 1024),
+    ).rejects.toMatchObject({code: 'request_timeout'})
+    await expect(
+      uploadClient.sendToUploadUrl(upload, new Uint8Array([1])),
+    ).rejects.toMatchObject({code: 'request_timeout'})
+    expect(preview500.cancel).toHaveBeenCalled()
+    expect(upload500.cancel).toHaveBeenCalled()
+  })
+
+  test('still reports the status and body code when the error body arrives', async () => {
+    const client = createVoiceClient(
+      environment(50),
+      fetchReturning(
+        () => new Response('{"error":{"code":"link_expired"}}', {status: 403}),
+      ),
+    )
+
+    await expect(
+      client.sendToUploadUrl(upload, new Uint8Array([1])),
+    ).rejects.toMatchObject({code: 'link_expired', status: 403})
+  })
+
+  test('stops reading a preview without Content-Length once it passes the limit', async () => {
+    const maxBytes = 10_000
+    const chunkBytes = 1_000
+    const {body, state} = endlessBody(chunkBytes)
+    const client = createVoiceClient(
+      environment(5_000),
+      fetchReturning(() => new Response(body, {status: 200})),
+    )
+
+    await expect(
+      client.downloadPreview(preview, maxBytes),
+    ).rejects.toMatchObject({code: 'preview_too_large'})
+    expect(state.cancelled).toBe(true)
+    // The reader stops on the first chunk past the limit; the stream may
+    // have queued one more chunk ahead of the reader.
+    expect(state.produced).toBeGreaterThan(maxBytes)
+    expect(state.produced).toBeLessThanOrEqual(maxBytes + 2 * chunkBytes)
+  })
+
+  test('refuses a declared oversize preview before reading it', async () => {
+    const {body, state} = endlessBody(1_000)
+    const client = createVoiceClient(
+      environment(5_000),
+      fetchReturning(
+        () =>
+          new Response(body, {
+            headers: {'content-length': '10001'},
+            status: 200,
+          }),
+      ),
+    )
+
+    await expect(client.downloadPreview(preview, 10_000)).rejects.toMatchObject(
+      {code: 'preview_too_large'},
+    )
+    expect(state.cancelled).toBe(true)
+    expect(state.produced).toBeLessThanOrEqual(1_000)
+  })
+
+  test('returns a preview at exactly the limit', async () => {
+    const client = createVoiceClient(
+      environment(5_000),
+      fetchReturning(() => new Response(new Uint8Array(1_000), {status: 200})),
+    )
+
+    await expect(client.downloadPreview(preview, 1_000)).resolves.toHaveLength(
+      1_000,
+    )
+  })
+
+  function previewClient(fetchImplementation: typeof fetch, timeoutMs: number) {
+    const client = createVoiceClient(
+      environment(timeoutMs),
+      fetchImplementation,
+    )
+    return {
+      ...client,
+      previewAudio: () =>
+        Promise.resolve({
+          data: preview,
+          metadata: {attempts: 1, headers: {}, status: 200},
+        }),
+    } satisfies VoiceClient
+  }
+
+  test('writes no output file when an unbounded preview is refused', async () => {
+    const directory = await temporaryDirectory()
+    try {
+      const {body, state} = endlessBody(1_048_576)
+      const client = previewClient(
+        fetchReturning(() => new Response(body, {status: 200})),
+        30_000,
+      )
+
+      await expect(
+        previewAudio(client, ASSET_ID, {
+          output: join(directory, 'preview.ogg'),
+        }),
+      ).rejects.toMatchObject({code: 'preview_too_large'})
+      expect(state.cancelled).toBe(true)
+      expect(state.produced).toBeLessThanOrEqual(
+        MAX_PREVIEW_BYTES + 2 * 1_048_576,
+      )
+      await expect(readdir(directory)).resolves.toEqual([])
+    } finally {
+      await rm(directory, {force: true, recursive: true})
+    }
+  })
+
+  test('writes no output file when the preview body times out', async () => {
+    const directory = await temporaryDirectory()
+    try {
+      const {body} = stalledBody()
+      const client = previewClient(
+        fetchReturning(() => new Response(body, {status: 200})),
+        50,
+      )
+
+      await expect(
+        previewAudio(client, ASSET_ID, {
+          output: join(directory, 'preview.ogg'),
+        }),
+      ).rejects.toMatchObject({code: 'request_timeout'})
+      await expect(readdir(directory)).resolves.toEqual([])
+    } finally {
+      await rm(directory, {force: true, recursive: true})
+    }
   })
 })

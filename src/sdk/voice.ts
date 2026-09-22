@@ -238,19 +238,26 @@ export function createVoiceClient(
     return {data: envelopeData(response.data), metadata: response.metadata}
   }
 
-  async function transfer(
+  /**
+   * Sends one credential-free request and consumes its response inside the
+   * same timed section, so a server that sends headers and then stalls on the
+   * body still hits the transfer timeout.
+   */
+  async function transfer<T>(
     url: URL,
     init: RequestInit,
     label: string,
-  ): Promise<Response> {
+    consume: (response: Response, signal: AbortSignal) => Promise<T>,
+  ): Promise<T> {
     const controller = new AbortController()
     const timer = setTimeout(() => controller.abort(), transferTimeoutMs)
     try {
-      return await fetchImplementation(url, {
+      const response = await fetchImplementation(url, {
         ...init,
         redirect: 'error',
         signal: controller.signal,
       })
+      return await consume(response, controller.signal)
     } catch (error) {
       if (controller.signal.aborted) {
         throw new PolymorfaTimeoutError(
@@ -258,6 +265,7 @@ export function createVoiceClient(
           {cause: error, code: 'request_timeout'},
         )
       }
+      if (error instanceof PolymorfaError) throw error
       // Never include the URL: it is a short-lived capability.
       throw new PolymorfaConnectionError(
         `The ${label} could not reach its URL.`,
@@ -302,7 +310,7 @@ export function createVoiceClient(
         if (name.toLowerCase() === 'authorization') continue
         headers.set(name, value)
       }
-      const response = await transfer(
+      return transfer(
         url,
         {
           body: body as unknown as BodyInit,
@@ -310,12 +318,18 @@ export function createVoiceClient(
           method: upload.method === 'PUT' ? 'PUT' : 'POST',
         },
         'upload',
+        async (response, signal) => {
+          if (!response.ok) {
+            throw transferError(
+              response,
+              await safeBody(response, signal),
+              'upload',
+            )
+          }
+          await discardBody(response)
+          return transferMetadata(response)
+        },
       )
-      const metadata = transferMetadata(response)
-      if (!response.ok) {
-        throw transferError(response, await safeBody(response), 'upload')
-      }
-      return metadata
     },
     completeAudio: (assetId) =>
       data<VoiceAudioAsset>('POST', `${assetPath(assetId)}/complete`),
@@ -331,22 +345,30 @@ export function createVoiceClient(
       data<VoiceAudioPreview>('GET', `${assetPath(assetId)}/preview`),
     async downloadPreview(preview, maxBytes) {
       const url = capabilityUrl(baseUrl, preview.url, 'preview')
-      const response = await transfer(url, {method: 'GET'}, 'preview download')
-      if (!response.ok) {
-        throw transferError(
-          response,
-          await safeBody(response),
-          'preview download',
-        )
-      }
-      const declared = Number(response.headers.get('content-length'))
-      if (Number.isFinite(declared) && declared > maxBytes) {
-        await response.body?.cancel()
-        throw tooLargePreview(maxBytes)
-      }
-      const bytes = new Uint8Array(await response.arrayBuffer())
-      if (bytes.byteLength > maxBytes) throw tooLargePreview(maxBytes)
-      return bytes
+      return transfer(
+        url,
+        {method: 'GET'},
+        'preview download',
+        async (response, signal) => {
+          if (!response.ok) {
+            throw transferError(
+              response,
+              await safeBody(response, signal),
+              'preview download',
+            )
+          }
+          const declared = Number(response.headers.get('content-length'))
+          if (Number.isFinite(declared) && declared > maxBytes) {
+            await discardBody(response)
+            throw tooLargePreview(maxBytes)
+          }
+          // Content-Length can be missing, understated or describe a
+          // compressed body, so the limit is enforced on the bytes read.
+          const bytes = await readBody(response, signal, maxBytes)
+          if (bytes === undefined) throw tooLargePreview(maxBytes)
+          return bytes
+        },
+      )
     },
     listCredentials: (projectId) =>
       data<readonly VoiceProviderCredential[]>('GET', CREDENTIALS_PATH, {
@@ -433,18 +455,80 @@ function transferMetadata(response: Response): ResponseMetadata {
   }
 }
 
-async function safeBody(response: Response): Promise<unknown> {
+/** Error bodies are only inspected for an error code. */
+const MAX_ERROR_BODY_BYTES = 65_536
+
+async function safeBody(
+  response: Response,
+  signal: AbortSignal,
+): Promise<unknown> {
+  let bytes: Uint8Array | undefined
   try {
-    const text = await response.text()
-    if (text.length === 0) return undefined
-    try {
-      return JSON.parse(text) as unknown
-    } catch {
-      return undefined
-    }
+    bytes = await readBody(response, signal, MAX_ERROR_BODY_BYTES)
+  } catch (error) {
+    // A timeout must surface as a timeout, not as the status error.
+    if (signal.aborted) throw error
+    return undefined
+  }
+  if (bytes === undefined || bytes.byteLength === 0) return undefined
+  try {
+    return JSON.parse(new TextDecoder().decode(bytes)) as unknown
   } catch {
     return undefined
   }
+}
+
+/**
+ * Reads a response body incrementally. Returns undefined, after cancelling
+ * the stream, as soon as more than maxBytes arrive. Aborting the signal
+ * cancels the stream and rejects, even when the body source ignores it.
+ */
+async function readBody(
+  response: Response,
+  signal: AbortSignal,
+  maxBytes: number,
+): Promise<Uint8Array | undefined> {
+  const body = response.body
+  if (body === null) return new Uint8Array()
+  const reader = body.getReader()
+  const onAbort = () => {
+    reader.cancel(signal.reason).catch(() => undefined)
+  }
+  signal.addEventListener('abort', onAbort, {once: true})
+  const chunks: Uint8Array[] = []
+  let total = 0
+  try {
+    for (;;) {
+      if (signal.aborted) throw abortReason(signal)
+      const {done, value} = await reader.read()
+      // A cancelled read resolves as done; never return a truncated body.
+      if (signal.aborted) throw abortReason(signal)
+      if (done) break
+      total += value.byteLength
+      if (total > maxBytes) {
+        await reader.cancel().catch(() => undefined)
+        return undefined
+      }
+      chunks.push(value)
+    }
+  } finally {
+    signal.removeEventListener('abort', onAbort)
+  }
+  const bytes = new Uint8Array(total)
+  let offset = 0
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset)
+    offset += chunk.byteLength
+  }
+  return bytes
+}
+
+async function discardBody(response: Response): Promise<void> {
+  await response.body?.cancel().catch(() => undefined)
+}
+
+function abortReason(signal: AbortSignal): unknown {
+  return signal.reason ?? new Error('The transfer was aborted.')
 }
 
 function transferError(
