@@ -7,6 +7,7 @@ import {
   type RequestOptions,
   type ResponseMetadata,
   type SeenRequest,
+  type SendMessageRequest,
   type SendTextMessageRequest,
   type StarRequest,
   type SuccessResponse,
@@ -37,6 +38,57 @@ export async function sendTextMessage(
   }
   const response = await client.messages.send(session, request, options)
   return result(response.data.data, response.metadata)
+}
+
+/** Send any typed message kind through the SDK's single send method. */
+export async function sendMessage(
+  client: MessagingClient,
+  session: string,
+  request: SendMessageRequest,
+  options: RequestOptions = {},
+): Promise<MessageResult<MessageResponse>> {
+  const response = await client.messages.send(session, request, options)
+  return result(response.data.data, response.metadata)
+}
+
+export async function editMessage(
+  client: MessagingClient,
+  session: string,
+  chat: string,
+  message: string,
+  text: string,
+  options: RequestOptions = {},
+): Promise<MessageResult<SuccessResponse>> {
+  if (text.trim().length === 0) {
+    throw new PolymorfaConfigurationError(
+      'Edited message text cannot be empty.',
+      'body',
+    )
+  }
+  const response = await client.chats.editMessage(
+    session,
+    chat,
+    message,
+    {text},
+    options,
+  )
+  return result(response.data, response.metadata)
+}
+
+export async function deleteMessage(
+  client: MessagingClient,
+  session: string,
+  chat: string,
+  message: string,
+  options: RequestOptions = {},
+): Promise<MessageResult<SuccessResponse>> {
+  const response = await client.chats.deleteMessage(
+    session,
+    chat,
+    message,
+    options,
+  )
+  return result(response.data, response.metadata)
 }
 
 export async function reactToMessage(
