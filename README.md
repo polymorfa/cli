@@ -1117,8 +1117,9 @@ polymorfa trigger bansafe.enforcement --project PROJECT_ID --session my-test-num
 
 The trigger prints the event ID. Without `--forward-to`, the listener prints
 the same line (`message.received <eventId>`) when the event arrives; with
-`--forward-to`, it prints nothing on success unless you add `--json`, which
-writes one JSON line per event. Fixtures are
+`--forward-to`, it prints nothing on success unless you add `--json` together
+with `--forward-secret-out <file>` (JSON forwarding requires the secret file),
+which writes one JSON line per event. Fixtures are
 `message.received`, `message.ack`, `message.failed`, `call.received`,
 `call.missed`, `call.ended`, `session.status`, `template.status`,
 `bansafe.enforcement`, and `bansafe.risk_changed`. `--override key=value`
