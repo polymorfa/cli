@@ -3,8 +3,9 @@
 - **Status:** Implemented against Calls contract revision 1, unpublished
 - **Reviewed:** 2026-09-17
 - **SDK baseline:** `@polymorfa/sdk` (including the `@polymorfa/sdk/calls`
-  subpath) at `polymorfa/sdks` commit
-  `94bfd09825817f842434e206e6a77adb5cc0c414`
+  subpath) `0.1.0-dev.20260922102711` from npm. The research was done against
+  `polymorfa/sdks` commit `94bfd09825817f842434e206e6a77adb5cc0c414`; the npm
+  build also reports a `claim` activity when the placed call is answered.
 
 ## Sources reviewed
 
