@@ -19,7 +19,7 @@ export default class MessageSendText extends BaseCommand {
     }),
     'idempotency-key': Flags.string({
       description:
-        'Key that makes retries of this write safe for 24 hours. Generated when omitted.',
+        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).',
     }),
     mention: Flags.string({
       description:

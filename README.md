@@ -268,12 +268,49 @@ Add `--remove` to `message star` to unstar. Text sends accept repeatable
 `--mention` with a Polymorfa user ID, `--reply-to` with a Polymorfa message ID,
 and `--forwarded`. `--to` and `--chat` accept a conversation ID, E.164 phone
 number, or BSUID. The API resolves message direction and sender identity.
-Every mutation accepts `--idempotency-key` for safe retry identity. Every `message
-send` variant and `message react` generates a key when you omit it and send it as
-`Idempotency-Key`; the API replays the first result for 24 hours instead of
-sending again. Pass your own key to make a retried script invocation safe.
 Server API keys require `messages:write`; client tokens remain subject to their
 live recipient rules, allowed actions, and rate limits.
+
+### Retry identity
+
+Every `message send` variant, `message react`, `message edit`, and
+`message delete` sends an `Idempotency-Key` by default. When you omit
+`--idempotency-key`, the CLI or its SDK generates a fresh key for that command
+invocation. Automatic HTTP retries within the invocation reuse it.
+
+To retry across separate CLI processes or script runs, choose a key before the
+first attempt and pass the same `--idempotency-key` on each attempt. Keep the
+request, credential, and API version unchanged. Running the command again
+without an explicit key creates a new request and can repeat the write.
+
+```shell
+# Reuse order-123-shipped only when retrying this exact notification.
+polymorfa message send text \
+  --session session_123 --to +15551234567 \
+  --body 'Your order shipped.' --idempotency-key order-123-shipped
+```
+
+For 24 hours after the first request, the API prevents the same key and request
+from running the write again:
+
+- A recorded success returns `409 idempotency_completed` with
+  `Idempotent-Replayed: true`. The CLI reports an error; the response does not
+  contain the original message or response body.
+- A recorded server error returns its status and error code with
+  `Idempotent-Replayed: true`. The write may have happened.
+- A request still running returns `409 idempotency_in_progress` with
+  `Retry-After`. An unrecorded outcome returns
+  `409 idempotency_outcome_unknown` and blocks another attempt with that key.
+- Reusing a key for a changed request returns `409 idempotency_conflict`.
+
+Keep the first response when you receive it. If the outcome is uncertain, check
+message events or webhooks before deciding whether to use a new key. A new key
+does not resolve the uncertainty and can send a duplicate. See the
+[Messaging retry contract](https://docs.polymorfa.com/guides/communicate/overview#retry-sends-safely).
+
+`message mark-seen`, `message typing`, and `message star` accept an explicit
+`--idempotency-key`, but the API does not deduplicate those actions by that
+header.
 
 ### Typed sends
 
@@ -967,10 +1004,18 @@ Follow the returned operation with `polymorfa operation wait` or
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
 is synchronous and reports only the number moved. Every mutation accepts
-`--idempotency-key`. `campaign create` and `campaign launch` generate one when
-you omit it, and the API deduplicates those two for 24 hours. Pause, resume,
-stop, and requeue do not persist the header, so it is not server-side
-deduplication for them.
+`--idempotency-key`. `campaign create` and `campaign launch` send an
+`Idempotency-Key` by default, generating a fresh key for each invocation when
+you omit the flag. Pass the same explicit key from the first attempt when
+retrying either command in another process, with the same input, credential,
+and API version.
+
+Both commands use the [retry identity](#retry-identity) contract above: within
+24 hours, a recorded success returns `409 idempotency_completed` without the
+original response body; an uncertain outcome stays blocked rather than running
+again. Save the first campaign or operation response and inspect campaign
+state before using a new key. Pause, resume, stop, and requeue do not persist
+the header, so it is not server-side deduplication for them.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
 recipient, event, history, or replay route. The CLI does not substitute
