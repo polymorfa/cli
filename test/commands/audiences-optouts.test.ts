@@ -71,6 +71,20 @@ describe('Audience and opt-out commands', () => {
     })
   })
 
+  test('refuses a file import without a mapping before sending it', async () => {
+    server = await startHttpServer({body: {data: audience()}})
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand('audience create --name August --file-id upload_1'),
+    )
+
+    expect(result.error).toBeDefined()
+    expect(result.stderr).toContain(
+      'must be provided when using --file-id: --mapping',
+    )
+    expect(server.requests).toHaveLength(0)
+  })
+
   test('refuses a mapping that does not name the phone column', async () => {
     directory = await mkdtemp(join(tmpdir(), 'polymorfa-audience-'))
     const mapping = join(directory, 'mapping.json')

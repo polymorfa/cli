@@ -3,7 +3,7 @@
 - **Status:** Campaigns P0 slice: nine lifecycle operations plus recipients,
   audiences and opt-out settings
 - **Reviewed:** 2026-09-20
-- **SDK baseline:** `b663914f84801fed209945b802d3cf7f87ea4974`
+- **SDK baseline:** `1abacf9af7e2fefeac7384a9b23a537784545d9f`
 - **Contract:** `polymorfa/polymorfa` `ef1653e3c4fc7a98b9da56fffae5f2184b7e4574`
 
 ## Sources reviewed
@@ -96,7 +96,8 @@ zero after the first transaction moved its eligible recipients.
 
 Recipient and audience-member appends have no declared replay at all. From SDK
 `b663914` the SDK generates no key for them and sends each append once unless
-the caller sets a per-request retry count, which the CLI never does. A resent
+the caller sets both a per-request retry count and a key, and the CLI never
+sets a retry count. A resent
 append would report the first attempt's rows as duplicates, so the flag help
 says the request is not retried.
 

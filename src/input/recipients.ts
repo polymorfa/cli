@@ -11,6 +11,7 @@ export const RECIPIENT_BATCH_LIMIT = 1000
 const MAX_CSV_BYTES = 10 * 1024 * 1024
 const VARIABLE_NAME = /^[A-Za-z0-9_.-]{1,64}$/
 const MAX_VARIABLES = 50
+const MAX_REPORTED_ROWS = 20
 
 export interface CsvRecipientOptions {
   /** Header naming the phone column. */
@@ -58,10 +59,15 @@ export async function readCsvRecipients(
   }
 
   const recipients: CampaignRecipientInput[] = []
-  for (const record of records.slice(1)) {
+  const missingPhoneRows: number[] = []
+  for (const [index, record] of records.slice(1).entries()) {
     if (record.every((cell) => cell.trim() === '')) continue
     const phone = (record[phoneIndex] ?? '').trim()
-    if (phone === '') continue
+    if (phone === '') {
+      // Header is row 1, matching the API's row numbers for file imports.
+      missingPhoneRows.push(index + 2)
+      continue
+    }
     const variables: Record<string, string> = {}
     for (const [name, index] of variableIndexes) {
       const value = (record[index] ?? '').trim()
@@ -72,6 +78,19 @@ export async function readCsvRecipients(
     )
   }
 
+  if (missingPhoneRows.length > 0) {
+    // Refuse rather than drop them: the API can only report entries it
+    // receives, so a skipped row would vanish from the invalid counts.
+    const shown = missingPhoneRows.slice(0, MAX_REPORTED_ROWS).join(', ')
+    const more =
+      missingPhoneRows.length > MAX_REPORTED_ROWS
+        ? ` and ${missingPhoneRows.length - MAX_REPORTED_ROWS} more`
+        : ''
+    throw invalid(
+      `${path} has ${missingPhoneRows.length} row${missingPhoneRows.length === 1 ? '' : 's'} with an empty ${options.phoneColumn} value (row ${shown}${more}; the header is row 1). Fill or remove them; nothing was sent.`,
+      'csv_missing_phone',
+    )
+  }
   if (recipients.length === 0) {
     throw invalid(`${path} has no rows with a phone number.`, 'csv_empty')
   }

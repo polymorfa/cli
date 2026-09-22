@@ -129,6 +129,30 @@ describe('Campaign recipient commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test('refuses rows with an empty phone instead of dropping them', async () => {
+    directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
+    const csv = join(directory, 'contacts.csv')
+    await writeFile(
+      csv,
+      'phone,Name\n,Ada\n+15551234567,Grace\n,,\n\n  ,Linus\n',
+      'utf8',
+    )
+    server = await startHttpServer({body: {data: {}, success: true}})
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign recipients add campaign_1 --project-slug project_1 --csv ${csv}`,
+      ),
+    )
+
+    expect(result.error).toBeDefined()
+    // Wholly blank rows (4 and 5) are ignored; rows 2 and 6 have a name but
+    // no phone and must be reported, not silently omitted.
+    expect(result.stderr).toContain('2 rows with an empty phone value')
+    expect(result.stderr).toContain('row 2, 6')
+    expect(server.requests).toHaveLength(0)
+  })
+
   test('says a campaign was cancelled when stop returns no operation', async () => {
     server = await startHttpServer({
       body: {

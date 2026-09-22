@@ -28,7 +28,9 @@ export default class AudienceCreate extends BaseCommand {
       exclusive: ['file-id'],
     }),
     'file-id': Flags.string({
-      description: 'Storage ID of a file already uploaded through the API.',
+      dependsOn: ['mapping'],
+      description:
+        'Storage ID of a file already uploaded through the API. Requires --mapping.',
       exclusive: ['csv'],
     }),
     'idempotency-key': Flags.string({
@@ -78,9 +80,7 @@ export default class AudienceCreate extends BaseCommand {
     if (flags['file-id'] !== undefined) {
       return {
         fileId: flags['file-id'],
-        ...(flags.mapping === undefined
-          ? {}
-          : {mapping: audienceMapping(await readJsonInput(flags.mapping))}),
+        mapping: audienceMapping(await readJsonInput(requiredMapping(flags))),
         name: flags.name,
         source: 'csv' as const,
       }
@@ -95,4 +95,14 @@ export default class AudienceCreate extends BaseCommand {
     }
     return {name: flags.name, source: 'manual' as const}
   }
+}
+
+/** The API refuses a file import without a mapping; oclif enforces the pair. */
+function requiredMapping(flags: {
+  readonly mapping?: string | undefined
+}): string {
+  if (flags.mapping === undefined) {
+    throw new Error('--mapping is required with --file-id.')
+  }
+  return flags.mapping
 }
