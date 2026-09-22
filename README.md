@@ -712,7 +712,9 @@ Both commands filter with `--session`, `--direction` (`inbound` or
 - **Export.** `--format` is `csv` (the default) or `ndjson`. The command requests
   pages of `--limit` records (1 to 1,000; default 1,000), newest first, until
   none remain, and writes one CSV header. Records go to standard output, or to
-  the `--output` file, which must not exist unless you pass `--force`. Progress,
+  the `--output` file, which must not exist unless you pass `--force`. The file
+  is created, or emptied with `--force`, when the first page arrives, even if
+  no records match. Progress,
   the final summary, and the next cursor go to standard error, as JSON lines
   with `--json`. `--max-pages` stops early and prints the cursor for the rest;
   `--cursor` resumes from it with the same filters. If a page fails, the

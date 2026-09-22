@@ -148,7 +148,8 @@ internal SDK module.
   absent and writes the CSV header from the first page only; a later page with
   different columns, or a repeated cursor, stops the export with a server
   error. Records go to standard output or `--output`, which is created on the
-  first page and refused when it exists unless `--force`. Progress, the
+  first page (even an empty one, so a zero-record export truncates a
+  `--force` target) and refused when it exists unless `--force`. Progress, the
   summary, and resume cursors go to standard error only (JSON lines with
   `--json`). `--cursor` is sent with the filters because the API expects the
   same filters on every page. A failed page keeps earlier records, reports

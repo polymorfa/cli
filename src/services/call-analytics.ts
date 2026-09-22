@@ -267,7 +267,9 @@ export interface ExportSummary {
 
 /**
  * Request export pages in order and hand each one to `write`. A CSV header is
- * written once, from the first page; later pages must repeat it exactly. When a
+ * written once, from the first page; later pages must repeat it exactly. The
+ * first page is always written, even when empty, so the destination reflects a
+ * zero-record export. When a
  * page fails, `onStop` receives the progress so far and the cursor that
  * resumes from the failed page, and the original error is rethrown.
  */
@@ -333,7 +335,9 @@ export async function exportCallRecords(input: {
       chunk = page.body
       count = countLines(page.body)
     }
-    if (chunk.length > 0) {
+    // Always hand the first page to `write`, even when it is empty, so an
+    // export with no matching records still creates or truncates the output.
+    if (chunk.length > 0 || pages === 0) {
       try {
         await input.write(chunk)
       } catch (error) {

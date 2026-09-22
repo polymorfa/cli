@@ -400,6 +400,35 @@ describe('calls export', () => {
     expect(server.requests).toHaveLength(2)
   })
 
+  test('creates or truncates the output file for an empty NDJSON export', async () => {
+    server = await startHttpSequenceServer([ndjsonPage([]), ndjsonPage([])])
+    directory = await temporaryDirectory()
+    const created = join(directory, 'new.ndjson')
+    const replaced = join(directory, 'old.ndjson')
+    await writeFile(replaced, '{"callId":"stale"}\n')
+
+    const first = await apiKey(() =>
+      runCommand(['calls', 'export', '--format', 'ndjson', '-o', created]),
+    )
+    const second = await apiKey(() =>
+      runCommand([
+        'calls',
+        'export',
+        '--format',
+        'ndjson',
+        '-o',
+        replaced,
+        '--force',
+      ]),
+    )
+
+    expect(first.error).toBeUndefined()
+    expect(second.error).toBeUndefined()
+    expect(await readFile(created, 'utf8')).toBe('')
+    expect(await readFile(replaced, 'utf8')).toBe('')
+    expect(second.stderr).toContain('Exported 0 records in 1 page')
+  })
+
   test('refuses an existing output file before resolving a project slug', async () => {
     server = await startHttpSequenceServer([ndjsonPage(['call_1'])])
     directory = await temporaryDirectory()
