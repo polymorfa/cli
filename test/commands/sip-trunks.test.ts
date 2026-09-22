@@ -272,16 +272,22 @@ describe('sip-trunk commands', () => {
     ['rotate-credentials', 'rotated-first'],
     ['create', 'created-first'],
   ])(
-    '%s prints the one-time password while the SIP address lookup still hangs',
+    '%s prints credentials first and exits successfully after a bounded hanging address lookup',
     async (command, password) => {
       const credentials = {
         password,
         realm: 'sip.example.test',
         username: 'pmfa_abc',
       }
+      let endpointRequests = 0
+      let endpointStartedAt = 0
       // Answers the trunk request, then never answers the address lookup.
       const hanging = createServer((request, reply) => {
-        if (request.url?.startsWith('/platform/sip/endpoint')) return
+        if (request.url?.startsWith('/platform/sip/endpoint')) {
+          endpointRequests += 1
+          endpointStartedAt ||= performance.now()
+          return
+        }
         reply.writeHead(command === 'create' ? 201 : 200, {
           'content-type': 'application/json',
         })
@@ -324,12 +330,20 @@ describe('sip-trunk commands', () => {
           stdio: ['ignore', 'pipe', 'pipe'],
         },
       )
+      const exited = new Promise<{
+        code: number | null
+        signal: NodeJS.Signals | null
+      }>((resolve, reject) => {
+        child.once('error', reject)
+        child.once('exit', (code, signal) => resolve({code, signal}))
+      })
       let stdout = ''
       let stderr = ''
       child.stderr.on('data', (chunk: Buffer) => {
         stderr += String(chunk)
       })
       let timer: NodeJS.Timeout | undefined
+      let exitTimer: NodeJS.Timeout | undefined
       try {
         const printed = new Promise<boolean>((resolve) => {
           child.stdout.on('data', (chunk: Buffer) => {
@@ -344,9 +358,32 @@ describe('sip-trunk commands', () => {
         expect(await printed, stderr).toBe(true)
         expect(child.exitCode).toBeNull()
         expect(stdout).not.toContain('SIP address')
+        const outcome = await Promise.race([
+          exited,
+          new Promise<never>((_, reject) => {
+            exitTimer = setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    'Optional address lookup did not finish within eight seconds',
+                  ),
+                ),
+              8_000,
+            )
+          }),
+        ])
+        expect(outcome, stderr).toEqual({code: 0, signal: null})
+        expect(endpointRequests).toBe(1)
+        const lookupMs = performance.now() - endpointStartedAt
+        expect(lookupMs).toBeGreaterThanOrEqual(4_000)
+        expect(lookupMs).toBeLessThan(8_000)
+        expect(stdout).toContain(password)
+        expect(stdout).not.toContain('SIP address')
       } finally {
         clearTimeout(timer)
-        child.kill()
+        clearTimeout(exitTimer)
+        if (child.exitCode === null && child.signalCode === null) child.kill()
+        await exited
         hanging.closeAllConnections()
         await new Promise<void>((resolve) => hanging.close(() => resolve()))
         await rm(directory, {force: true, recursive: true})

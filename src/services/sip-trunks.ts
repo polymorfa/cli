@@ -4,6 +4,7 @@ import {
   PolymorfaValidationError,
   type Client as PlatformClient,
   type CreateSipTrunkInput,
+  type RequestOptions,
   type ResponseMetadata,
   type SipTrunk,
   type SipTrunkCreated,
@@ -142,8 +143,9 @@ export type SipEndpointTransportName = SipEndpointTransport['transport']
  */
 export async function getSipEndpoint(
   client: PlatformClient,
+  options: RequestOptions = {},
 ): Promise<SipTrunkResult<SipEndpoint>> {
-  const response = await client.sipTrunks.endpoint()
+  const response = await client.sipTrunks.endpoint(options)
   return result(
     decodeSipEndpoint(response.data, response.metadata),
     response.metadata,
@@ -159,11 +161,20 @@ export async function trySipEndpoint(
   client: PlatformClient,
 ): Promise<SipEndpoint | undefined> {
   try {
-    return (await getSipEndpoint(client)).data
+    return (
+      await getSipEndpoint(client, {
+        maxNetworkRetries: 0,
+        signal: AbortSignal.timeout(SIP_ENDPOINT_APPENDIX_TIMEOUT_MS),
+        timeoutMs: SIP_ENDPOINT_APPENDIX_TIMEOUT_MS,
+      })
+    ).data
   } catch {
     return undefined
   }
 }
+
+/** The appendix is optional, so its lookup never keeps the command waiting long. */
+const SIP_ENDPOINT_APPENDIX_TIMEOUT_MS = 5_000
 
 // ── Rendering ──────────────────────────────────────────────────────────────
 
