@@ -3,7 +3,7 @@
 - **Status:** Campaigns P0 slice: nine lifecycle operations plus recipients,
   audiences and opt-out settings
 - **Reviewed:** 2026-09-20
-- **SDK baseline:** `3a8e4073281657977d0d1db520e1368d892d66bd`
+- **SDK baseline:** `b663914f84801fed209945b802d3cf7f87ea4974`
 - **Contract:** `polymorfa/polymorfa` `ef1653e3c4fc7a98b9da56fffae5f2184b7e4574`
 
 ## Sources reviewed
@@ -93,6 +93,12 @@ handlers do not persist the header. The help text does not claim deduplication:
 an unseen successful create can duplicate, a repeated lifecycle request can
 conflict or append another intent, and a repeated requeue normally returns
 zero after the first transaction moved its eligible recipients.
+
+Recipient and audience-member appends have no declared replay at all. From SDK
+`b663914` the SDK generates no key for them and sends each append once unless
+the caller sets a per-request retry count, which the CLI never does. A resent
+append would report the first attempt's rows as duplicates, so the flag help
+says the request is not retried.
 
 List returns the complete newest-first array. There is no cursor or automatic
 pagination. JSON output preserves complete campaign and analytics objects,

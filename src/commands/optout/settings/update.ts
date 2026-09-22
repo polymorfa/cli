@@ -25,7 +25,7 @@ export default class OptOutSettingsUpdate extends BaseCommand {
     }),
     'idempotency-key': Flags.string({
       description:
-        'Use this key to identify retries; one is generated when omitted.',
+        'Send this Idempotency-Key header. None is generated when omitted.',
     }),
     'opt-in-keyword': Flags.string({
       description: 'A keyword that opts a contact back in. Repeatable.',

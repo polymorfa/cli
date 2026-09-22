@@ -942,6 +942,11 @@ campaign is skipped, and invalid entries are reported rather than added, so the
 result carries `added`, `duplicateCount`, `invalidCount` and up to 20
 `invalidRows`.
 
+The API does not replay an append, so the CLI sends it once and never retries
+it automatically, with or without `--idempotency-key`. A resent append would
+count the first attempt's rows as duplicates. If a connection drops before the
+result arrives, list the recipients before appending again.
+
 List returns `{data, page}`. Pass `page.nextCursor` back as `--cursor` while
 `page.hasMore` is true; the CLI prints the next cursor in human output. Filter
 with `--status queued|sending|sent|delivered|read|failed|skipped`. A recipient
@@ -980,7 +985,8 @@ the phone column and any variable columns:
 ```
 
 Creation and appends report the same import counts as campaign recipients, so a
-caller can reconcile what was accepted. Member listing is cursor-paged like
+caller can reconcile what was accepted. Like recipient appends, `members add` is
+sent once and never retried automatically. Member listing is cursor-paged like
 recipient listing.
 
 ## Campaign opt-outs

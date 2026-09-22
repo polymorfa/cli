@@ -34,7 +34,7 @@ export default class CampaignRecipientsAdd extends BaseCommand {
     }),
     'idempotency-key': Flags.string({
       description:
-        'Use this key to identify retries; one is generated when omitted.',
+        'Send this Idempotency-Key header. The API does not replay appends, so the request is sent once and not retried.',
     }),
     input: Flags.string({
       description:
