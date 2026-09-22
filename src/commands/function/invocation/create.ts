@@ -20,7 +20,7 @@ export default class FunctionInvocationCreate extends FunctionsCommand {
     }),
     'idempotency-key': Flags.string({
       description:
-        'Stable identity for this effect. Never change it to retry an uncertain effect.',
+        'Stable identity: 1–128 printable ASCII characters, excluding spaces. Never change it to retry an uncertain effect.',
       required: true,
     }),
   }

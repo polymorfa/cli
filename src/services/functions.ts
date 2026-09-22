@@ -31,6 +31,24 @@ const uuid = z
   .string()
   .regex(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/)
 const name = z.string().trim().min(1).max(120)
+const egressOrigin = z
+  .string()
+  .max(2048)
+  .url()
+  .refine((value) => {
+    try {
+      const url = new URL(value)
+      return (
+        url.protocol === 'https:' &&
+        url.origin === value &&
+        !url.username &&
+        !url.password &&
+        (!url.port || url.port === '443')
+      )
+    } catch {
+      return false
+    }
+  })
 const create = z.object({functionId: uuid.optional(), name}).strict()
 const update = z
   .object({
@@ -51,7 +69,7 @@ const deployment = z
     region: z.string().regex(/^[a-z0-9][a-z0-9-]{0,31}$/),
     compatibilityDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     secretVersionIds: z.array(uuid).max(64).optional(),
-    egressOrigins: z.array(z.string().url()).max(32).optional(),
+    egressOrigins: z.array(egressOrigin).max(32).optional(),
   })
   .strict()
 const secret = z

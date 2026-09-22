@@ -8,7 +8,7 @@ import {
 
 export default class FunctionDeploymentCreate extends FunctionsCommand {
   static override description =
-    'Build an immutable deployment from JSON with deploymentId, source, language, region and compatibilityDate. Optional secretVersionIds and egressOrigins are pinned. No packages are installed during execution.'
+    'Build an immutable deployment from JSON with deploymentId, source, language, region and compatibilityDate. Optional secretVersionIds and egressOrigins are pinned. Egress entries must be exact HTTPS origins, without credentials, a path, query, fragment or custom port. No packages are installed during execution.'
   static override args = {
     function: Args.string({description: 'Function UUID.', required: true}),
   }

@@ -186,6 +186,43 @@ describe('Function commands', () => {
       projectId: PROJECT,
     })
   })
+  test('rejects non-origin egress URLs before sending and preserves exact HTTPS origins', async () => {
+    server = await startHttpServer({body: {data: deployment}})
+    const input = {
+      deploymentId: DEPLOY,
+      source: deployment.source,
+      language: deployment.language,
+      region: deployment.region,
+      compatibilityDate: deployment.compatibilityDate,
+    }
+    for (const origin of [
+      'not-a-url',
+      'http://example.com',
+      'ftp://example.com',
+      'https://example.com/',
+      'https://example.com/path',
+      'https://example.com?query=value',
+      'https://example.com#fragment',
+      'https://user:password@example.com',
+      'https://example.com:8443',
+      'https://example.com:443',
+      'https://EXAMPLE.com',
+    ]) {
+      const result = await run(
+        `function deployment create ${FN} --project ${PROJECT} --input ${await file('egress.json', {...input, egressOrigins: [origin]})}`,
+      )
+      expect(exit(result.error), origin).toBe(2)
+    }
+    expect(server.requests).toHaveLength(0)
+    const origins = ['https://example.com', 'https://api.example.com']
+    const result = await run(
+      `function deployment create ${FN} --project ${PROJECT} --input ${await file('egress-valid.json', {...input, egressOrigins: origins})}`,
+    )
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toMatchObject({
+      egressOrigins: origins,
+    })
+  })
   test('creates write-only secrets, lists metadata and revokes exact versions', async () => {
     server = await startHttpSequenceServer([
       {body: {data: secret}},
@@ -266,6 +303,45 @@ describe('Function commands', () => {
         )
       ).stdout,
     ).toContain(INVOCATION)
+  })
+  test('rejects invalid invocation keys before sending without trimming and preserves valid boundary keys', async () => {
+    server = await startHttpServer({
+      body: {
+        data: {
+          receipt,
+          replayed: false,
+          responseRetained: false,
+          retryable: false,
+        },
+      },
+    })
+    const input = await file('keys.json', inputRequest)
+    // The oclif test helper joins and reparses argv; quoting preserves whitespace.
+    const command = (key: string) =>
+      `function invocation create ${FN} --project ${PROJECT} --input ${input} --idempotency-key "${key}"`
+    for (const key of [
+      '',
+      ' ',
+      ' padded',
+      'padded ',
+      'with space',
+      'with\ttab',
+      'with\nnewline',
+      'non-ascii-é',
+      'a'.repeat(129),
+    ]) {
+      const result = await run(command(key))
+      expect(exit(result.error), JSON.stringify(key)).toBe(2)
+    }
+    expect(server.requests).toHaveLength(0)
+    const valid = ['x', 'A'.repeat(128), 'booking-42!~']
+    for (const key of valid) {
+      const result = await run(command(key))
+      expect(result.error, result.stderr).toBeUndefined()
+    }
+    expect(
+      server.requests.map(({headers}) => headers['idempotency-key']),
+    ).toEqual(valid)
   })
   test('unknown outcomes require attention, remain visible in JSON, and are never automatically retried', async () => {
     server = await startHttpServer({
