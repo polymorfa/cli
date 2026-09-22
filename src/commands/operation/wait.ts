@@ -26,7 +26,9 @@ export default class OperationWait extends BaseCommand {
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(OperationWait)
-    const session = await this.developerSession(flags)
+    // --timeout here is the wait budget in seconds. It replaces the global
+    // per-request timeout (milliseconds), so it must not reach the client.
+    const session = await this.developerSession({...flags, timeout: undefined})
     const response = await operationsFor(session).wait(args.operation, {
       maxWaitMs: flags.timeout * 1000,
       requestOptions: session.requestOptions,

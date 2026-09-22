@@ -2,9 +2,10 @@
 
 The official command-line interface for Polymorfa.
 
-The package is under active development and has not been published to npm.
-The source repository is private, so GitHub installation requires repository
-access until `@polymorfa/cli` is released publicly.
+The package is under active development. `@polymorfa/cli` is not published to
+npm yet, so `npm install --global @polymorfa/cli` does not work. Once the CLI is
+published, that command will be the supported installation. Until then, install
+from the private source repository, which requires repository access.
 
 ## Requirements
 
@@ -30,11 +31,19 @@ npm link
 polymorfa version
 ```
 
-The verified version output includes both runtime components:
+Both methods install the CLI's dependencies, including the TypeScript SDK
+`@polymorfa/sdk`, from the public npm registry. The CLI pins one exact SDK
+prerelease in `package.json`.
+
+The version output includes both runtime components:
 
 ```text
 polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.0
 ```
+
+The SDK component reports the version constant built into the SDK. SDK dev
+prereleases report `0.1.0-dev.0`, not their full prerelease version; run
+`npm ls @polymorfa/sdk` to see the installed build.
 
 ## Authentication profiles
 
