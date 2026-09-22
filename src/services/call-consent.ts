@@ -12,6 +12,7 @@ import {
 
 import {conversationReference} from './conversation.js'
 import {validateCallTarget} from './calls.js'
+import {assertCursorAdvanced} from '../developer/support.js'
 
 type PlatformClient = ClientInstance<'organization'>
 
@@ -264,8 +265,20 @@ export async function listCallOptOuts(
         ...identity,
       },
     })
-    items.push(...response.data.data)
     const page = response.data.page
+    if (maxItems !== 0) {
+      const remaining = maxItems - items.length
+      items.push(...response.data.data.slice(0, remaining))
+      if (response.data.data.length > remaining) {
+        // The page cursor would skip the truncated entries, so do not offer it.
+        return {
+          ...envelope(items, response.metadata),
+          page: {hasMore: true, nextCursor: null},
+        }
+      }
+    } else {
+      items.push(...response.data.data)
+    }
     const done =
       maxItems === 0 ||
       items.length >= maxItems ||
@@ -278,12 +291,8 @@ export async function listCallOptOuts(
         page: {hasMore: page.hasMore, nextCursor: page.nextCursor},
       }
     }
-    if (page.nextCursor === cursor) {
-      throw new PolymorfaValidationError(
-        'The API returned the same continuation cursor for the next page.',
-        {code: 'pagination_cursor_unchanged'},
-      )
-    }
+    // A repeated cursor is a server defect, not invalid input.
+    assertCursorAdvanced(cursor, page.nextCursor)
     cursor = page.nextCursor
   }
 }
@@ -584,6 +593,8 @@ export interface ImportProgress {
   readonly error?: Error
   readonly metadata?: CallConsentResult<unknown>['metadata']
   readonly summary: ImportSummary
+  /** Requests the import needs: entries rejected locally are never sent. */
+  readonly totalBatches: number
 }
 
 /**
@@ -604,6 +615,7 @@ export async function importCallOptOuts(
     if (reason === undefined) sendable.push({entry, index})
     else rejected.push(rejection(index, entry, reason))
   })
+  const totalBatches = Math.ceil(sendable.length / batchSize)
   let added = 0
   let existing = 0
   let batches = 0
@@ -637,6 +649,7 @@ export async function importCallOptOuts(
         error: cause instanceof Error ? cause : new Error(String(cause)),
         ...(metadata === undefined ? {} : {metadata}),
         summary: summary(),
+        totalBatches,
       }
     }
     batches += 1
@@ -649,7 +662,11 @@ export async function importCallOptOuts(
     }
     metadata = response.metadata
   }
-  return {...(metadata === undefined ? {} : {metadata}), summary: summary()}
+  return {
+    ...(metadata === undefined ? {} : {metadata}),
+    summary: summary(),
+    totalBatches,
+  }
 }
 
 function rejection(

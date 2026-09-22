@@ -232,6 +232,71 @@ describe('call consent commands', () => {
     expect(server.requests).toHaveLength(4)
   }, 30_000)
 
+  test('caps --max-items when a page is larger than requested', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          data: [
+            optOut,
+            {...optOut, id: NEXT_CURSOR},
+            {...optOut, id: '2c9f6a52-8f0e-4a44-9d51-3c1f9d6f2a12'},
+          ],
+          page: {hasMore: true, nextCursor: NEXT_CURSOR},
+          success: true,
+        },
+      },
+    ])
+
+    const listed = await apiKey(() =>
+      runCommand('calls opt-outs list --paginate --max-items 2 --json'),
+    )
+
+    const body = JSON.parse(listed.stdout) as {
+      data: {id: string}[]
+      page: {hasMore: boolean; nextCursor: string | null}
+    }
+    expect(body.data.map(({id}) => id)).toEqual([OPT_OUT_ID, NEXT_CURSOR])
+    // The server cursor would skip the dropped entry, so it is not offered.
+    expect(body.page).toEqual({hasMore: true, nextCursor: null})
+    expect(server.requests).toHaveLength(1)
+  }, 30_000)
+
+  test('reports a repeated cursor as a server failure', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          data: [optOut],
+          page: {hasMore: true, nextCursor: NEXT_CURSOR},
+          success: true,
+        },
+      },
+      {
+        body: {
+          data: [optOut],
+          page: {hasMore: true, nextCursor: NEXT_CURSOR},
+          success: true,
+        },
+      },
+    ])
+
+    const listed = await apiKey(() =>
+      runCommand('calls opt-outs list --paginate --max-items 10 --json'),
+    )
+
+    expect(exitCode(listed.error)).not.toBe(2)
+    expect(listed.stderr).toContain('same continuation cursor')
+    expect(server.requests).toHaveLength(2)
+  }, 30_000)
+
+  test('refuses a client token for the team policy before sending', async () => {
+    server = await startHttpServer({body: {data: policy, success: true}})
+
+    const read = await clientToken(() => runCommand('calls policy get'))
+
+    expect(exitCode(read.error)).toBe(2)
+    expect(server.requests).toHaveLength(0)
+  }, 30_000)
+
   test('adds and removes entries', async () => {
     server = await startHttpSequenceServer([
       {body: {data: optOut, success: true}, status: 201},
@@ -326,6 +391,41 @@ describe('call consent commands', () => {
       error: {category: 'partial_success', code: 'partial_success'},
     })
   }, 30_000)
+
+  test('counts only the batches it sends when entries are rejected locally', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: {added: 5000, existing: 0, rejected: []}, success: true}},
+      {
+        body: {
+          error: {code: 'call_opt_out_limit', message: 'The list is full.'},
+          success: false,
+        },
+        status: 409,
+      },
+    ])
+    directory = await mkdtemp(join(tmpdir(), 'polymorfa-opt-outs-'))
+    const file = join(directory, 'list.json')
+    const valid = (index: number) => ({
+      phoneNumber: `+1415555${String(index).padStart(4, '0')}`,
+    })
+    const entries = [
+      ...Array.from({length: 5000}, (_, index) => valid(index)),
+      // Over the request's field limit: rejected by the CLI, never sent.
+      ...Array.from({length: 5000}, () => ({
+        phoneNumber: '+1'.padEnd(65, '5'),
+      })),
+      valid(9999),
+    ]
+    await writeFile(file, JSON.stringify({entries}))
+
+    const imported = await apiKey(() =>
+      runCommand(`calls opt-outs import ${file}`),
+    )
+
+    expect(server.requests).toHaveLength(2)
+    expect(exitCode(imported.error)).toBe(12)
+    expect(imported.stderr).toContain('Stored 1 of 2 batches')
+  }, 60_000)
 
   test('imports JSON in batches of 5,000 and reports a failed later batch', async () => {
     server = await startHttpSequenceServer([

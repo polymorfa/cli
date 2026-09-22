@@ -62,7 +62,7 @@ export default class CallsOptOutsImport extends BaseCommand {
       const reason = presentError(progress.error).message
       throw new CliConditionError(
         'partial_success',
-        `Stored ${summary.batches} of ${Math.ceil(entries.length / IMPORT_BATCH_SIZE)} batches, then a request failed: ${reason} Run the import again; entries already stored are counted as already listed.`,
+        `Stored ${summary.batches} of ${progress.totalBatches} batches, then a request failed: ${reason} Run the import again; entries already stored are counted as already listed.`,
         {cause: progress.error},
       )
     }

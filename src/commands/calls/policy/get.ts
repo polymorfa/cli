@@ -6,7 +6,7 @@ import {
 
 export default class CallsPolicyGet extends BaseCommand {
   static override description =
-    'Read the team call policy: the blocked country codes, the number of entries on the do-not-call list, and the revision to pass to `calls policy set --expected-revision`. The revision is 0 before the codes are first saved. Requires an organization API key; project tokens and client tokens are refused (exit code 3).'
+    'Read the team call policy: the blocked country codes, the number of entries on the do-not-call list, and the revision to pass to `calls policy set --expected-revision`. The revision is 0 before the codes are first saved. Requires an organization API key: a project token used as the API key is refused by the API (exit code 3), and a client token is not accepted for this command (exit code 2).'
 
   static override examples = ['<%= config.bin %> calls policy get']
 

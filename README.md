@@ -550,8 +550,10 @@ sox greeting.wav -t raw -r 16000 -e signed -b 16 -c 1 - | \
 
 Polymorfa checks every call against the team's call policy before the
 destination rings. `calls policy` and `calls opt-outs` read and change that
-policy and require an organization API key; project tokens and client tokens
-receive `403` and exit with code 3.
+policy and require an organization API key (`POLYMORFA_API_KEY` or a profile).
+A project token used as the API key reaches the API, which refuses it with
+`403` (exit code 3). A client token is not a Platform credential, so the CLI
+refuses the command before sending a request (exit code 2).
 
 ```shell
 polymorfa calls policy get
