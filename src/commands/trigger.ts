@@ -8,7 +8,10 @@ import {
 } from '@polymorfa/sdk'
 import {BaseCommand} from '../base-command.js'
 
-const BOOLEAN_OVERRIDES = new Set<keyof TestEventOverrides>(['video'])
+const BOOLEAN_OVERRIDES = new Set<keyof TestEventOverrides>([
+  'video',
+  'restrictionActive',
+])
 const INTEGER_OVERRIDES = new Set<keyof TestEventOverrides>(['durationSeconds'])
 
 export default class Trigger extends BaseCommand {

@@ -114,6 +114,50 @@ test('lists fixtures', async () => {
   )
 })
 
+test.each(['true', 'false'])(
+  'triggers the listed restriction fixture with restrictionActive=%s',
+  async (active) => {
+    const fixture = 'session.restriction_updated'
+    const listed = await run(`trigger --list --project ${projectId}`, [
+      {
+        body: {
+          fixtures: [
+            {
+              name: fixture,
+              description: 'WhatsApp restriction changed',
+              overrides: ['restrictionActive'],
+            },
+          ],
+        },
+      },
+    ])
+    expect(listed.result.stdout).toContain(fixture)
+
+    const {result, requests} = await run(
+      `trigger ${fixture} --project ${projectId} --session test-a --override restrictionActive=${active}`,
+      [
+        {
+          status: 202,
+          body: {
+            event: fixture,
+            session: 'test-a',
+            delivery: 'generated',
+            eventId,
+            source: 'test',
+          },
+        },
+      ],
+    )
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(requests).toHaveLength(1)
+    expect(JSON.parse(requests[0]!.body)).toEqual({
+      session: 'test-a',
+      event: fixture,
+      overrides: {restrictionActive: active === 'true'},
+    })
+  },
+)
+
 test('reports a real-session refusal without retrying', async () => {
   const {result, requests} = await run(
     `trigger call.received --project ${projectId} --session real-number`,
@@ -157,6 +201,12 @@ test('parses typed overrides and rejects malformed ones', () => {
   expect(() => parseOverrides(['video=yes'])).toThrow('true or false')
   expect(() => parseOverrides(['durationSeconds=-1'])).toThrow('whole number')
   expect(() => parseOverrides(['text=a', 'text=b'])).toThrow('more than once')
+  expect(parseOverrides(['restrictionActive=false'])).toEqual({
+    restrictionActive: false,
+  })
+  expect(() => parseOverrides(['restrictionActive=yes'])).toThrow(
+    'true or false',
+  )
 })
 
 test('rejects a shortcut that repeats an explicit override', async () => {
