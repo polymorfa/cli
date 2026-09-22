@@ -50,6 +50,8 @@ export interface ListenerEnvironment {
 export interface ResolveListenerEnvironmentInput {
   readonly apiVersion?: string | undefined
   readonly env: Readonly<Record<string, string | undefined>>
+  /** Project from the nearest `polymorfa link` file; below --project. */
+  readonly linkedProject?: string | undefined
   readonly profile?: string | undefined
   readonly project?: string | undefined
   readonly timeoutMs?: number | undefined
@@ -66,6 +68,8 @@ export interface DeveloperEnvironment {
 export interface ResolveDeveloperEnvironmentInput {
   readonly apiVersion?: string | undefined
   readonly env: Readonly<Record<string, string | undefined>>
+  /** Project from the nearest `polymorfa link` file; below --project. */
+  readonly linkedProject?: string | undefined
   readonly owner?: string | undefined
   readonly profile?: string | undefined
   readonly project?: string | undefined
@@ -93,7 +97,9 @@ export async function resolveDeveloperEnvironment(
   if (explicitProfile === undefined && environmentCredential !== undefined) {
     const baseUrl =
       nonEmpty(input.env.POLYMORFA_BASE_URL) ?? 'https://api.polymorfa.com'
-    const requestedProject = nonEmpty(input.project)
+    const requestedProject =
+      nonEmpty(input.project) ??
+      (input.owner === 'project' ? nonEmpty(input.linkedProject) : undefined)
     const unresolvedContext = resolveOwnerContext({
       principalType: environmentCredential.principalType,
       ...(input.owner === undefined ? {} : {owner: input.owner}),
@@ -169,8 +175,23 @@ export async function resolveDeveloperEnvironment(
       'project',
     )
   }
+  const linkedProject = nonEmpty(input.linkedProject)
+  if (
+    principalType === 'project_token' &&
+    owner === 'project' &&
+    explicitProject === undefined &&
+    linkedProject !== undefined &&
+    profile.project !== linkedProject
+  ) {
+    throw new PolymorfaConfigurationError(
+      `This directory is linked to project ${linkedProject}, but project-token profile ${selected} is bound to ${profile.project ?? 'another project'}. Pass --project or run polymorfa link again.`,
+      'project',
+    )
+  }
   const unresolvedProject =
-    owner === 'project' ? (explicitProject ?? profile.project) : explicitProject
+    owner === 'project'
+      ? (explicitProject ?? linkedProject ?? profile.project)
+      : explicitProject
   const baseUrl =
     nonEmpty(input.env.POLYMORFA_BASE_URL) ??
     profile.baseUrl ??
@@ -231,7 +252,7 @@ export async function resolveListenerEnvironment(
       'credential',
     )
   }
-  const project = nonEmpty(input.project)
+  const project = nonEmpty(input.project) ?? nonEmpty(input.linkedProject)
   if (projectToken !== undefined) {
     if (project === undefined) {
       throw new PolymorfaConfigurationError(
@@ -322,7 +343,7 @@ export async function resolveListenerEnvironment(
     profile.project !== project
   ) {
     throw new PolymorfaConfigurationError(
-      'A project-token profile cannot listen to a different --project context.',
+      'A project-token profile cannot listen to a different --project or linked project context.',
       'project',
     )
   }
@@ -516,7 +537,7 @@ function durableEnvironmentCredential(
 const PROJECT_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
-async function canonicalProjectId(
+export async function canonicalProjectId(
   project: string | undefined,
   principalType: 'organization_key' | 'project_token',
   connection: Parameters<ProjectLookup>[0],
@@ -554,7 +575,7 @@ async function canonicalProjectId(
   return projectId
 }
 
-async function listProjects(
+export async function listProjects(
   input: Parameters<ProjectLookup>[0],
 ): Promise<readonly ProjectWithStats[]> {
   const client = new Client({

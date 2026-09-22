@@ -2,9 +2,10 @@
 
 The official command-line interface for Polymorfa.
 
-The package is under active development and has not been published to npm.
-The source repository is private, so GitHub installation requires repository
-access until `@polymorfa/cli` is released publicly.
+The package is under active development. `@polymorfa/cli` is not published to
+npm yet, so `npm install --global @polymorfa/cli` does not work. Once the CLI is
+published, that command will be the supported installation. Until then, install
+from the private source repository, which requires repository access.
 
 ## Requirements
 
@@ -30,11 +31,19 @@ npm link
 polymorfa version
 ```
 
-The verified version output includes both runtime components:
+Both methods install the CLI's dependencies, including the TypeScript SDK
+`@polymorfa/sdk`, from the public npm registry. The CLI pins one exact SDK
+prerelease in `package.json`.
+
+The version output includes both runtime components:
 
 ```text
 polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.0
 ```
+
+The SDK component reports the version constant built into the SDK. SDK dev
+prereleases report `0.1.0-dev.0`, not their full prerelease version; run
+`npm ls @polymorfa/sdk` to see the installed build.
 
 ## Authentication profiles
 
@@ -61,6 +70,53 @@ in this development slice and does not yet claim remote identity validation.
 
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
+
+## Project context
+
+Select a default project per profile, or link a directory so every command run
+inside it uses one project:
+
+```shell
+polymorfa project list               # projects for the current credential; * marks the current one
+polymorfa project use my-app         # store the project on the active profile
+polymorfa project use my-app --profile work
+polymorfa link --project my-app      # write polymorfa.json here
+polymorfa project current            # show the project and where it comes from
+```
+
+Commands resolve the project in this order: `--project`, the nearest
+`polymorfa.json` in the current directory or a parent, then the
+profile's stored project. Organization-owned commands ignore linked and profile
+projects. `--verbose` prints the link file in use.
+
+`project use` and `link` accept a UUID or a unique slug and store the canonical
+UUID. The link file holds only `{"version": 1, "project": "<uuid>"}`, never a
+credential, so it is safe to commit. `link` without `--project` uses the
+profile's project, and replacing a link to a different project requires
+`--force`. Project-token profiles stay bound to their one project: `project use`
+rejects any other project, and a command fails if the directory is linked to a
+different project. `polymorfa listen` falls back to the linked or profile
+project when `--project` is omitted.
+
+## Doctor
+
+```shell
+polymorfa doctor
+polymorfa doctor --profile work --json
+```
+
+`doctor` runs five checks and exits with code 1 if any fails:
+
+| Check        | What it does                                                                                                                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `node`       | Requires Node.js 22 or newer.                                                                                                                                                                                                        |
+| `config`     | Loads and validates the profile config and reports the active profile.                                                                                                                                                               |
+| `keyring`    | Reads the selected profile's entry from the operating-system keyring. A locked or unavailable keyring fails, or warns when an environment credential is in use.                                                                      |
+| `api`        | Calls the unauthenticated `/ping` on the configured base URL, without retries.                                                                                                                                                       |
+| `credential` | For a server API key, lists projects as an authenticated ping. `401` fails; `403` warns that the key authenticated but project listing was denied. Project and client tokens are reported as present but are not validated remotely. |
+
+Environment credentials take precedence over the active profile, as for other
+commands. Output never contains credential values.
 
 ## QuickLinks
 
@@ -837,8 +893,8 @@ this route. Security-incident acknowledgement is repeatable and sends no body.
 
 Audit filters are exact matches, and `--limit` is bounded to 1 through 500.
 These list operations return complete arrays and expose no cursor. Project-token
-listing requires one explicit project ID. Operation inspection is console-only;
-the CLI does not expose operation polling or cancellation.
+listing requires one explicit project ID. Follow asynchronous work with the
+`operation` commands described in [Operations](#operations).
 
 Member invite, role update, and removal remain dashboard-session routes and are
 not exposed through server-key commands. The API also exposes no compatible
@@ -902,7 +958,8 @@ polymorfa campaign requeue campaign_123 \
 
 Launch, pause, and resume return accepted durable work; they do not wait for
 the state transition. Check the campaign with `polymorfa campaign view`.
-Operation inspection is console-only; the CLI has no operation-polling command.
+Follow the returned operation with `polymorfa operation wait` or
+`polymorfa operation watch`; see [Operations](#operations).
 
 Stop is terminal and requires `--yes`. A campaign that has an active delivery
 run answers with an operation ID, as the other lifecycle commands do. A
@@ -953,9 +1010,10 @@ with `--status queued|sending|sent|delivered|read|failed|skipped`. A recipient
 suppressed by an opt-out appears as `skipped` with `lastError` `opted_out`.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
-event, history, replay, watch, or operation-cancel route on the Messaging
-surface. The CLI does not substitute similarly named Platform campaign methods
-for these gaps.
+event, history, or replay route on the Messaging surface. The CLI does not
+substitute similarly named Platform campaign methods for these gaps. To follow
+or stop a campaign's operation, use the `operation` commands in
+[Operations](#operations).
 
 ## Campaign audiences
 
@@ -1064,10 +1122,39 @@ is capped at 10,000. The CLI shrinks the last request to the remaining item
 budget instead of fetching records it will discard.
 
 Replay, delivery retry, and webhook test return an idempotency receipt and an
-operation ID in the JSON `operation.id` field. Operation inspection is
-console-only, so the CLI has no command to poll or cancel that operation. Use
-`webhook delivery view` and `webhook delivery attempt list` to follow the
-resulting delivery.
+operation ID in the JSON `operation.id` field. Follow it with
+`polymorfa operation wait <id>`, or use `webhook delivery view` and
+`webhook delivery attempt list` to follow the resulting delivery.
+
+## Operations
+
+Campaign sends, production enrollments, and other durable work are tracked as
+operations. The commands need `operations:read`; `operation cancel` needs
+`operations:cancel`. With `--owner organization`, commands read team-owned
+operations and every project's operations. With `--owner project`, they read
+one project.
+
+```shell
+polymorfa operation list --owner organization --status running
+polymorfa operation list --owner organization \
+  --resource-type campaign --resource-id campaign_123
+polymorfa operation view operation_123 --owner organization
+polymorfa operation wait operation_123 --owner organization --timeout 600
+polymorfa operation watch operation_123 --owner organization
+polymorfa operation cancel operation_123 --owner organization --yes
+```
+
+`operation wait` long-polls the API (up to 30 seconds per request) until the
+operation succeeds, fails, or is cancelled. It exits `0` on success, `1` on
+failure or cancellation, and `8` when `--timeout` (default 300 seconds) ends
+first. `operation watch` prints each status change as it happens, one JSON
+document per change with `--json`, and exits the same way.
+
+`operation cancel` works only while `capabilities.cancellable` is true (running
+or action-required campaign and production-enrollment operations). It requires
+`--yes` in noninteractive runs and accepts `--idempotency-key`; a retry with the
+same key returns the original receipt. Other operations fail with a conflict
+that includes the current operation.
 
 `event view` prints the retained payload in human output only with
 `--include-payload`. `webhook delivery attempt view` prints the redacted
@@ -1151,9 +1238,10 @@ polymorfa api /v1/projects --surface platform
 
 polymorfa api /v1/campaigns \
   --surface platform \
-  --method POST \
-  --field projectId=project_123 \
-  --field name='August launch' \
+  -X POST \
+  -f projectId=project_123 \
+  -f name='August launch' \
+  -F dryRun=true \
   --json
 
 polymorfa api /v1/campaigns \
@@ -1169,8 +1257,57 @@ cat campaign.json | polymorfa api /v1/campaigns \
 
 GET and HEAD fields become query parameters. Other methods encode fields as a
 JSON object. `--input` reads one JSON value from a file or standard input and
-is capped at 10 MiB. Use `--header name:value` for additional headers and
-`--include` to include response metadata in human output.
+is capped at 10 MiB. Use `-H/--header name:value` for additional headers and
+`-i/--include` to include response metadata in human output. `-X` is short for
+`--method`.
+
+### Fields
+
+- `-f/--raw-field name=value` always sends a string.
+- `-F/--field name=value` converts `true`, `false`, `null`, and integers to JSON
+  values. `@path` reads a file and `@-` reads standard input as a string.
+  Anything else stays a string.
+- Both accept `name[key]=value` to build nested objects and `name[]=value` to
+  append to an array. GET and HEAD query parameters accept values and `name[]`
+  arrays but not nested objects.
+
+`--field` previously sent every value as a string. Use `-f` where a value such
+as `10` or `true` must stay a string.
+
+### Pagination and output filters
+
+```shell
+# Every page, one ID per line
+polymorfa api /platform/customers --surface platform --paginate --jq '.data[].id'
+
+# All pages as one array, then one jq program over it
+polymorfa api /platform/customers --surface platform --paginate --slurp \
+  --jq 'map(.data | length) | add'
+
+# Go-style template
+polymorfa api /platform/customers --surface platform \
+  --template '{{range .data}}{{.id}}{{"\t"}}{{.name}}{{"\n"}}{{end}}'
+```
+
+- `--paginate` (GET only) follows `page.nextCursor` by sending it back as the
+  `cursor` query parameter until the cursor is null or `hasMore` is false. It
+  stops with an error after `--max-pages` pages (100 by default) and when the
+  API returns the same cursor twice. Without a filter, human output prints each
+  page as it arrives; `--json` prints one document whose `data` is the array of
+  page bodies and whose `metadata.pages` is the page count.
+- `--slurp` requires `--paginate` and combines the page bodies into one array
+  before `--jq` or `--template` runs. Without `--slurp`, filters run on each page.
+- `-q/--jq` runs a jq 1.8 program with an embedded WebAssembly jq, so no `jq`
+  binary is required. Strings print without quotes. The jq runtime has its own
+  environment, so `$ENV` does not expose your shell variables or credentials.
+- `-t/--template` renders a Go-style template: `{{.path.to.value}}`,
+  `{{range .list}}…{{else}}…{{end}}`, `{{if .value}}…{{else}}…{{end}}`,
+  `{{$.root}}` inside a range, `{{json .x}}`, `{{len .x}}`, `{{upper .x}}`,
+  `{{lower .x}}`, `{{join ", " .list}}`, string literals such as `{{"\n"}}`,
+  comments, and `{{-`/`-}}` whitespace trimming. Missing values render as an
+  empty string.
+- `--jq`, `--template`, and `--json` are mutually exclusive, as are `--include`
+  and a filter.
 
 `--json` prints exactly one JSON document on stdout. `--quiet` suppresses
 successful output without hiding failures. Diagnostics and errors go to stderr;
