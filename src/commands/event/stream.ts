@@ -1,3 +1,4 @@
+import {once} from 'node:events'
 import {Flags} from '@oclif/core'
 import type {EventStreamItem} from '@polymorfa/sdk'
 
@@ -86,8 +87,8 @@ export default class EventStream extends BaseCommand {
       for await (const item of stream) {
         delivered += 1
         lastCursor = item.cursor
-        if (json) process.stdout.write(`${JSON.stringify(jsonLine(item))}\n`)
-        else if (!quiet) process.stdout.write(`${humanLine(item)}\n`)
+        if (json) await writeStdout(`${JSON.stringify(jsonLine(item))}\n`)
+        else if (!quiet) await writeStdout(`${humanLine(item)}\n`)
         if (
           flags['max-events'] !== undefined &&
           delivered >= flags['max-events']
@@ -108,6 +109,15 @@ export default class EventStream extends BaseCommand {
       )
     }
   }
+}
+
+/**
+ * Waits for stdout to accept each line so a slow consumer pauses the stream
+ * instead of growing the process's output buffer without bound.
+ */
+async function writeStdout(value: string): Promise<void> {
+  if (process.stdout.write(value)) return
+  await once(process.stdout, 'drain')
 }
 
 function jsonLine(item: EventStreamItem) {
