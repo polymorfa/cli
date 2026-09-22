@@ -62,6 +62,53 @@ in this development slice and does not yet claim remote identity validation.
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
 
+## Project context
+
+Select a default project per profile, or link a directory so every command run
+inside it uses one project:
+
+```shell
+polymorfa project list               # projects for the current credential; * marks the current one
+polymorfa project use my-app         # store the project on the active profile
+polymorfa project use my-app --profile work
+polymorfa link --project my-app      # write polymorfa.json here
+polymorfa project current            # show the project and where it comes from
+```
+
+Commands resolve the project in this order: `--project`, the nearest
+`polymorfa.json` in the current directory or a parent, then the
+profile's stored project. Organization-owned commands ignore linked and profile
+projects. `--verbose` prints the link file in use.
+
+`project use` and `link` accept a UUID or a unique slug and store the canonical
+UUID. The link file holds only `{"version": 1, "project": "<uuid>"}`, never a
+credential, so it is safe to commit. `link` without `--project` uses the
+profile's project, and replacing a link to a different project requires
+`--force`. Project-token profiles stay bound to their one project: `project use`
+rejects any other project, and a command fails if the directory is linked to a
+different project. `polymorfa listen` falls back to the linked or profile
+project when `--project` is omitted.
+
+## Doctor
+
+```shell
+polymorfa doctor
+polymorfa doctor --profile work --json
+```
+
+`doctor` runs five checks and exits with code 1 if any fails:
+
+| Check        | What it does                                                                                                                                                                                                                         |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `node`       | Requires Node.js 22 or newer.                                                                                                                                                                                                        |
+| `config`     | Loads and validates the profile config and reports the active profile.                                                                                                                                                               |
+| `keyring`    | Reads the selected profile's entry from the operating-system keyring. A locked or unavailable keyring fails, or warns when an environment credential is in use.                                                                      |
+| `api`        | Calls the unauthenticated `/ping` on the configured base URL, without retries.                                                                                                                                                       |
+| `credential` | For a server API key, lists projects as an authenticated ping. `401` fails; `403` warns that the key authenticated but project listing was denied. Project and client tokens are reported as present but are not validated remotely. |
+
+Environment credentials take precedence over the active profile, as for other
+commands. Output never contains credential values.
+
 ## QuickLinks
 
 A QuickLink is a persistent hosted link that connects one WhatsApp number to a
@@ -152,7 +199,32 @@ polymorfa group invite-link 750000000001 --session session_123
 
 Add `--json` for complete resource data and response metadata. Group and
 participant lists are unpaged because the source API does not expose cursors.
-Mutating group commands remain under implementation.
+
+Create and change groups with a server API key that has `groups:manage`:
+
+```shell
+polymorfa group create --session session_123 \
+  --name 'Launch team' \
+  --participant 750000000001 --participant 750000000002
+
+polymorfa group participants add 750000000009 --session session_123 --participant 750000000003
+polymorfa group participants promote 750000000009 --session session_123 --participant 750000000003
+polymorfa group participants demote 750000000009 --session session_123 --participant 750000000003
+polymorfa group participants remove 750000000009 --session session_123 --participant 750000000003 --yes
+
+polymorfa group subject 750000000009 --session session_123 --value 'Launch crew'
+polymorfa group description 750000000009 --session session_123 --value ''
+
+polymorfa group settings 750000000009 --session session_123 \
+  --messaging admins --info-editing admins --member-add all --join-approval on
+```
+
+Participants are Polymorfa user IDs. Resolve phone numbers with
+`polymorfa identity resolve` first. An empty `--value` clears the description.
+`group settings` applies each requested setting with its own API call, in the
+order info editing, messaging, member add, join approval. If one fails, the
+error names the settings that were already applied. Removing participants
+requires `--yes`.
 
 ## Messages
 
@@ -191,9 +263,63 @@ Every mutation accepts `--idempotency-key` for safe retry identity. Server API
 keys require `messages:write`; client tokens remain subject to their live
 recipient rules, allowed actions, and rate limits.
 
+### Typed sends
+
+Every `message send <kind>` command accepts the same `--session`, `--to`,
+`--reply-to`, `--mention`, `--forwarded`, and `--idempotency-key` flags as
+`message send text`:
+
+```shell
+# Media from a local file (sent inline as base64) or a public URL
+polymorfa message send image --session session_123 --to +15551234567 --file ./photo.jpg --caption 'Today'
+polymorfa message send video --session session_123 --to +15551234567 --url https://example.com/clip.mp4
+polymorfa message send audio --session session_123 --to +15551234567 --file ./note.ogg --voice
+polymorfa message send document --session session_123 --to +15551234567 --file ./invoice.pdf
+
+polymorfa message send template --session session_123 --to +15551234567 \
+  --name order_update --language en_US --components components.json
+polymorfa message send location --session session_123 --to +15551234567 \
+  --lat 51.5007 --long=-0.1246 --address 'Westminster'
+polymorfa message send contact --session session_123 --to +15551234567 \
+  --name 'Ada Lovelace' --phone +15557654321
+polymorfa message send poll --session session_123 --to 730000000001 \
+  --title 'Lunch?' --option Pizza --option Sushi --multi-select
+polymorfa message send buttons --session session_123 --to +15551234567 \
+  --body 'Confirm your order?' --button reply:yes=Yes --button reply:no=No
+polymorfa message send list --session session_123 --to +15551234567 \
+  --title 'Pick a slot' --button-text Choose \
+  --row 'Morning/am9=9:00' --row 'Afternoon/pm2=14:00|Near the office'
+```
+
+- Media commands take exactly one of `--file` or `--url`. Local files are
+  limited by `--max-bytes` (100 MiB by default) and the MIME type is inferred
+  from the extension unless `--mime-type` is set. `document` sends the local
+  file name unless `--filename` overrides it. `audio --voice` sends a
+  push-to-talk voice note.
+- `template --components` reads a JSON array from a file or `-` for stdin.
+- Pass negative coordinates as `--lat=-33.86` so they are not read as flags.
+- `contact` builds a vCard 3.0 from `--name`, repeatable `--phone`, and
+  `--organization`, or sends the vCard file given by `--vcard`.
+- `poll` takes 2 to 12 unique `--option` values.
+- `buttons` takes repeatable `--button` values: `reply:<id>=<text>`,
+  `url:<text>=<url>`, `call:<text>=<+E.164>`, or `copy:<text>=<code>`.
+- `list` takes repeatable `--row` values `[<section>/]<id>=<title>[|<description>]`.
+  Rows with the same section are grouped in order.
+
+The API has no sticker send kind, so the CLI has no `message send sticker`.
+
+### Edit and delete
+
+```shell
+polymorfa message edit 740000000001 --session session_123 --chat 730000000001 --body 'Corrected text'
+polymorfa message delete 740000000001 --session session_123 --chat 730000000001 --yes
+```
+
+Edit and delete require `chats:manage`. Delete asks for confirmation; pass
+`--yes` in scripts.
+
 The API does not expose message history, list, or search operations. Those
-commands are not synthesized by the CLI. Additional typed send kinds will be
-added as focused subcommands instead of a generic JSON payload interface.
+commands are not synthesized by the CLI.
 
 ## Media
 
@@ -838,8 +964,8 @@ this route. Security-incident acknowledgement is repeatable and sends no body.
 
 Audit filters are exact matches, and `--limit` is bounded to 1 through 500.
 These list operations return complete arrays and expose no cursor. Project-token
-listing requires one explicit project ID. Operation inspection is console-only;
-the CLI does not expose operation polling or cancellation.
+listing requires one explicit project ID. Follow asynchronous work with the
+`operation` commands described in [Operations](#operations).
 
 Member invite, role update, and removal remain dashboard-session routes and are
 not exposed through server-key commands. The API also exposes no compatible
@@ -903,7 +1029,8 @@ polymorfa campaign requeue campaign_123 \
 
 Launch, pause, resume, and stop return accepted durable work; they do not wait
 for the state transition. Check the campaign with `polymorfa campaign view`.
-Operation inspection is console-only; the CLI has no operation-polling command.
+Follow the returned operation with `polymorfa operation wait` or
+`polymorfa operation watch`; see [Operations](#operations).
 
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
@@ -912,8 +1039,9 @@ is synchronous and reports only the number moved. Every mutation accepts
 treated as server-side deduplication.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
-recipient, event, history, replay, watch, or operation-cancel route. The CLI
-does not substitute similarly named Platform campaign methods for these gaps.
+recipient, event, history, or replay route. The CLI does not substitute
+similarly named Platform campaign methods for these gaps. To follow or stop a
+campaign's operation, use the `operation` commands in [Operations](#operations).
 
 ## Developer events and webhooks
 
@@ -968,10 +1096,39 @@ is capped at 10,000. The CLI shrinks the last request to the remaining item
 budget instead of fetching records it will discard.
 
 Replay, delivery retry, and webhook test return an idempotency receipt and an
-operation ID in the JSON `operation.id` field. Operation inspection is
-console-only, so the CLI has no command to poll or cancel that operation. Use
-`webhook delivery view` and `webhook delivery attempt list` to follow the
-resulting delivery.
+operation ID in the JSON `operation.id` field. Follow it with
+`polymorfa operation wait <id>`, or use `webhook delivery view` and
+`webhook delivery attempt list` to follow the resulting delivery.
+
+## Operations
+
+Campaign sends, production enrollments, and other durable work are tracked as
+operations. The commands need `operations:read`; `operation cancel` needs
+`operations:cancel`. With `--owner organization`, commands read team-owned
+operations and every project's operations. With `--owner project`, they read
+one project.
+
+```shell
+polymorfa operation list --owner organization --status running
+polymorfa operation list --owner organization \
+  --resource-type campaign --resource-id campaign_123
+polymorfa operation view operation_123 --owner organization
+polymorfa operation wait operation_123 --owner organization --timeout 600
+polymorfa operation watch operation_123 --owner organization
+polymorfa operation cancel operation_123 --owner organization --yes
+```
+
+`operation wait` long-polls the API (up to 30 seconds per request) until the
+operation succeeds, fails, or is cancelled. It exits `0` on success, `1` on
+failure or cancellation, and `8` when `--timeout` (default 300 seconds) ends
+first. `operation watch` prints each status change as it happens, one JSON
+document per change with `--json`, and exits the same way.
+
+`operation cancel` works only while `capabilities.cancellable` is true (running
+or action-required campaign and production-enrollment operations). It requires
+`--yes` in noninteractive runs and accepts `--idempotency-key`; a retry with the
+same key returns the original receipt. Other operations fail with a conflict
+that includes the current operation.
 
 `event view` prints the retained payload in human output only with
 `--include-payload`. `webhook delivery attempt view` prints the redacted
@@ -1055,9 +1212,10 @@ polymorfa api /v1/projects --surface platform
 
 polymorfa api /v1/campaigns \
   --surface platform \
-  --method POST \
-  --field projectId=project_123 \
-  --field name='August launch' \
+  -X POST \
+  -f projectId=project_123 \
+  -f name='August launch' \
+  -F dryRun=true \
   --json
 
 polymorfa api /v1/campaigns \
@@ -1073,8 +1231,57 @@ cat campaign.json | polymorfa api /v1/campaigns \
 
 GET and HEAD fields become query parameters. Other methods encode fields as a
 JSON object. `--input` reads one JSON value from a file or standard input and
-is capped at 10 MiB. Use `--header name:value` for additional headers and
-`--include` to include response metadata in human output.
+is capped at 10 MiB. Use `-H/--header name:value` for additional headers and
+`-i/--include` to include response metadata in human output. `-X` is short for
+`--method`.
+
+### Fields
+
+- `-f/--raw-field name=value` always sends a string.
+- `-F/--field name=value` converts `true`, `false`, `null`, and integers to JSON
+  values. `@path` reads a file and `@-` reads standard input as a string.
+  Anything else stays a string.
+- Both accept `name[key]=value` to build nested objects and `name[]=value` to
+  append to an array. GET and HEAD query parameters accept values and `name[]`
+  arrays but not nested objects.
+
+`--field` previously sent every value as a string. Use `-f` where a value such
+as `10` or `true` must stay a string.
+
+### Pagination and output filters
+
+```shell
+# Every page, one ID per line
+polymorfa api /platform/customers --surface platform --paginate --jq '.data[].id'
+
+# All pages as one array, then one jq program over it
+polymorfa api /platform/customers --surface platform --paginate --slurp \
+  --jq 'map(.data | length) | add'
+
+# Go-style template
+polymorfa api /platform/customers --surface platform \
+  --template '{{range .data}}{{.id}}{{"\t"}}{{.name}}{{"\n"}}{{end}}'
+```
+
+- `--paginate` (GET only) follows `page.nextCursor` by sending it back as the
+  `cursor` query parameter until the cursor is null or `hasMore` is false. It
+  stops with an error after `--max-pages` pages (100 by default) and when the
+  API returns the same cursor twice. Without a filter, human output prints each
+  page as it arrives; `--json` prints one document whose `data` is the array of
+  page bodies and whose `metadata.pages` is the page count.
+- `--slurp` requires `--paginate` and combines the page bodies into one array
+  before `--jq` or `--template` runs. Without `--slurp`, filters run on each page.
+- `-q/--jq` runs a jq 1.8 program with an embedded WebAssembly jq, so no `jq`
+  binary is required. Strings print without quotes. The jq runtime has its own
+  environment, so `$ENV` does not expose your shell variables or credentials.
+- `-t/--template` renders a Go-style template: `{{.path.to.value}}`,
+  `{{range .list}}…{{else}}…{{end}}`, `{{if .value}}…{{else}}…{{end}}`,
+  `{{$.root}}` inside a range, `{{json .x}}`, `{{len .x}}`, `{{upper .x}}`,
+  `{{lower .x}}`, `{{join ", " .list}}`, string literals such as `{{"\n"}}`,
+  comments, and `{{-`/`-}}` whitespace trimming. Missing values render as an
+  empty string.
+- `--jq`, `--template`, and `--json` are mutually exclusive, as are `--include`
+  and a filter.
 
 `--json` prints exactly one JSON document on stdout. `--quiet` suppresses
 successful output without hiding failures. Diagnostics and errors go to stderr;
