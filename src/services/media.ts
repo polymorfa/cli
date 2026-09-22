@@ -4,6 +4,7 @@ import {resolve} from 'node:path'
 import {
   PolymorfaConfigurationError,
   PolymorfaConflictError,
+  PolymorfaTimeoutError,
   PolymorfaValidationError,
   type MessagingClient,
   type MessagingMediaInfo,
@@ -144,16 +145,28 @@ export async function downloadMediaFromEvent(
     readonly force: boolean
     readonly maxBytes: number
     readonly output: string
+    readonly timeoutMs?: number
   },
 ): Promise<MediaResult<DownloadedWhatsAppMedia>> {
   const output = resolve(options.output)
   if (!options.force) await rejectExistingOutput(output)
   const message = await readMediaEvent(eventFile)
 
+  const signal =
+    options.timeoutMs === undefined
+      ? undefined
+      : AbortSignal.timeout(options.timeoutMs)
   const written = await downloadWhatsAppMediaToFile(message, output, {
     maxBytes: options.maxBytes,
     overwrite: options.force,
+    ...(signal === undefined ? {} : {signal}),
   }).catch((error: unknown) => {
+    if (signal?.aborted === true) {
+      throw new PolymorfaTimeoutError(
+        `The media download did not finish within ${options.timeoutMs} ms.`,
+        {cause: error, code: 'request_timeout'},
+      )
+    }
     throw mapWriteError(error, output, 'from the event', options.maxBytes)
   })
 
@@ -186,16 +199,21 @@ export async function readMediaEvent(
   path: string,
 ): Promise<WhatsAppMediaMessage> {
   const file = resolve(path)
-  const stats = await stat(file)
+  const stats = await stat(file).catch((error: unknown) => {
+    throw eventFileAccessError(file, error)
+  })
   if (!stats.isFile() || stats.size > MAX_EVENT_FILE_BYTES) {
     throw new PolymorfaValidationError(
       `${file} must be a regular JSON file no larger than 10 MiB.`,
     )
   }
 
+  const text = await readFile(file, 'utf8').catch((error: unknown) => {
+    throw eventFileAccessError(file, error)
+  })
   let parsed: unknown
   try {
-    parsed = JSON.parse(await readFile(file, 'utf8')) as unknown
+    parsed = JSON.parse(text) as unknown
   } catch {
     throw new PolymorfaValidationError(`${file} is not valid JSON.`)
   }
@@ -213,6 +231,16 @@ export async function readMediaEvent(
   }
 
   return {media: payload.media, type: payload.type}
+}
+
+function eventFileAccessError(
+  file: string,
+  error: unknown,
+): PolymorfaValidationError {
+  const code = nodeErrorCode(error)
+  return new PolymorfaValidationError(
+    `${file} could not be read${code === undefined ? '' : ` (${code})`}. Pass --from-event a readable JSON file.`,
+  )
 }
 
 async function rejectExistingOutput(output: string): Promise<void> {

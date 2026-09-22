@@ -408,6 +408,41 @@ describe('media commands', () => {
       )
       expect(exitCode(both.error)).toBe(2)
     })
+
+    test('reports a missing event file as invalid input', async () => {
+      const result = await runCommand(
+        `media download --from-event ${join(directory, 'missing.json')} -o ${join(directory, 'o')} --json`,
+      )
+      expect(exitCode(result.error)).toBe(2)
+      expect(result.stderr).toContain('could not be read (ENOENT)')
+    })
+
+    test('honors --timeout for the CDN download', async () => {
+      const fixture = whatsAppFixture(Buffer.from('slow'))
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(
+          (_input: unknown, init?: {signal?: AbortSignal}) =>
+            new Promise<Response>((_resolve, reject) => {
+              init?.signal?.addEventListener('abort', () => {
+                reject(init.signal?.reason as Error)
+              })
+            }),
+        ),
+      )
+      const eventFile = join(directory, 'event.json')
+      await writeFile(
+        eventFile,
+        JSON.stringify({media: fixture.media, type: 'image'}),
+      )
+
+      const result = await runCommand(
+        `media download --from-event ${eventFile} -o ${join(directory, 'out.jpg')} --timeout 50 --json`,
+      )
+      expect(result.error).toBeDefined()
+      expect(result.stderr).toContain('did not finish within 50 ms')
+      await expect(readdir(directory)).resolves.toEqual(['event.json'])
+    })
   })
 
   async function apiKeyEnvironment<T>(run: () => Promise<T>): Promise<T> {

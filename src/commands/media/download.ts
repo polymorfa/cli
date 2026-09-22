@@ -68,6 +68,7 @@ export default class MediaDownload extends BaseCommand {
         force: flags.force,
         maxBytes: flags['max-bytes'],
         output,
+        ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
       })
       this.writeValue(result, result.data.path, flags)
       return
