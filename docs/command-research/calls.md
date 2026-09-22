@@ -84,12 +84,15 @@ internal SDK module.
   revision returns 409 `state_conflict`, which exits with code 4.
 - `calls retention` resolves a team API key or a project token
   (`resolveTeamSettingEnvironment`), from the environment or a profile, with
-  no project context. The pinned SDK has no call-retention resource, and its
-  project-token client confines raw paths to `/platform/projects/{id}`, so
-  `createCallRetentionClient` in `src/sdk/client.ts` sends `GET` and
-  `PUT /platform/call-retention` through the unconfined organization raw
-  transport for both principals (as the project lookup does); the API
-  identifies the principal from the bearer credential. Switch to the SDK's
+  no project context, and the API decides what each principal may do. The
+  pinned SDK has no call-retention resource. `createCallRetentionClient` in
+  `src/sdk/client.ts` sends `GET` and `PUT /platform/call-retention` through
+  the SDK organization client's raw transport for team API keys. The pinned
+  SDK confines a project-token client's raw paths to `/platform/projects/{id}`
+  and refuses a project token as an organization key, so project tokens use
+  `projectTokenRequest` (`src/sdk/project-token-request.ts`): one request with
+  the SDK's headers, no redirects, https except on loopback, and failures
+  mapped to the SDK error classes. Switch to the SDK's
   `callRetention` methods (polymorfa/sdks#278, which serve both principals)
   once a release that includes them is pinned. The API lets team API keys and
   project tokens read the setting and only team API keys change it; the CLI
