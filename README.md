@@ -1088,6 +1088,9 @@ command reconnects with backoff after a dropped connection. If events after
 `--on-gap stop` to exit with the stream gap code instead. `--max-events` stops
 after a fixed number of events.
 
+Ctrl-C or SIGTERM stops the stream with exit code 0. If the output pipe is
+blocked, stopping discards queued output instead of waiting for the reader.
+
 Use `event stream` to consume events in a script. Use `listen` to forward exact
 bodies to a local webhook handler.
 

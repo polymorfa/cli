@@ -48,7 +48,11 @@ export default class EventStream extends BaseCommand {
     const json = flags.json === true
     const quiet = flags.quiet === true
     const controller = new AbortController()
-    const stop = () => controller.abort()
+    let interrupted = false
+    const stop = () => {
+      interrupted = true
+      controller.abort()
+    }
     process.once('SIGINT', stop)
     process.once('SIGTERM', stop)
     // A consumer that closes the pipe (for example `| head -n 1`) ends the
@@ -115,6 +119,11 @@ export default class EventStream extends BaseCommand {
       if (!json && !quiet && lastCursor !== undefined) {
         process.stderr.write(`Resume with --from ${lastCursor}\n`)
       }
+      // Aborting the drain wait does not cancel Node's pending stdout write.
+      // stdout.destroy() also leaves that write alive. After closing the
+      // iterator and removing listeners, discard the cancelled output so an
+      // unread pipe cannot keep an interrupted command running indefinitely.
+      if (interrupted && process.stdout.writableNeedDrain) process.exit(0)
     }
     if (gap !== undefined && flags['on-gap'] === 'stop') {
       throw new CliConditionError(
@@ -137,7 +146,8 @@ async function writeStdout(value: string, signal: AbortSignal): Promise<void> {
     // even when the consumer never drains stdout.
     await once(process.stdout, 'drain', {signal})
   } catch (error) {
-    if (signal.aborted || isClosedPipe(error)) return
+    if (isClosedPipe(error)) return
+    if (signal.aborted) return
     throw error
   }
 }

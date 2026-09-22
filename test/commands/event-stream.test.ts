@@ -150,6 +150,7 @@ describe('event stream', () => {
       EventStream.run(['--owner', 'project', '--project', PROJECT, '--json']),
     )
     expect(output).toHaveBeenCalledTimes(1)
+    expect(sdk.params[0]?.signal).toMatchObject({aborted: true})
   })
 
   test('a closed stdout pipe ends the stream without an error', async () => {
