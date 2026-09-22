@@ -51,6 +51,13 @@ export default class EventStream extends BaseCommand {
     const stop = () => controller.abort()
     process.once('SIGINT', stop)
     process.once('SIGTERM', stop)
+    // A consumer that closes the pipe (for example `| head -n 1`) ends the
+    // stream normally instead of failing the command.
+    const stdoutClosed = (error: unknown) => {
+      if (isClosedPipe(error)) controller.abort()
+      else throw error
+    }
+    process.stdout.on('error', stdoutClosed)
     let gap: {missedEvents: number} | undefined
     let delivered = 0
     let lastCursor: string | undefined = flags.from
@@ -104,6 +111,7 @@ export default class EventStream extends BaseCommand {
     } finally {
       process.removeListener('SIGINT', stop)
       process.removeListener('SIGTERM', stop)
+      process.stdout.removeListener('error', stdoutClosed)
       if (!json && !quiet && lastCursor !== undefined) {
         process.stderr.write(`Resume with --from ${lastCursor}\n`)
       }
@@ -120,7 +128,7 @@ export default class EventStream extends BaseCommand {
 /**
  * Waits for stdout to accept each line so a slow consumer pauses the stream
  * instead of growing the process's output buffer without bound. An abort
- * (Ctrl-C or SIGTERM) ends the wait.
+ * (Ctrl-C, SIGTERM or a closed stdout pipe) ends the wait.
  */
 async function writeStdout(value: string, signal: AbortSignal): Promise<void> {
   if (process.stdout.write(value)) return
@@ -129,9 +137,17 @@ async function writeStdout(value: string, signal: AbortSignal): Promise<void> {
     // even when the consumer never drains stdout.
     await once(process.stdout, 'drain', {signal})
   } catch (error) {
-    if (signal.aborted) return
+    if (signal.aborted || isClosedPipe(error)) return
     throw error
   }
+}
+
+function isClosedPipe(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    (error.code === 'EPIPE' || error.code === 'ERR_STREAM_DESTROYED')
+  )
 }
 
 function jsonLine(item: EventStreamItem) {
