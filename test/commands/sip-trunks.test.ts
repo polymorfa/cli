@@ -269,11 +269,13 @@ describe('sip-trunk commands', () => {
   })
 
   test.each([
-    ['rotate-credentials', 'rotated-first'],
-    ['create', 'created-first'],
-  ])(
-    '%s prints credentials first and exits successfully after a bounded hanging address lookup',
-    async (command, password) => {
+    ['rotate-credentials', 'rotated-first', undefined],
+    ['create', 'created-first', undefined],
+    ['rotate-credentials', 'rotated-fast', 500],
+    ['create', 'created-fast', 500],
+  ] as const)(
+    '%s prints %s before a hanging address lookup, respecting timeout %s',
+    async (command, password, timeoutMs) => {
       const credentials = {
         password,
         realm: 'sip.example.test',
@@ -319,6 +321,7 @@ describe('sip-trunk commands', () => {
           'tsx',
           fileURLToPath(new URL('../../bin/dev.js', import.meta.url)),
           ...args,
+          ...(timeoutMs === undefined ? [] : ['--timeout', String(timeoutMs)]),
         ],
         {
           env: {
@@ -375,8 +378,10 @@ describe('sip-trunk commands', () => {
         expect(outcome, stderr).toEqual({code: 0, signal: null})
         expect(endpointRequests).toBe(1)
         const lookupMs = performance.now() - endpointStartedAt
-        expect(lookupMs).toBeGreaterThanOrEqual(4_000)
-        expect(lookupMs).toBeLessThan(8_000)
+        expect(lookupMs).toBeGreaterThanOrEqual(
+          timeoutMs === undefined ? 4_000 : 100,
+        )
+        expect(lookupMs).toBeLessThan(timeoutMs === undefined ? 8_000 : 2_000)
         expect(stdout).toContain(password)
         expect(stdout).not.toContain('SIP address')
       } finally {

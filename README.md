@@ -713,7 +713,8 @@ does not host SIP, `endpoint` prints `This environment has no SIP address.`
 and exits with code 0; `--json` returns the `sip_not_hosted` status with a null
 host and RTP range and no transports. `create` and `rotate-credentials` also
 print the password before looking up the SIP address in human output. The
-optional address lookup stops after five seconds without retrying. If it fails
+optional address lookup stops after five seconds without retrying and respects
+a shorter `--timeout`. If it fails
 or times out, the command keeps the password on screen and exits successfully.
 
 ## Session call rejection and stable identities

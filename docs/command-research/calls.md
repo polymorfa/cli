@@ -146,3 +146,6 @@ internal SDK module.
   npm only as dev prereleases; the CLI pins exactly
   `0.1.0-dev.20260922115749`. The CLI cannot release until a stable
   `@polymorfa/sdk` is published with a compatible semver range.
+
+The optional SIP address appendix respects a shorter global `--timeout`; its
+five-second abort signal is an upper bound, not a per-request timeout override.

@@ -165,7 +165,6 @@ export async function trySipEndpoint(
       await getSipEndpoint(client, {
         maxNetworkRetries: 0,
         signal: AbortSignal.timeout(SIP_ENDPOINT_APPENDIX_TIMEOUT_MS),
-        timeoutMs: SIP_ENDPOINT_APPENDIX_TIMEOUT_MS,
       })
     ).data
   } catch {
