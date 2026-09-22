@@ -61,8 +61,13 @@ export function presentError(
       ? error.requestId
       : undefined
   const requestLogUrl =
-    error instanceof PolymorfaError ? error.requestLogUrl : undefined
-  const docUrl = error instanceof PolymorfaError ? error.docUrl : undefined
+    error instanceof PolymorfaError && error.requestLogUrl !== undefined
+      ? redact(error.requestLogUrl, secrets)
+      : undefined
+  const docUrl =
+    error instanceof PolymorfaError && error.docUrl !== undefined
+      ? redact(error.docUrl, secrets)
+      : undefined
 
   return {
     ...classified,

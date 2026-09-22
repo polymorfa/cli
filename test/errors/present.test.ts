@@ -155,6 +155,20 @@ describe('presentError', () => {
     )
   })
 
+  test('redacts credentials echoed in the request log and doc URLs', () => {
+    const secret = 'pmfa_secret_token_value'
+    const error = new PolymorfaRateLimitError('Limited.', {
+      requestLogUrl: `https://evil.example/logs?token=${secret}`,
+      docUrl: `https://evil.example/docs/${secret}`,
+    })
+    const presented = presentError(error, [secret])
+    expect(presented.requestLogUrl).toBe(
+      'https://evil.example/logs?token=[REDACTED]',
+    )
+    expect(presented.docUrl).toBe('https://evil.example/docs/[REDACTED]')
+    expect(renderErrorDetails(presented)).not.toContain(secret)
+  })
+
   test('prints only the message when the API returned no links', () => {
     expect(renderErrorDetails(presentError(new Error('socket exploded')))).toBe(
       'Error: socket exploded\n',
