@@ -12,6 +12,7 @@ import {
   type DeveloperEnvironment,
   type ResolvedEnvironment,
 } from './context/environment.js'
+import {findProjectLink} from './config/project-link.js'
 import {presentError} from './errors/present.js'
 import {errorEnvelope, type OutputContext} from './output/contracts.js'
 import {renderValue, type OutputMode} from './output/render.js'
@@ -89,8 +90,10 @@ export abstract class BaseCommand extends Command {
   protected async developerSession(
     flags: GlobalFlags,
   ): Promise<DeveloperSession> {
-    const session = await createDeveloperSession(flags, (secret) =>
-      this.registerSecret(secret),
+    const session = await createDeveloperSession(
+      flags,
+      (secret) => this.registerSecret(secret),
+      await this.linkedProject(flags),
     )
     this.errorContext = session.context
     return session
@@ -145,8 +148,10 @@ export abstract class BaseCommand extends Command {
     client: MessagingClient
     projectId: string
   }> {
+    const linkedProject = await this.linkedProject(flags)
     const environment = await resolveListenerEnvironment({
       env: process.env,
+      ...(linkedProject === undefined ? {} : {linkedProject}),
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags.project === undefined ? {} : {project: flags.project}),
       ...(flags['api-version'] === undefined
@@ -175,6 +180,21 @@ export abstract class BaseCommand extends Command {
       }),
       projectId: environment.projectId,
     }
+  }
+
+  /**
+   * Project from the nearest `polymorfa.json`, used only when
+   * --project is absent. It ranks above the profile's stored project.
+   */
+  protected async linkedProject(
+    flags: GlobalFlags,
+  ): Promise<string | undefined> {
+    if (flags.project !== undefined) return undefined
+    const link = await findProjectLink()
+    if (link !== undefined && flags.verbose === true) {
+      process.stderr.write(`Using project ${link.project} from ${link.path}\n`)
+    }
+    return link?.project
   }
 
   /** Resolve Messaging credentials once, for commands that also open sockets. */

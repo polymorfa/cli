@@ -62,8 +62,7 @@ export default class Listen extends BaseCommand {
     }),
     project: Flags.string({
       description:
-        'Use a project UUID; organization API keys may use a unique slug.',
-      required: true,
+        'Use a project UUID; organization API keys may use a unique slug. Defaults to the linked or profile project.',
     }),
   }
 
@@ -71,10 +70,12 @@ export default class Listen extends BaseCommand {
     const {flags} = await this.parse(Listen)
     const {resolveListenerEnvironment} =
       await import('../context/environment.js')
+    const linkedProject = await this.linkedProject(flags)
     const environment = await resolveListenerEnvironment({
       env: process.env,
+      ...(linkedProject === undefined ? {} : {linkedProject}),
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
-      project: flags.project,
+      ...(flags.project === undefined ? {} : {project: flags.project}),
     })
     this.registerSecret(environment.credential)
 
