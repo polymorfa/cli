@@ -350,6 +350,7 @@ describe('calls watch and media', () => {
     expect(statuses).toEqual([
       'ready',
       'placed',
+      'claim',
       'state',
       'state',
       'connected',
