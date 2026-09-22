@@ -242,6 +242,25 @@ describe('operation commands', () => {
     await vi.waitFor(() => expect(api.closedEarly).toBe(1))
   }, 20_000)
 
+  test('stops watch at --timeout when the first read hangs', async () => {
+    api.responses.push(HANG)
+    silence()
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const error = await environment(() =>
+      OperationWatch.run([
+        OPERATION,
+        '--owner',
+        'organization',
+        '--timeout',
+        '1',
+        '--json',
+      ]),
+    ).catch((caught: unknown) => caught)
+    expect(exitCode(error)).toBe(8)
+    expect(api.calls).toHaveLength(1)
+    await vi.waitFor(() => expect(api.closedEarly).toBe(1))
+  }, 20_000)
+
   test('cancels with confirmation and a caller idempotency key', async () => {
     api.responses.push({
       data: {

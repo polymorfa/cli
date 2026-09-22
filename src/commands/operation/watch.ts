@@ -1,7 +1,13 @@
 import {Args} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
-import {operationsFor} from '../../developer/operations.js'
+import type {ApiResponse, RequestOptions} from '@polymorfa/sdk'
+
+import {
+  operationsFor,
+  type OperationRecord,
+  type OperationsClient,
+} from '../../developer/operations.js'
 import {developerResponse} from '../../developer/output.js'
 import {CliConditionError} from '../../errors/conditions.js'
 import {
@@ -33,7 +39,13 @@ export default class OperationWatch extends BaseCommand {
       // for the next transition.
       const response =
         afterSequence === undefined
-          ? await operations.get(args.operation, {}, session.requestOptions)
+          ? await this.firstRead(
+              operations,
+              args.operation,
+              session.requestOptions,
+              deadline,
+              flags.timeout,
+            )
           : await operations.wait(args.operation, {
               afterSequence,
               maxWaitMs: Math.max(0, deadline - Date.now()),
@@ -58,6 +70,40 @@ export default class OperationWatch extends BaseCommand {
           `Operation ${operation.id} is still ${operation.status} after ${flags.timeout} seconds.`,
         )
       }
+    }
+  }
+
+  /**
+   * The first read reports the current state. It gets the same budget as
+   * --timeout (at least one second to answer), so a server that never
+   * replies cannot hold the watch past its deadline.
+   */
+  private async firstRead(
+    operations: OperationsClient,
+    operationId: string,
+    requestOptions: RequestOptions,
+    deadline: number,
+    timeout: number,
+  ): Promise<ApiResponse<OperationRecord>> {
+    const budget = new AbortController()
+    const timer = setTimeout(
+      () => budget.abort(),
+      Math.max(deadline - Date.now(), 1000),
+    )
+    try {
+      return await operations.get(
+        operationId,
+        {},
+        {...requestOptions, signal: budget.signal},
+      )
+    } catch (error) {
+      if (!budget.signal.aborted) throw error
+      throw new CliConditionError(
+        'action_required',
+        `Operation ${operationId} did not report its state within ${timeout} seconds.`,
+      )
+    } finally {
+      clearTimeout(timer)
     }
   }
 }
