@@ -8,6 +8,8 @@ import {
   type SipTrunk,
   type SipTrunkCreated,
   type SipTrunkCredentials,
+  type SipEndpoint,
+  type SipEndpointTransport,
   type SipTrunkDeleted,
 } from '@polymorfa/sdk'
 
@@ -122,56 +124,26 @@ export async function rotateSipTrunkCredentials(
   return result(response.data, response.metadata)
 }
 
-export type SipEndpointTransportName = 'udp' | 'tcp' | 'tls'
+export type {
+  SipEndpoint,
+  SipEndpointHosted,
+  SipEndpointNotHosted,
+  SipEndpointRtp,
+  SipEndpointTransport,
+} from '@polymorfa/sdk'
 
-export interface SipEndpointTransport {
-  readonly transport: SipEndpointTransportName
-  readonly port: number
-  readonly srtp: 'required' | 'not_supported'
-}
-
-export interface SipEndpointRtp {
-  readonly protocol: 'udp'
-  readonly portMin: number
-  readonly portMax: number
-}
-
-/** The environment accepts SIP at `host`. */
-export interface SipEndpointHosted {
-  readonly status: 'hosted'
-  readonly host: string
-  readonly transports: readonly SipEndpointTransport[]
-  readonly rtp: SipEndpointRtp
-}
-
-/** The environment has no SIP address. */
-export interface SipEndpointNotHosted {
-  readonly status: 'sip_not_hosted'
-  readonly host: null
-  readonly transports: readonly []
-  readonly rtp: null
-}
+export type SipEndpointTransportName = SipEndpointTransport['transport']
 
 /**
  * The SIP address of the environment, from `GET /platform/sip/endpoint`.
- * `sip_not_hosted` is a normal answer, not a failure. Narrow on `status`
- * before reading `host`, `transports` or `rtp`.
- */
-export type SipEndpoint = SipEndpointHosted | SipEndpointNotHosted
-
-/**
- * The pinned SDK has no `sipTrunks.endpoint()` yet, so this reads the
- * operation through the SDK's raw client (same transport, credential, retries
- * and error mapping) and checks the envelope here. Switch to
- * `client.sipTrunks.endpoint()` once the SDK release that adds it is pinned.
+ * `sip_not_hosted` is a normal answer, not a failure. The shape is checked
+ * before it is rendered, so a malformed answer fails instead of printing a
+ * partial address.
  */
 export async function getSipEndpoint(
   client: PlatformClient,
 ): Promise<SipTrunkResult<SipEndpoint>> {
-  const response = await client.raw.request({
-    method: 'GET',
-    path: '/platform/sip/endpoint',
-  })
+  const response = await client.sipTrunks.endpoint()
   return result(
     decodeSipEndpoint(response.data, response.metadata),
     response.metadata,
@@ -320,16 +292,15 @@ function validateTrunkId(trunkId: string): string {
 const SIP_TRANSPORTS: ReadonlySet<string> = new Set(['udp', 'tcp', 'tls'])
 
 function decodeSipEndpoint(
-  body: unknown,
+  data: unknown,
   metadata: ResponseMetadata,
 ): SipEndpoint {
-  const data = isRecord(body) ? body.data : undefined
   if (isSipEndpoint(data)) return data
   throw new PolymorfaServerError(
     'The Polymorfa API returned an invalid SIP address response.',
     {
       code: 'invalid_response',
-      details: body,
+      details: data,
       metadata,
       status: metadata.status,
       ...(metadata.requestId === undefined

@@ -51,7 +51,7 @@ calls
 | `calls invite`                 | `POST /messaging/voip/calls/{id}/participants`   | `voip.addParticipant`               |
 | `calls settings get`           | `GET /platform/sessions/{session}/call-settings` | `voip.retrieveCallSettings`         |
 | `calls settings set`           | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
-| `sip-trunk endpoint`           | `GET /platform/sip/endpoint`                     | `raw.request` (see below)           |
+| `sip-trunk endpoint`           | `GET /platform/sip/endpoint`                     | `sipTrunks.endpoint`                |
 | `sip-trunk list`               | `GET /platform/sip-trunks`                       | `sipTrunks.list`                    |
 | `sip-trunk view`               | `GET /platform/sip-trunks/{id}`                  | `sipTrunks.retrieve`                |
 | `sip-trunk create`             | `POST /platform/sip-trunks`                      | `sipTrunks.create`                  |
@@ -61,10 +61,9 @@ calls
 | `calls watch`                  | Lifecycle socket                                 | `CallsClient` events                |
 | `calls media`                  | Place or accept, then the media socket           | `CallsClient`, `Call`, `call.audio` |
 
-The pinned SDK has no `sipTrunks.endpoint` yet, so `sip-trunk endpoint` reads
-`GET /platform/sip/endpoint` through the SDK raw client and validates the
-response itself. Switch it to `sipTrunks.endpoint` once an SDK release with that
-method is pinned.
+`sip-trunk endpoint` reads the address with `sipTrunks.endpoint` and checks
+the response shape before printing it, so a malformed answer fails instead of
+printing a partial address.
 
 The CLI uses only the neutral public calling surface. It does not expose
 offers, candidates, session descriptions, or media framing, and it imports no
