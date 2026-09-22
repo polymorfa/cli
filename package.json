@@ -239,6 +239,18 @@
       },
       "webhook:secret": {
         "description": "Manage one-time webhook signing-secret rotation."
+      },
+      "function": {
+        "description": "Manage project Functions and pinned deployments."
+      },
+      "function:deployment": {
+        "description": "Build and promote immutable Function deployments."
+      },
+      "function:secret": {
+        "description": "Create and revoke write-only Function secret versions."
+      },
+      "function:invocation": {
+        "description": "Invoke Functions once and inspect metadata receipts."
       }
     }
   },
