@@ -52,6 +52,7 @@ export default class ChatList extends BaseCommand {
     const range = optionalTimeRange(
       flags['active-since'],
       flags['active-before'],
+      {since: '--active-since', until: '--active-before'},
     )
     const client = await this.messagingClient(flags, {
       serverApiKeyOnly: 'Message history',

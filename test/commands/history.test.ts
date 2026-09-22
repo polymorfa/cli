@@ -19,7 +19,11 @@ describe('message history commands', () => {
   test('lists stored messages with filters as JSON', async () => {
     server = await startHttpServer({
       body: page([message('1')], 'next-1', null),
-      headers: {'polymorfa-data-region': 'ch', 'x-request-id': 'req_hist'},
+      headers: {
+        'polymorfa-data-region': 'ch',
+        'polymorfa-version': '2026-09-01',
+        'x-request-id': 'req_hist',
+      },
     })
 
     const result = await apiKeyEnvironment(() =>
@@ -32,7 +36,12 @@ describe('message history commands', () => {
     expect(JSON.parse(result.stdout)).toEqual({
       data: [message('1')],
       dataRegion: 'ch',
-      metadata: {attempts: 1, requestId: 'req_hist', status: 200},
+      metadata: {
+        apiVersion: '2026-09-01',
+        attempts: 1,
+        requestId: 'req_hist',
+        status: 200,
+      },
       page: {hasMore: true, nextCursor: 'next-1', previousCursor: null},
     })
     const url = new URL(server.requests[0]!.url, 'http://x')
@@ -129,6 +138,25 @@ describe('message history commands', () => {
     expect(server.requests[0]?.url).toBe(
       '/messaging/s/chats/7391/messages/739182640518977',
     )
+  })
+
+  test('names the chat activity flags in range errors', async () => {
+    server = await startHttpServer({body: page([], null, null)})
+    const invalid = await apiKeyEnvironment(() =>
+      runCommand('chat list --session s --active-since yesterday --json'),
+    )
+    expect(exitCode(invalid.error)).toBe(2)
+    expect(invalid.stderr).toContain('--active-since must be an RFC 3339')
+    const reversed = await apiKeyEnvironment(() =>
+      runCommand(
+        'chat list --session s --active-since 2026-09-02T00:00:00Z --active-before 2026-09-01T00:00:00Z --json',
+      ),
+    )
+    expect(exitCode(reversed.error)).toBe(2)
+    expect(reversed.stderr).toContain(
+      '--active-before must be after --active-since.',
+    )
+    expect(server.requests).toHaveLength(0)
   })
 
   test('rejects a client token before any history request', async () => {

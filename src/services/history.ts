@@ -32,6 +32,9 @@ export function historyListValue<T>(
     },
     dataRegion: page.dataRegion ?? null,
     metadata: {
+      ...(metadata.apiVersion === undefined
+        ? {}
+        : {apiVersion: metadata.apiVersion}),
       attempts: metadata.attempts,
       ...(metadata.requestId === undefined
         ? {}

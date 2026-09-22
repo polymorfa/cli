@@ -6,15 +6,19 @@ const RFC_3339 =
 export function optionalTimeRange(
   since: string | undefined,
   until: string | undefined,
+  flags: {readonly since: string; readonly until: string} = {
+    since: '--since',
+    until: '--until',
+  },
 ): {readonly since?: string; readonly until?: string} {
-  if (since !== undefined) validateTimestamp(since, '--since')
-  if (until !== undefined) validateTimestamp(until, '--until')
+  if (since !== undefined) validateTimestamp(since, flags.since)
+  if (until !== undefined) validateTimestamp(until, flags.until)
   if (
     since !== undefined &&
     until !== undefined &&
     Date.parse(until) <= Date.parse(since)
   ) {
-    throw invalid('--until must be after --since.')
+    throw invalid(`${flags.until} must be after ${flags.since}.`)
   }
   return {
     ...(since === undefined ? {} : {since}),
