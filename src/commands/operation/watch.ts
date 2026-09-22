@@ -22,7 +22,9 @@ export default class OperationWatch extends BaseCommand {
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(OperationWatch)
-    const session = await this.developerSession(flags)
+    // --timeout here is the wait budget in seconds. It replaces the global
+    // per-request timeout (milliseconds), so it must not reach the client.
+    const session = await this.developerSession({...flags, timeout: undefined})
     const deadline = Date.now() + flags.timeout * 1000
     let afterSequence: number | undefined
     for (;;) {
