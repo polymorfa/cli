@@ -268,8 +268,8 @@ Add `--remove` to `message star` to unstar. Text sends accept repeatable
 `--mention` with a Polymorfa user ID, `--reply-to` with a Polymorfa message ID,
 and `--forwarded`. `--to` and `--chat` accept a conversation ID, E.164 phone
 number, or BSUID. The API resolves message direction and sender identity.
-Every mutation accepts `--idempotency-key` for safe retry identity. `message
-send text` and `message react` generate a key when you omit it and send it as
+Every mutation accepts `--idempotency-key` for safe retry identity. Every `message
+send` variant and `message react` generates a key when you omit it and send it as
 `Idempotency-Key`; the API replays the first result for 24 hours instead of
 sending again. Pass your own key to make a retried script invocation safe.
 Server API keys require `messages:write`; client tokens remain subject to their

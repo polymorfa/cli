@@ -42,6 +42,21 @@ describe('message commands', () => {
     )
   })
 
+  test('generates an idempotency key for non-text send variants', async () => {
+    server = await messageServer('req_location')
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'message send location --session session_1 --to +15551234567 --lat 51.5 --long -0.12 --json',
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+      /^pmfa_cli_[0-9a-f-]{36}$/,
+    )
+  })
+
   test('rejects an empty idempotency key before transport', async () => {
     server = await messageServer()
 
