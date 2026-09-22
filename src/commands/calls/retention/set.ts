@@ -15,7 +15,7 @@ import {
 } from '../../../services/calls.js'
 
 export default class CallsRetentionSet extends BaseCommand {
-  static override description = `Change how long Polymorfa keeps your team’s call data through the Platform API. --policy short, standard, extended, or compliance keeps call data for 7, 30, 90, or 365 days; --policy custom keeps it for --days (${MIN_CALL_RETENTION_DAYS} to ${MAX_CALL_RETENTION_DAYS}). Polymorfa deletes call data within 24 hours after it becomes older than the period. A shorter period also applies to call data already stored, and deleted call data cannot be recovered, so the command asks you to confirm a shorter period; pass --yes to confirm without a prompt (required when standard input or error is not a terminal). --expected-revision is required: the command reads the setting first and changes it only if it still has that revision (see \`calls retention get\`); otherwise it fails with state_conflict (exit code 4) and changes nothing. Requires a team API key with the sessions:manage scope; project keys fail with exit code 3.`
+  static override description = `Change how long Polymorfa keeps your team’s call data through the Platform API. --policy short, standard, extended, or compliance keeps call data for 7, 30, 90, or 365 days; --policy custom keeps it for --days (${MIN_CALL_RETENTION_DAYS} to ${MAX_CALL_RETENTION_DAYS}). Deletion of call data older than the period starts on a date Polymorfa announces in its changelog; until then saving a period deletes nothing. Once deletion runs, a shorter period also applies to call data already stored, and deleted call data cannot be recovered, so the command asks you to confirm a shorter period; pass --yes to confirm without a prompt (required when standard input or error is not a terminal). --expected-revision is required: the command reads the setting first and changes it only if it still has that revision (see \`calls retention get\`); otherwise it fails with state_conflict (exit code 4) and changes nothing. Requires a team API key with the sessions:manage scope; the API refuses project tokens (exit code 3).`
 
   static override examples = [
     '<%= config.bin %> calls retention set --policy compliance --expected-revision 0',
@@ -52,7 +52,7 @@ export default class CallsRetentionSet extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(CallsRetentionSet)
     const result = await updateCallRetention(
-      createCallRetentionClient(await this.platformEnvironment(flags)),
+      createCallRetentionClient(await this.teamSettingEnvironment(flags)),
       {
         expectedRevision: flags['expected-revision'],
         policy: flags.policy as CallRetentionPolicy,
@@ -60,7 +60,7 @@ export default class CallsRetentionSet extends BaseCommand {
       },
       (current, retentionDays) =>
         confirmDangerous({
-          prompt: `Shorten call data retention from ${current.retentionDays} to ${retentionDays} days? Polymorfa deletes stored call data older than ${retentionDays} days within 24 hours, and it cannot be recovered.`,
+          prompt: `Shorten call data retention from ${current.retentionDays} to ${retentionDays} days? Once deletion runs, stored call data older than ${retentionDays} days is deleted and cannot be recovered.`,
           yes: flags.yes,
         }),
     )

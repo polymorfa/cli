@@ -8,7 +8,11 @@ import {
   type SharedClientOptions,
 } from '@polymorfa/sdk'
 
-import type {ResolvedEnvironment} from '../context/environment.js'
+import type {
+  ResolvedEnvironment,
+  TeamSettingEnvironment,
+} from '../context/environment.js'
+import {projectTokenRequest} from './project-token-request.js'
 
 export function createRawClient(environment: ResolvedEnvironment): RawClient {
   return environment.surface === 'platform'
@@ -81,15 +85,42 @@ export interface CallRetentionClient {
 
 /**
  * Team call data retention on the Platform API. The pinned SDK has no typed
- * resource for it yet, so this adapter sends the two documented requests
- * through the organization client's raw transport. The SDK keeps its
- * credential, retry, and error mapping; replace this with the SDK's
- * `callRetention` resource once a release that includes it is pinned.
+ * resource for it yet. Team API keys use the SDK organization client's raw
+ * transport, which keeps its credential, retry, and error mapping. Project
+ * tokens may read this team-wide route, but the pinned SDK confines a
+ * project-token client to `/platform/projects/{id}`, so they use
+ * `projectTokenRequest`; the API decides what each principal may do. Replace
+ * both with the SDK's `callRetention` resource once a release that includes
+ * it is pinned (polymorfa/sdks#278).
  */
 export function createCallRetentionClient(
-  environment: ResolvedEnvironment,
+  environment: TeamSettingEnvironment,
 ): CallRetentionClient {
-  const raw = createPlatformClient(environment).raw
+  if (environment.principalType === 'project_token') {
+    return {
+      retrieve: () =>
+        projectTokenRequest<{readonly data: CallRetention}>(environment, {
+          method: 'GET',
+          path: '/platform/call-retention',
+        }),
+      update: (input) =>
+        projectTokenRequest<{readonly data: CallRetention}>(environment, {
+          body: input,
+          method: 'PUT',
+          path: '/platform/call-retention',
+        }),
+    }
+  }
+  const raw = new Client({
+    baseUrl: environment.baseUrl,
+    credential: {type: 'organizationApiKey', value: environment.credential},
+    ...(environment.apiVersion === undefined
+      ? {}
+      : {apiVersion: environment.apiVersion}),
+    ...(environment.timeoutMs === undefined
+      ? {}
+      : {timeoutMs: environment.timeoutMs}),
+  }).raw
   return {
     retrieve: () =>
       raw.request<{readonly data: CallRetention}>({

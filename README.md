@@ -517,23 +517,27 @@ never answers or declines on its own.
   them first, the command exits with code 4 (`state_conflict`) and changes
   nothing.
 - **Call data retention.** `calls retention` reads and changes how long
-  Polymorfa keeps your team's call data. It uses the Platform API; client
-  tokens fail with the Platform credential error. `--policy short`,
+  Polymorfa keeps your team's call data. It uses the Platform API with a team
+  API key or a project token (`POLYMORFA_API_KEY`, `POLYMORFA_PROJECT_TOKEN`,
+  or a profile); client tokens are refused. `--policy short`,
   `standard`, `extended`, or `compliance` keeps call data for 7, 30, 90, or
   365 days; `--policy custom --days <n>` keeps it for 1 to 2555 days. Teams
-  without a saved setting use `extended` (90 days) at revision `0`. Polymorfa
-  deletes call data within 24 hours after it becomes older than the period.
+  without a saved setting use `extended` (90 days) at revision `0`. Deletion
+  of call data older than the period starts on a date Polymorfa announces in
+  its changelog; until then the setting records a choice and nothing is
+  deleted.
   `calls retention get` prints the policy, period, the kinds of call data it
   applies to, and the `revision`. `calls retention set` requires
   `--expected-revision <n>`: it reads the setting first and changes it only if
   it still has that revision; otherwise it exits with code 4
   (`state_conflict`) and changes nothing, so read the setting again and retry.
-  A shorter period also applies to call data already stored, and deleted call
-  data cannot be recovered. The command asks you to type `yes` before it
+  Once deletion runs, a shorter period also applies to call data already
+  stored, and deleted call data cannot be recovered. The command asks you to type `yes` before it
   shortens the period; `--yes` confirms without a prompt, and without a
   terminal the command exits with code 2 (`confirmation_required`) unless you
   pass `--yes`. Changing retention requires a team API key with the
-  `sessions:manage` scope; other keys exit with code 3.
+  `sessions:manage` scope. Project tokens can read the setting; the API
+  refuses their changes, and the command exits with code 3.
 
 `calls watch` streams inbound calls and their progress: `incoming`, `claim`,
 `state`, `participant_joined`, `participant_state`, `participant_left`, and

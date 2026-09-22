@@ -8,6 +8,8 @@ import {
 import {
   resolveCommandEnvironment,
   resolveListenerEnvironment,
+  resolveTeamSettingEnvironment,
+  type TeamSettingEnvironment,
   type ResolvedEnvironment,
 } from './context/environment.js'
 import {presentError} from './errors/present.js'
@@ -158,6 +160,26 @@ export abstract class BaseCommand extends Command {
     flags: GlobalFlags,
   ): Promise<ClientInstance<'organization'>> {
     return createPlatformClient(await this.platformEnvironment(flags))
+  }
+
+  /**
+   * Resolve credentials for a team-wide setting that project tokens may read
+   * (call data retention): team API keys or project tokens; the API decides.
+   */
+  protected async teamSettingEnvironment(
+    flags: GlobalFlags,
+  ): Promise<TeamSettingEnvironment> {
+    const environment = await resolveTeamSettingEnvironment({
+      env: process.env,
+      surface: 'platform',
+      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
+      ...(flags['api-version'] === undefined
+        ? {}
+        : {apiVersion: flags['api-version']}),
+      ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
+    })
+    this.registerSecret(environment.credential)
+    return environment
   }
 
   /** Resolve Platform credentials: server API keys only. */

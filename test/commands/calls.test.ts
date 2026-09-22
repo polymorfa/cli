@@ -12,6 +12,8 @@ import {
 const API_KEY =
   'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const CLIENT_TOKEN = 'pmfa_ct_browser_token'
+const PROJECT_TOKEN =
+  'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const TRUNK_ID = '6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10'
 const DEFAULT_RETENTION = {
   appliesTo: ['call_records', 'call_events', 'client_reports'],
@@ -697,9 +699,7 @@ describe('unified calls commands', () => {
     }
     expect(mismatched.stderr).toContain('omit --days or use --policy custom')
     expect(exitCode(token.error)).toBe(2)
-    expect(token.stderr).toContain(
-      'Platform API requests require POLYMORFA_API_KEY',
-    )
+    expect(token.stderr).toContain('browser client tokens are refused')
     expect(server.requests).toHaveLength(0)
   })
 
@@ -815,6 +815,41 @@ describe('unified calls commands', () => {
     )
   })
 
+  test('reads team call retention with a project token and lets the API refuse its changes', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: DEFAULT_RETENTION, success: true}},
+      {body: {data: DEFAULT_RETENTION, success: true}},
+      apiError(
+        403,
+        'forbidden',
+        'call retention is a team setting; use a team API key to change it',
+      ),
+    ])
+
+    const read = await projectToken(() =>
+      runCommand('calls retention get --json'),
+    )
+    const change = await projectToken(() =>
+      runCommand(
+        'calls retention set --policy compliance --expected-revision 0 --json',
+      ),
+    )
+
+    expect(read.stderr).toBe('')
+    expect(read.error).toBeUndefined()
+    expect(jsonData(read.stdout)).toEqual(DEFAULT_RETENTION)
+    // The change reaches the API, which decides; no local credential refusal.
+    expect(exitCode(change.error)).toBe(3)
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/call-retention',
+      'GET /platform/call-retention',
+      'PUT /platform/call-retention',
+    ])
+    for (const request of server.requests) {
+      expect(request.headers.authorization).toBe(`Bearer ${PROJECT_TOKEN}`)
+    }
+  })
+
   test('distinguishes the unified and session-route reject commands in help', async () => {
     const unified = await runCommand('calls reject --help')
     const legacy = await runCommand('call reject --help')
@@ -830,6 +865,19 @@ describe('unified calls commands', () => {
         POLYMORFA_API_KEY: API_KEY,
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
+      },
+      run,
+    )
+  }
+
+  async function projectToken<T>(run: () => Promise<T>): Promise<T> {
+    if (server === undefined) throw new Error('Test server was not started.')
+    return withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN,
       },
       run,
     )

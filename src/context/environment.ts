@@ -424,6 +424,90 @@ export async function resolveCommandEnvironment(
   return {...resolved, profile: selected, source: 'profile'}
 }
 
+export interface TeamSettingEnvironment {
+  readonly apiVersion?: string
+  readonly baseUrl: string
+  readonly credential: string
+  readonly principalType: 'organization_key' | 'project_token'
+  readonly timeoutMs?: number
+}
+
+/**
+ * Credentials for a team-wide setting that project tokens may read, such as
+ * call data retention. Team API keys and project tokens both resolve, from the
+ * environment or a profile, with no project context: the API identifies the
+ * principal from the credential and decides whether it may read or change the
+ * setting (a project token's change fails with 403). Client tokens are refused.
+ */
+export async function resolveTeamSettingEnvironment(
+  input: ResolveCommandEnvironmentInput,
+  profiles: ProfileRepositoryLike = new ProfileRepository(),
+  credentials: CredentialStore = new SecureCredentialStore(),
+): Promise<TeamSettingEnvironment> {
+  const explicitProfile = nonEmpty(input.profile)
+  const baseUrl = nonEmpty(input.env.POLYMORFA_BASE_URL)
+  const optional = {
+    ...(input.timeoutMs === undefined ? {} : {timeoutMs: input.timeoutMs}),
+  }
+  if (explicitProfile === undefined) {
+    if (
+      nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN) !== undefined &&
+      nonEmpty(input.env.POLYMORFA_API_KEY) === undefined &&
+      nonEmpty(input.env.POLYMORFA_PROJECT_TOKEN) === undefined
+    ) {
+      throw new PolymorfaConfigurationError(
+        'This command requires a team API key or a project token; browser client tokens are refused.',
+        'credential',
+      )
+    }
+    const environment = durableEnvironmentCredential(input.env)
+    if (environment !== undefined) {
+      return {
+        ...(input.apiVersion === undefined
+          ? {}
+          : {apiVersion: input.apiVersion}),
+        baseUrl: baseUrl ?? 'https://api.polymorfa.com',
+        credential: environment.value,
+        principalType: environment.principalType,
+        ...optional,
+      }
+    }
+  }
+  const config = await profiles.load()
+  const selected = explicitProfile ?? config.activeProfile
+  if (selected === undefined) {
+    throw new PolymorfaConfigurationError(
+      'This command requires POLYMORFA_API_KEY, POLYMORFA_PROJECT_TOKEN, or an authentication profile.',
+      'credential',
+    )
+  }
+  const profile = config.profiles[selected]
+  if (profile === undefined) {
+    throw new PolymorfaConfigurationError(
+      `Profile ${selected} does not exist. Run polymorfa auth list to inspect configured profiles.`,
+      'profile',
+    )
+  }
+  const credential = await credentials.get(profile.credential.account)
+  if (credential === undefined) {
+    throw new PolymorfaConfigurationError(
+      `Profile ${selected} has no credential in the operating-system keyring.`,
+      'keyring',
+    )
+  }
+  const apiVersion = input.apiVersion ?? profile.apiVersion
+  return {
+    ...(apiVersion === undefined ? {} : {apiVersion}),
+    baseUrl: baseUrl ?? profile.baseUrl ?? 'https://api.polymorfa.com',
+    credential,
+    principalType:
+      profile.credential.kind === 'projectToken'
+        ? 'project_token'
+        : 'organization_key',
+    ...optional,
+  }
+}
+
 export function resolveEnvironment(
   input: ResolveEnvironmentInput,
 ): ResolvedEnvironment {

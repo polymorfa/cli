@@ -82,11 +82,16 @@ internal SDK module.
   Messaging client; the CLI builds that client from the Platform environment.
   `calls settings set --expected-revision` sends `expectedRevision`; a stale
   revision returns 409 `state_conflict`, which exits with code 4.
-- `calls retention` resolves Platform credentials. The pinned SDK has no
-  call-retention resource, so `createCallRetentionClient` in `src/sdk/client.ts`
-  sends `GET` and `PUT /platform/call-retention` through the organization
-  client's raw transport; switch it to the SDK's `callRetention` methods once
-  a release that includes them is pinned. The API lets team API keys and
+- `calls retention` resolves a team API key or a project token
+  (`resolveTeamSettingEnvironment`), from the environment or a profile, with
+  no project context. The pinned SDK has no call-retention resource, and its
+  project-token client confines raw paths to `/platform/projects/{id}`, so
+  `createCallRetentionClient` in `src/sdk/client.ts` sends `GET` and
+  `PUT /platform/call-retention` through the unconfined organization raw
+  transport for both principals (as the project lookup does); the API
+  identifies the principal from the bearer credential. Switch to the SDK's
+  `callRetention` methods (polymorfa/sdks#278, which serve both principals)
+  once a release that includes them is pinned. The API lets team API keys and
   project tokens read the setting and only team API keys change it; the CLI
   replaces the API's 403 text with that rule and keeps the API message.
 - `calls retention set` requires `--expected-revision`. It reads the setting,
