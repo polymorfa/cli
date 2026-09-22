@@ -2,12 +2,15 @@ import {readFile, stat} from 'node:fs/promises'
 
 import {PolymorfaValidationError, type RawRequest} from '@polymorfa/sdk'
 
+import {queryFromFields, type FieldValue} from './fields.js'
+
 const MAX_INPUT_BYTES = 10 * 1024 * 1024
 
 export interface BuildRawRequestInput {
   readonly body?: unknown
   readonly endpoint: string
-  readonly fields?: readonly string[] | undefined
+  /** Already-parsed `-f/-F` fields; see parseFields in fields.ts. */
+  readonly fields?: Record<string, FieldValue> | undefined
   readonly headers?: readonly string[] | undefined
   readonly method: RawRequest['method']
 }
@@ -20,7 +23,7 @@ export function buildRawRequest(input: BuildRawRequestInput): RawRequest {
     )
   }
 
-  const fields = parseFields(input.fields ?? [])
+  const fields = input.fields
   const bodyMethod = input.method !== 'GET' && input.method !== 'HEAD'
   if (!bodyMethod && input.body !== undefined) {
     throw new PolymorfaValidationError(
@@ -35,7 +38,9 @@ export function buildRawRequest(input: BuildRawRequestInput): RawRequest {
     ...(input.headers === undefined
       ? {}
       : {headers: parseHeaders(input.headers)}),
-    ...(!bodyMethod && fields !== undefined ? {query: fields} : {}),
+    ...(!bodyMethod && fields !== undefined
+      ? {query: queryFromFields(fields)}
+      : {}),
     ...(bodyMethod && fields !== undefined ? {body: fields} : {}),
     ...(input.body === undefined ? {} : {body: input.body}),
   }
@@ -101,27 +106,6 @@ async function readBoundedInput(
   }
 
   return Buffer.concat(chunks).toString('utf8')
-}
-
-function parseFields(
-  fields: readonly string[],
-): Readonly<Record<string, string>> | undefined {
-  if (fields.length === 0) return undefined
-
-  const body: Record<string, string> = {}
-  for (const field of fields) {
-    const separator = field.indexOf('=')
-    if (separator <= 0) {
-      throw new PolymorfaValidationError(
-        'API fields must use the name=value form with a non-empty name.',
-        {code: 'invalid_field'},
-      )
-    }
-
-    body[field.slice(0, separator)] = field.slice(separator + 1)
-  }
-
-  return body
 }
 
 function parseHeaders(

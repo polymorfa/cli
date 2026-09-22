@@ -33,7 +33,8 @@
     "@modelcontextprotocol/server": "2.0.0",
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "github:polymorfa/sdks#94bfd09825817f842434e206e6a77adb5cc0c414",
+    "@polymorfa/sdk": "0.1.0-dev.20260922102711",
+    "jq-wasm": "3.0.0-jq-1.8.2",
     "zod": "4.2.0"
   },
   "devDependencies": {
@@ -137,6 +138,9 @@
       "group": {
         "description": "Inspect and manage Messaging groups."
       },
+      "group:participants": {
+        "description": "List and change group participants and admins."
+      },
       "key": {
         "description": "Inspect and revoke organization API keys."
       },
@@ -184,6 +188,9 @@
       },
       "presence:chat": {
         "description": "View and renew policy-governed chat presence observations."
+      },
+      "project": {
+        "description": "Select, list, and inspect the project context."
       },
       "project-token": {
         "description": "Inspect project-token metadata."
