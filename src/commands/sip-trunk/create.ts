@@ -6,8 +6,8 @@ import {
   createSipTrunk,
   renderSipTrunkCreated,
   requireSipTrunkProject,
+  sipEndpointAppendix,
   trySipEndpoint,
-  withSipEndpoint,
 } from '../../services/sip-trunks.js'
 
 export default class SipTrunkCreate extends BaseCommand {
@@ -35,15 +35,15 @@ export default class SipTrunkCreate extends BaseCommand {
       requireSipTrunkProject(flags.project),
       await readJsonInput(flags.input),
     )
-    const endpoint =
+    // Print the one-time password before anything else can fail or hang.
+    this.writeValue(result, renderSipTrunkCreated(result.data), flags)
+    if (
       result.data.inboundCredentials !== undefined &&
       this.outputMode(flags) === 'human'
-        ? await trySipEndpoint(client)
-        : undefined
-    this.writeValue(
-      result,
-      withSipEndpoint(renderSipTrunkCreated(result.data), endpoint),
-      flags,
-    )
+    ) {
+      const endpoint = await trySipEndpoint(client)
+      if (endpoint !== undefined)
+        process.stdout.write(sipEndpointAppendix(endpoint))
+    }
   }
 }

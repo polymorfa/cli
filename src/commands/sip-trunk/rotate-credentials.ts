@@ -4,8 +4,8 @@ import {BaseCommand} from '../../base-command.js'
 import {
   renderSipTrunkCredentials,
   rotateSipTrunkCredentials,
+  sipEndpointAppendix,
   trySipEndpoint,
-  withSipEndpoint,
 } from '../../services/sip-trunks.js'
 
 export default class SipTrunkRotateCredentials extends BaseCommand {
@@ -29,14 +29,12 @@ export default class SipTrunkRotateCredentials extends BaseCommand {
     const {args, flags} = await this.parse(SipTrunkRotateCredentials)
     const client = await this.platformClient(flags)
     const result = await rotateSipTrunkCredentials(client, args.trunk)
-    const endpoint =
-      this.outputMode(flags) === 'human'
-        ? await trySipEndpoint(client)
-        : undefined
-    this.writeValue(
-      result,
-      withSipEndpoint(renderSipTrunkCredentials(result.data), endpoint),
-      flags,
-    )
+    // Print the one-time password before anything else can fail or hang.
+    this.writeValue(result, renderSipTrunkCredentials(result.data), flags)
+    if (this.outputMode(flags) === 'human') {
+      const endpoint = await trySipEndpoint(client)
+      if (endpoint !== undefined)
+        process.stdout.write(sipEndpointAppendix(endpoint))
+    }
   }
 }

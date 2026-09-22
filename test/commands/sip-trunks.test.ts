@@ -1,7 +1,11 @@
 import {runCommand} from '@oclif/test'
+import {spawn} from 'node:child_process'
 import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {createServer} from 'node:http'
+import type {AddressInfo} from 'node:net'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
+import {fileURLToPath} from 'node:url'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {
@@ -263,6 +267,93 @@ describe('sip-trunk commands', () => {
     expect(withoutTransports.error).toBeDefined()
     expect(withoutTransports.stdout).not.toContain('sip.example.test')
   })
+
+  test.each([
+    ['rotate-credentials', 'rotated-first'],
+    ['create', 'created-first'],
+  ])(
+    '%s prints the one-time password while the SIP address lookup still hangs',
+    async (command, password) => {
+      const credentials = {
+        password,
+        realm: 'sip.example.test',
+        username: 'pmfa_abc',
+      }
+      // Answers the trunk request, then never answers the address lookup.
+      const hanging = createServer((request, reply) => {
+        if (request.url?.startsWith('/platform/sip/endpoint')) return
+        reply.writeHead(command === 'create' ? 201 : 200, {
+          'content-type': 'application/json',
+        })
+        reply.end(
+          JSON.stringify({
+            data:
+              command === 'create'
+                ? {trunk, inboundCredentials: credentials}
+                : credentials,
+            success: true,
+          }),
+        )
+      })
+      await new Promise<void>((resolve) =>
+        hanging.listen(0, '127.0.0.1', resolve),
+      )
+      const {port} = hanging.address() as AddressInfo
+      const directory = await mkdtemp(join(tmpdir(), 'polymorfa-sip-order-'))
+      const input = join(directory, 'trunk.json')
+      await writeFile(input, JSON.stringify({name: 'PBX', direction: 'both'}))
+      const args =
+        command === 'create'
+          ? ['sip-trunk', 'create', '--project', PROJECT, '--input', input]
+          : ['sip-trunk', 'rotate-credentials', TRUNK_ID, '--yes']
+      const child = spawn(
+        process.execPath,
+        [
+          '--import',
+          'tsx',
+          fileURLToPath(new URL('../../bin/dev.js', import.meta.url)),
+          ...args,
+        ],
+        {
+          env: {
+            ...process.env,
+            POLYMORFA_API_KEY: API_KEY,
+            POLYMORFA_BASE_URL: `http://127.0.0.1:${port}`,
+            POLYMORFA_CLIENT_TOKEN: '',
+          },
+          stdio: ['ignore', 'pipe', 'pipe'],
+        },
+      )
+      let stdout = ''
+      let stderr = ''
+      child.stderr.on('data', (chunk: Buffer) => {
+        stderr += String(chunk)
+      })
+      let timer: NodeJS.Timeout | undefined
+      try {
+        const printed = new Promise<boolean>((resolve) => {
+          child.stdout.on('data', (chunk: Buffer) => {
+            stdout += String(chunk)
+            if (stdout.includes(password)) resolve(true)
+          })
+          timer = setTimeout(() => resolve(false), 20_000)
+        })
+
+        // The password is on screen before the lookup ends, so interrupting
+        // the command now cannot lose it.
+        expect(await printed, stderr).toBe(true)
+        expect(child.exitCode).toBeNull()
+        expect(stdout).not.toContain('SIP address')
+      } finally {
+        clearTimeout(timer)
+        child.kill()
+        hanging.closeAllConnections()
+        await new Promise<void>((resolve) => hanging.close(() => resolve()))
+        await rm(directory, {force: true, recursive: true})
+      }
+    },
+    30_000,
+  )
 
   test('still prints rotated credentials when the SIP address is unavailable', async () => {
     server = await startHttpSequenceServer([

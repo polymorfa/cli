@@ -286,13 +286,14 @@ export function renderSipEndpoint(endpoint: SipEndpoint): string {
   return lines.join('\n')
 }
 
-/** Credentials followed by the SIP address the PBX registers against, when known. */
-export function withSipEndpoint(
-  human: string,
-  endpoint: SipEndpoint | undefined,
-): string {
-  if (endpoint === undefined) return human
-  return `${human}\n\nSIP address\n${renderSipEndpoint(endpoint)}`
+/**
+ * Human output that follows one-time credentials: a blank line and the SIP
+ * address the PBX sends calls to. Commands print the credentials first and
+ * only then look the address up, so a slow or interrupted lookup can never
+ * cost the only copy of a password.
+ */
+export function sipEndpointAppendix(endpoint: SipEndpoint): string {
+  return `\nSIP address\n${renderSipEndpoint(endpoint)}\n`
 }
 
 export function renderSipTrunkDeleted(deleted: SipTrunkDeleted): string {
