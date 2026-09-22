@@ -1,12 +1,39 @@
 # BanSafe SDK integration check
 
-The BanSafe CLI commands depend on the matching typed SDK revision pinned in
-`package.json`. During coordinated SDK and CLI development, verify both
-worktrees without replacing that immutable dependency in either manifest:
+The BanSafe CLI commands depend on the matching typed SDK version pinned in
+`package.json`.
 
-The pinned SDK revision is `polymorfa/sdks@94bfd09825817f842434e206e6a77adb5cc0c414`
-(the Calls client ships in the same package as `@polymorfa/sdk/calls`).
-Its coverage ledger is reconciled against the API contracts at
+## SDK dependency
+
+The CLI installs `@polymorfa/sdk` from npm. Each merge to the `dev` branch of
+`polymorfa/sdks` publishes a prerelease under the `dev` dist-tag, versioned
+`0.1.0-dev.<UTC timestamp YYYYMMDDHHmmss>` (for example
+`0.1.0-dev.20260919094454`). Later builds always sort higher. See
+`docs/releasing.md` in `polymorfa/sdks`.
+
+Pin one exact version, never a range or the `dev` tag, so every install and
+published CLI resolves the same SDK build:
+
+```shell
+npm view @polymorfa/sdk dist-tags          # find the newest dev build
+npm install --save-exact @polymorfa/sdk@0.1.0-dev.<timestamp>
+npm ci && npm run verify
+```
+
+Git-commit pins (`github:polymorfa/sdks#<sha>`) no longer work. The SDK lives
+in `packages/typescript` of a private workspace root, and npm installs the
+repository root.
+
+The CLI pins `0.1.0-dev.20260922102711`, the first build published from npm
+with provenance. The last git pin was
+`polymorfa/sdks@94bfd09825817f842434e206e6a77adb5cc0c414`.
+
+## Coordinated SDK and CLI development
+
+During coordinated SDK and CLI development, verify both worktrees without
+replacing the pinned dependency in either manifest. The Calls client ships in
+the same package as `@polymorfa/sdk/calls`. The SDK coverage ledger at the last
+git pin is reconciled against the API contracts at
 `polymorfa/polymorfa@aca849cda44ad8582d7ae87489404d2483173a53` (Platform
 snapshot SHA-256
 `2a30e8e0af8902703609f8ed0f5bb2c108b39c5c11863d5ebd8907e56a9f25d2`).
@@ -29,8 +56,8 @@ npx vitest run test/commands/bansafe.test.ts
 npm run build
 ```
 
-Before publishing the CLI, confirm that the pinned SDK revision remains
-available, run `npm ci`, and run `npm run verify` from a fresh checkout. A
+Before publishing the CLI, confirm that the pinned SDK version is published
+(`npm view @polymorfa/sdk@<version> version`), run `npm ci`, and run `npm run verify` from a fresh checkout. A
 local-path install is integration evidence only; it is not a publishable
 dependency.
 
