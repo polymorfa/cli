@@ -130,6 +130,7 @@ internal SDK module.
 - `calls media` does not attach to a call that was already ringing or answered
   before it started, and carries no video.
 - `calls watch` does not report outbound calls placed by other participants.
-- `@polymorfa/sdk` (with its `@polymorfa/sdk/calls` subpath) is not
-  published; development pins an exact Git commit. The CLI cannot release
-  until `@polymorfa/sdk` is published with a compatible semver range.
+- `@polymorfa/sdk` (with its `@polymorfa/sdk/calls` subpath) is published to
+  npm only as dev prereleases; the CLI pins exactly
+  `0.1.0-dev.20260922102711`. The CLI cannot release until a stable
+  `@polymorfa/sdk` is published with a compatible semver range.
