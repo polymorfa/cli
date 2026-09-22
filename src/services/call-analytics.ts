@@ -51,7 +51,21 @@ const MAX_RANGE_DAYS: Readonly<Record<CallStatsGroupBy, number | undefined>> = {
   outcome: undefined,
   session: undefined,
 }
-const TIME_ZONE = /^(?:UTC|[A-Za-z]+(?:\/[A-Za-z0-9_+-]+){1,2})$/
+/**
+ * An IANA time zone name the runtime recognizes, such as UTC, CET or
+ * Europe/Lisbon. Offsets such as +03:00 are refused: the API reads their sign
+ * inverted. The API checks the name against its own time zone database.
+ */
+export function isTimeZoneName(value: string): boolean {
+  if (value.length > 64 || !/^[A-Za-z][A-Za-z0-9_+\-/]*$/.test(value))
+    return false
+  try {
+    new Intl.DateTimeFormat('en', {timeZone: value})
+    return true
+  } catch {
+    return false
+  }
+}
 
 export interface CallFilterInput {
   readonly direction?: string | undefined
@@ -212,12 +226,9 @@ export function callStatsQuery(
 ): Query {
   const filters = callFilterQuery(input)
   const timezone = input.timezone?.trim()
-  if (
-    timezone !== undefined &&
-    (timezone.length > 64 || !TIME_ZONE.test(timezone))
-  ) {
+  if (timezone !== undefined && !isTimeZoneName(timezone)) {
     throw invalid(
-      '--timezone must be an IANA time zone name such as UTC or Europe/Lisbon.',
+      '--timezone must be an IANA time zone name such as UTC, CET or Europe/Lisbon.',
     )
   }
   const maxDays = MAX_RANGE_DAYS[input.groupBy]

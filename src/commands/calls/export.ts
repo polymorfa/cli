@@ -80,6 +80,16 @@ Pass --project to read one project. Without it, an organization API key reads ev
     }
     const query = callFilterQuery(flags)
     const format = flags.format as CallExportFormat
+    const outputPath =
+      flags.output === undefined || flags.output === '-'
+        ? undefined
+        : resolve(flags.output)
+    // Refuse an existing file before any request (resolving a project slug
+    // is one), but create it only when the first page arrives, so a failed
+    // request leaves no empty file.
+    if (outputPath !== undefined && !flags.force)
+      await rejectExisting(outputPath)
+
     const environment = await this.developerEnvironment(flags, {
       inferOwner: true,
     })
@@ -90,15 +100,6 @@ Pass --project to read one project. Without it, an organization API key reads ev
       if (mode === 'json') process.stderr.write(`${JSON.stringify(value)}\n`)
       else if (mode === 'human') process.stderr.write(`${human}\n`)
     }
-
-    const outputPath =
-      flags.output === undefined || flags.output === '-'
-        ? undefined
-        : resolve(flags.output)
-    // Refuse an existing file before any request, but create it only when
-    // the first page arrives, so a failed request leaves no empty file.
-    if (outputPath !== undefined && !flags.force)
-      await rejectExisting(outputPath)
     let file: FileHandle | undefined
     const destination = outputPath ?? 'standard output'
     const write =
@@ -106,7 +107,7 @@ Pass --project to read one project. Without it, an organization API key reads ev
         ? writeStandardOutput
         : async (chunk: string) => {
             file ??= await openOutput(outputPath, flags.force)
-            await file.write(chunk)
+            await writeFully(file, chunk)
           }
 
     let summary: ExportSummary
@@ -142,6 +143,32 @@ Pass --project to read one project. Without it, an organization API key reads ev
         ? `Exported ${count(summary.records, 'record')} in ${count(summary.pages, 'page')} to ${destination}.`
         : `Exported ${count(summary.records, 'record')} in ${count(summary.pages, 'page')} to ${destination}. More records remain; continue with --cursor ${summary.nextCursor} and the same filters.`,
     )
+  }
+}
+
+/**
+ * Writes the whole chunk. A low-level write may persist fewer bytes than it
+ * was given; keep writing the remainder so no record is silently dropped.
+ */
+export async function writeFully(
+  file: Pick<FileHandle, 'write'>,
+  chunk: string,
+): Promise<void> {
+  const buffer = Buffer.from(chunk, 'utf8')
+  let offset = 0
+  while (offset < buffer.length) {
+    const {bytesWritten} = await file.write(
+      buffer,
+      offset,
+      buffer.length - offset,
+    )
+    if (bytesWritten <= 0) {
+      throw new PolymorfaConfigurationError(
+        'Could not write the export to the output file.',
+        'output',
+      )
+    }
+    offset += bytesWritten
   }
 }
 

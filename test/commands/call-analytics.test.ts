@@ -3,6 +3,8 @@ import {readFile, rm, writeFile} from 'node:fs/promises'
 import {join} from 'node:path'
 import {afterEach, describe, expect, test} from 'vitest'
 
+import {writeFully} from '../../src/commands/calls/export.js'
+
 import {
   startHttpSequenceServer,
   withEnvironment,
@@ -221,6 +223,25 @@ describe('calls stats', () => {
     )
   })
 
+  test('accepts single-name IANA time zones', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: stats()}},
+      {body: {data: stats()}},
+    ])
+
+    const results = await apiKey(async () => [
+      await runCommand('calls stats --timezone CET'),
+      await runCommand('calls stats --timezone GMT'),
+    ])
+
+    for (const result of results) expect(result.error).toBeUndefined()
+    expect(
+      server.requests.map((request) =>
+        new URL(request.url, 'http://localhost').searchParams.get('timezone'),
+      ),
+    ).toEqual(['CET', 'GMT'])
+  })
+
   test('rejects invalid filters before sending a request', async () => {
     server = await startHttpSequenceServer([{body: {data: stats()}}])
 
@@ -379,6 +400,22 @@ describe('calls export', () => {
     expect(server.requests).toHaveLength(2)
   })
 
+  test('refuses an existing output file before resolving a project slug', async () => {
+    server = await startHttpSequenceServer([ndjsonPage(['call_1'])])
+    directory = await temporaryDirectory()
+    const output = join(directory, 'calls.csv')
+    await writeFile(output, 'keep')
+
+    const result = await apiKey(() =>
+      runCommand(['calls', 'export', '--project', 'support', '-o', output]),
+    )
+
+    expect(exitCode(result.error)).toBe(4)
+    expect(result.stderr).toContain('--force')
+    expect(server.requests).toHaveLength(0)
+    expect(await readFile(output, 'utf8')).toBe('keep')
+  })
+
   test('overwrites with --force and writes the header for a resumed export', async () => {
     server = await startHttpSequenceServer([csvPage(['call_9'])])
     directory = await temporaryDirectory()
@@ -533,3 +570,30 @@ describe('calls export', () => {
 function exitCode(error: unknown): number | undefined {
   return (error as {oclif?: {exit?: number}} | undefined)?.oclif?.exit
 }
+
+describe('writeFully', () => {
+  test('keeps writing after a short write', async () => {
+    const written: Buffer[] = []
+    const file = {
+      write: (buffer: Buffer, offset: number, length: number) => {
+        // Persist at most three bytes per call, as a short write may.
+        const size = Math.min(3, length)
+        written.push(Buffer.from(buffer.subarray(offset, offset + size)))
+        return Promise.resolve({bytesWritten: size, buffer})
+      },
+    }
+
+    await writeFully(file as never, 'callId,peerRef\r\nçall_1,f00d\r\n')
+
+    expect(Buffer.concat(written).toString('utf8')).toBe(
+      'callId,peerRef\r\nçall_1,f00d\r\n',
+    )
+  })
+
+  test('fails instead of looping when nothing is written', async () => {
+    const file = {write: () => Promise.resolve({bytesWritten: 0})}
+    await expect(writeFully(file as never, 'x')).rejects.toThrow(
+      'Could not write',
+    )
+  })
+})
