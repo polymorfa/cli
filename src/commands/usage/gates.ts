@@ -6,7 +6,7 @@ import {listUsageGates, renderUsageGates} from '../../services/usage.js'
 
 export default class UsageGates extends BaseCommand {
   static override description =
-    'List your usage gates with their mode, limit, usage this month and how often an action went over the limit in the last 30 days. In record mode a gate never refuses an action; in enforce mode an action over the limit fails with gate_limit_reached. Pass --session to include limits that apply per number.'
+    'List your usage gates with their mode, limit, usage this month and how often an action went over the limit in the last 30 days. In record mode a gate never refuses an action; in enforce mode an action over the limit fails with gate_limit_reached. Pass --session to include limits that apply per number. Gate state covers the whole team, so this needs a team API key; project API keys are refused. A limit that cannot be checked fails the action with 503 in either mode.'
 
   static override examples = [
     '<%= config.bin %> usage gates',

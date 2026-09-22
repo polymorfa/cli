@@ -573,7 +573,8 @@ session routes calls to the trunk.
 
 Polymorfa measures the calls your numbers host. Usage is measured, not charged.
 Commands require a server API key with `sessions:read`; a project API key reads
-its own project.
+its own project's usage. `usage gates` needs a team API key, because gate state
+covers the whole team.
 
 ```shell
 polymorfa usage summary
