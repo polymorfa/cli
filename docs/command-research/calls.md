@@ -3,8 +3,9 @@
 - **Status:** Implemented against Calls contract revision 1, unpublished
 - **Reviewed:** 2026-09-17
 - **SDK baseline:** `@polymorfa/sdk` (including the `@polymorfa/sdk/calls`
-  subpath) at `polymorfa/sdks` commit
-  `94bfd09825817f842434e206e6a77adb5cc0c414`
+  subpath) `0.1.0-dev.20260922102711` from npm. The research was done against
+  `polymorfa/sdks` commit `94bfd09825817f842434e206e6a77adb5cc0c414`; the npm
+  build also reports a `claim` activity when the placed call is answered.
 
 ## Sources reviewed
 
@@ -129,6 +130,7 @@ internal SDK module.
 - `calls media` does not attach to a call that was already ringing or answered
   before it started, and carries no video.
 - `calls watch` does not report outbound calls placed by other participants.
-- `@polymorfa/sdk` (with its `@polymorfa/sdk/calls` subpath) is not
-  published; development pins an exact Git commit. The CLI cannot release
-  until `@polymorfa/sdk` is published with a compatible semver range.
+- `@polymorfa/sdk` (with its `@polymorfa/sdk/calls` subpath) is published to
+  npm only as dev prereleases; the CLI pins exactly
+  `0.1.0-dev.20260922102711`. The CLI cannot release until a stable
+  `@polymorfa/sdk` is published with a compatible semver range.
