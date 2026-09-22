@@ -140,6 +140,18 @@ describe('event stream', () => {
     expect(output).toHaveBeenCalledTimes(1)
   })
 
+  test('SIGINT ends a write blocked on stdout backpressure', async () => {
+    const output = vi.spyOn(process.stdout, 'write').mockImplementation(() => {
+      setImmediate(() => process.emit('SIGINT', 'SIGINT'))
+      return false
+    })
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    await environment(() =>
+      EventStream.run(['--owner', 'project', '--project', PROJECT, '--json']),
+    )
+    expect(output).toHaveBeenCalledTimes(1)
+  })
+
   test('exits with the stream gap code when --on-gap stop sees expired events', async () => {
     sdk.gap = {missedEvents: 3}
     vi.spyOn(process.stdout, 'write').mockImplementation(() => true)

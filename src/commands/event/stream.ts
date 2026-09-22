@@ -87,8 +87,14 @@ export default class EventStream extends BaseCommand {
       for await (const item of stream) {
         delivered += 1
         lastCursor = item.cursor
-        if (json) await writeStdout(`${JSON.stringify(jsonLine(item))}\n`)
-        else if (!quiet) await writeStdout(`${humanLine(item)}\n`)
+        if (json)
+          await writeStdout(
+            `${JSON.stringify(jsonLine(item))}\n`,
+            controller.signal,
+          )
+        else if (!quiet)
+          await writeStdout(`${humanLine(item)}\n`, controller.signal)
+        if (controller.signal.aborted) break
         if (
           flags['max-events'] !== undefined &&
           delivered >= flags['max-events']
@@ -113,11 +119,19 @@ export default class EventStream extends BaseCommand {
 
 /**
  * Waits for stdout to accept each line so a slow consumer pauses the stream
- * instead of growing the process's output buffer without bound.
+ * instead of growing the process's output buffer without bound. An abort
+ * (Ctrl-C or SIGTERM) ends the wait.
  */
-async function writeStdout(value: string): Promise<void> {
+async function writeStdout(value: string, signal: AbortSignal): Promise<void> {
   if (process.stdout.write(value)) return
-  await once(process.stdout, 'drain')
+  try {
+    // SIGINT/SIGTERM abort the controller; stop waiting so the command exits
+    // even when the consumer never drains stdout.
+    await once(process.stdout, 'drain', {signal})
+  } catch (error) {
+    if (signal.aborted) return
+    throw error
+  }
 }
 
 function jsonLine(item: EventStreamItem) {
