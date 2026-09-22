@@ -996,7 +996,11 @@ polymorfa campaign recipients list campaign_123 \
 One append accepts at most 1,000 entries. `--csv` reads the file locally and
 sends the rows inline; it does not upload the file. Blank rows are ignored, but
 a row with other values and an empty phone cell stops the command before
-anything is sent, naming the row numbers (the header is row 1). A phone already on the
+anything is sent, naming the row numbers (the header is row 1). `--input`
+entries with an empty phone, and any phone longer than 64 characters, are
+refused the same way, because the API would reject the whole request. Comma,
+semicolon and tab separators are detected from the header row; separators
+inside quoted fields are ignored. A phone already on the
 campaign is skipped, and invalid entries are reported rather than added, so the
 result carries `added`, `duplicateCount`, `invalidCount` and up to 20
 `invalidRows`.

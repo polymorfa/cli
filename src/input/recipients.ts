@@ -12,6 +12,8 @@ const MAX_CSV_BYTES = 10 * 1024 * 1024
 const VARIABLE_NAME = /^[A-Za-z0-9_.-]{1,64}$/
 const MAX_VARIABLES = 50
 const MAX_REPORTED_ROWS = 20
+/** The request schema's maximum phone length. */
+const MAX_PHONE_LENGTH = 64
 
 export interface CsvRecipientOptions {
   /** Header naming the phone column. */
@@ -67,6 +69,12 @@ export async function readCsvRecipients(
       // Header is row 1, matching the API's row numbers for file imports.
       missingPhoneRows.push(index + 2)
       continue
+    }
+    if (phone.length > MAX_PHONE_LENGTH) {
+      throw invalid(
+        `${path} row ${index + 2} has a phone longer than ${MAX_PHONE_LENGTH} characters (the header is row 1); nothing was sent.`,
+        'invalid_phone',
+      )
     }
     const variables: Record<string, string> = {}
     for (const [name, index] of variableIndexes) {
@@ -157,6 +165,20 @@ export function recipientsFromJson(input: unknown): CampaignRecipientInput[] {
         'invalid_recipient_entry',
       )
     }
+    // The request schema requires 1 to 64 characters, so an entry outside
+    // that range fails the whole request instead of becoming an invalid row.
+    if (entry.phone.trim() === '') {
+      throw invalid(
+        `Entry ${index + 1} has an empty phone. Fill or remove it; nothing was sent.`,
+        'missing_phone',
+      )
+    }
+    if (entry.phone.length > MAX_PHONE_LENGTH) {
+      throw invalid(
+        `Entry ${index + 1} has a phone longer than ${MAX_PHONE_LENGTH} characters; nothing was sent.`,
+        'invalid_phone',
+      )
+    }
     return entry as unknown as CampaignRecipientInput
   })
 }
@@ -199,19 +221,40 @@ function columnIndex(header: readonly string[], name: string): number {
   return header.findIndex((cell) => cell.toLowerCase() === folded)
 }
 
+/**
+ * Pick the separator that occurs most often in the header record, counting
+ * only separators outside quoted fields, so `"Phone, Intl";Name` is read as
+ * semicolon-separated.
+ */
 function detectDelimiter(text: string): string {
-  const line = text.slice(
-    0,
-    text.search(/\r?\n/) === -1 ? undefined : text.search(/\r?\n/),
-  )
-  const counts = [',', ';', '\t'].map((candidate) => ({
-    candidate,
-    count: line.split(candidate).length - 1,
-  }))
-  const best = counts.reduce((left, right) =>
-    right.count > left.count ? right : left,
-  )
-  return best.count === 0 ? ',' : best.candidate
+  const counts = new Map<string, number>([
+    [',', 0],
+    [';', 0],
+    ['\t', 0],
+  ])
+  let quoted = false
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index]!
+    if (quoted) {
+      if (char === '"') {
+        if (text[index + 1] === '"') index += 1
+        else quoted = false
+      }
+      continue
+    }
+    if (char === '"') quoted = true
+    else if (char === '\n' || char === '\r') break
+    else if (counts.has(char)) counts.set(char, counts.get(char)! + 1)
+  }
+  let best = ','
+  let bestCount = 0
+  for (const [candidate, count] of counts) {
+    if (count > bestCount) {
+      best = candidate
+      bestCount = count
+    }
+  }
+  return best
 }
 
 function parseCsv(input: string): string[][] {

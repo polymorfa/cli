@@ -153,6 +153,68 @@ describe('Campaign recipient commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test('reads a semicolon file whose quoted header contains a comma', async () => {
+    directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
+    const csv = join(directory, 'contacts.csv')
+    await writeFile(
+      csv,
+      '"Phone, Intl";"Name"\n+15551234567;"Lovelace, Ada"\n',
+      'utf8',
+    )
+    server = await startHttpServer({
+      body: {
+        data: {
+          added: 1,
+          campaignId: 'campaign_1',
+          duplicateCount: 0,
+          invalidCount: 0,
+          invalidRows: [],
+          recipientCount: 1,
+        },
+        success: true,
+      },
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign recipients add campaign_1 --project-slug project_1 --csv ${csv} --phone-column "Phone, Intl" --variable name=Name`,
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({
+      recipients: [{phone: '+15551234567', variables: {name: 'Lovelace, Ada'}}],
+    })
+  })
+
+  test.each([
+    ['an empty phone', '', 'Entry 2 has an empty phone'],
+    ['a blank phone', '   ', 'Entry 2 has an empty phone'],
+    ['an overlong phone', '1'.repeat(65), 'longer than 64 characters'],
+  ])(
+    'refuses JSON input with %s before sending it',
+    async (_name, phone, message) => {
+      directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
+      const input = join(directory, 'recipients.json')
+      await writeFile(
+        input,
+        JSON.stringify([{phone: '+15551234567'}, {phone}]),
+        'utf8',
+      )
+      server = await startHttpServer({body: {data: {}, success: true}})
+
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `campaign recipients add campaign_1 --project-slug project_1 --input ${input}`,
+        ),
+      )
+
+      expect(result.error).toBeDefined()
+      expect(result.stderr).toContain(message)
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
   test('says a campaign was cancelled when stop returns no operation', async () => {
     server = await startHttpServer({
       body: {
