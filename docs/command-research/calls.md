@@ -97,7 +97,9 @@ internal SDK module.
   once a release that includes them is pinned. The API lets team API keys and
   project tokens read the setting and only team API keys change it; the CLI
   replaces the API's 403 text with that rule and keeps the API message.
-- `calls retention set` requires `--expected-revision`. It reads the setting,
+- `calls retention set` requires `--expected-revision`. It reads the setting
+  (`GET` needs `sessions:read`, which `sessions:manage` does not imply, so the
+  command needs both scopes; a 403 on either request gets the change message),
   fails locally with `state_conflict` (exit 4) when the revision differs, asks
   for confirmation when the new period is shorter (`--yes`, or exit 2
   `confirmation_required` without a terminal), then sends `policy`,

@@ -815,6 +815,31 @@ describe('unified calls commands', () => {
     )
   })
 
+  test('explains that changing call retention also needs sessions:read for the first read', async () => {
+    server = await startHttpSequenceServer([
+      apiError(403, 'missing_scope', 'This action requires sessions:read.'),
+    ])
+
+    const result = await apiKey(() =>
+      runCommand(
+        'calls retention set --policy compliance --expected-revision 0 --json',
+      ),
+    )
+
+    expect(exitCode(result.error)).toBe(3)
+    const envelope = JSON.parse(result.stderr.trim()) as {
+      error: {category: string; message: string}
+    }
+    expect(envelope.error.category).toBe('authorization')
+    expect(envelope.error.message).toContain(
+      'use a team API key with the sessions:read and sessions:manage scopes to change it',
+    )
+    expect(envelope.error.message).toContain(
+      'This action requires sessions:read.',
+    )
+    expect(server.requests.map(({method}) => method)).toEqual(['GET'])
+  })
+
   test('reads team call retention with a project token and lets the API refuse its changes', async () => {
     server = await startHttpSequenceServer([
       {body: {data: DEFAULT_RETENTION, success: true}},

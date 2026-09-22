@@ -662,7 +662,8 @@ never answers or declines on its own.
   shortens the period; `--yes` confirms without a prompt, and without a
   terminal the command exits with code 2 (`confirmation_required`) unless you
   pass `--yes`. Changing retention requires a team API key with the
-  `sessions:manage` scope. Project tokens can read the setting; the API
+  `sessions:read` and `sessions:manage` scopes, because the command reads the
+  setting before it changes it. Project tokens can read the setting; the API
   refuses their changes, and the command exits with code 3.
 
 `calls watch` streams inbound calls and their progress: `incoming`, `claim`,

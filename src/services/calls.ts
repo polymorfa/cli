@@ -378,8 +378,8 @@ export async function updateCallRetention(
   confirmShorter: ConfirmShorterRetention,
 ): Promise<CallsResult<CallRetention>> {
   const retentionDays = callRetentionDays(change.policy, change.retentionDays)
-  const current = (await retentionRequest('read', () => client.retrieve())).data
-    .data
+  const current = (await retentionRequest('change', () => client.retrieve()))
+    .data.data
   if (current.revision !== change.expectedRevision) {
     throw new PolymorfaConflictError(retentionConflict, {
       code: 'state_conflict',
@@ -448,7 +448,7 @@ const retentionConflict =
 
 const retentionForbidden = {
   change:
-    'Call retention is a team setting; use a team API key with the sessions:manage scope to change it.',
+    'Call retention is a team setting; use a team API key with the sessions:read and sessions:manage scopes to change it (the command reads the setting before it changes it).',
   read: 'Call retention is a team setting; use a team API key or project token with the sessions:read scope to read it.',
 } as const
 
