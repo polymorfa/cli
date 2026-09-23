@@ -27,21 +27,5 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
-      # The Hybrid Link SDK contract is in a companion PR. Verify this PR against
-      # that immutable source revision until its package is published.
-      - run: npm ci --ignore-scripts
-      - uses: actions/checkout@v6
-        with:
-          persist-credentials: false
-          repository: polymorfa/sdks
-          ref: 705f76eb82035a8ae752546d3a8d6c8b5f4156b3
-          path: .sdk-source
       - run: npm ci
-        working-directory: .sdk-source
-      - run: npm run build -w @polymorfa/sdk
-        working-directory: .sdk-source
-      - run: npm pack -w @polymorfa/sdk --pack-destination .. --ignore-scripts
-        working-directory: .sdk-source
-      - run: npm install --no-save --package-lock=false --ignore-scripts ./polymorfa-sdk-*.tgz
-      - run: npm run build
       - run: npm run verify
