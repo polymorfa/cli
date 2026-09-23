@@ -1725,7 +1725,8 @@ polymorfa hybrid-link resume --session NUMBER --expected-revision REVISION
 
 For project and session routing scopes, `--project`, the nearest linked project,
 and the selected profile determine the project in that order. A project-token
-profile fails when its project differs from the linked directory. `quicklink
+profile fails when its project differs from the linked directory. Team routing
+scope uses an organization API key and ignores directory project links. `quicklink
 availability` shows existing connection status and any QuickLink that can be
 resumed.
 

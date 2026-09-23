@@ -132,11 +132,15 @@ export abstract class BaseCommand extends Command {
   protected async messagingClient(
     flags: GlobalFlags,
     options: {
+      readonly ignoreProjectLink?: boolean
       readonly serverApiKeyOnly?: string
       readonly serverCredentialOnly?: string
     } = {},
   ): Promise<MessagingClient> {
-    const environment = await this.messagingEnvironment(flags)
+    const environment = await this.messagingEnvironment(
+      flags,
+      options.ignoreProjectLink,
+    )
     if (
       options.serverApiKeyOnly !== undefined &&
       environment.credential.type !== 'apiKey'
@@ -214,8 +218,9 @@ export abstract class BaseCommand extends Command {
   /** Resolve Messaging credentials once, for commands that also open sockets. */
   protected async messagingEnvironment(
     flags: GlobalFlags,
+    ignoreProjectLink = false,
   ): Promise<ResolvedEnvironment> {
-    return this.resolveEnvironment(flags, 'messaging')
+    return this.resolveEnvironment(flags, 'messaging', ignoreProjectLink)
   }
 
   protected async platformClient(
@@ -254,9 +259,12 @@ export abstract class BaseCommand extends Command {
   private async resolveEnvironment(
     flags: GlobalFlags,
     surface: ResolvedEnvironment['surface'],
+    ignoreProjectLink = false,
   ): Promise<ResolvedEnvironment> {
     const linkedProject =
-      surface === 'messaging' ? await this.linkedProject(flags) : undefined
+      surface === 'messaging' && !ignoreProjectLink
+        ? await this.linkedProject(flags)
+        : undefined
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface,

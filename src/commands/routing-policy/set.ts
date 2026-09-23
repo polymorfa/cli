@@ -61,6 +61,7 @@ export default class RoutingPolicySet extends BaseCommand {
       flags.scope === 'team'
         ? {
             client: await this.messagingClient(flags, {
+              ignoreProjectLink: true,
               serverApiKeyOnly: 'Team Hybrid routing',
             }),
             projectId: undefined,

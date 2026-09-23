@@ -1,5 +1,5 @@
 import {runCommand} from '@oclif/test'
-import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
 import {homedir} from 'node:os'
 import {join} from 'node:path'
 import {expect, test} from 'vitest'
@@ -95,6 +95,54 @@ test('routing policy uses linked project and resolves an explicit slug', async (
     await server.close()
   }
 })
+
+test.each(['malformed', 'unreadable'])(
+  'team routing policies ignore a %s project link',
+  async (kind) => {
+    const policy = {
+      scope: 'team',
+      revision: 'team-1',
+      prefer: null,
+      allowedTransports: ['linked_devices'],
+    }
+    const server = await startHttpSequenceServer([
+      {body: {success: true, data: policy}},
+      {body: {success: true, data: {...policy, revision: 'team-2'}}},
+    ])
+    const directory = await mkdtemp(
+      join(homedir(), '.polymorfa-cli-team-policy-'),
+    )
+    const previousDirectory = process.cwd()
+    try {
+      const link = join(directory, 'polymorfa.json')
+      if (kind === 'malformed') await writeFile(link, '{invalid json')
+      else await mkdir(link)
+      process.chdir(directory)
+      await withEnvironment(env(server.baseUrl), async () => {
+        const get = await runCommand(
+          'routing-policy get --scope team --verbose',
+        )
+        expect(get.error, get.stderr).toBeUndefined()
+        expect(get.stderr).not.toContain('Using project')
+        const set = await runCommand(
+          'routing-policy set --scope team --expected-revision team-1 --prefer inherit --allow linked_devices --verbose',
+        )
+        expect(set.error, set.stderr).toBeUndefined()
+        expect(set.stderr).not.toContain('Using project')
+      })
+      expect(
+        server.requests.map(({method, url}) => `${method} ${url}`),
+      ).toEqual([
+        'GET /messaging/routing/hybrid?scope=team',
+        'PUT /messaging/routing/hybrid?scope=team',
+      ])
+    } finally {
+      process.chdir(previousDirectory)
+      await rm(directory, {recursive: true, force: true})
+      await server.close()
+    }
+  },
+)
 
 test('flag-only QuickLink creation uses the linked project', async () => {
   const server = await startHttpSequenceServer([
