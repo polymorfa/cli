@@ -7,8 +7,10 @@ import {
 
 import {
   resolveCommandEnvironment,
+  resolveDeveloperEnvironment,
   resolveListenerEnvironment,
   resolveTeamSettingEnvironment,
+  type DeveloperEnvironment,
   type TeamSettingEnvironment,
   type ResolvedEnvironment,
 } from './context/environment.js'
@@ -97,6 +99,34 @@ export abstract class BaseCommand extends Command {
     )
     this.errorContext = session.context
     return session
+  }
+
+  /**
+   * Resolve an organization API key or exact-project token without building a
+   * typed client, for commands that span projects. With `inferOwner`, --project
+   * or a project token reads one project and an organization key otherwise
+   * reads the whole organization.
+   */
+  protected async developerEnvironment(
+    flags: GlobalFlags,
+    options: {readonly inferOwner?: boolean} = {},
+  ): Promise<DeveloperEnvironment> {
+    const environment = await resolveDeveloperEnvironment({
+      env: process.env,
+      ...(flags['api-version'] === undefined
+        ? {}
+        : {apiVersion: flags['api-version']}),
+      ...(options.inferOwner === undefined
+        ? {}
+        : {inferOwner: options.inferOwner}),
+      ...(flags.owner === undefined ? {} : {owner: flags.owner}),
+      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
+      ...(flags.project === undefined ? {} : {project: flags.project}),
+      ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
+    })
+    this.registerSecret(environment.credential)
+    this.errorContext = environment.context
+    return environment
   }
 
   protected async messagingClient(
