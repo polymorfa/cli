@@ -33,6 +33,12 @@ import {
   type VoipPlaceCallResult,
 } from '@polymorfa/sdk'
 
+import type {
+  CallRetention,
+  CallRetentionClient,
+  CallRetentionPolicy,
+} from '../sdk/client.js'
+
 /** Unified Calls credential facts the commands need before any transport. */
 export interface CallsCredential {
   readonly type: MessagingCredential['type']
@@ -320,6 +326,167 @@ function validateSession(session: string): string {
   return trimmed
 }
 
+// ── Team call data retention ───────────────────────────────────────────────
+
+/** The period each named policy sets; `custom` takes --days. */
+export const CALL_RETENTION_PERIODS: Readonly<
+  Record<Exclude<CallRetentionPolicy, 'custom'>, number>
+> = {short: 7, standard: 30, extended: 90, compliance: 365}
+
+export const CALL_RETENTION_POLICIES: readonly CallRetentionPolicy[] = [
+  'short',
+  'standard',
+  'extended',
+  'compliance',
+  'custom',
+]
+
+export const MIN_CALL_RETENTION_DAYS = 1
+export const MAX_CALL_RETENTION_DAYS = 2555
+
+export async function viewCallRetention(
+  client: CallRetentionClient,
+): Promise<CallsResult<CallRetention>> {
+  const response = await retentionRequest('read', () => client.retrieve())
+  return result(response.data, response.metadata)
+}
+
+export interface CallRetentionChange {
+  /** Apply only if the setting still has this revision. */
+  readonly expectedRevision: number
+  readonly policy: CallRetentionPolicy
+  readonly retentionDays?: number | undefined
+}
+
+/**
+ * Shortening the period deletes stored call data. The command decides how to
+ * confirm; this is called only when the new period is shorter.
+ */
+export type ConfirmShorterRetention = (
+  current: CallRetention,
+  retentionDays: number,
+) => Promise<void>
+
+/**
+ * Change the team's call data retention. Reads the current setting first so
+ * a shorter period is confirmed before anything is deleted, and so a stale
+ * --expected-revision fails before the change is sent.
+ */
+export async function updateCallRetention(
+  client: CallRetentionClient,
+  change: CallRetentionChange,
+  confirmShorter: ConfirmShorterRetention,
+): Promise<CallsResult<CallRetention>> {
+  const retentionDays = callRetentionDays(change.policy, change.retentionDays)
+  const current = (await retentionRequest('change', () => client.retrieve()))
+    .data
+  if (current.revision !== change.expectedRevision) {
+    throw new PolymorfaConflictError(retentionConflict, {
+      code: 'state_conflict',
+      details: {
+        currentRevision: current.revision,
+        expectedRevision: change.expectedRevision,
+      },
+      status: 409,
+    })
+  }
+  if (
+    typeof current.retentionDays !== 'number' ||
+    retentionDays < current.retentionDays
+  ) {
+    await confirmShorter(current, retentionDays)
+  }
+  const response = await retentionRequest('change', () =>
+    client.update({
+      expectedRevision: change.expectedRevision,
+      policy: change.policy,
+      ...(change.retentionDays === undefined
+        ? {}
+        : {retentionDays: change.retentionDays}),
+    }),
+  )
+  return result(response.data, response.metadata)
+}
+
+/** The period a change sets, checked the way the API checks it. */
+export function callRetentionDays(
+  policy: CallRetentionPolicy,
+  retentionDays: number | undefined,
+): number {
+  if (
+    retentionDays !== undefined &&
+    (!Number.isInteger(retentionDays) ||
+      retentionDays < MIN_CALL_RETENTION_DAYS ||
+      retentionDays > MAX_CALL_RETENTION_DAYS)
+  ) {
+    throw new PolymorfaConfigurationError(
+      `--days must be a whole number from ${MIN_CALL_RETENTION_DAYS} to ${MAX_CALL_RETENTION_DAYS}.`,
+      'days',
+    )
+  }
+  if (policy === 'custom') {
+    if (retentionDays === undefined) {
+      throw new PolymorfaConfigurationError(
+        '--policy custom requires --days.',
+        'days',
+      )
+    }
+    return retentionDays
+  }
+  const period = CALL_RETENTION_PERIODS[policy]
+  if (retentionDays !== undefined && retentionDays !== period) {
+    throw new PolymorfaConfigurationError(
+      `--policy ${policy} keeps call data for ${period} days; omit --days or use --policy custom.`,
+      'days',
+    )
+  }
+  return period
+}
+
+const retentionConflict =
+  'The call retention setting changed (state_conflict); read it again with `polymorfa calls retention get` and retry with its revision.'
+
+const retentionForbidden = {
+  change:
+    'Call retention is a team setting; use a team API key with the sessions:read and sessions:manage scopes to change it (the command reads the setting before it changes it).',
+  read: 'Call retention is a team setting; use a team API key or project token with the sessions:read scope to read it.',
+} as const
+
+/** Replace the API's generic 403 and 409 text with what the user can do. */
+async function retentionRequest<T>(
+  action: keyof typeof retentionForbidden,
+  run: () => Promise<T>,
+): Promise<T> {
+  try {
+    return await run()
+  } catch (error) {
+    const message =
+      error instanceof PolymorfaConflictError && error.code === 'state_conflict'
+        ? retentionConflict
+        : error instanceof PolymorfaAuthorizationError
+          ? `${retentionForbidden[action]} The API said: ${error.message}`
+          : undefined
+    if (message === undefined || !(error instanceof PolymorfaError)) {
+      throw error
+    }
+    const options = {
+      cause: error,
+      details: error.details,
+      ...(error.code === undefined ? {} : {code: error.code}),
+      ...(error.status === undefined ? {} : {status: error.status}),
+      ...(error.requestId === undefined ? {} : {requestId: error.requestId}),
+      ...(error.requestLogUrl === undefined
+        ? {}
+        : {requestLogUrl: error.requestLogUrl}),
+      ...(error.docUrl === undefined ? {} : {docUrl: error.docUrl}),
+      ...(error.metadata === undefined ? {} : {metadata: error.metadata}),
+    }
+    throw error instanceof PolymorfaConflictError
+      ? new PolymorfaConflictError(message, options)
+      : new PolymorfaAuthorizationError(message, options)
+  }
+}
+
 /** Replace the API's generic conflict text with the Calls meaning of its code. */
 async function callRequest<T>(run: () => Promise<T>): Promise<T> {
   try {
@@ -405,6 +572,16 @@ export function renderCallSettings(
     `Cloud API calls answered by\t${settings.hostCloudApiCalls === true ? 'Polymorfa Calls' : 'your Graph API integration'}`,
     `Revision\t${settings.revision ?? 0}`,
     `Updated\t${settings.updatedAt ?? 'never (defaults)'}`,
+  ].join('\n')
+}
+
+export function renderCallRetention(retention: CallRetention): string {
+  return [
+    `Policy\t${retention.policy}`,
+    `Retention\t${retention.retentionDays} ${retention.retentionDays === 1 ? 'day' : 'days'}`,
+    `Applies to\t${retention.appliesTo.join(', ')}`,
+    `Revision\t${retention.revision}`,
+    `Updated\t${retention.updatedAt ?? 'never (defaults)'}`,
   ].join('\n')
 }
 
