@@ -44,36 +44,43 @@ describe('Messaging campaign commands', () => {
     )
   })
 
-  test('creates one campaign from bounded JSON and preserves retry identity', async () => {
-    const input = await jsonInput('campaign.json', {
-      name: 'September launch',
-      recipientListId: 'recipients_1',
-      senderConfig: {session: 'session_1'},
-      templateId: 'template_1',
-    })
-    server = await startHttpServer({body: {data: campaign(), success: true}})
+  test.each(['campaign_create', undefined])(
+    'creates a campaign with an explicit or generated idempotency key (%s)',
+    async (key) => {
+      const input = await jsonInput('campaign.json', {
+        name: 'September launch',
+        recipientListId: 'recipients_1',
+        senderConfig: {session: 'session_1'},
+        templateId: 'template_1',
+      })
+      server = await startHttpServer({body: {data: campaign(), success: true}})
 
-    const result = await apiKeyEnvironment(() =>
-      runCommand(
-        `campaign create --project-slug project_1 --input ${input} --idempotency-key campaign_create --json`,
-      ),
-    )
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `campaign create --project-slug project_1 --input ${input} ${key === undefined ? '' : `--idempotency-key ${key}`} --json`,
+        ),
+      )
 
-    expect(result.error).toBeUndefined()
-    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      name: 'September launch',
-      recipientListId: 'recipients_1',
-      senderConfig: {session: 'session_1'},
-      templateId: 'template_1',
-    })
-    expect(server.requests[0]).toMatchObject({
-      method: 'POST',
-      url: '/messaging/projects/project_1/campaigns',
-    })
-    expect(server.requests[0]?.headers['idempotency-key']).toBe(
-      'campaign_create',
-    )
-  })
+      expect(result.error).toBeUndefined()
+      expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+        name: 'September launch',
+        recipientListId: 'recipients_1',
+        senderConfig: {session: 'session_1'},
+        templateId: 'template_1',
+      })
+      expect(server.requests[0]).toMatchObject({
+        method: 'POST',
+        url: '/messaging/projects/project_1/campaigns',
+      })
+      if (key === undefined) {
+        expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+          /^pmfa_cli_[0-9a-f-]{36}$/,
+        )
+      } else {
+        expect(server.requests[0]?.headers['idempotency-key']).toBe(key)
+      }
+    },
+  )
 
   test('views one campaign and its exact live analytics counters', async () => {
     server = await startHttpSequenceServer([
@@ -113,34 +120,44 @@ describe('Messaging campaign commands', () => {
     ])
   })
 
-  test('launches at an ISO instant and reports accepted operation semantics', async () => {
-    server = await startHttpServer({
-      body: {
-        data: {...campaign(), operationId: 'operation_1', status: 'draft'},
-        success: true,
-      },
-    })
+  test.each(['launch_1', undefined])(
+    'launches with an explicit or generated idempotency key (%s)',
+    async (key) => {
+      server = await startHttpServer({
+        body: {
+          data: {...campaign(), operationId: 'operation_1', status: 'draft'},
+          success: true,
+        },
+      })
 
-    const result = await apiKeyEnvironment(() =>
-      runCommand(
-        'campaign launch campaign_1 --project-slug project_1 --scheduled-at 2026-09-01T12:00:00Z --idempotency-key launch_1',
-      ),
-    )
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `campaign launch campaign_1 --project-slug project_1 --scheduled-at 2026-09-01T12:00:00Z ${key === undefined ? '' : `--idempotency-key ${key}`}`,
+        ),
+      )
 
-    expect(result.error).toBeUndefined()
-    expect(result.stdout).toContain(
-      'Accepted campaign launch as operation operation_1.',
-    )
-    expect(result.stdout).toContain(
-      'Check the campaign status with polymorfa campaign view.',
-    )
-    expect(result.stdout).not.toContain('Campaign launched successfully')
-    expect(server.requests[0]).toMatchObject({
-      body: JSON.stringify({scheduledAt: 1_788_264_000_000}),
-      method: 'POST',
-      url: '/messaging/projects/project_1/campaigns/campaign_1/launch',
-    })
-  })
+      expect(result.error).toBeUndefined()
+      expect(result.stdout).toContain(
+        'Accepted campaign launch as operation operation_1.',
+      )
+      expect(result.stdout).toContain(
+        'Check the campaign status with polymorfa campaign view.',
+      )
+      expect(result.stdout).not.toContain('Campaign launched successfully')
+      expect(server.requests[0]).toMatchObject({
+        body: JSON.stringify({scheduledAt: 1_788_264_000_000}),
+        method: 'POST',
+        url: '/messaging/projects/project_1/campaigns/campaign_1/launch',
+      })
+      if (key === undefined) {
+        expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+          /^pmfa_cli_[0-9a-f-]{36}$/,
+        )
+      } else {
+        expect(server.requests[0]?.headers['idempotency-key']).toBe(key)
+      }
+    },
+  )
 
   test('rejects an invalid launch time before transport', async () => {
     server = await startHttpServer({body: {data: campaign(), success: true}})

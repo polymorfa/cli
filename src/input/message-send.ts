@@ -2,6 +2,7 @@ import {Flags} from '@oclif/core'
 import type {MessageSendContext, RequestOptions} from '@polymorfa/sdk'
 
 import {conversationReference} from '../services/conversation.js'
+import {idempotencyKey} from './idempotency.js'
 
 /** Flags shared by every `message send <kind>` command. */
 export const sendContextFlags = {
@@ -9,7 +10,8 @@ export const sendContextFlags = {
     description: 'Mark the message as forwarded.',
   }),
   'idempotency-key': Flags.string({
-    description: 'Safely identify retries of this send operation.',
+    description:
+      'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).',
   }),
   mention: Flags.string({
     description: 'Mention a Polymorfa user ID. Repeat for multiple recipients.',
@@ -48,4 +50,11 @@ export function sendContext(flags: SendContextFlagValues): MessageSendContext {
 
 export function idempotencyOptions(key: string | undefined): RequestOptions {
   return key === undefined ? {} : {idempotencyKey: key}
+}
+
+/** Request options for `message send <kind>`: always carries an idempotency key, generated when omitted. */
+export function sendIdempotencyOptions(
+  key: string | undefined,
+): RequestOptions {
+  return {idempotencyKey: idempotencyKey(key)}
 }

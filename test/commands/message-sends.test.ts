@@ -555,6 +555,9 @@ describe('typed message send commands', () => {
       method: 'PUT',
       url: '/messaging/session_1/chats/730000000001/messages/740000000001',
     })
+    expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+      /^[0-9a-f-]{36}$/,
+    )
   })
 
   test('requires confirmation before deleting a message', async () => {
@@ -589,6 +592,9 @@ describe('typed message send commands', () => {
       method: 'DELETE',
       url: '/messaging/session_1/chats/730000000001/messages/740000000001',
     })
+    expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+      /^[0-9a-f-]{36}$/,
+    )
   })
 
   function sentBody(): unknown {
