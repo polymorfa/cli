@@ -102,6 +102,9 @@
       "calls": {
         "description": "Place, answer, join, decline, leave, end, and watch calls, and carry call audio."
       },
+      "calls:retention": {
+        "description": "Inspect and change how long Polymorfa keeps your team's call data."
+      },
       "calls:settings": {
         "description": "Inspect and replace session call settings."
       },
