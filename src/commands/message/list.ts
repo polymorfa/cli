@@ -65,23 +65,31 @@ export default class MessageList extends BaseCommand {
     const client = await this.messagingClient(flags, {
       serverApiKeyOnly: 'Message history',
     })
-    const first = await client.messages.list(
+    const params = {
+      ...(flags.limit === undefined ? {} : {limit: flags.limit}),
+      ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),
+      ...(flags.order === undefined
+        ? {}
+        : {order: flags.order as 'asc' | 'desc'}),
+      ...(flags.direction === undefined
+        ? {}
+        : {direction: flags.direction as 'inbound' | 'outbound'}),
+      ...(types === undefined || types.length === 0
+        ? {}
+        : {types: types.join(',')}),
+      ...range,
+    }
+    const first = await client.chats.listMessages(
       flags.session,
       flags.conversation,
-      {
-        ...(flags.limit === undefined ? {} : {limit: flags.limit}),
-        ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),
-        ...(flags.order === undefined
-          ? {}
-          : {order: flags.order as 'asc' | 'desc'}),
-        ...(flags.direction === undefined
-          ? {}
-          : {direction: flags.direction as 'inbound' | 'outbound'}),
-        ...(types === undefined || types.length === 0 ? {} : {types}),
-        ...range,
-      },
+      params,
     )
-    const value = await collectHistory(first, flags['max-items'])
+    const value = await collectHistory(first, flags['max-items'], (cursor) =>
+      client.chats.listMessages(flags.session, flags.conversation, {
+        ...params,
+        cursor,
+      }),
+    )
     this.writeValue(value, renderMessages(value.data), flags)
   }
 }

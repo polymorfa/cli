@@ -57,7 +57,7 @@ export default class ChatList extends BaseCommand {
     const client = await this.messagingClient(flags, {
       serverApiKeyOnly: 'Message history',
     })
-    const first = await client.chats.list(flags.session, {
+    const params = {
       ...(flags.limit === undefined ? {} : {limit: flags.limit}),
       ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),
       ...(flags.kind === undefined
@@ -65,8 +65,11 @@ export default class ChatList extends BaseCommand {
         : {kind: flags.kind as 'direct' | 'group' | 'channel' | 'broadcast'}),
       ...(range.since === undefined ? {} : {activeSince: range.since}),
       ...(range.until === undefined ? {} : {activeBefore: range.until}),
-    })
-    const value = await collectHistory(first, flags['max-items'])
+    }
+    const first = await client.chats.list(flags.session, params)
+    const value = await collectHistory(first, flags['max-items'], (cursor) =>
+      client.chats.list(flags.session, {...params, cursor}),
+    )
     this.writeValue(value, renderChats(value.data), flags)
   }
 }

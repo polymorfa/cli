@@ -27,7 +27,7 @@ export default class MessageGet extends BaseCommand {
     const client = await this.messagingClient(flags, {
       serverApiKeyOnly: 'Message history',
     })
-    const response = await client.messages.get(
+    const response = await client.chats.retrieveMessage(
       flags.session,
       flags.conversation,
       args.message,

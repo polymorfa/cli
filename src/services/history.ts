@@ -1,4 +1,9 @@
-import type {HistoryChat, HistoryMessage, HistoryPage} from '@polymorfa/sdk'
+import type {
+  ApiResponse,
+  HistoryChat,
+  HistoryMessage,
+  HistoryPage,
+} from '@polymorfa/sdk'
 
 export interface HistoryListValue<T> {
   readonly data: readonly T[]
@@ -17,20 +22,23 @@ export interface HistoryListValue<T> {
 
 /** Machine output for one history page; cursors are passed back unchanged. */
 export function historyListValue<T>(
-  page: HistoryPage<T>,
-  items: readonly T[] = page.items,
-  hasMore: boolean = page.hasMore,
-  nextCursor: string | null = page.nextCursor ?? null,
+  response: ApiResponse<HistoryPage<T>>,
+  items: readonly T[] = response.data.data,
+  hasMore: boolean = response.data.hasMore,
+  nextCursor: string | null = response.data.nextCursor,
 ): HistoryListValue<T> {
-  const metadata = page.response.metadata
+  const metadata = response.metadata
   return {
     data: items,
     page: {
       hasMore,
       nextCursor,
-      previousCursor: page.previousCursor ?? null,
+      previousCursor: response.data.previousCursor,
     },
-    dataRegion: page.dataRegion ?? null,
+    dataRegion:
+      Object.entries(metadata.headers).find(
+        ([name]) => name.toLowerCase() === 'polymorfa-data-region',
+      )?.[1] ?? null,
     metadata: {
       ...(metadata.apiVersion === undefined
         ? {}
@@ -46,27 +54,31 @@ export function historyListValue<T>(
 
 /** Follows nextCursor until maxItems or the last page. */
 export async function collectHistory<T>(
-  first: HistoryPage<T>,
+  first: ApiResponse<HistoryPage<T>>,
   maxItems: number | undefined,
+  loadNext: (cursor: string) => Promise<ApiResponse<HistoryPage<T>>>,
 ): Promise<HistoryListValue<T>> {
   if (maxItems === undefined) return historyListValue(first)
-  const items: T[] = [...first.items]
-  let page: HistoryPage<T> = first
-  while (items.length < maxItems && page.hasMore) {
-    const next = await page.nextPage()
-    if (next === null) break
-    if (next.nextCursor !== undefined && next.nextCursor === page.nextCursor) {
+  const items: T[] = [...first.data.data]
+  let response = first
+  while (items.length < maxItems && response.data.hasMore) {
+    const cursor = response.data.nextCursor
+    if (cursor === null) {
+      throw new Error('The API omitted the next cursor for a history page.')
+    }
+    const next = await loadNext(cursor)
+    if (next.data.nextCursor === cursor) {
       throw new Error('The API returned the same cursor twice.')
     }
-    page = next
-    items.push(...page.items)
+    response = next
+    items.push(...response.data.data)
   }
   const truncated = items.length > maxItems
   return historyListValue(
     first,
     items.slice(0, maxItems),
-    truncated || page.hasMore,
-    truncated ? null : (page.nextCursor ?? null),
+    truncated || response.data.hasMore,
+    truncated ? null : response.data.nextCursor,
   )
 }
 
