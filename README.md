@@ -912,8 +912,9 @@ polymorfa voice audio delete 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --yes
   3650). `update --retention-days none` keeps it until you delete it.
 - `preview` prints a link to the transcoded audio (Opus in Ogg). The link works
   for 5 minutes; treat it as a secret. `--output` downloads it instead and
-  refuses an existing file unless `--force` is given. Storage refusals retain
-  the HTTP status but omit the signed link and storage response text.
+  refuses an existing file unless `--force` is given. With `--output`, JSON
+  results omit the signed link. Storage refusals retain the HTTP status but
+  omit the signed link and storage response text.
 - `delete` asks for confirmation, or takes `--yes`, and exits with code 4 while
   a campaign or flow uses the asset.
 

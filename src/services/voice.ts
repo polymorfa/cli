@@ -414,10 +414,15 @@ export async function deleteAudio(
   return result(response.data, response.metadata)
 }
 
-export interface PreviewResult {
-  readonly preview: VoiceAudioPreview
-  readonly download?: {readonly bytes: number; readonly path: string}
-}
+export type PreviewResult =
+  | {
+      readonly preview: VoiceAudioPreview
+      readonly download?: undefined
+    }
+  | {
+      readonly preview: Pick<VoiceAudioPreview, 'contentType' | 'expiresAt'>
+      readonly download: {readonly bytes: number; readonly path: string}
+    }
 
 export async function previewAudio(
   client: VoiceClient,
@@ -445,7 +450,13 @@ export async function previewAudio(
     throw error
   }
   return result(
-    {download: {bytes: bytes.byteLength, path: output}, preview: response.data},
+    {
+      download: {bytes: bytes.byteLength, path: output},
+      preview: {
+        contentType: response.data.contentType,
+        expiresAt: response.data.expiresAt,
+      },
+    },
     response.metadata,
   )
 }

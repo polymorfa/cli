@@ -550,6 +550,33 @@ describe('voice audio commands', () => {
     ])
   })
 
+  test('omits the signed link from JSON after downloading a preview', async () => {
+    const signedUrl = '/previews/signed-capability'
+    server = await startHttpSequenceServer([
+      ok({
+        contentType: 'audio/ogg',
+        expiresAt: '2026-09-19T10:05:00.000Z',
+        url: signedUrl,
+      }),
+      {rawBody: Buffer.from('OggS-audio')},
+    ])
+    directory = await mkdtemp(join(tmpdir(), 'polymorfa-voice-'))
+    const output = join(directory, 'greeting.ogg')
+
+    const downloaded = await apiKey(() =>
+      runCommand(`voice audio preview ${ASSET_ID} --output ${output} --json`),
+    )
+
+    expect(downloaded.error, downloaded.stderr).toBeUndefined()
+    expect(JSON.parse(downloaded.stdout)).toMatchObject({
+      data: {download: {bytes: 10, path: output}},
+    })
+    expect(downloaded.stdout).not.toContain(signedUrl)
+    expect(await readFile(output, 'utf8')).toBe('OggS-audio')
+    expect(server.requests[1]?.url).toBe(signedUrl)
+    expect(server.requests[1]?.headers.authorization).toBeUndefined()
+  })
+
   async function apiKey<T>(run: () => Promise<T>): Promise<T> {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
