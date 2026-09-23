@@ -645,7 +645,9 @@ pagination. Block and unblock are reversible actions and accept
 ## Calls
 
 The `calls` commands place, answer, join, decline, leave, and end calls, invite
-participants, follow a session's calls, and carry call audio:
+participants, follow a session's calls, and carry call audio. `calls stats` and
+`calls export` report on past calls; see
+[Call statistics and export](#call-statistics-and-export). For example:
 
 ```shell
 polymorfa calls place +15550100 --session support --exclusive
@@ -779,6 +781,55 @@ sox greeting.wav -t raw -r 16000 -e signed -b 16 -c 1 - | \
     --input - --leave-on-eof > reply.pcm
 ```
 
+### Call statistics and export
+
+`calls stats` summarizes calls and `calls export` writes call detail records.
+Both accept an organization API key or an exact-project token with the
+`sessions:read` scope. Pass `--project` to read one project. Without it, an
+organization API key reads every project in the organization. A project token
+reads only its own project and requires `--project`.
+
+```shell
+polymorfa calls stats
+polymorfa calls stats --project 018f0000-0000-7000-8000-000000000002 \
+  --group-by session
+polymorfa calls stats --since 2026-09-01T00:00:00Z --until 2026-09-02T00:00:00Z \
+  --group-by hour --timezone Europe/Lisbon --heatmap
+
+polymorfa calls export --since 2026-09-01T00:00:00Z --output calls.csv
+polymorfa calls export --format ndjson --outcome missed > missed.ndjson
+polymorfa calls export --max-pages 1 --limit 100
+polymorfa calls export --since 2026-09-01T00:00:00Z --cursor <cursor> \
+  --output rest.csv
+```
+
+Both commands filter with `--session`, `--direction` (`inbound` or
+`outbound`), `--upstream` (`linked_device` or `cloud_api`), `--outcome`
+(`answered`, `missed`, `declined`, `failed`, or `in_progress`), `--since`, and
+`--until` (RFC 3339 times; a call matches by its start time).
+
+- **Statistics.** The range defaults to the last 7 days. `--group-by` accepts
+  `day` (the default, up to 366 days), `hour` (up to 31 days), `session`, or
+  `outcome`. Day and hour groups, and the `--heatmap` grid of calls by day of
+  week and hour, use `--timezone`, an IANA name such as `Europe/Lisbon` (UTC by
+  default). Human output prints the totals, with the answer rate as a
+  percentage and durations as hours, minutes, and seconds, and then one row per
+  group. `--json` prints the complete response, including the heatmap. Grouping
+  by session lists at most 500 numbers; the totals still count every call.
+- **Export.** `--format` is `csv` (the default) or `ndjson`. The command requests
+  pages of `--limit` records (1 to 1,000; default 1,000), newest first, until
+  none remain, and writes one CSV header. Records go to standard output, or to
+  the `--output` file, which must not exist unless you pass `--force`. The file
+  is created, or emptied with `--force`, when the first page arrives, even if
+  no records match. Progress,
+  the final summary, and the next cursor go to standard error, as JSON lines
+  with `--json`. `--max-pages` stops early and prints the cursor for the rest;
+  `--cursor` resumes from it with the same filters. If a page fails, the
+  command keeps the records already written, prints the cursor that resumes
+  from the failed page, and exits with the API error's exit code. The other
+  party appears only as `peerRef`, a team-specific pseudonym, never a phone
+  number.
+
 ### SIP trunks
 
 SIP trunks connect a PBX to WhatsApp calls. They are part of Calls and need no
@@ -814,6 +865,30 @@ print the password before looking up the SIP address in human output. The
 optional address lookup stops after five seconds without retrying and respects
 a shorter `--timeout`. If it fails
 or times out, the command keeps the password on screen and exits successfully.
+
+### Call usage and limits
+
+When Calls access is enabled for a team, Polymorfa measures the calls its numbers host. Usage is measured, not charged.
+Commands require `sessions:read`; a project token reads only its own project's
+usage and needs `--project` or a project-bound profile. `usage gates` needs a
+team API key, because gate state covers the whole team.
+
+```shell
+polymorfa usage summary
+polymorfa usage summary --period 2026-09 --session support
+polymorfa usage records --call 3EB0C431C26A1916E07A
+polymorfa usage records --session support --meter call.duration --limit 50
+polymorfa usage records --session support --cursor <cursor from the last page>
+polymorfa usage gates --session support
+```
+
+`usage summary` totals one calendar month (UTC) by meter and by number, and
+defaults to the current month; without `--project`, each number row also shows
+its project. `usage records` lists records newest first with each record's
+project, and prints the cursor for the next page. `usage gates` shows each gate's mode,
+limit, usage this month and how often an action went over the limit in the last
+30 days: in `record` mode nothing is refused, and in `enforce` mode an action
+over the limit exits with code 4 (`gate_limit_reached`).
 
 ## Session call rejection and stable identities
 
