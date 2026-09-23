@@ -1,6 +1,7 @@
 import {readdir, rm} from 'node:fs/promises'
 import {join} from 'node:path'
 import {PassThrough, Readable} from 'node:stream'
+import {inspect} from 'node:util'
 import {describe, expect, test, vi} from 'vitest'
 
 import {createVoiceClient, type VoiceClient} from '../../src/sdk/voice.js'
@@ -228,6 +229,34 @@ describe('voice transfers', () => {
       code: 'link_expired',
       status: 403,
     })
+  })
+
+  test('does not retain a signed preview URL in network errors or storage response codes', async () => {
+    const secret = preview.url
+    const networkClient = createVoiceClient(
+      environment(50),
+      vi.fn(() =>
+        Promise.reject(new Error(`GET ${secret} failed`)),
+      ) as typeof fetch,
+    )
+    const networkError = await networkClient
+      .downloadPreview(preview, 1_000)
+      .catch((error: unknown) => error)
+    expect(networkError).toMatchObject({code: 'connection_error'})
+    expect(inspect(networkError, {depth: 10})).not.toContain(secret)
+
+    const storageClient = createVoiceClient(
+      environment(50),
+      fetchReturning(
+        () =>
+          new Response(JSON.stringify({error: {code: secret}}), {status: 403}),
+      ),
+    )
+    const storageError = await storageClient
+      .downloadPreview(preview, 1_000)
+      .catch((error: unknown) => error)
+    expect(storageError).toMatchObject({status: 403})
+    expect(inspect(storageError, {depth: 10})).not.toContain(secret)
   })
 
   test('stops reading a preview without Content-Length once it passes the limit', async () => {

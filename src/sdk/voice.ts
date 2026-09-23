@@ -136,13 +136,13 @@ export function createVoiceClient(
       if (controller.signal.aborted) {
         throw new PolymorfaTimeoutError(
           `The ${label} did not finish within ${transferTimeoutMs}ms.`,
-          {cause: error, code: 'request_timeout'},
+          {code: 'request_timeout'},
         )
       }
       if (error instanceof PolymorfaError) throw error
       throw new PolymorfaConnectionError(
         `The ${label} could not reach its URL.`,
-        {cause: error, code: 'connection_error'},
+        {code: 'connection_error'},
       )
     } finally {
       clearTimeout(timer)
@@ -382,12 +382,14 @@ function transferError(
   body: unknown,
   label: string,
 ): PolymorfaError {
-  const bodyCode =
+  const candidateCode =
     typeof body === 'object' &&
     body !== null &&
     typeof (body as {error?: {code?: unknown}}).error?.code === 'string'
       ? (body as {error: {code: string}}).error.code
       : undefined
+  // The external storage response is untrusted and may echo the signed URL.
+  const bodyCode = candidateCode === 'link_expired' ? candidateCode : undefined
   const status = response.status
   const options = {
     status,
