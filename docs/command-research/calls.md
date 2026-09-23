@@ -64,8 +64,8 @@ calls
 | `calls invite`                 | `POST /messaging/voip/calls/{id}/participants`   | `voip.addParticipant`               |
 | `calls settings get`           | `GET /platform/sessions/{session}/call-settings` | `voip.retrieveCallSettings`         |
 | `calls settings set`           | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
-| `calls stats`                  | `GET /platform/calls/stats`                      | `calls.stats`                        |
-| `calls export`                 | `GET /platform/calls/export`                     | `calls.export`                       |
+| `calls stats`                  | `GET /platform/calls/stats`                      | `calls.stats`                       |
+| `calls export`                 | `GET /platform/calls/export`                     | `calls.export`                      |
 | `calls retention get`          | `GET /platform/call-retention`                   | `callRetention.retrieve`            |
 | `calls retention set`          | `PUT /platform/call-retention`                   | `callRetention.update`              |
 | `sip-trunk endpoint`           | `GET /platform/sip/endpoint`                     | `sipTrunks.endpoint`                |
