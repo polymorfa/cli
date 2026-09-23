@@ -31,7 +31,7 @@ jobs:
       - uses: actions/checkout@v6
         with:
           repository: polymorfa/sdks
-          ref: 92a2617a5a4ad02cc082f33b6bd0354e03103eeb
+          ref: c7cdba278c3d53f2e21a8d6efda097d6a09a2374
           path: .sdk-source
       - run: npm ci
         working-directory: .sdk-source
