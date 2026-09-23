@@ -1,8 +1,10 @@
 import {
-  MessagingClient,
+  Client,
   PolymorfaServerError,
   PolymorfaValidationError,
-  type RawClient,
+  type CallStats,
+  type CallStatsHeatmapCell,
+  type PlatformCallsResource,
   type ResponseMetadata,
 } from '@polymorfa/sdk'
 
@@ -14,12 +16,6 @@ import type {OutputContext} from '../output/contracts.js'
 
 // Call statistics and call detail record export (`GET /platform/calls/stats`
 // and `GET /platform/calls/export`).
-//
-// The pinned SDK has no typed methods for these operations yet, so this module
-// sends them through the SDK's raw transport, which keeps the SDK's
-// authentication, retry, and error mapping. Replace `CallAnalyticsApi` with the
-// typed SDK resource once the CLI pins an SDK revision that includes it; the
-// command flags and output do not change.
 
 export const CALL_DIRECTIONS = ['inbound', 'outbound'] as const
 export const CALL_UPSTREAMS = ['linked_device', 'cloud_api'] as const
@@ -40,9 +36,6 @@ export const CALL_EXPORT_FORMATS = ['csv', 'ndjson'] as const
 
 export type CallStatsGroupBy = (typeof CALL_STATS_GROUP_BY)[number]
 export type CallExportFormat = (typeof CALL_EXPORT_FORMATS)[number]
-
-/** Response header that carries the next export page's cursor. */
-export const NEXT_CURSOR_HEADER = 'polymorfa-next-cursor'
 
 const DAY_MS = 86_400_000
 const MAX_RANGE_DAYS: Readonly<Record<CallStatsGroupBy, number | undefined>> = {
@@ -76,41 +69,6 @@ export interface CallFilterInput {
   readonly upstream?: string | undefined
 }
 
-export interface CallMetrics {
-  readonly calls: number
-  readonly answered: number
-  readonly missed: number
-  readonly declined: number
-  readonly failed: number
-  readonly inProgress: number
-  readonly answerRate: number | null
-  readonly totalDurationSeconds: number
-  readonly averageDurationSeconds: number | null
-}
-
-export interface CallStatsGroup extends CallMetrics {
-  readonly key: string
-  readonly start: string | null
-}
-
-export interface CallStatsHeatmapCell {
-  readonly dayOfWeek: number
-  readonly hour: number
-  readonly calls: number
-  readonly answered: number
-}
-
-export interface CallStats {
-  readonly since: string
-  readonly until: string
-  readonly timezone: string
-  readonly groupBy: CallStatsGroupBy
-  readonly totals: CallMetrics
-  readonly groups: readonly CallStatsGroup[]
-  readonly groupsTruncated: boolean
-  readonly heatmap: readonly CallStatsHeatmapCell[]
-}
-
 export interface CallExportPage {
   readonly body: string
   readonly metadata: ResponseMetadata
@@ -120,47 +78,47 @@ export interface CallExportPage {
 type Query = Readonly<Record<string, string | number>>
 
 export class CallAnalyticsApi {
-  private readonly raw: RawClient
-  private lastNextCursor: string | null = null
+  private readonly calls:
+    PlatformCallsResource<'organization'> | PlatformCallsResource<'project'>
 
   constructor(
     environment: DeveloperEnvironment,
     fetchImplementation: typeof globalThis.fetch = globalThis.fetch,
   ) {
-    // The SDK keeps only a fixed set of response headers, so read the export
-    // cursor header here. Retries overwrite it; the last response wins.
-    const fetchWithCursor: typeof globalThis.fetch = async (input, init) => {
-      const response = await fetchImplementation(input, init)
-      this.lastNextCursor = response.headers.get(NEXT_CURSOR_HEADER)
-      return response
-    }
-    this.raw = new MessagingClient({
+    const options = {
       baseUrl: environment.baseUrl,
-      credential: {
-        type:
-          environment.context.principalType === 'project_token'
-            ? 'projectToken'
-            : 'apiKey',
-        value: environment.credential,
-      },
-      fetch: fetchWithCursor,
+      fetch: fetchImplementation,
       ...(environment.apiVersion === undefined
         ? {}
         : {apiVersion: environment.apiVersion}),
       ...(environment.timeoutMs === undefined
         ? {}
         : {timeoutMs: environment.timeoutMs}),
-    }).raw
+    }
+    if (environment.context.principalType === 'project_token') {
+      const projectId = environment.context.projectId
+      if (!projectId) throw invalid('A project token requires --project.')
+      this.calls = new Client({
+        ...options,
+        credential: {type: 'projectToken', value: environment.credential},
+        projectId,
+      }).calls
+    } else {
+      const root = new Client({
+        ...options,
+        credential: {type: 'organizationApiKey', value: environment.credential},
+      })
+      this.calls =
+        environment.context.owner === 'project' && environment.context.projectId
+          ? root.project(environment.context.projectId).calls
+          : root.calls
+    }
   }
 
   async stats(
     query: Query,
   ): Promise<{readonly data: CallStats; readonly metadata: ResponseMetadata}> {
-    const response = await this.raw.request<unknown>({
-      method: 'GET',
-      path: '/platform/calls/stats',
-      query,
-    })
+    const response = await this.calls.stats(query)
     return {data: statsData(response.data), metadata: response.metadata}
   }
 
@@ -168,28 +126,22 @@ export class CallAnalyticsApi {
     query: Query,
     format: CallExportFormat,
   ): Promise<CallExportPage> {
-    this.lastNextCursor = null
-    const response = await this.raw.request<unknown>({
-      headers: {
-        accept: format === 'csv' ? 'text/csv' : 'application/x-ndjson',
-      },
-      method: 'GET',
-      path: '/platform/calls/export',
-      query: {...query, format},
-    })
-    const body = response.data ?? ''
-    if (typeof body !== 'string') {
+    const response = await this.calls.export({...query, format})
+    const contentType = response.metadata.headers['content-type']
+    const expected = format === 'csv' ? 'text/csv' : 'application/x-ndjson'
+    if (
+      contentType !== undefined &&
+      contentType.split(';', 1)[0]?.trim().toLowerCase() !== expected
+    ) {
       throw new PolymorfaServerError(
         `The call export did not return ${format === 'csv' ? 'CSV' : 'NDJSON'}.`,
         {code: 'call_export_invalid_response'},
       )
     }
-    // Set by the fetch wrapper during the request above.
-    const cursor = this.lastNextCursor as string | null
     return {
-      body,
+      body: response.data.body,
       metadata: response.metadata,
-      nextCursor: cursor === null || cursor.length === 0 ? null : cursor,
+      nextCursor: response.data.nextCursor,
     }
   }
 }
@@ -513,24 +465,19 @@ export function duration(seconds: number | null): string {
 // ── Helpers ────────────────────────────────────────────────────────────────
 
 function statsData(value: unknown): CallStats {
-  const envelope =
-    typeof value === 'object' && value !== null
-      ? (value as {readonly data?: unknown})
-      : {}
-  const data = envelope.data
   if (
-    typeof data !== 'object' ||
-    data === null ||
-    !('totals' in data) ||
-    !('groups' in data) ||
-    !Array.isArray((data as {groups: unknown}).groups)
+    typeof value !== 'object' ||
+    value === null ||
+    !('totals' in value) ||
+    !('groups' in value) ||
+    !Array.isArray(value.groups)
   ) {
     throw new PolymorfaServerError(
       'The call statistics response was not recognized.',
       {code: 'call_stats_invalid_response'},
     )
   }
-  return data as CallStats
+  return value as CallStats
 }
 
 function invalid(message: string): PolymorfaValidationError {

@@ -216,7 +216,7 @@ describe('calls stats', () => {
     expect(scoped.error).toBeUndefined()
     expect(server.requests).toHaveLength(1)
     expect(server.requests[0]?.url).toBe(
-      `/platform/calls/stats?groupBy=day&projectId=${PROJECT}`,
+      `/platform/calls/stats?projectId=${PROJECT}&groupBy=day`,
     )
     expect(server.requests[0]?.headers.authorization).toBe(
       `Bearer ${PROJECT_TOKEN}`,
@@ -282,6 +282,18 @@ describe('calls stats', () => {
 
     expect(exitCode(result.error)).toBe(3)
     expect(result.stderr).toContain('sessions:read')
+    expect(result.stdout).toBe('')
+  })
+
+  test('rejects a malformed statistics response without printing partial output', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: {totals: metrics()}}},
+    ])
+
+    const result = await apiKey(() => runCommand('calls stats --json'))
+
+    expect(exitCode(result.error)).not.toBe(0)
+    expect(result.stderr).toContain('not recognized')
     expect(result.stdout).toBe('')
   })
 
@@ -393,7 +405,7 @@ describe('calls export', () => {
       '{"callId":"call_1"}\n{"callId":"call_2"}\n',
     )
     expect(server.requests[0]?.url).toBe(
-      '/platform/calls/export?limit=1000&format=ndjson',
+      '/platform/calls/export?format=ndjson&limit=1000',
     )
     expect(exitCode(refused.error)).toBe(4)
     expect(refused.stderr).toContain('--force')
@@ -468,7 +480,7 @@ describe('calls export', () => {
       `${HEADER}\r\n${csvRow('call_9')}\r\n`,
     )
     expect(server.requests[0]?.url).toBe(
-      '/platform/calls/export?limit=1000&cursor=cursor_9&format=csv',
+      '/platform/calls/export?format=csv&limit=1000&cursor=cursor_9',
     )
   })
 
@@ -528,6 +540,21 @@ describe('calls export', () => {
       'Stopped after 1 page and 1 record. Resume with --cursor cursor_2',
     )
     expect(result.stderr).toContain('invalid cursor')
+  })
+
+  test('rejects an HTML export response without writing it to standard output', async () => {
+    server = await startHttpSequenceServer([
+      {
+        headers: {'content-type': 'text/html'},
+        rawBody: '<html>proxy error</html>',
+      },
+    ])
+
+    const result = await apiKey(() => runCommand('calls export'))
+
+    expect(exitCode(result.error)).not.toBe(0)
+    expect(result.stdout).toBe('')
+    expect(result.stderr).not.toContain('<html>')
   })
 
   test('fails when the API repeats a cursor or changes the CSV columns', async () => {
