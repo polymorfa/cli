@@ -228,6 +228,7 @@ export function recipientsFromJson(input: unknown): CampaignRecipientInput[] {
         variables.length > MAX_VARIABLES ||
         variables.some(
           ([name, value]) =>
+            name === '__proto__' ||
             !VARIABLE_NAME.test(name) ||
             typeof value !== 'string' ||
             value.length > MAX_VARIABLE_VALUE_LENGTH,

@@ -267,6 +267,10 @@ describe('Campaign recipient commands', () => {
   test.each([
     ['non-string value', {firstName: 42}],
     ['invalid name', {'-firstName': 'Ada'}],
+    [
+      'reserved name',
+      JSON.parse('{"__proto__":"Ada"}') as Record<string, string>,
+    ],
     ['overlong value', {firstName: 'x'.repeat(1025)}],
   ])(
     'refuses JSON variables with %s before sending',
