@@ -38,12 +38,12 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.0
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260923115544
 ```
 
-The SDK component reports the version constant built into the SDK. SDK dev
-prereleases report `0.1.0-dev.0`, not their full prerelease version; run
-`npm ls @polymorfa/sdk` to see the installed build.
+The SDK component reports the version built into the installed SDK. Dev
+prereleases include their full timestamped version. Run `npm ls @polymorfa/sdk`
+to see the installed build.
 
 ## Authentication profiles
 
@@ -272,9 +272,49 @@ Add `--remove` to `message star` to unstar. Text sends accept repeatable
 `--mention` with a Polymorfa user ID, `--reply-to` with a Polymorfa message ID,
 and `--forwarded`. `--to` and `--chat` accept a conversation ID, E.164 phone
 number, or BSUID. The API resolves message direction and sender identity.
-Every mutation accepts `--idempotency-key` for safe retry identity. Server API
-keys require `messages:write`; client tokens remain subject to their live
-recipient rules, allowed actions, and rate limits.
+Server API keys require `messages:write`; client tokens remain subject to their
+live recipient rules, allowed actions, and rate limits.
+
+### Retry identity
+
+Every `message send` variant, `message react`, `message edit`, and
+`message delete` sends an `Idempotency-Key` by default. When you omit
+`--idempotency-key`, the CLI or its SDK generates a fresh key for that command
+invocation. Automatic HTTP retries within the invocation reuse it.
+
+To retry across separate CLI processes or script runs, choose a key before the
+first attempt and pass the same `--idempotency-key` on each attempt. Keep the
+request, credential, and API version unchanged. Running the command again
+without an explicit key creates a new request and can repeat the write.
+
+```shell
+# Reuse order-123-shipped only when retrying this exact notification.
+polymorfa message send text \
+  --session session_123 --to +15551234567 \
+  --body 'Your order shipped.' --idempotency-key order-123-shipped
+```
+
+For 24 hours after the first request, the API prevents the same key and request
+from running the write again:
+
+- A recorded success returns `409 idempotency_completed` with
+  `Idempotent-Replayed: true`. The CLI reports an error; the response does not
+  contain the original message or response body.
+- A recorded server error returns its status and error code with
+  `Idempotent-Replayed: true`. The write may have happened.
+- A request still running returns `409 idempotency_in_progress` with
+  `Retry-After`. An unrecorded outcome returns
+  `409 idempotency_outcome_unknown` and blocks another attempt with that key.
+- Reusing a key for a changed request returns `409 idempotency_conflict`.
+
+Keep the first response when you receive it. If the outcome is uncertain, check
+message events or webhooks before deciding whether to use a new key. A new key
+does not resolve the uncertainty and can send a duplicate. See the
+[Messaging retry contract](https://docs.polymorfa.com/guides/communicate/overview#retry-sends-safely).
+
+`message mark-seen`, `message typing`, and `message star` accept an explicit
+`--idempotency-key`, but the API does not deduplicate those actions by that
+header.
 
 ### Typed sends
 
@@ -344,16 +384,36 @@ polymorfa media view media_123
 polymorfa media download media_123 \
   --output ./attachment.bin
 
+polymorfa media download media_123 --url
+
+polymorfa media download --from-event ./message.json \
+  --output ./photo.jpg
+
 polymorfa media persist media_123 \
   --idempotency-key persist_media_123
 ```
 
-`media download` retrieves metadata before fetching bytes and rejects media
-larger than 100 MiB by default. Override the memory guard with `--max-bytes`
-only when the process has enough memory. An explicit output path is required,
-and existing files are preserved unless `--force` is passed. The SDK buffers
-the complete response before the CLI writes it; this is not a streaming or
-range-download command.
+`media download` retrieves metadata, then streams the file into a temporary
+sibling file and renames it into place when the download completes. It
+rejects media larger than 100 MiB by default, both from the declared size and
+while bytes arrive. Raise the limit with `--max-bytes`. An explicit
+`--output` path (`-o`) is required. Existing files are kept unless you pass
+`--force`, and an interrupted or rejected download leaves no partial file.
+When the API redirects to object storage, the CLI requests the storage URL
+without your API key.
+
+`--url` prints the short-lived signed storage link to stdout instead of
+downloading it, and writes a warning to stderr. Anyone who has the link can
+fetch the file until it expires, so do not log, store or share it. If the API
+streams the media itself, no link exists and the command exits with code 2.
+
+`--from-event <file>` reads a stored message webhook, either the full event
+or its `payload`. It downloads the encrypted attachment from the WhatsApp CDN
+and verifies and decrypts it locally, with no Polymorfa credential. It works
+only for messages that carry the `media` descriptor, which projects without
+media persistence receive. The event file contains the decryption key: keep
+it private. If verification fails, the command exits with code 2 and writes
+no file. The CDN link in the event expires, so older events stop working.
 
 `media persist` asks the server to copy the media into configured object
 storage. It does not write a local file. The source API has no Messaging media
@@ -605,6 +665,10 @@ polymorfa calls settings set --session support --calls-enabled=false \
   --expected-revision 3
 polymorfa calls settings set --session support \
   --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+
+polymorfa calls retention get
+polymorfa calls retention set --policy compliance --expected-revision 0
+polymorfa calls retention set --policy custom --days 14 --expected-revision 1 --yes
 ```
 
 Every inbound call rings until a participant answers or declines it. The CLI
@@ -625,6 +689,13 @@ never answers or declines on its own.
   the answered call. `calls reject` exits with code 4 and
   `code: "call_not_ringing"` when the call was already answered, declined, or
   ended. Declining ends the call for every participant.
+- **Number restrictions.** When WhatsApp restricts the Number to people it has
+  already chatted with, `calls place` and `calls invite` exit with code 3 and
+  `code: "number_restricted"` for anyone else; calls to people it has already
+  chatted with still work. A call WhatsApp refuses for that reason ends with
+  `reason: "call_restricted"` in `calls watch`.
+  `polymorfa listen --event session.restriction_updated` reports the
+  restriction starting and ending.
 - **Connections.** `calls leave` closes one connection, named by an 8 to 64
   character ID from `A-Z`, `a-z`, `0-9`, `_`, and `-`. The call continues.
   `calls end` ends the call for everyone.
@@ -651,6 +722,29 @@ never answers or declines on its own.
   change only if the settings still have that revision; if someone changed
   them first, the command exits with code 4 (`state_conflict`) and changes
   nothing.
+- **Call data retention.** `calls retention` reads and changes how long
+  Polymorfa keeps your team's call data. It uses the Platform API with a team
+  API key or a project token (`POLYMORFA_API_KEY`, `POLYMORFA_PROJECT_TOKEN`,
+  or a profile); client tokens are refused. `--policy short`,
+  `standard`, `extended`, or `compliance` keeps call data for 7, 30, 90, or
+  365 days; `--policy custom --days <n>` keeps it for 1 to 2555 days. Teams
+  without a saved setting use `extended` (90 days) at revision `0`. Deletion
+  of call data older than the period starts on a date Polymorfa announces in
+  its changelog; until then the setting records a choice and nothing is
+  deleted.
+  `calls retention get` prints the policy, period, the kinds of call data it
+  applies to, and the `revision`. `calls retention set` requires
+  `--expected-revision <n>`: it reads the setting first and changes it only if
+  it still has that revision; otherwise it exits with code 4
+  (`state_conflict`) and changes nothing, so read the setting again and retry.
+  Once deletion runs, a shorter period also applies to call data already
+  stored, and deleted call data cannot be recovered. The command asks you to type `yes` before it
+  shortens the period; `--yes` confirms without a prompt, and without a
+  terminal the command exits with code 2 (`confirmation_required`) unless you
+  pass `--yes`. Changing retention requires a team API key with the
+  `sessions:read` and `sessions:manage` scopes, because the command reads the
+  setting before it changes it. Project tokens can read the setting; the API
+  refuses their changes, and the command exits with code 3.
 
 `calls watch` streams inbound calls and their progress: `incoming`, `claim`,
 `state`, `participant_joined`, `participant_state`, `participant_left`, and
@@ -691,6 +785,7 @@ SIP trunks connect a PBX to WhatsApp calls. They are part of Calls and need no
 enrollment. Commands require a server API key.
 
 ```shell
+polymorfa sip-trunk endpoint
 polymorfa sip-trunk list --project 018f0000-0000-7000-8000-000000000002
 polymorfa sip-trunk view 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
 polymorfa sip-trunk create --project 018f0000-0000-7000-8000-000000000002 --input trunk.json
@@ -707,6 +802,18 @@ passwords never appear in the command line. `create` refuses a body that names
 `rotate-credentials`, print the password once. `update --expected-revision`
 exits with code 4 when the trunk changed; `delete` exits with code 4 while a
 session routes calls to the trunk.
+
+`endpoint` prints the host your PBX sends SIP to, each transport with its port
+and whether it requires SRTP, and the UDP port range call audio uses. The
+address is the same for every trunk. Allow SIP and RTP in both directions
+between your PBX and the addresses the host resolves to. When the environment
+does not host SIP, `endpoint` prints `This environment has no SIP address.`
+and exits with code 0; `--json` returns the `sip_not_hosted` status with a null
+host and RTP range and no transports. `create` and `rotate-credentials` also
+print the password before looking up the SIP address in human output. The
+optional address lookup stops after five seconds without retrying and respects
+a shorter `--timeout`. If it fails
+or times out, the command keeps the password on screen and exits successfully.
 
 ## Session call rejection and stable identities
 
@@ -960,21 +1067,142 @@ polymorfa campaign requeue campaign_123 \
   --include-skipped-error
 ```
 
-Launch, pause, resume, and stop return accepted durable work; they do not wait
-for the state transition. Check the campaign with `polymorfa campaign view`.
+Launch, pause, and resume return accepted durable work; they do not wait for
+the state transition. Check the campaign with `polymorfa campaign view`.
 Follow the returned operation with `polymorfa operation wait` or
 `polymorfa operation watch`; see [Operations](#operations).
 
+Stop is terminal and requires `--yes`. A campaign that has an active delivery
+run answers with an operation ID, as the other lifecycle commands do. A
+campaign with no active run is cancelled immediately and answers without one;
+the CLI reports that outcome instead of printing an empty operation.
+
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
-is synchronous and reports only the number moved. Every mutation accepts
-`--idempotency-key`, but the API does not persist the header, so it must not be
-treated as server-side deduplication.
+is synchronous and reports only the number moved.
+
+Create, launch, pause, resume and stop accept `--idempotency-key` to deduplicate
+the same request for 24 hours. A successful request repeated with the same key
+returns `409 idempotency_completed`, not the original response. Changed input
+returns `409 idempotency_conflict`; an in-progress or uncertain result must be
+resolved before trying a new key. The SDK generates a fresh key for create and
+launch when the flag is omitted. Supply an explicit key from the first attempt
+to reuse it across CLI invocations with the same input, credential and API
+version. Save the first campaign or operation response and inspect campaign
+state before using a new key. Pause, resume and stop persist an explicit key;
+they do not generate one when the flag is omitted.
+
+Requeue also accepts the header, but the API does not deduplicate it. Each
+invocation moves recipients eligible at that time, so a retry can move newly
+failed recipients rather than returning the first result.
+
+### Campaign recipients
+
+Recipients are appended to a campaign that has not started sending, and read
+back one cursor page at a time:
+
+```shell
+polymorfa campaign recipients add campaign_123 \
+  --project-slug launch-project \
+  --csv contacts.csv \
+  --phone-column Phone \
+  --variable "firstName=First name"
+
+polymorfa campaign recipients add campaign_123 \
+  --project-slug launch-project \
+  --input recipients.json
+
+polymorfa campaign recipients list campaign_123 \
+  --project-slug launch-project \
+  --status skipped \
+  --limit 100
+```
+
+One append accepts at most 1,000 entries. `--csv` reads the file locally and
+sends the rows inline; it does not upload the file. Blank rows are ignored, but
+a row with other values and an empty phone cell stops the command before
+anything is sent, naming the row numbers (the header is row 1). `--input`
+entries with an empty phone, and any phone longer than 64 characters, are
+refused the same way, as is an empty `--input` array, because the API would
+reject the whole request. JSON variables must use valid names and string values;
+CSV and JSON variable values are limited to 1,024 characters. Reported invalid
+rows for `--csv` refer to the
+original spreadsheet rows, including blank rows. `__proto__` is not accepted as a `--variable` name. Comma,
+semicolon and tab separators are detected from the header row; separators
+inside quoted fields are ignored. A phone already on the
+campaign is skipped, and invalid entries are reported rather than added, so the
+result carries `added`, `duplicateCount`, `invalidCount` and up to 20
+`invalidRows`.
+
+The API does not replay an append, so the CLI sends it once and never retries
+it automatically, with or without `--idempotency-key`. A resent append would
+count the first attempt's rows as duplicates. If a connection drops before the
+result arrives, list the recipients before appending again.
+
+List returns `{data, page}`. Pass `page.nextCursor` back as `--cursor` while
+`page.hasMore` is true; the CLI prints the next cursor in human output. Filter
+with `--status queued|sending|sent|delivered|read|failed|skipped`. A recipient
+suppressed by an opt-out appears as `skipped` with `lastError` `opted_out`.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
-recipient, event, history, or replay route. The CLI does not substitute
-similarly named Platform campaign methods for these gaps. To follow or stop a
-campaign's operation, use the `operation` commands in [Operations](#operations).
+event, history, or replay route on the Messaging surface. The CLI does not
+substitute similarly named Platform campaign methods for these gaps. To follow
+or stop a campaign's operation, use the `operation` commands in
+[Operations](#operations).
+
+## Campaign audiences
+
+Audience commands are organization-scoped and use the Platform API:
+
+```shell
+polymorfa audience create --name "August launch" \
+  --csv contacts.csv \
+  --phone-column Phone \
+  --variable "firstName=First name"
+
+polymorfa audience create --name "August launch" \
+  --file-id upload_1 \
+  --mapping mapping.json
+
+polymorfa audience members add list_123 --csv contacts.csv
+polymorfa audience members list list_123 --limit 100
+polymorfa audience members remove list_123 +15551234567
+```
+
+`--csv` sends up to 1,000 members inline. `--file-id` imports a file that was
+already uploaded through the API and needs `--mapping`, a JSON document naming
+the phone column and any variable columns:
+
+```json
+{"phone": "Phone", "variables": {"firstName": "First name"}}
+```
+
+Creation and appends report the same import counts as campaign recipients, so a
+caller can reconcile what was accepted. Like recipient appends, `members add` is
+sent once and never retried automatically. Member listing is cursor-paged like
+recipient listing.
+
+## Campaign opt-outs
+
+Opt-out suppression is organization-wide. Keyword capture has its own settings:
+
+```shell
+polymorfa optout settings view
+polymorfa optout settings update \
+  --enabled \
+  --opt-out-keyword STOP \
+  --opt-out-keyword BAJA \
+  --opt-in-keyword START
+polymorfa optout settings update --no-enabled --opt-out-keyword STOP
+```
+
+Update replaces the whole settings document, so pass the complete keyword set
+every time; the CLI refuses a partial update rather than clearing keywords the
+caller did not mention. At least one opt-out keyword is required even when
+capture is off. When capture is on, a matching reply suppresses the contact and
+the API emits `contact.opted_out`; an opt-in keyword emits `contact.opted_in`.
+A suppressed contact is skipped at dispatch, which is visible as a `skipped`
+recipient with `lastError` `opted_out`.
 
 ## Developer events and webhooks
 
@@ -1068,6 +1296,36 @@ that includes the current operation.
 response excerpt that the API records for a failed HTTP response. Human output
 escapes control characters in remote text.
 
+### Stream events
+
+`polymorfa event stream` follows a project's public event stream and prints
+each event as it happens. It needs a credential with `events:listen` and a team
+enrolled in the Event streams beta; otherwise it exits with the authorization
+code.
+
+```shell
+polymorfa event stream \
+  --owner project \
+  --project project_123 \
+  --type 'message.*' \
+  --json
+```
+
+`--json` writes one JSON line per event with its `cursor`, the event metadata,
+and the decoded webhook body (`null` when hosted message storage did not keep
+it). Human output prints the time, type, ID, and body, and prints a
+`--from <cursor>` hint on exit. Pass `--from` to resume within 24 hours. The
+command reconnects with backoff after a dropped connection. If events after
+`--from` expired before delivery, it reports the count and continues; use
+`--on-gap stop` to exit with the stream gap code instead. `--max-events` stops
+after a fixed number of events.
+
+Ctrl-C or SIGTERM stops the stream with exit code 0. If the output pipe is
+blocked, stopping discards queued output instead of waiting for the reader.
+
+Use `event stream` to consume events in a script. Use `listen` to forward exact
+bodies to a local webhook handler.
+
 ## Local event listening and forwarding
 
 `polymorfa listen` opens the project listener stream and can forward the exact
@@ -1088,6 +1346,53 @@ default; explicit redirect following revalidates each hop. The listener writes
 checkpoints only after stdout and every forwarding destination have accepted an
 event. A cursor gap stops with a nonzero exit unless `--on-gap continue` was
 selected.
+
+## Trigger test events
+
+`polymorfa trigger` sends a signed test event for a Test number. The event
+reaches your webhooks, event history, and a running `polymorfa listen` with
+`source: "test"`, and does not change the Test number. Real numbers are
+refused. Each project can trigger 30 test events per minute. It requires a
+server API key with `sandbox:write` (`sandbox:read` for `--list`) and Test
+numbers access.
+
+Run a listener in one terminal:
+
+```shell
+polymorfa listen --project PROJECT_ID --forward-to http://127.0.0.1:3000/webhooks
+```
+
+Trigger events in another:
+
+```shell
+polymorfa trigger --list --project PROJECT_ID
+polymorfa trigger message.received --project PROJECT_ID --session my-test-number --text "hi"
+polymorfa trigger message.received --project PROJECT_ID --session my-test-number \
+  --override mediaType=image --override caption=look
+polymorfa trigger message.ack --project PROJECT_ID --session my-test-number --override ackStatus=read
+polymorfa trigger message.failed --project PROJECT_ID --session my-test-number
+polymorfa trigger call.received --project PROJECT_ID --session my-test-number --override video=true
+polymorfa trigger session.restriction_updated --project PROJECT_ID --session my-test-number \
+  --override restrictionActive=false
+polymorfa trigger template.status --project PROJECT_ID --session my-test-number \
+  --override templateStatus=REJECTED --override reason=INVALID_FORMAT
+polymorfa trigger bansafe.enforcement --project PROJECT_ID --session my-test-number
+```
+
+The trigger prints the event ID. Without `--forward-to`, the listener prints
+the same line (`message.received <eventId>`) when the event arrives; with
+`--forward-to`, it prints nothing on success unless you add `--json` together
+with `--forward-secret-out <file>` (JSON forwarding requires the secret file),
+which writes one JSON line per event. Fixtures are
+`message.received`, `message.ack`, `message.failed`, `call.received`,
+`call.missed`, `call.ended`, `session.status`, `session.restriction_updated`, `template.status`,
+`bansafe.enforcement`, and `bansafe.risk_changed`. `--override key=value`
+sets one payload field and can be repeated; `--text` and `--from` are
+shortcuts. `video` and `restrictionActive` accept only `true` or `false`;
+`durationSeconds` accepts a whole number. Set `restrictionActive=false` to
+test the end of a restriction. `--from-session OTHER_TEST_NUMBER` sends a real simulated text from
+another Test number in the project instead, producing an ordinary
+`message.received` event you can reply to. Use `--json` for one JSON document.
 
 ## MCP listener controls
 
@@ -1222,6 +1527,21 @@ polymorfa api /platform/customers --surface platform \
 successful output without hiding failures. Diagnostics and errors go to stderr;
 SDK request IDs are preserved and active credentials are redacted.
 
+An API failure prints the message, then the request ID, the Console request
+log link, and the documentation link for the error code when the API returned
+them:
+
+```text
+Error: WhatsApp is limiting requests from this number. Follow Retry-After when supplied.
+Request ID: 5f0c2a8e-3b1d-4c6f-9e2a-7d4b1c8f6a30
+Request log: https://www.polymorfa.com/console/acme/support-bot/logs/api?request_id=5f0c2a8e-3b1d-4c6f-9e2a-7d4b1c8f6a30
+Docs: https://docs.polymorfa.com/api/errors#whatsapp-rate-limited
+```
+
+With `--json`, the stderr error envelope carries the same values as
+`error.requestId`, `error.requestLogUrl`, and `error.docUrl`. The request log
+link is returned only for team API keys and project tokens.
+
 `POLYMORFA_BASE_URL` exists only for development and controlled testing. It
 overrides a profile endpoint and must not be placed in project files.
 
@@ -1300,7 +1620,7 @@ it contains numeric values or `null`; `--field` creates string values.
 
 These additions are under development and are not available in the published
 CLI. They are tested against the companion Hybrid Link SDK source using API
-contract `e50d2d69f0b6bec6da2b0b6719a5a498a20bf34b`. The registry SDK dependency
+contract `d5245f76d5d6bc7b9af439571bd1f157185b1b87`. The registry SDK dependency
 must be updated after that SDK artifact is published before releasing this CLI.
 The companion SDK defaults native requests to API revision `2026-09-22`. An
 explicit `--api-version` or saved-profile version remains explicit; retired
@@ -1339,3 +1659,37 @@ for an unsaved policy). Pause/resume requires the UUID returned by
 `hybrid-link state`. A stale write fails without replacing later changes.
 `--prefer inherit` sends no local preference. `--deny-all` disallows both transports at the selected scope. Repeating `--allow` permits both
 transports within the restrictions inherited from the team and project.
+
+### Functions
+
+Functions are project-owned. Select `--project` or use the linked project/profile context. The commands accept an organization API key or a project token; browser client tokens are refused. Access also depends on the team's enabled Functions release and the configured execution region.
+
+```bash
+polymorfa function list --project PROJECT_UUID
+polymorfa function create --project PROJECT_UUID --input function.json
+polymorfa function deployment create FUNCTION_UUID --project PROJECT_UUID --input deployment.json
+polymorfa function invocation create FUNCTION_UUID --project PROJECT_UUID --input invocation.json --idempotency-key booking-42
+polymorfa function deployment promote FUNCTION_UUID DEPLOYMENT_UUID --project PROJECT_UUID --expected-revision 1
+```
+
+`function.json` contains `name` and an optional stable `functionId`. A deployment input contains a new `deploymentId`, `source`, `language` (`javascript`, `typescript` or `visual`), `region`, `compatibilityDate`, optional `secretVersionIds` and exact HTTPS `egressOrigins`. Visual source is a JSON action program encoded as the source string. Input files do not contain `projectId` or override path IDs.
+
+Use an origin such as `https://api.example.com` for each egress entry. Credentials, paths (including a trailing slash), queries, fragments and explicit ports are rejected before sending. The CLI preserves accepted origins exactly.
+
+`function update FUNCTION_UUID --input update.json` takes `expectedRevision` and `name` or `enabled`. `function delete FUNCTION_UUID --expected-revision N --yes` retires the definition and leaves invocation receipts readable. Add the selected project to each command or use the linked context.
+
+Secret values go through a JSON file or stdin, never a command-line value flag:
+
+```bash
+polymorfa function secret create FUNCTION_UUID --project PROJECT_UUID --input secret.json
+polymorfa function secret list FUNCTION_UUID --project PROJECT_UUID
+polymorfa function secret revoke FUNCTION_UUID SECRET_VERSION_UUID --project PROJECT_UUID --yes
+```
+
+The secret input is `{ "name": "PROVIDER_KEY", "value": "YOUR_EXTERNAL_SECRET" }`. Keep the file private. Values are write-only. Creating a new version leaves existing deployments pinned to their original version. Revocation stops new invocations that use that version; running code can finish. Polymorfa credentials cannot be stored as Function secrets.
+
+Invocation input contains an optional `deploymentId`, `trigger` (`test` or `http`) and `request` with `method`, a synthetic URL under `https://function.polymorfa.invalid`, selected `headers` and `bodyBase64`. Every invocation requires an explicit `--idempotency-key` of 1–128 printable ASCII characters, excluding spaces. The CLI rejects invalid keys without trimming or changing them. It never retries Function writes automatically. Reusing a key returns the original receipt without executing again, including when credentials rotate; replay does not return the original response body.
+
+Use `function invocation list FUNCTION_UUID` and `function invocation view FUNCTION_UUID INVOCATION_UUID` to reconcile a result. Invocation inputs, responses and customer log text are not retained. `--json` includes the transient result when the initial invocation returns it. The default display prints metadata and HTTP status without response content. An uncertain, failed, running or unavailable invocation, or an HTTP response of 400 or higher, exits with code 8 after printing its receipt. Check customer effects before using a new key unless `retryable` explicitly says execution did not start.
+
+Function, deployment, secret and invocation lists accept `--limit 1..100` and `--before UUID`. Deployment lists return metadata without source, including with `--json`. `function deployment view` exposes source with `--json`; secret reads always return metadata.

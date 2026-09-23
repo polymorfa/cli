@@ -8,10 +8,12 @@ import {
 import {
   resolveCommandEnvironment,
   resolveListenerEnvironment,
+  resolveTeamSettingEnvironment,
+  type TeamSettingEnvironment,
   type ResolvedEnvironment,
 } from './context/environment.js'
 import {findProjectLink} from './config/project-link.js'
-import {presentError} from './errors/present.js'
+import {presentError, renderErrorDetails} from './errors/present.js'
 import {errorEnvelope, type OutputContext} from './output/contracts.js'
 import {renderValue, type OutputMode} from './output/render.js'
 import {createMessagingClient, createPlatformClient} from './sdk/client.js'
@@ -192,6 +194,26 @@ export abstract class BaseCommand extends Command {
     return createPlatformClient(await this.platformEnvironment(flags))
   }
 
+  /**
+   * Resolve credentials for a team-wide setting that project tokens may read
+   * (call data retention): team API keys or project tokens; the API decides.
+   */
+  protected async teamSettingEnvironment(
+    flags: GlobalFlags,
+  ): Promise<TeamSettingEnvironment> {
+    const environment = await resolveTeamSettingEnvironment({
+      env: process.env,
+      surface: 'platform',
+      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
+      ...(flags['api-version'] === undefined
+        ? {}
+        : {apiVersion: flags['api-version']}),
+      ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
+    })
+    this.registerSecret(environment.credential)
+    return environment
+  }
+
   /** Resolve Platform credentials: server API keys only. */
   protected async platformEnvironment(
     flags: GlobalFlags,
@@ -240,6 +262,12 @@ export abstract class BaseCommand extends Command {
             ...(presented.requestId === undefined
               ? {}
               : {requestId: presented.requestId}),
+            ...(presented.requestLogUrl === undefined
+              ? {}
+              : {requestLogUrl: presented.requestLogUrl}),
+            ...(presented.docUrl === undefined
+              ? {}
+              : {docUrl: presented.docUrl}),
             retryable: presented.retryable,
             ...(presented.operationId === undefined
               ? {}
@@ -248,12 +276,7 @@ export abstract class BaseCommand extends Command {
         )}\n`,
       )
     } else {
-      process.stderr.write(`Error: ${presented.message}\n`)
-      if (presented.operationId !== undefined)
-        process.stderr.write(`Operation ID: ${presented.operationId}\n`)
-      if (presented.requestId !== undefined) {
-        process.stderr.write(`Request ID: ${presented.requestId}\n`)
-      }
+      process.stderr.write(renderErrorDetails(presented))
     }
 
     this.exit(presented.exitCode)

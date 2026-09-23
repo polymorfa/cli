@@ -3,7 +3,10 @@
 - **Status:** Implemented against Calls contract revision 1, unpublished
 - **Reviewed:** 2026-09-17
 - **SDK baseline:** `@polymorfa/sdk` (including the `@polymorfa/sdk/calls`
-  subpath) `0.1.0-dev.20260922102711` from npm. The research was done against
+  subpath) `0.1.0-dev.20260922115749` from npm, published from `polymorfa/sdks`
+  commit `8bc00778b3b3aaf05b09369c3f7840eb24cf6a56` by
+  [workflow run 35724232746](https://github.com/polymorfa/sdks/actions/runs/35724232746).
+  The research was done against
   `polymorfa/sdks` commit `94bfd09825817f842434e206e6a77adb5cc0c414`; the npm
   build also reports a `claim` activity when the placed call is answered.
 
@@ -51,6 +54,9 @@ calls
 | `calls invite`                 | `POST /messaging/voip/calls/{id}/participants`   | `voip.addParticipant`               |
 | `calls settings get`           | `GET /platform/sessions/{session}/call-settings` | `voip.retrieveCallSettings`         |
 | `calls settings set`           | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
+| `calls retention get`          | `GET /platform/call-retention`                   | `callRetention.retrieve`            |
+| `calls retention set`          | `PUT /platform/call-retention`                   | `callRetention.update`              |
+| `sip-trunk endpoint`           | `GET /platform/sip/endpoint`                     | `sipTrunks.endpoint`                |
 | `sip-trunk list`               | `GET /platform/sip-trunks`                       | `sipTrunks.list`                    |
 | `sip-trunk view`               | `GET /platform/sip-trunks/{id}`                  | `sipTrunks.retrieve`                |
 | `sip-trunk create`             | `POST /platform/sip-trunks`                      | `sipTrunks.create`                  |
@@ -59,6 +65,14 @@ calls
 | `sip-trunk rotate-credentials` | `POST /platform/sip-trunks/{id}/credentials`     | `sipTrunks.rotateCredentials`       |
 | `calls watch`                  | Lifecycle socket                                 | `CallsClient` events                |
 | `calls media`                  | Place or accept, then the media socket           | `CallsClient`, `Call`, `call.audio` |
+
+`sip-trunk endpoint` reads the address with `sipTrunks.endpoint` and checks
+the response shape before printing it, so a malformed answer fails instead of
+printing a partial address. The human output of `sip-trunk create` and
+`sip-trunk rotate-credentials` prints the one-time credentials before looking up
+this address. That optional lookup has a five-second deadline and no retries;
+a timeout omits the appendix and leaves the successful credential operation's
+exit status unchanged. JSON output does not perform the optional lookup.
 
 The CLI uses only the neutral public calling surface. It does not expose
 offers, candidates, session descriptions, or media framing, and it imports no
@@ -81,6 +95,22 @@ internal SDK module.
   Messaging client; the CLI builds that client from the Platform environment.
   `calls settings set --expected-revision` sends `expectedRevision`; a stale
   revision returns 409 `state_conflict`, which exits with code 4.
+- `calls retention` resolves a team API key or a project token
+  (`resolveTeamSettingEnvironment`), from the environment or a profile, with
+  no project context, and the API decides what each principal may do.
+  `createCallRetentionClient` in `src/sdk/client.ts` uses the pinned SDK's
+  `createTeamCallRetentionClient` for both credential types. The API lets team
+  API keys and project tokens read the setting and only team API keys change
+  it; the CLI replaces the API's 403 text with that rule and keeps the API
+  message.
+- `calls retention set` requires `--expected-revision`. It reads the setting
+  (`GET` needs `sessions:read`, which `sessions:manage` does not imply, so the
+  command needs both scopes; a 403 on either request gets the change message),
+  fails locally with `state_conflict` (exit 4) when the revision differs, asks
+  for confirmation when the new period is shorter (`--yes`, or exit 2
+  `confirmation_required` without a terminal), then sends `policy`,
+  `retentionDays` (only when `--days` is given) and `expectedRevision`. A 409
+  from the `PUT` also exits 4 and tells the user to read the setting again.
 - Sockets carry the credential in their first frame. The CLI requires an HTTPS
   base URL, or HTTP on a loopback host, before opening any Calls connection.
 
@@ -132,5 +162,8 @@ internal SDK module.
 - `calls watch` does not report outbound calls placed by other participants.
 - `@polymorfa/sdk` (with its `@polymorfa/sdk/calls` subpath) is published to
   npm only as dev prereleases; the CLI pins exactly
-  `0.1.0-dev.20260922102711`. The CLI cannot release until a stable
+  `0.1.0-dev.20260922115749`. The CLI cannot release until a stable
   `@polymorfa/sdk` is published with a compatible semver range.
+
+The optional SIP address appendix respects a shorter global `--timeout`; its
+five-second abort signal is an upper bound, not a per-request timeout override.

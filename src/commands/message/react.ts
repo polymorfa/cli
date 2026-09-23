@@ -3,6 +3,7 @@ import {Args, Flags} from '@oclif/core'
 import {conversationReference} from '../../services/conversation.js'
 
 import {BaseCommand} from '../../base-command.js'
+import {idempotencyKey} from '../../input/idempotency.js'
 import {reactToMessage} from '../../services/messages.js'
 
 export default class MessageReact extends BaseCommand {
@@ -20,7 +21,8 @@ export default class MessageReact extends BaseCommand {
     }),
     emoji: Flags.string({description: 'Reaction emoji.', required: true}),
     'idempotency-key': Flags.string({
-      description: 'Safely identify retries of this reaction.',
+      description:
+        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).',
     }),
     session: Flags.string({
       description: 'Messaging session ID.',
@@ -41,9 +43,7 @@ export default class MessageReact extends BaseCommand {
           ? {}
           : {transport: messageTransport(flags.transport)}),
       },
-      flags['idempotency-key'] === undefined
-        ? {}
-        : {idempotencyKey: flags['idempotency-key']},
+      {idempotencyKey: idempotencyKey(flags['idempotency-key'])},
     )
     this.writeValue(
       result,

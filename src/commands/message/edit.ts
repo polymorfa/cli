@@ -27,7 +27,8 @@ export default class MessageEdit extends BaseCommand {
       required: true,
     }),
     'idempotency-key': Flags.string({
-      description: 'Safely identify retries of this edit.',
+      description:
+        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).',
     }),
     session: Flags.string({
       description: 'Messaging session ID.',

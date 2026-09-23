@@ -2,6 +2,7 @@ import {Flags} from '@oclif/core'
 import type {SendTextMessageRequest} from '@polymorfa/sdk'
 
 import {BaseCommand} from '../../../base-command.js'
+import {idempotencyKey} from '../../../input/idempotency.js'
 import {sendTextMessage} from '../../../services/messages.js'
 import {transportFlag, messageTransport} from '../../../input/message-send.js'
 import {conversationReference} from '../../../services/conversation.js'
@@ -19,7 +20,8 @@ export default class MessageSendText extends BaseCommand {
       description: 'Mark the message as forwarded.',
     }),
     'idempotency-key': Flags.string({
-      description: 'Safely identify retries of this send operation.',
+      description:
+        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).',
     }),
     mention: Flags.string({
       description:
@@ -61,9 +63,7 @@ export default class MessageSendText extends BaseCommand {
       await this.messagingClient(flags),
       flags.session,
       request,
-      flags['idempotency-key'] === undefined
-        ? {}
-        : {idempotencyKey: flags['idempotency-key']},
+      {idempotencyKey: idempotencyKey(flags['idempotency-key'])},
     )
     this.writeValue(
       result,

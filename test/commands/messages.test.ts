@@ -37,6 +37,48 @@ describe('message commands', () => {
       method: 'POST',
       url: '/messaging/session%2Fmain/messages/send',
     })
+    expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+      /^pmfa_cli_[0-9a-f-]{36}$/,
+    )
+  })
+
+  test.each([
+    'image --url https://example.com/photo.jpg',
+    'video --url https://example.com/clip.mp4',
+    'audio --url https://example.com/note.ogg',
+    'document --url https://example.com/invoice.pdf',
+    'template --name order_update --language en_US',
+    'location --lat 51.5 --long=-0.12',
+    'contact --name Ada --phone +15557654321',
+    'poll --title Lunch --option Pizza --option Sushi',
+    'buttons --body Confirm --button reply:yes=Yes',
+    'list --title Slots --button-text Choose --row am9=9:00',
+  ])('generates an idempotency key for message send %s', async (kind) => {
+    server = await messageServer('req_generated_key')
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `message send ${kind} --session session_1 --to +15551234567 --json`,
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+      /^pmfa_cli_[0-9a-f-]{36}$/,
+    )
+  })
+
+  test('rejects an empty idempotency key before transport', async () => {
+    server = await messageServer()
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'message send text --session session_1 --to +15551234567 --body Hello --idempotency-key " " --json',
+      ),
+    )
+
+    expect(result.error).toBeDefined()
+    expect(server.requests).toHaveLength(0)
   })
 
   test('maps reply, forwarding, mentions, and idempotency without synthetic routes', async () => {
@@ -104,31 +146,40 @@ describe('message commands', () => {
     expect(server.requests).toHaveLength(1)
   })
 
-  test('reacts to a message with an idempotent exact action request', async () => {
-    server = await messageServer('req_reaction')
+  test.each(['react_1', undefined])(
+    'reacts with an explicit or generated idempotency key (%s)',
+    async (key) => {
+      server = await messageServer('req_reaction')
 
-    const result = await apiKeyEnvironment(() =>
-      runCommand(
-        'message react 740000000001 --session session/main --chat 730000000001 --emoji 👍 --idempotency-key react_1 --json',
-      ),
-    )
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `message react 740000000001 --session session/main --chat 730000000001 --emoji 👍 ${key === undefined ? '' : `--idempotency-key ${key}`} --json`,
+        ),
+      )
 
-    expect(result.error).toBeUndefined()
-    expect(JSON.parse(result.stdout)).toEqual({
-      data: completeMessage(),
-      metadata: {attempts: 1, requestId: 'req_reaction', status: 200},
-    })
-    expect(server.requests[0]).toMatchObject({
-      body: JSON.stringify({
-        conversation: {id: '730000000001'},
-        id: '740000000001',
-        reaction: '👍',
-      }),
-      method: 'POST',
-      url: '/messaging/session%2Fmain/messages/react',
-    })
-    expect(server.requests[0]?.headers['idempotency-key']).toBe('react_1')
-  })
+      expect(result.error).toBeUndefined()
+      expect(JSON.parse(result.stdout)).toEqual({
+        data: completeMessage(),
+        metadata: {attempts: 1, requestId: 'req_reaction', status: 200},
+      })
+      expect(server.requests[0]).toMatchObject({
+        body: JSON.stringify({
+          conversation: {id: '730000000001'},
+          id: '740000000001',
+          reaction: '👍',
+        }),
+        method: 'POST',
+        url: '/messaging/session%2Fmain/messages/react',
+      })
+      if (key === undefined) {
+        expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+          /^pmfa_cli_[0-9a-f-]{36}$/,
+        )
+      } else {
+        expect(server.requests[0]?.headers['idempotency-key']).toBe(key)
+      }
+    },
+  )
 
   test('marks one exact message as seen', async () => {
     server = await startHttpServer({body: {success: true}})
