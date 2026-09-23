@@ -862,6 +862,30 @@ optional address lookup stops after five seconds without retrying and respects
 a shorter `--timeout`. If it fails
 or times out, the command keeps the password on screen and exits successfully.
 
+### Call usage and limits
+
+When Calls access is enabled for a team, Polymorfa measures the calls its numbers host. Usage is measured, not charged.
+Commands require `sessions:read`; a project token reads only its own project's
+usage and needs `--project` or a project-bound profile. `usage gates` needs a
+team API key, because gate state covers the whole team.
+
+```shell
+polymorfa usage summary
+polymorfa usage summary --period 2026-09 --session support
+polymorfa usage records --call 3EB0C431C26A1916E07A
+polymorfa usage records --session support --meter call.duration --limit 50
+polymorfa usage records --session support --cursor <cursor from the last page>
+polymorfa usage gates --session support
+```
+
+`usage summary` totals one calendar month (UTC) by meter and by number, and
+defaults to the current month; without `--project`, each number row also shows
+its project. `usage records` lists records newest first with each record's
+project, and prints the cursor for the next page. `usage gates` shows each gate's mode,
+limit, usage this month and how often an action went over the limit in the last
+30 days: in `record` mode nothing is refused, and in `enforce` mode an action
+over the limit exits with code 4 (`gate_limit_reached`).
+
 ## Session call rejection and stable identities
 
 `call reject` is a separate command for the Linked Device session route. It
