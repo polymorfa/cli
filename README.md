@@ -683,8 +683,8 @@ never answers or declines on its own.
   ended. Declining ends the call for every participant.
 - **Number restrictions.** When WhatsApp restricts the Number to people it has
   already chatted with, `calls place` and `calls invite` exit with code 3 and
-  `code: "number_restricted"` for anyone else; calls to existing contacts still
-  work. A call WhatsApp refuses for that reason ends with
+  `code: "number_restricted"` for anyone else; calls to people it has already
+  chatted with still work. A call WhatsApp refuses for that reason ends with
   `reason: "call_restricted"` in `calls watch`.
   `polymorfa listen --event session.restriction_updated` reports the
   restriction starting and ending.
