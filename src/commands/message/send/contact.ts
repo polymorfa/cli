@@ -8,7 +8,7 @@ import {
 
 import {BaseCommand} from '../../../base-command.js'
 import {
-  idempotencyOptions,
+  sendIdempotencyOptions,
   sendContext,
   sendContextFlags,
 } from '../../../input/message-send.js'
@@ -71,7 +71,7 @@ export default class MessageSendContact extends BaseCommand {
       await this.messagingClient(flags),
       flags.session,
       request,
-      idempotencyOptions(flags['idempotency-key']),
+      sendIdempotencyOptions(flags['idempotency-key']),
     )
     this.writeValue(
       result,
