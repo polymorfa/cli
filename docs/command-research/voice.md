@@ -113,7 +113,8 @@ URL itself with no credential, no redirects, a bounded response, and a timeout.
   The upload request itself is not retried, matching the SDK.
 - **Preview.** Without `--output` the command prints the 5-minute URL. With it,
   the file is downloaded without a credential, limited to 32 MiB, and an
-  existing file is refused unless `--force` is given.
+  existing file is refused unless `--force` is given. Error messages and nested
+  causes must not retain the signed URL or storage response text.
 - **Confirmation.** Both deletes use the shared confirmation prompt, or
   `--yes` in noninteractive use.
 - **No idempotency flags.** The contract defines no idempotency behavior for
