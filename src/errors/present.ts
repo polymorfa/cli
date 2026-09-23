@@ -96,6 +96,19 @@ export function presentError(
   }
 }
 
+/**
+ * API error codes with their own exit code, whatever their HTTP status, so
+ * scripts can tell a missing beta enrollment or a reached limit apart from
+ * other authorization or payment failures.
+ */
+export const CODE_EXIT_CODES: ReadonlyMap<
+  string,
+  Pick<PresentedError, 'category' | 'exitCode'>
+> = new Map<string, Pick<PresentedError, 'category' | 'exitCode'>>([
+  ['voice_not_enabled', {category: 'authorization', exitCode: 6}],
+  ['gate_limit_reached', {category: 'payment_required', exitCode: 7}],
+])
+
 /** Human stderr lines for a failure: message, then request and docs links. */
 export function renderErrorDetails(presented: PresentedError): string {
   return [
@@ -115,6 +128,11 @@ export function renderErrorDetails(presented: PresentedError): string {
 function classifyError(
   error: unknown,
 ): Pick<PresentedError, 'category' | 'exitCode'> {
+  if (error instanceof PolymorfaError && error.code !== undefined) {
+    const mapped = CODE_EXIT_CODES.get(error.code)
+    if (mapped !== undefined) return mapped
+  }
+
   if (error instanceof PolymorfaPaymentRequiredError) {
     return {category: 'payment_required', exitCode: 4}
   }

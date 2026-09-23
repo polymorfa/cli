@@ -862,6 +862,101 @@ optional address lookup stops after five seconds without retrying and respects
 a shorter `--timeout`. If it fails
 or times out, the command keeps the password on screen and exits successfully.
 
+## Voice Automation (beta)
+
+Voice Automation is a beta (`calls.voice-automation`) for enrolled teams only.
+For other teams, every change except delete fails with `voice_not_enabled`.
+Reads, previews and deletes keep working after a team leaves the beta. The
+commands require an organization server API key with `voice:read` (lists,
+views, previews) or `voice:manage` (changes).
+
+### Audio library
+
+The audio library holds recordings and text-to-speech renders for calls. The
+API transcodes each asset to 16 kHz mono; an asset is `transcoding` until it is
+`ready` or `failed`.
+
+```shell
+polymorfa voice audio upload greeting.mp3 --name Greeting \
+  --project 018f0000-0000-7000-8000-000000000002 --wait
+polymorfa voice audio tts --name Welcome --text "Thanks for calling." \
+  --provider openai --voice alloy \
+  --project 018f0000-0000-7000-8000-000000000002
+polymorfa voice audio list --status ready \
+  --project 018f0000-0000-7000-8000-000000000002
+polymorfa voice audio view 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+polymorfa voice audio update 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 \
+  --name "Greeting v2" --retention-days none --expected-revision 2
+polymorfa voice audio preview 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 \
+  --output greeting.ogg
+polymorfa voice audio delete 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --yes
+```
+
+- `upload` takes `.mp3`, `.wav`, `.ogg`, `.opus`, `.m4a` and `.mp4` files up to
+  16 MB and sets the content type from the extension. Other types, empty files
+  and larger files fail with exit code 2 before any request is sent. The file
+  goes to a short-lived upload URL that carries no credential.
+- `tts` reads the text from `--text` or `--text-file` (`-` for stdin): 1 to
+  5000 characters, or 4096 for `openai`. `--voice` is an OpenAI voice name or
+  an ElevenLabs voice ID. `--model` defaults to the provider's default model.
+  Unsupported OpenAI voices and provider-specific models fail with exit code 2
+  before any request is sent.
+  Without `--credential`, the render uses Polymorfa's managed key for the
+  provider.
+- `upload --wait` and `tts --wait` wait until the asset is `ready` (exit 0) or
+  `failed` (exit 13, with the failure reason). `--wait-timeout` defaults to 120
+  seconds and exits with code 5 when reached, including when a status request
+  stalls. This budget starts after upload or TTS submission and covers status
+  requests, response bodies, and retries.
+- `--retention-days` deletes the asset that many days after creation (1 to
+  3650). `update --retention-days none` keeps it until you delete it.
+- `preview` prints a link to the transcoded audio (Opus in Ogg). The link works
+  for 5 minutes; treat it as a secret. `--output` downloads it instead and
+  refuses an existing file unless `--force` is given. With `--output`, JSON
+  results omit the signed link. Storage refusals retain the HTTP status but
+  omit the signed link and storage response text.
+- `delete` asks for confirmation, or takes `--yes`, and exits with code 4 while
+  a campaign or flow uses the asset.
+
+### Provider credentials
+
+Store your own ElevenLabs or OpenAI key to render text to speech with it. The
+CLI never takes the key from an argument. It reads the environment variable
+named by `--key-env` (default `POLYMORFA_VOICE_PROVIDER_KEY`) or, when that is
+unset, piped standard input, and it refuses to read the key from a terminal:
+
+```shell
+printf '%s' "$ELEVENLABS_API_KEY" | \
+  polymorfa voice credential add --provider elevenlabs --label "Studio key"
+polymorfa voice credential add --provider openai --label "Support line" \
+  --key-env OPENAI_API_KEY --project 018f0000-0000-7000-8000-000000000002
+polymorfa voice credential list --project 018f0000-0000-7000-8000-000000000002
+polymorfa voice credential view 7a2d3e4f-5b6c-4d7e-8f90-1a2b3c4d5e6f
+polymorfa voice credential verify 7a2d3e4f-5b6c-4d7e-8f90-1a2b3c4d5e6f
+polymorfa voice credential delete 7a2d3e4f-5b6c-4d7e-8f90-1a2b3c4d5e6f --yes
+```
+
+Without `--project`, the credential is available to every project of the team.
+Output shows only the key's fingerprint (the first 8 hex characters of its
+SHA-256). The provider checks the key when it is added and on `verify`; a
+rejected key fails with `provider_credential_invalid` (exit code 2).
+
+### Voice exit codes
+
+| Exit code | Error code                                                               | Meaning                                                 |
+| --------- | ------------------------------------------------------------------------ | ------------------------------------------------------- |
+| 6         | `voice_not_enabled`                                                      | The team is not enrolled in the Voice Automation beta.  |
+| 7         | `gate_limit_reached`                                                     | A voice limit is reached.                               |
+| 13        | `voice_asset_failed`                                                     | Audio awaited with `--wait` failed processing.          |
+| 4         | `voice_asset_in_use`, `voice_asset_revision_conflict`, `asset_not_ready` | The asset is in use, changed, or not ready.             |
+| 2         | `provider_credential_invalid`, `invalid_parameter`                       | The provider rejected the key, or the input is invalid. |
+| 5         | `provider_unavailable`, `voice_unavailable`                              | The provider or voice service did not answer.           |
+
+Other errors keep the standard exit codes: 2 for invalid input, 3 for
+authentication and authorization, 4 for conflicts, missing resources and other
+payment errors, and 5 for network, rate-limit, server and timeout failures.
+With `--json`, stderr carries the error code in `error.code`.
+
 ### Call usage and limits
 
 When Calls access is enabled for a team, Polymorfa measures the calls its numbers host. Usage is measured, not charged.
