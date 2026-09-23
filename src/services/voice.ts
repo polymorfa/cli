@@ -6,6 +6,7 @@ import {
   PolymorfaConfigurationError,
   PolymorfaConflictError,
   PolymorfaTimeoutError,
+  type KnownVoiceAudioUploadContentType,
   type ResponseMetadata,
 } from '@polymorfa/sdk'
 
@@ -38,7 +39,9 @@ export const BETA_NOTICE =
   'Voice Automation is a beta (calls.voice-automation) for enrolled teams only; other teams get voice_not_enabled (exit code 6).'
 
 /** File extensions the CLI uploads, and the content type it sends for each. */
-export const UPLOAD_CONTENT_TYPES: Readonly<Record<string, string>> = {
+export const UPLOAD_CONTENT_TYPES: Readonly<
+  Record<string, KnownVoiceAudioUploadContentType>
+> = {
   '.m4a': 'audio/x-m4a',
   '.mp3': 'audio/mpeg',
   '.mp4': 'audio/mp4',
@@ -110,7 +113,9 @@ export function parseRetentionDays(
   return days
 }
 
-export function uploadContentType(path: string): string {
+export function uploadContentType(
+  path: string,
+): KnownVoiceAudioUploadContentType {
   const extension = extname(path).toLowerCase()
   const contentType = UPLOAD_CONTENT_TYPES[extension]
   if (contentType === undefined) {
@@ -125,7 +130,7 @@ export function uploadContentType(path: string): string {
 /** Read an upload after checking its type and size, before any request. */
 export async function readUploadFile(path: string): Promise<{
   readonly bytes: Uint8Array
-  readonly contentType: string
+  readonly contentType: KnownVoiceAudioUploadContentType
 }> {
   const contentType = uploadContentType(path)
   const absolute = resolve(path)
@@ -286,24 +291,14 @@ export async function uploadAudio(
   client: VoiceClient,
   input: {
     readonly bytes: Uint8Array
-    readonly contentType: string
+    readonly contentType: KnownVoiceAudioUploadContentType
     readonly name: string
     readonly projectId: string
     readonly retentionDays?: number
   },
 ): Promise<VoiceResult<VoiceAudioAsset>> {
-  const created = await client.createAudioUpload({
-    contentType: input.contentType,
-    name: input.name,
-    projectId: input.projectId,
-    sizeBytes: input.bytes.byteLength,
-    ...(input.retentionDays === undefined
-      ? {}
-      : {retentionDays: input.retentionDays}),
-  })
-  await client.sendToUploadUrl(created.data.upload, input.bytes)
-  const completed = await client.completeAudio(created.data.asset.id)
-  return result(completed.data, completed.metadata)
+  const uploaded = await client.uploadAudio(input)
+  return result(uploaded.data, uploaded.metadata)
 }
 
 export async function synthesizeAudio(

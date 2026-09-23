@@ -6,7 +6,7 @@
 - **API contract:** polymorfa/polymorfa draft PR #227, branch
   `t3code/voice-audio-library`, revision `voice-audio-v1`
 - **SDK reference:** `client.voice` in polymorfa/sdks draft PR #279 at
-  `f0f3c0719ce44226aa6af896c33a69c71ef934eb`
+  `8c61d642da51e14290ae916cd342f71cc0bf94e6`
 - **SDK pin:** `@polymorfa/sdk@0.1.0-dev.20260922102711`, inherited from
   CLI `dev` (see
   [SDK dependency](#sdk-dependency))
@@ -20,7 +20,7 @@
   tree, key input rule, and distinct exit codes for `gate_limit_reached` and
   `voice_not_enabled`.
 - `packages/typescript/src/platform/voice.ts` and the upload URL transport in
-  polymorfa/sdks `f0f3c07`.
+  polymorfa/sdks `8c61d64`.
 
 ## Command tree
 
@@ -48,7 +48,7 @@ Voice Automation phases and are not part of this revision.
 
 ## Operation mapping
 
-| Command                   | Operation                                                  | SDK `client.voice` (f0f3c07)   |
+| Command                   | Operation                                                  | SDK `client.voice` (8c61d64)   |
 | ------------------------- | ---------------------------------------------------------- | ------------------------------ |
 | `voice audio upload`      | `POST /platform/voice/audio`, upload URL, `.../complete`   | `audio.upload`                 |
 | `voice audio tts`         | `POST /platform/voice/audio/tts`                           | `audio.synthesize`             |
@@ -57,7 +57,7 @@ Voice Automation phases and are not part of this revision.
 | `voice audio update`      | `PATCH /platform/voice/audio/{id}`                         | `audio.update`                 |
 | `voice audio delete`      | `DELETE /platform/voice/audio/{id}`                        | `audio.delete`                 |
 | `voice audio preview`     | `GET /platform/voice/audio/{id}/preview`                   | `audio.previewUrl`             |
-| `--wait`                  | `GET /platform/voice/audio/{id}` until `ready` or `failed` | `audio.waitUntilReady`         |
+| `--wait`                  | `GET /platform/voice/audio/{id}` until `ready` or `failed` | `audio.retrieve`               |
 | `voice credential add`    | `POST /platform/voice/provider-credentials`                | `providerCredentials.create`   |
 | `voice credential list`   | `GET /platform/voice/provider-credentials`                 | `providerCredentials.list`     |
 | `voice credential view`   | `GET /platform/voice/provider-credentials/{id}`            | `providerCredentials.retrieve` |
@@ -66,22 +66,16 @@ Voice Automation phases and are not part of this revision.
 
 ## SDK dependency
 
-The pinned SDK has no `client.voice`. Since polymorfa/sdks `4f54b26` the SDK
-lives in the `packages/typescript` workspace of a private workspace root, so a
-`github:polymorfa/sdks#<sha>` pin installs the root, not `@polymorfa/sdk`, and
-cannot take `f0f3c07`. CLI `dev` now pins an npm development prerelease,
-`0.1.0-dev.20260922102711`, which still has no `client.voice`. API PR #227 and
-SDK PR #279 must merge before this CLI PR can pin the exact resulting SDK
-prerelease and replace the raw adapter with the typed resource.
+The committed npm pin, `0.1.0-dev.20260922102711`, predates `client.voice`.
+This branch uses the typed resource from SDK PR #279 and was verified with a
+temporary local package. API PR #227 and SDK PR #279 must merge before this CLI
+PR can pin the exact published SDK prerelease. No local package path belongs in
+the committed manifest or lockfile.
 
-Until a release with `client.voice` can be pinned, `src/sdk/voice.ts` sends the
-documented requests through the organization client's raw transport, the same approach as the open
-call retention change. The SDK still resolves credentials, retries and
-maps errors. The adapter mirrors the SDK's upload rules: the upload and preview
-URLs must be HTTPS (HTTP only on loopback) without embedded credentials, the
-request carries only the returned headers and never `Authorization`,
-redirects are refused, and error messages never include the URL. Replace the
-adapter with `client.voice` when the SDK pin moves.
+`src/sdk/voice.ts` calls the typed audio and provider-credential resources.
+The SDK handles upload URL transfer without the API credential. The SDK does
+not expose a preview download method, so the CLI downloads the signed preview
+URL itself with no credential, no redirects, a bounded response, and a timeout.
 
 ## Credential rules
 
@@ -105,10 +99,9 @@ adapter with `client.voice` when the SDK pin moves.
 - **Local refusals.** Upload type (from the extension, case-insensitive),
   empty files, files over 16,777,216 bytes, names over 100 characters,
   retention outside 1 to 3650, TTS text length (5000, or 4096 for `openai`),
-  ElevenLabs voice IDs (`^[A-Za-z0-9]{1,64}$`), non-UUID IDs and oversized keys
-  (over 512 characters) fail with exit code 2 before any request. OpenAI voice
-  and model names are left to the API so new values work without a CLI
-  release.
+  ElevenLabs voice IDs (`^[A-Za-z0-9]{1,64}$`), provider-specific model and
+  OpenAI voice names outside the SDK's accepted sets, non-UUID IDs and oversized
+  keys (over 512 characters) fail with exit code 2 before any request.
 - **Content types.** `.mp3` sends `audio/mpeg`, `.wav` `audio/wav`, `.ogg` and
   `.opus` `audio/ogg`, `.m4a` `audio/x-m4a`, `.mp4` `audio/mp4`.
 - **Waiting.** `--wait` reads the asset first and then every 2 seconds, like the

@@ -741,6 +741,8 @@ polymorfa voice audio delete 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10 --yes
 - `tts` reads the text from `--text` or `--text-file` (`-` for stdin): 1 to
   5000 characters, or 4096 for `openai`. `--voice` is an OpenAI voice name or
   an ElevenLabs voice ID. `--model` defaults to the provider's default model.
+  Unsupported OpenAI voices and provider-specific models fail with exit code 2
+  before any request is sent.
   Without `--credential`, the render uses Polymorfa's managed key for the
   provider.
 - `upload --wait` and `tts --wait` wait until the asset is `ready` (exit 0) or

@@ -1,5 +1,12 @@
 import {
+  ELEVENLABS_TTS_MODELS,
+  OPENAI_TTS_MODELS,
+  OPENAI_TTS_VOICES,
+  VOICE_AUDIO_MAX_UPLOAD_BYTES,
+  VOICE_AUDIO_STATUSES,
+  VOICE_PROVIDERS,
   PolymorfaAuthorizationError,
+  PolymorfaConfigurationError,
   PolymorfaConnectionError,
   PolymorfaError,
   PolymorfaNotFoundError,
@@ -7,109 +14,28 @@ import {
   PolymorfaTimeoutError,
   PolymorfaValidationError,
   type ApiResponse,
-  type QueryValue,
+  type KnownVoiceAudioUploadContentType,
   type RequestOptions,
-  type ResponseMetadata,
+  type UpdateVoiceAudioInput,
+  type VoiceAudioAsset,
+  type VoiceAudioPreview,
+  type VoiceProviderCredential,
+  type VoiceResourceDeleted,
 } from '@polymorfa/sdk'
 
 import type {ResolvedEnvironment} from '../context/environment.js'
 import {createPlatformClient} from './client.js'
 
-// Voice Automation (beta) audio library and provider credentials, contract
-// revision voice-audio-v1. The pinned SDK predates `client.voice`, and git
-// pins can no longer install newer SDK commits, so this adapter sends the
-// documented requests through the organization client's raw transport. The
-// SDK keeps credential, retry and error mapping. The types and paths mirror
-// `client.voice` in polymorfa/sdks f0f3c0719ce44226aa6af896c33a69c71ef934eb;
-// replace this module with that resource once a release that includes it is
-// pinned.
-
-export const VOICE_AUDIO_STATUSES = [
-  'pending_upload',
-  'uploaded',
-  'transcoding',
-  'ready',
-  'failed',
-] as const
-export type VoiceAudioStatus = (typeof VOICE_AUDIO_STATUSES)[number]
-
-export const VOICE_PROVIDERS = ['elevenlabs', 'openai'] as const
-export type VoiceProvider = (typeof VOICE_PROVIDERS)[number]
-
-/** Largest upload the API accepts: 16 MiB. */
-export const VOICE_AUDIO_MAX_UPLOAD_BYTES = 16_777_216
-
-export interface VoiceAudioTts {
-  readonly provider: string
-  readonly voiceId: string
-  readonly model: string
-  readonly text: string
-  readonly characters: number
-  readonly keySource: string
-  readonly credentialId: string | null
+export {VOICE_AUDIO_MAX_UPLOAD_BYTES, VOICE_AUDIO_STATUSES, VOICE_PROVIDERS}
+export type {
+  VoiceAudioAsset,
+  VoiceAudioPreview,
+  VoiceProviderCredential,
+  VoiceResourceDeleted,
 }
 
-export interface VoiceAudioAsset {
-  readonly id: string
-  readonly projectId: string
-  readonly name: string
-  readonly source: string
-  readonly status: string
-  readonly failureReason: string | null
-  readonly originalFormat: string | null
-  readonly originalContentType: string | null
-  readonly sizeBytes: number | null
-  readonly durationMs: number | null
-  readonly contentSha256: string | null
-  readonly tts: VoiceAudioTts | null
-  readonly retentionDays: number | null
-  readonly expiresAt: string | null
-  readonly inUseCount: number
-  readonly revision: number
-  readonly createdAt: string
-  readonly updatedAt: string
-  readonly readyAt: string | null
-}
-
-/** Where to send the file. The URL is valid for 5 minutes; treat it as a secret. */
-export interface VoiceAudioUpload {
-  readonly url: string
-  readonly method: string
-  readonly headers: Readonly<Record<string, string>>
-  readonly maxBytes: number
-  readonly expiresAt: string
-}
-
-export interface VoiceAudioUploadCreated {
-  readonly asset: VoiceAudioAsset
-  readonly upload: VoiceAudioUpload
-}
-
-/** A 5-minute link to Opus-in-Ogg audio (16 kHz mono). */
-export interface VoiceAudioPreview {
-  readonly url: string
-  readonly contentType: string
-  readonly expiresAt: string
-}
-
-export interface VoiceProviderCredential {
-  readonly id: string
-  readonly projectId: string | null
-  readonly provider: string
-  readonly label: string
-  readonly keyFingerprint: string
-  readonly status: string
-  readonly verifiedAt: string | null
-  readonly lastError: string | null
-  readonly revision: number
-  readonly createdAt: string
-  readonly updatedAt: string
-}
-
-export interface VoiceResourceDeleted {
-  readonly id: string
-  readonly deleted: true
-}
+const DEFAULT_BASE_URL = 'https://api.polymorfa.com'
+const DEFAULT_TRANSFER_TIMEOUT_MS = 120_000
 
 export interface VoiceAudioPage {
   readonly items: readonly VoiceAudioAsset[]
@@ -117,61 +43,30 @@ export interface VoiceAudioPage {
   readonly hasMore: boolean
 }
 
-export interface ListVoiceAudioParams {
-  readonly projectId: string
-  readonly status?: string
-  readonly cursor?: string
-  readonly limit?: number
-}
-
-export interface CreateVoiceAudioUploadInput {
-  readonly projectId: string
-  readonly name: string
-  readonly contentType: string
-  readonly sizeBytes: number
-  readonly retentionDays?: number
-}
-
-export interface SynthesizeVoiceAudioInput {
-  readonly projectId: string
-  readonly name: string
-  readonly text: string
-  readonly provider: string
-  readonly voiceId: string
-  readonly model?: string
-  readonly credentialId?: string
-  readonly retentionDays?: number
-}
-
-export interface UpdateVoiceAudioInput {
-  readonly expectedRevision?: number
-  readonly name?: string
-  readonly retentionDays?: number | null
-}
-
-export interface CreateVoiceProviderCredentialInput {
-  readonly provider: string
-  readonly label: string
-  /** Write-only. Never returned, logged or echoed. */
-  readonly apiKey: string
-  /** A project, or omitted for a credential every project of the team can use. */
-  readonly projectId?: string
-}
-
 export interface VoiceClient {
-  listAudio(params: ListVoiceAudioParams): Promise<ApiResponse<VoiceAudioPage>>
-  createAudioUpload(
-    input: CreateVoiceAudioUploadInput,
-  ): Promise<ApiResponse<VoiceAudioUploadCreated>>
-  /** Sends bytes to an upload URL with only its headers and no credential. */
-  sendToUploadUrl(
-    upload: VoiceAudioUpload,
-    body: Uint8Array,
-  ): Promise<ResponseMetadata>
-  completeAudio(assetId: string): Promise<ApiResponse<VoiceAudioAsset>>
-  synthesizeAudio(
-    input: SynthesizeVoiceAudioInput,
-  ): Promise<ApiResponse<VoiceAudioAsset>>
+  listAudio(params: {
+    projectId: string
+    status?: string
+    cursor?: string
+    limit?: number
+  }): Promise<ApiResponse<VoiceAudioPage>>
+  uploadAudio(input: {
+    projectId: string
+    name: string
+    bytes: Uint8Array
+    contentType: KnownVoiceAudioUploadContentType
+    retentionDays?: number
+  }): Promise<ApiResponse<VoiceAudioAsset>>
+  synthesizeAudio(input: {
+    projectId: string
+    name: string
+    text: string
+    provider: string
+    voiceId: string
+    model?: string
+    credentialId?: string
+    retentionDays?: number
+  }): Promise<ApiResponse<VoiceAudioAsset>>
   retrieveAudio(
     assetId: string,
     options?: RequestOptions,
@@ -182,7 +77,6 @@ export interface VoiceClient {
   ): Promise<ApiResponse<VoiceAudioAsset>>
   deleteAudio(assetId: string): Promise<ApiResponse<VoiceResourceDeleted>>
   previewAudio(assetId: string): Promise<ApiResponse<VoiceAudioPreview>>
-  /** Downloads a preview URL without a credential. */
   downloadPreview(
     preview: VoiceAudioPreview,
     maxBytes: number,
@@ -190,9 +84,12 @@ export interface VoiceClient {
   listCredentials(
     projectId?: string,
   ): Promise<ApiResponse<readonly VoiceProviderCredential[]>>
-  createCredential(
-    input: CreateVoiceProviderCredentialInput,
-  ): Promise<ApiResponse<VoiceProviderCredential>>
+  createCredential(input: {
+    provider: string
+    label: string
+    apiKey: string
+    projectId?: string
+  }): Promise<ApiResponse<VoiceProviderCredential>>
   retrieveCredential(
     credentialId: string,
   ): Promise<ApiResponse<VoiceProviderCredential>>
@@ -204,51 +101,22 @@ export interface VoiceClient {
   ): Promise<ApiResponse<VoiceResourceDeleted>>
 }
 
-const AUDIO_PATH = '/platform/voice/audio'
-const CREDENTIALS_PATH = '/platform/voice/provider-credentials'
-const DEFAULT_BASE_URL = 'https://api.polymorfa.com'
-const DEFAULT_TRANSFER_TIMEOUT_MS = 120_000
-
-interface DataEnvelope<T> {
-  readonly data: T
-  readonly page?: {
-    readonly nextCursor?: string | null
-    readonly hasMore?: boolean
-  }
+function memberOf<const T extends readonly string[]>(
+  values: T,
+  value: string,
+): value is T[number] {
+  return (values as readonly string[]).includes(value)
 }
 
+/** The Platform API calls use the typed SDK. Only signed preview downloads use fetch. */
 export function createVoiceClient(
   environment: ResolvedEnvironment,
   fetchImplementation: typeof fetch = fetch,
 ): VoiceClient {
-  const raw = createPlatformClient(environment).raw
+  const voice = createPlatformClient(environment).voice
   const baseUrl = environment.baseUrl ?? DEFAULT_BASE_URL
   const transferTimeoutMs = environment.timeoutMs ?? DEFAULT_TRANSFER_TIMEOUT_MS
 
-  async function data<T>(
-    method: 'GET' | 'POST' | 'PATCH' | 'DELETE',
-    path: string,
-    options: {
-      readonly body?: unknown
-      readonly query?: Readonly<Record<string, QueryValue>>
-      readonly requestOptions?: RequestOptions
-    } = {},
-  ): Promise<ApiResponse<T>> {
-    const response = await raw.request<DataEnvelope<T>>({
-      ...options.requestOptions,
-      method,
-      path,
-      ...(options.body === undefined ? {} : {body: options.body}),
-      ...(options.query === undefined ? {} : {query: options.query}),
-    })
-    return {data: envelopeData(response.data), metadata: response.metadata}
-  }
-
-  /**
-   * Sends one credential-free request and consumes its response inside the
-   * same timed section, so a server that sends headers and then stalls on the
-   * body still hits the transfer timeout.
-   */
   async function transfer<T>(
     url: URL,
     init: RequestInit,
@@ -272,7 +140,6 @@ export function createVoiceClient(
         )
       }
       if (error instanceof PolymorfaError) throw error
-      // Never include the URL: it is a short-lived capability.
       throw new PolymorfaConnectionError(
         `The ${label} could not reach its URL.`,
         {cause: error, code: 'connection_error'},
@@ -284,71 +151,75 @@ export function createVoiceClient(
 
   return {
     async listAudio(params) {
-      const response = await raw.request<DataEnvelope<VoiceAudioAsset[]>>({
-        method: 'GET',
-        path: AUDIO_PATH,
-        query: {
-          projectId: params.projectId,
-          ...(params.status === undefined ? {} : {status: params.status}),
-          ...(params.cursor === undefined ? {} : {cursor: params.cursor}),
-          ...(params.limit === undefined ? {} : {limit: params.limit}),
-        },
-      })
-      const items = envelopeData(response.data)
-      if (!Array.isArray(items)) throw malformed()
-      const page = response.data.page
+      const {projectId, status, ...rest} = params
+      if (status !== undefined && !memberOf(VOICE_AUDIO_STATUSES, status)) {
+        throw new PolymorfaConfigurationError(
+          'Unsupported voice audio status.',
+          'status',
+        )
+      }
+      const filters = {...rest, ...(status === undefined ? {} : {status})}
+      const page = await voice.audio.list(projectId, filters)
       return {
         data: {
-          hasMore: page?.hasMore === true,
-          items,
-          nextCursor:
-            typeof page?.nextCursor === 'string' ? page.nextCursor : null,
+          items: page.items,
+          hasMore: page.hasMore,
+          nextCursor: page.nextCursor ?? null,
         },
-        metadata: response.metadata,
+        metadata: page.response.metadata,
       }
     },
-    createAudioUpload: (input) =>
-      data<VoiceAudioUploadCreated>('POST', AUDIO_PATH, {body: input}),
-    async sendToUploadUrl(upload, body) {
-      const url = capabilityUrl(baseUrl, upload.url, 'upload')
-      const headers = new Headers()
-      for (const [name, value] of Object.entries(upload.headers)) {
-        if (name.toLowerCase() === 'authorization') continue
-        headers.set(name, value)
+    uploadAudio: ({projectId, name, bytes, contentType, retentionDays}) =>
+      voice.audio.upload(projectId, {
+        name,
+        body: bytes,
+        contentType,
+        ...(retentionDays === undefined ? {} : {retentionDays}),
+      }),
+    synthesizeAudio: ({projectId, provider, voiceId, model, ...fields}) => {
+      if (provider === 'elevenlabs') {
+        if (model !== undefined && !memberOf(ELEVENLABS_TTS_MODELS, model)) {
+          throw new PolymorfaConfigurationError(
+            'Unsupported ElevenLabs model.',
+            'model',
+          )
+        }
+        return voice.audio.synthesize(projectId, {
+          ...fields,
+          provider,
+          voiceId,
+          ...(model === undefined ? {} : {model}),
+        })
       }
-      return transfer(
-        url,
-        {
-          body: body as unknown as BodyInit,
-          headers,
-          method: upload.method === 'PUT' ? 'PUT' : 'POST',
-        },
-        'upload',
-        async (response, signal) => {
-          if (!response.ok) {
-            throw transferError(
-              response,
-              await safeBody(response, signal),
-              'upload',
-            )
-          }
-          await discardBody(response)
-          return transferMetadata(response)
-        },
+      if (provider === 'openai') {
+        if (!memberOf(OPENAI_TTS_VOICES, voiceId)) {
+          throw new PolymorfaConfigurationError(
+            'Unsupported OpenAI voice.',
+            'voice',
+          )
+        }
+        if (model !== undefined && !memberOf(OPENAI_TTS_MODELS, model)) {
+          throw new PolymorfaConfigurationError(
+            'Unsupported OpenAI model.',
+            'model',
+          )
+        }
+        return voice.audio.synthesize(projectId, {
+          ...fields,
+          provider,
+          voiceId,
+          ...(model === undefined ? {} : {model}),
+        })
+      }
+      throw new PolymorfaConfigurationError(
+        'Unsupported voice provider.',
+        'provider',
       )
     },
-    completeAudio: (assetId) =>
-      data<VoiceAudioAsset>('POST', `${assetPath(assetId)}/complete`),
-    synthesizeAudio: (input) =>
-      data<VoiceAudioAsset>('POST', `${AUDIO_PATH}/tts`, {body: input}),
-    retrieveAudio: (assetId, requestOptions = {}) =>
-      data<VoiceAudioAsset>('GET', assetPath(assetId), {requestOptions}),
-    updateAudio: (assetId, input) =>
-      data<VoiceAudioAsset>('PATCH', assetPath(assetId), {body: input}),
-    deleteAudio: (assetId) =>
-      data<VoiceResourceDeleted>('DELETE', assetPath(assetId)),
-    previewAudio: (assetId) =>
-      data<VoiceAudioPreview>('GET', `${assetPath(assetId)}/preview`),
+    retrieveAudio: (assetId, options) => voice.audio.retrieve(assetId, options),
+    updateAudio: (assetId, input) => voice.audio.update(assetId, input),
+    deleteAudio: (assetId) => voice.audio.delete(assetId),
+    previewAudio: (assetId) => voice.audio.previewUrl(assetId),
     async downloadPreview(preview, maxBytes) {
       const url = capabilityUrl(baseUrl, preview.url, 'preview')
       return transfer(
@@ -368,8 +239,6 @@ export function createVoiceClient(
             await discardBody(response)
             throw tooLargePreview(maxBytes)
           }
-          // Content-Length can be missing, understated or describe a
-          // compressed body, so the limit is enforced on the bytes read.
           const bytes = await readBody(response, signal, maxBytes)
           if (bytes === undefined) throw tooLargePreview(maxBytes)
           return bytes
@@ -377,47 +246,28 @@ export function createVoiceClient(
       )
     },
     listCredentials: (projectId) =>
-      data<readonly VoiceProviderCredential[]>('GET', CREDENTIALS_PATH, {
-        query: projectId === undefined ? {} : {projectId},
-      }),
-    createCredential: (input) =>
-      data<VoiceProviderCredential>('POST', CREDENTIALS_PATH, {body: input}),
-    retrieveCredential: (credentialId) =>
-      data<VoiceProviderCredential>('GET', credentialPath(credentialId)),
-    verifyCredential: (credentialId) =>
-      data<VoiceProviderCredential>(
-        'POST',
-        `${credentialPath(credentialId)}/verify`,
+      voice.providerCredentials.list(
+        projectId === undefined ? {} : {projectId},
       ),
+    createCredential: (input) => {
+      if (!memberOf(VOICE_PROVIDERS, input.provider)) {
+        throw new PolymorfaConfigurationError(
+          'Unsupported voice provider.',
+          'provider',
+        )
+      }
+      return voice.providerCredentials.create({
+        ...input,
+        provider: input.provider,
+      })
+    },
+    retrieveCredential: (credentialId) =>
+      voice.providerCredentials.retrieve(credentialId),
+    verifyCredential: (credentialId) =>
+      voice.providerCredentials.verify(credentialId),
     deleteCredential: (credentialId) =>
-      data<VoiceResourceDeleted>('DELETE', credentialPath(credentialId)),
+      voice.providerCredentials.delete(credentialId),
   }
-}
-
-function assetPath(assetId: string): string {
-  return `${AUDIO_PATH}/${encodeURIComponent(assetId)}`
-}
-
-function credentialPath(credentialId: string): string {
-  return `${CREDENTIALS_PATH}/${encodeURIComponent(credentialId)}`
-}
-
-function envelopeData<T>(envelope: DataEnvelope<T>): T {
-  if (
-    typeof envelope !== 'object' ||
-    envelope === null ||
-    !('data' in envelope)
-  ) {
-    throw malformed()
-  }
-  return envelope.data
-}
-
-function malformed(): PolymorfaServerError {
-  return new PolymorfaServerError(
-    'The API returned a voice response without data.',
-    {code: 'invalid_response'},
-  )
 }
 
 /**
@@ -449,16 +299,6 @@ function capabilityUrl(baseUrl: string, value: string, label: string): URL {
     )
   }
   return url
-}
-
-function transferMetadata(response: Response): ResponseMetadata {
-  const requestId = response.headers.get('x-request-id') ?? undefined
-  return {
-    attempts: 1,
-    headers: {},
-    status: response.status,
-    ...(requestId === undefined ? {} : {requestId}),
-  }
 }
 
 /** Error bodies are only inspected for an error code. */

@@ -352,6 +352,37 @@ describe('voice audio commands', () => {
     expect(server.requests).toHaveLength(1)
   })
 
+  test('rejects provider-specific voices and models before sending TTS requests', async () => {
+    server = await startHttpSequenceServer([ok(asset)])
+    const base = `voice audio tts --name Greeting --text Hello --project ${PROJECT}`
+    const badVoice = await apiKey(() =>
+      runCommand(`${base} --provider openai --voice unsupported --json`),
+    )
+    const badOpenAiModel = await apiKey(() =>
+      runCommand(`${base} --provider openai --voice alloy --model unsupported`),
+    )
+    const badElevenModel = await apiKey(() =>
+      runCommand(
+        `${base} --provider elevenlabs --voice voice123 --model unsupported --json`,
+      ),
+    )
+
+    expect(exitCode(badVoice.error)).toBe(2)
+    expect(JSON.parse(badVoice.stderr)).toMatchObject({
+      error: {category: 'configuration', message: 'Unsupported OpenAI voice.'},
+    })
+    expect(exitCode(badOpenAiModel.error)).toBe(2)
+    expect(badOpenAiModel.stderr).toContain('Unsupported OpenAI model.')
+    expect(exitCode(badElevenModel.error)).toBe(2)
+    expect(JSON.parse(badElevenModel.stderr)).toMatchObject({
+      error: {
+        category: 'configuration',
+        message: 'Unsupported ElevenLabs model.',
+      },
+    })
+    expect(server.requests).toHaveLength(0)
+  })
+
   test('lists with filters and shows the next cursor', async () => {
     server = await startHttpSequenceServer([
       {

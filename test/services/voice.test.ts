@@ -132,86 +132,13 @@ describe('waitForAudio', () => {
   })
 })
 
-describe('createVoiceClient', () => {
-  const environment = {
-    baseUrl: 'https://api.example.test',
-    credential: {
-      type: 'apiKey' as const,
-      value:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    },
-    surface: 'platform' as const,
-  }
-  const upload = {
-    expiresAt: '2026-09-19T10:05:00.000Z',
-    headers: {Authorization: 'Bearer leak', 'Content-Type': 'audio/wav'},
-    maxBytes: 16_777_216,
-    method: 'POST',
-    url: 'https://uploads.example.test/u/token',
-  }
-
-  test('sends only the upload headers, never a credential', async () => {
-    const fetch = vi.fn<(url: URL, init: RequestInit) => Promise<Response>>(
-      () => Promise.resolve(new Response('{"storageId":"s"}', {status: 201})),
-    )
-    const client = createVoiceClient(
-      environment,
-      fetch as typeof globalThis.fetch,
-    )
-
-    await client.sendToUploadUrl(upload, new Uint8Array([1, 2]))
-
-    const [url, init] = fetch.mock.calls[0] ?? []
-    expect(String(url)).toBe('https://uploads.example.test/u/token')
-    const headers = new Headers(init?.headers)
-    expect(headers.get('authorization')).toBeNull()
-    expect(headers.get('content-type')).toBe('audio/wav')
-    expect(init?.redirect).toBe('error')
-  })
-
-  test('refuses plain HTTP upload URLs and maps 413 and 415 without the URL', async () => {
-    const fetch = vi.fn(() => Promise.resolve(new Response('', {status: 413})))
-    const client = createVoiceClient(environment, fetch)
-
-    await expect(
-      client.sendToUploadUrl(
-        {...upload, url: 'http://uploads.example.test/u/token'},
-        new Uint8Array([1]),
-      ),
-    ).rejects.toMatchObject({code: 'invalid_upload_url'})
-    expect(fetch).not.toHaveBeenCalled()
-
-    const tooLarge = client.sendToUploadUrl(upload, new Uint8Array([1]))
-    await expect(tooLarge).rejects.toMatchObject({
-      code: 'too_large',
-      status: 413,
-    })
-    await expect(tooLarge).rejects.not.toThrow(/token/)
-
-    fetch.mockImplementationOnce(() =>
-      Promise.resolve(new Response('', {status: 415})),
-    )
-    await expect(
-      client.sendToUploadUrl(upload, new Uint8Array([1])),
-    ).rejects.toThrow('content type does not match')
-  })
-})
-
 describe('voice transfers', () => {
   const ASSET_ID = '6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10'
   const preview = {
-    contentType: 'audio/ogg',
+    contentType: 'audio/ogg' as const,
     expiresAt: '2026-09-19T10:05:00.000Z',
     url: 'https://previews.example.test/p/token',
   }
-  const upload = {
-    expiresAt: '2026-09-19T10:05:00.000Z',
-    headers: {'Content-Type': 'audio/wav'},
-    maxBytes: 16_777_216,
-    method: 'PUT',
-    url: 'https://uploads.example.test/u/token',
-  }
-
   function environment(timeoutMs?: number) {
     return {
       baseUrl: 'https://api.example.test',
@@ -278,24 +205,15 @@ describe('voice transfers', () => {
 
   test('times out an error response whose body stalls after the headers', async () => {
     const preview500 = stalledBody()
-    const upload500 = stalledBody()
     const previewClient = createVoiceClient(
       environment(50),
       fetchReturning(() => new Response(preview500.body, {status: 500})),
-    )
-    const uploadClient = createVoiceClient(
-      environment(50),
-      fetchReturning(() => new Response(upload500.body, {status: 403})),
     )
 
     await expect(
       previewClient.downloadPreview(preview, 1024),
     ).rejects.toMatchObject({code: 'request_timeout'})
-    await expect(
-      uploadClient.sendToUploadUrl(upload, new Uint8Array([1])),
-    ).rejects.toMatchObject({code: 'request_timeout'})
     expect(preview500.cancel).toHaveBeenCalled()
-    expect(upload500.cancel).toHaveBeenCalled()
   })
 
   test('still reports the status and body code when the error body arrives', async () => {
@@ -306,9 +224,10 @@ describe('voice transfers', () => {
       ),
     )
 
-    await expect(
-      client.sendToUploadUrl(upload, new Uint8Array([1])),
-    ).rejects.toMatchObject({code: 'link_expired', status: 403})
+    await expect(client.downloadPreview(preview, 1_000)).rejects.toMatchObject({
+      code: 'link_expired',
+      status: 403,
+    })
   })
 
   test('stops reading a preview without Content-Length once it passes the limit', async () => {
