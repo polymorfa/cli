@@ -340,16 +340,36 @@ polymorfa media view media_123
 polymorfa media download media_123 \
   --output ./attachment.bin
 
+polymorfa media download media_123 --url
+
+polymorfa media download --from-event ./message.json \
+  --output ./photo.jpg
+
 polymorfa media persist media_123 \
   --idempotency-key persist_media_123
 ```
 
-`media download` retrieves metadata before fetching bytes and rejects media
-larger than 100 MiB by default. Override the memory guard with `--max-bytes`
-only when the process has enough memory. An explicit output path is required,
-and existing files are preserved unless `--force` is passed. The SDK buffers
-the complete response before the CLI writes it; this is not a streaming or
-range-download command.
+`media download` retrieves metadata, then streams the file into a temporary
+sibling file and renames it into place when the download completes. It
+rejects media larger than 100 MiB by default, both from the declared size and
+while bytes arrive. Raise the limit with `--max-bytes`. An explicit
+`--output` path (`-o`) is required. Existing files are kept unless you pass
+`--force`, and an interrupted or rejected download leaves no partial file.
+When the API redirects to object storage, the CLI requests the storage URL
+without your API key.
+
+`--url` prints the short-lived signed storage link to stdout instead of
+downloading it, and writes a warning to stderr. Anyone who has the link can
+fetch the file until it expires, so do not log, store or share it. If the API
+streams the media itself, no link exists and the command exits with code 2.
+
+`--from-event <file>` reads a stored message webhook, either the full event
+or its `payload`. It downloads the encrypted attachment from the WhatsApp CDN
+and verifies and decrypts it locally, with no Polymorfa credential. It works
+only for messages that carry the `media` descriptor, which projects without
+media persistence receive. The event file contains the decryption key: keep
+it private. If verification fails, the command exits with code 2 and writes
+no file. The CDN link in the event expires, so older events stop working.
 
 `media persist` asks the server to copy the media into configured object
 storage. It does not write a local file. The source API has no Messaging media
