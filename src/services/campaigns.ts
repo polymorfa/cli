@@ -2,6 +2,7 @@ import {
   type Campaign,
   type CampaignAnalytics,
   type CampaignOperation,
+  type CampaignStopOperation,
   type CampaignRequeueResult,
   type CreateCampaignRequest,
   type MessagingClient,
@@ -109,7 +110,7 @@ export async function stopCampaign(
   projectSlug: string,
   campaignId: string,
   options: RequestOptions = {},
-): Promise<CampaignResult<CampaignOperation>> {
+): Promise<CampaignResult<CampaignStopOperation>> {
   const response = await client.campaigns.stop(projectSlug, campaignId, options)
   return result(response.data.data, response.metadata)
 }
@@ -192,8 +193,11 @@ export function renderCampaignAnalytics(analytics: CampaignAnalytics): string {
 
 export function renderCampaignOperation(
   action: string,
-  campaign: CampaignOperation,
+  campaign: CampaignOperation | CampaignStopOperation,
 ): string {
+  if (campaign.operationId === null) {
+    return `Campaign ${campaign.id} is ${campaign.status}; no delivery operation was needed.`
+  }
   return [
     `Accepted campaign ${action} as operation ${campaign.operationId}.`,
     `Campaign ${campaign.id} is ${campaign.status}.`,
