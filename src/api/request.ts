@@ -50,6 +50,23 @@ export async function readJsonInput(
   path: string,
   standardInput: AsyncIterable<string | Uint8Array> = process.stdin,
 ): Promise<unknown> {
+  const contents = await readTextInput(path, standardInput)
+
+  try {
+    return JSON.parse(contents) as unknown
+  } catch (error) {
+    throw new PolymorfaValidationError(
+      'API input must contain one valid JSON value.',
+      {code: 'invalid_json_input', cause: error},
+    )
+  }
+}
+
+/** Read a UTF-8 input file, or stdin for `-`, up to 10 MiB. */
+export async function readTextInput(
+  path: string,
+  standardInput: AsyncIterable<string | Uint8Array> = process.stdin,
+): Promise<string> {
   let contents: string
 
   if (path === '-') {
@@ -76,15 +93,7 @@ export async function readJsonInput(
       )
     }
   }
-
-  try {
-    return JSON.parse(contents) as unknown
-  } catch (error) {
-    throw new PolymorfaValidationError(
-      'API input must contain one valid JSON value.',
-      {code: 'invalid_json_input', cause: error},
-    )
-  }
+  return contents
 }
 
 async function readBoundedInput(

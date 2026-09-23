@@ -80,13 +80,14 @@ rejects timezone-ambiguous local timestamps. Pause, resume, and stop remain
 distinct commands because the server enforces different source states. Stop is
 a terminal transition and requires `--yes`.
 
-Launch, pause, resume, and stop append durable commands and return an operation
-ID plus the campaign's present state. Human output says “Accepted” and does not
-say the transition completed. Use `operation view`, `operation wait`, or
-`operation watch` to inspect the returned ID through the public Platform
-operations resource; `operation cancel` requests supported cancellation.
-These commands use their own team/project credential context. The unpublished
-`--surface messaging` selector remains removed.
+Launch, pause, and resume append durable commands and return an operation ID
+plus the campaign's present state. Stop does the same when a delivery run is
+active; otherwise it cancels immediately and returns `operationId: null`.
+Human output distinguishes the immediate stop from accepted work. Use
+`operation view`, `operation wait`, or `operation watch` to inspect a returned ID
+through the public Platform operations resource; `operation cancel` requests
+supported cancellation. These commands use their own team/project credential
+context. The unpublished `--surface messaging` selector remains removed.
 
 Requeue is different: it is a direct transaction and returns only the number
 of recipients moved. Failed recipients are always considered;

@@ -146,6 +146,15 @@ export abstract class BaseCommand extends Command {
     return createMessagingClient(environment)
   }
 
+  /** History reads also accept exact-project server tokens. */
+  protected async historyMessagingClient(
+    flags: GlobalFlags,
+  ): Promise<MessagingClient> {
+    return createMessagingClient(
+      await this.resolveEnvironment(flags, 'messaging', true),
+    )
+  }
+
   protected async quickLinksClient(flags: GlobalFlags): Promise<{
     client: MessagingClient
     projectId: string
@@ -242,10 +251,12 @@ export abstract class BaseCommand extends Command {
   private async resolveEnvironment(
     flags: GlobalFlags,
     surface: ResolvedEnvironment['surface'],
+    allowProjectToken = false,
   ): Promise<ResolvedEnvironment> {
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface,
+      ...(allowProjectToken ? {allowProjectToken: true} : {}),
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags['api-version'] === undefined
         ? {}
@@ -286,6 +297,9 @@ export abstract class BaseCommand extends Command {
               ? {}
               : {docUrl: presented.docUrl}),
             retryable: presented.retryable,
+            ...(presented.retryAfterSeconds === undefined
+              ? {}
+              : {retryAfterSeconds: presented.retryAfterSeconds}),
           }),
         )}\n`,
       )

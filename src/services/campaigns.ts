@@ -240,6 +240,9 @@ export function renderCampaignOperation(
   action: string,
   campaign: CampaignOperation | CampaignStopOperation,
 ): string {
+  if (campaign.operationId === null) {
+    return `Stopped campaign ${campaign.id} immediately; no delivery operation was needed.`
+  }
   return [
     campaign.operationId === null
       ? `Campaign ${campaign.id} stopped immediately; no operation was created.`

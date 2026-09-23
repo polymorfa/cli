@@ -77,6 +77,7 @@ export function errorEnvelope(input: {
   readonly requestLogUrl?: string
   readonly docUrl?: string
   readonly retryable: boolean
+  readonly retryAfterSeconds?: number
   readonly context: Partial<OutputContext>
 }): {
   readonly schemaVersion: 1
