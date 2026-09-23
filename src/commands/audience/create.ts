@@ -4,6 +4,7 @@ import {readJsonInput} from '../../api/request.js'
 import {BaseCommand} from '../../base-command.js'
 import {
   assertBatchLimit,
+  csvInvalidRows,
   parseVariableMapping,
   readCsvRecipients,
   RECIPIENT_BATCH_LIMIT,
@@ -66,7 +67,17 @@ export default class AudienceCreate extends BaseCommand {
         ? {}
         : {idempotencyKey: flags['idempotency-key']},
     )
-    this.writeValue(result, renderAudienceImport(result.data), flags)
+    const presented = {
+      ...result,
+      data: {
+        ...result.data,
+        invalidRows:
+          'members' in body && body.members !== undefined
+            ? csvInvalidRows(body.members, result.data.invalidRows)
+            : result.data.invalidRows,
+      },
+    }
+    this.writeValue(presented, renderAudienceImport(presented.data), flags)
   }
 
   private async buildBody(flags: {

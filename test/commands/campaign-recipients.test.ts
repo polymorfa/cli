@@ -77,7 +77,7 @@ describe('Campaign recipient commands', () => {
     const csv = join(directory, 'contacts.csv')
     await writeFile(
       csv,
-      'Phone,First name\n+15551234567,Ada\n+15557654321,Grace\n',
+      'Phone,First name\n+15551234567,Ada\n\n+15557654321,Grace\n',
       'utf8',
     )
     server = await startHttpServer({
@@ -87,7 +87,7 @@ describe('Campaign recipient commands', () => {
           campaignId: 'campaign_1',
           duplicateCount: 1,
           invalidCount: 1,
-          invalidRows: [{reason: 'invalid_phone', row: 4}],
+          invalidRows: [{reason: 'invalid_phone', row: 2}],
           recipientCount: 11,
         },
         success: true,
@@ -110,6 +110,35 @@ describe('Campaign recipient commands', () => {
     expect(result.stdout).toContain('Added\t1')
     expect(result.stdout).toContain('Duplicates skipped\t1')
     expect(result.stdout).toContain('Row 4\tinvalid_phone')
+  })
+
+  test('maps invalid input indexes to CSV rows in JSON output', async () => {
+    directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
+    const csv = join(directory, 'contacts.csv')
+    await writeFile(csv, 'phone\n+15551234567\n\n+15557654321\n', 'utf8')
+    server = await startHttpServer({
+      body: {
+        data: {
+          added: 1,
+          campaignId: 'campaign_1',
+          duplicateCount: 0,
+          invalidCount: 1,
+          invalidRows: [{reason: 'invalid_phone', row: 2}],
+          recipientCount: 1,
+        },
+        success: true,
+      },
+    })
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign recipients add campaign_1 --project-slug project_1 --csv ${csv} --json`,
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    const output = JSON.parse(result.stdout) as {
+      data: {invalidRows: {reason: string; row: number}[]}
+    }
+    expect(output.data.invalidRows).toEqual([{reason: 'invalid_phone', row: 4}])
   })
 
   test('names the missing column instead of sending an empty request', async () => {
@@ -234,6 +263,32 @@ describe('Campaign recipient commands', () => {
     expect(result.stderr).toContain('Recipient input has no entries')
     expect(server.requests).toHaveLength(0)
   })
+
+  test.each([
+    ['non-string value', {firstName: 42}],
+    ['invalid name', {'-firstName': 'Ada'}],
+    ['overlong value', {firstName: 'x'.repeat(1025)}],
+  ])(
+    'refuses JSON variables with %s before sending',
+    async (_name, variables) => {
+      directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
+      const input = join(directory, 'recipients.json')
+      await writeFile(
+        input,
+        JSON.stringify([{phone: '+15551234567', variables}]),
+        'utf8',
+      )
+      server = await startHttpServer({body: {data: {}, success: true}})
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `campaign recipients add campaign_1 --project-slug project_1 --input ${input}`,
+        ),
+      )
+      expect(result.error).toBeDefined()
+      expect(result.stderr).toContain('invalid variables')
+      expect(server.requests).toHaveLength(0)
+    },
+  )
 
   test('refuses the reserved __proto__ variable name instead of dropping it', async () => {
     directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))

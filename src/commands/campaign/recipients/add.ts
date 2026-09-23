@@ -4,6 +4,7 @@ import {readJsonInput} from '../../../api/request.js'
 import {BaseCommand} from '../../../base-command.js'
 import {
   assertBatchLimit,
+  csvInvalidRows,
   parseVariableMapping,
   readCsvRecipients,
   recipientsFromJson,
@@ -77,6 +78,13 @@ export default class CampaignRecipientsAdd extends BaseCommand {
         ? {}
         : {idempotencyKey: flags['idempotency-key']},
     )
-    this.writeValue(result, renderRecipientAppend(result.data), flags)
+    const presented = {
+      ...result,
+      data: {
+        ...result.data,
+        invalidRows: csvInvalidRows(recipients, result.data.invalidRows),
+      },
+    }
+    this.writeValue(presented, renderRecipientAppend(presented.data), flags)
   }
 }

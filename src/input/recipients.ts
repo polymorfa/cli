@@ -2,6 +2,7 @@ import {readFile, stat} from 'node:fs/promises'
 
 import {
   type CampaignRecipientInput,
+  type InvalidRecipientRow,
   PolymorfaValidationError,
 } from '@polymorfa/sdk'
 
@@ -9,11 +10,16 @@ import {
 export const RECIPIENT_BATCH_LIMIT = 1000
 
 const MAX_CSV_BYTES = 10 * 1024 * 1024
-const VARIABLE_NAME = /^[A-Za-z0-9_.-]{1,64}$/
+const VARIABLE_NAME = /^[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}$/
 const MAX_VARIABLES = 50
+const MAX_VARIABLE_VALUE_LENGTH = 1024
 const MAX_REPORTED_ROWS = 20
 /** The request schema's maximum phone length. */
 const MAX_PHONE_LENGTH = 64
+const csvSourceRows = new WeakMap<
+  readonly CampaignRecipientInput[],
+  readonly number[]
+>()
 
 export interface CsvRecipientOptions {
   /** Header naming the phone column. */
@@ -61,6 +67,7 @@ export async function readCsvRecipients(
   }
 
   const recipients: CampaignRecipientInput[] = []
+  const sourceRows: number[] = []
   const missingPhoneRows: number[] = []
   for (const [index, record] of records.slice(1).entries()) {
     if (record.every((cell) => cell.trim() === '')) continue
@@ -84,6 +91,7 @@ export async function readCsvRecipients(
     recipients.push(
       Object.keys(variables).length === 0 ? {phone} : {phone, variables},
     )
+    sourceRows.push(index + 2)
   }
 
   if (missingPhoneRows.length > 0) {
@@ -102,7 +110,21 @@ export async function readCsvRecipients(
   if (recipients.length === 0) {
     throw invalid(`${path} has no rows with a phone number.`, 'csv_empty')
   }
+  csvSourceRows.set(recipients, sourceRows)
   return recipients
+}
+
+/** Translate API input indexes back to spreadsheet rows, including the header. */
+export function csvInvalidRows(
+  recipients: readonly CampaignRecipientInput[],
+  rows: readonly InvalidRecipientRow[],
+): InvalidRecipientRow[] {
+  const sourceRows = csvSourceRows.get(recipients)
+  if (sourceRows === undefined) return [...rows]
+  return rows.map((row) => ({
+    ...row,
+    row: sourceRows[row.row - 1] ?? row.row,
+  }))
 }
 
 /** `name=Column` pairs from repeated --variable flags. */
@@ -193,6 +215,29 @@ export function recipientsFromJson(input: unknown): CampaignRecipientInput[] {
         `Entry ${index + 1} has a phone longer than ${MAX_PHONE_LENGTH} characters; nothing was sent.`,
         'invalid_phone',
       )
+    }
+    if (entry.variables !== undefined) {
+      if (!isRecord(entry.variables)) {
+        throw invalid(
+          `Entry ${index + 1} variables must be an object of strings.`,
+          'invalid_recipient_variables',
+        )
+      }
+      const variables = Object.entries(entry.variables)
+      if (
+        variables.length > MAX_VARIABLES ||
+        variables.some(
+          ([name, value]) =>
+            !VARIABLE_NAME.test(name) ||
+            typeof value !== 'string' ||
+            value.length > MAX_VARIABLE_VALUE_LENGTH,
+        )
+      ) {
+        throw invalid(
+          `Entry ${index + 1} has invalid variables; use at most ${MAX_VARIABLES} named string values of at most ${MAX_VARIABLE_VALUE_LENGTH} characters.`,
+          'invalid_recipient_variables',
+        )
+      }
     }
     return entry as unknown as CampaignRecipientInput
   })

@@ -43,7 +43,7 @@ describe('Audience and opt-out commands', () => {
       source: 'csv',
     })
     expect(result.stdout).toContain('Members\t2')
-    expect(result.stdout).toContain('Row 3\tmissing_phone')
+    expect(result.stdout).toContain('Row 2\tmissing_phone')
   })
 
   test('imports a file already uploaded through the API', async () => {
@@ -223,7 +223,7 @@ function audience() {
     fileId: null,
     id: 'list_1',
     invalidCount: 1,
-    invalidRows: [{reason: 'missing_phone', row: 3}],
+    invalidRows: [{reason: 'missing_phone', row: 1}],
     mapping: null,
     name: 'August launch',
     recipientCount: 2,
