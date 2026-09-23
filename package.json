@@ -33,7 +33,7 @@
     "@modelcontextprotocol/server": "2.0.0",
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "0.1.0-dev.20260923115248",
+    "@polymorfa/sdk": "0.1.0-dev.20260923115544",
     "jq-wasm": "3.0.0-jq-1.8.2",
     "zod": "4.2.0"
   },
@@ -257,6 +257,18 @@
       },
       "widget": {
         "description": "Inspect and update saved QuickLink widget settings."
+      },
+      "function": {
+        "description": "Manage project Functions and pinned deployments."
+      },
+      "function:deployment": {
+        "description": "Build and promote immutable Function deployments."
+      },
+      "function:secret": {
+        "description": "Create and revoke write-only Function secret versions."
+      },
+      "function:invocation": {
+        "description": "Invoke Functions once and inspect metadata receipts."
       }
     }
   },

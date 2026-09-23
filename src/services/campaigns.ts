@@ -238,12 +238,16 @@ export function renderCampaignAnalytics(analytics: CampaignAnalytics): string {
 
 export function renderCampaignOperation(
   action: string,
-  campaign: CampaignOperation,
+  campaign: CampaignOperation | CampaignStopOperation,
 ): string {
   return [
-    `Accepted campaign ${action} as operation ${campaign.operationId}.`,
+    campaign.operationId === null
+      ? `Campaign ${campaign.id} stopped immediately; no operation was created.`
+      : `Accepted campaign ${action} as operation ${campaign.operationId}.`,
     `Campaign ${campaign.id} is ${campaign.status}.`,
-    'Check the campaign status with polymorfa campaign view.',
+    ...(campaign.operationId === null
+      ? []
+      : ['Check the campaign status with polymorfa campaign view.']),
   ].join('\n')
 }
 

@@ -3,11 +3,11 @@
 - **Status:** Campaigns P0 slice: nine lifecycle operations plus recipients,
   audiences and opt-out settings
 - **Reviewed:** 2026-09-23
-- **SDK baseline:** `7b8b44e9cd15356724e5ba825db320d90d896b06`
+- **SDK baseline:** `8ce8f7bae55fbc03da5a68e5609864d5742dc201`
 - **Contract:** `polymorfa/polymorfa` `f4a340da3b74248232ebea73f3e72b42f667beef` (merged `dev`)
 
 The API contract is merged into `dev`, and the SDK dev prerelease
-`0.1.0-dev.20260923115248` includes the Campaigns P0 methods. These notes do
+`0.1.0-dev.20260923115544` includes the Campaigns P0 methods. These notes do
 not claim deployed availability.
 
 ## Sources reviewed
