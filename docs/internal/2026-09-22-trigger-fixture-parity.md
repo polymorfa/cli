@@ -1,5 +1,12 @@
 # Trigger fixture parity
 
+Resolved on 2026-09-23: SDK PR #290 merged as
+`2b693964305b91dc34b9092ca5774055c7e47d88` and published
+`@polymorfa/sdk@0.1.0-dev.20260923093259`. CLI PR #15 now pins that exact
+registry artifact in its manifest and lockfile. A clean install and the full
+CLI verification suite passed on the branch merged with current `dev`.
+The notes below record the earlier local repair and its then-open dependency.
+
 Local repair of CLI #15 at `67b1c0f43568c015c779ebf2c6475237f7b980a8`.
 Not published or release-ready. The API contract checked is
 `polymorfa/polymorfa@63111fec728ac3ebc9a825ea57ebc4c592abdafc`.
