@@ -9,13 +9,16 @@ export default class RoutingPolicyGet extends BaseCommand {
   static override flags = hybridPolicyFlags
   async run(): Promise<void> {
     const {flags} = await this.parse(RoutingPolicyGet)
-    const scope = hybridPolicyScope(flags)
-    const client = await this.messagingClient(
-      flags,
-      scope.scope === 'team'
-        ? {serverApiKeyOnly: 'Team Hybrid routing'}
-        : {serverCredentialOnly: 'Hybrid routing'},
-    )
+    const {client, projectId} =
+      flags.scope === 'team'
+        ? {
+            client: await this.messagingClient(flags, {
+              serverApiKeyOnly: 'Team Hybrid routing',
+            }),
+            projectId: undefined,
+          }
+        : await this.quickLinksClient(flags)
+    const scope = hybridPolicyScope(flags, projectId)
     const response = await client.hybridLink.getPolicy(scope)
     const policy = response.data.data
     this.writeValue(

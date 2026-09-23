@@ -225,9 +225,11 @@ export abstract class BaseCommand extends Command {
     flags: GlobalFlags,
     surface: ResolvedEnvironment['surface'],
   ): Promise<ResolvedEnvironment> {
+    const linkedProject = await this.linkedProject(flags)
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface,
+      ...(linkedProject === undefined ? {} : {linkedProject}),
       ...(flags.project === undefined ? {} : {project: flags.project}),
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags['api-version'] === undefined

@@ -18,11 +18,23 @@ export default class QuickLinkAvailability extends BaseCommand {
       session: flags.session,
     })
     const data = response.data.data
+    const connections = data.connections
+      .map(
+        ({kind, status, enabled}) =>
+          `${kind}: ${status} (${enabled ? 'enabled' : 'disabled'})`,
+      )
+      .join(', ')
     this.writeValue(
       response,
-      data.allowed && data.addConnection
-        ? `Available: ${data.addConnection}`
-        : 'No added connection is available.',
+      [
+        data.allowed && data.addConnection
+          ? `Available: ${data.addConnection}`
+          : 'No added connection is available.',
+        `Connections: ${connections || 'none'}`,
+        ...(data.resumeQuickLinkId
+          ? [`Resume QuickLink: ${data.resumeQuickLinkId}`]
+          : []),
+      ].join('\n'),
       flags,
     )
   }

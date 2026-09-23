@@ -1645,6 +1645,12 @@ polymorfa hybrid-link pause --session NUMBER --expected-revision REVISION
 polymorfa hybrid-link resume --session NUMBER --expected-revision REVISION
 ```
 
+For project and session routing scopes, `--project`, the nearest linked project,
+and the selected profile determine the project in that order. A project-token
+profile fails when its project differs from the linked directory. `quicklink
+availability` shows existing connection status and any QuickLink that can be
+resumed.
+
 All message send types, reactions, edits, and deletions accept `--transport auto`,
 `linked_devices`, or `official_api`. Explicit choices never fall back. JSON output
 preserves route metadata and the operation ID. If a send reports an unknown

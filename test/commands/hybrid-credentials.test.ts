@@ -1,6 +1,6 @@
 import {runCommand} from '@oclif/test'
 import {AsyncEntry} from '@napi-rs/keyring'
-import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
 import {homedir} from 'node:os'
 import {join} from 'node:path'
 import {expect, test, vi} from 'vitest'
@@ -168,6 +168,128 @@ test.each(credentials)(
     }
   },
 )
+
+test('Hybrid mutation refuses a project-token profile in a different linked directory', async () => {
+  const server = await startHttpSequenceServer([{body: {}}])
+  const directory = await mkdtemp(join(homedir(), '.polymorfa-cli-link-'))
+  const configDirectory = join(directory, 'config')
+  const previousDirectory = process.cwd()
+  const keyring = vi
+    .spyOn(AsyncEntry.prototype, 'getPassword')
+    .mockResolvedValue(projectToken)
+  try {
+    await writeFile(
+      join(directory, 'polymorfa.json'),
+      JSON.stringify({
+        project: '22222222-2222-4222-8222-222222222222',
+        version: 1,
+      }),
+    )
+    await mkdir(configDirectory)
+    await writeFile(
+      join(configDirectory, 'config.json'),
+      JSON.stringify({
+        version: 2,
+        activeProfile: 'hybrid',
+        profiles: {
+          hybrid: {
+            credential: {
+              kind: 'projectToken',
+              account: 'profile:hybrid:projectToken',
+            },
+            owner: 'project',
+            project,
+          },
+        },
+      }),
+    )
+    process.chdir(directory)
+    await withEnvironment(
+      {
+        POLYMORFA_CONFIG_DIR: configDirectory,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_PROJECT_TOKEN: undefined,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+      },
+      async () => {
+        const result = await runCommand(
+          'hybrid-link pause --session existing --expected-revision prior --json',
+        )
+        expect(result.error).toBeDefined()
+        expect(result.stderr).toContain('This directory is linked to project')
+      },
+    )
+    expect(server.requests).toEqual([])
+    expect(keyring).not.toHaveBeenCalled()
+  } finally {
+    process.chdir(previousDirectory)
+    keyring.mockRestore()
+    await rm(directory, {recursive: true, force: true})
+    await server.close()
+  }
+})
+
+test('session policy uses the project bound to the selected profile', async () => {
+  const server = await startHttpSequenceServer([
+    {
+      body: {
+        success: true,
+        data: {
+          scope: 'session',
+          revision: 'default',
+          prefer: null,
+          allowedTransports: ['linked_devices'],
+        },
+      },
+    },
+  ])
+  const configDirectory = await mkdtemp(
+    join(homedir(), '.polymorfa-cli-profile-'),
+  )
+  const keyring = vi
+    .spyOn(AsyncEntry.prototype, 'getPassword')
+    .mockResolvedValue(apiKey)
+  try {
+    await writeFile(
+      join(configDirectory, 'config.json'),
+      JSON.stringify({
+        version: 2,
+        activeProfile: 'hybrid',
+        profiles: {
+          hybrid: {
+            credential: {kind: 'apiKey', account: 'profile:hybrid:apiKey'},
+            owner: 'project',
+            project,
+          },
+        },
+      }),
+    )
+    await withEnvironment(
+      {
+        POLYMORFA_CONFIG_DIR: configDirectory,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_PROJECT_TOKEN: undefined,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+      },
+      async () => {
+        const result = await runCommand(
+          'routing-policy get --scope session --session existing --json',
+        )
+        expect(result.error, result.stderr).toBeUndefined()
+      },
+    )
+    expect(server.requests.map(({url}) => url)).toEqual([
+      `/messaging/routing/hybrid?scope=session&projectId=${project}&session=existing`,
+    ])
+    expect(keyring).toHaveBeenCalledOnce()
+  } finally {
+    keyring.mockRestore()
+    await rm(configDirectory, {recursive: true, force: true})
+    await server.close()
+  }
+})
 
 test.each(cases)(
   'browser credentials cannot invoke $command',

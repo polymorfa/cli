@@ -1,4 +1,7 @@
 import {runCommand} from '@oclif/test'
+import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {homedir} from 'node:os'
+import {join} from 'node:path'
 import {expect, test} from 'vitest'
 import {
   startHttpSequenceServer,
@@ -34,6 +37,91 @@ test('state output shows both connection readiness and enablement', async () => 
       expect(result.stdout).toContain('pair-4\tactive')
       expect(result.stdout).toContain('linked_devices: connected (enabled)')
       expect(result.stdout).toContain('official_api: disconnected (disabled)')
+    })
+  } finally {
+    await server.close()
+  }
+})
+test('routing policy uses linked project and resolves an explicit slug', async () => {
+  const policy = {
+    scope: 'project',
+    revision: 'default',
+    prefer: null,
+    allowedTransports: ['linked_devices'],
+  }
+  const server = await startHttpSequenceServer([
+    {body: {success: true, data: policy}},
+    {
+      body: {
+        success: true,
+        data: [
+          {
+            _creationTime: 0,
+            _id: project,
+            name: 'App',
+            orgId: 'org_1',
+            slug: 'app',
+            stage: 'development',
+          },
+        ],
+      },
+    },
+    {body: {success: true, data: policy}},
+  ])
+  const directory = await mkdtemp(join(homedir(), '.polymorfa-cli-policy-'))
+  const previousDirectory = process.cwd()
+  try {
+    await writeFile(
+      join(directory, 'polymorfa.json'),
+      JSON.stringify({project, version: 1}),
+    )
+    process.chdir(directory)
+    await withEnvironment(env(server.baseUrl), async () => {
+      const linked = await runCommand('routing-policy get --scope project')
+      expect(linked.error, linked.stderr).toBeUndefined()
+      const explicit = await runCommand(
+        'routing-policy get --scope project --project app',
+      )
+      expect(explicit.error, explicit.stderr).toBeUndefined()
+    })
+    expect(server.requests.map(({url}) => url)).toEqual([
+      `/messaging/routing/hybrid?scope=project&projectId=${project}`,
+      '/platform/projects',
+      `/messaging/routing/hybrid?scope=project&projectId=${project}`,
+    ])
+  } finally {
+    process.chdir(previousDirectory)
+    await rm(directory, {recursive: true, force: true})
+    await server.close()
+  }
+})
+test('availability output names existing connections and resumable QuickLink', async () => {
+  const server = await startHttpSequenceServer([
+    {
+      body: {
+        success: true,
+        data: {
+          allowed: false,
+          addConnection: null,
+          connections: [
+            {kind: 'linked_devices', status: 'connected', enabled: true},
+            {kind: 'official_api', status: 'pending', enabled: false},
+          ],
+          resumeQuickLinkId: 'ql_pending',
+        },
+      },
+    },
+  ])
+  try {
+    await withEnvironment(env(server.baseUrl), async () => {
+      const result = await runCommand(
+        `quicklink availability --project ${project} --session existing`,
+      )
+      expect(result.error, result.stderr).toBeUndefined()
+      expect(result.stdout).toContain('No added connection is available.')
+      expect(result.stdout).toContain('linked_devices: connected (enabled)')
+      expect(result.stdout).toContain('official_api: pending (disabled)')
+      expect(result.stdout).toContain('Resume QuickLink: ql_pending')
     })
   } finally {
     await server.close()

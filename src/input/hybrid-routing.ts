@@ -14,19 +14,20 @@ export const hybridPolicyFlags = {
     description: 'Number session name for session scope.',
   }),
 }
-export function hybridPolicyScope(flags: {
-  scope: string
-  project?: string | undefined
-  session?: string | undefined
-}): HybridRoutingPolicyScope {
+export function hybridPolicyScope(
+  flags: {
+    scope: string
+    session?: string | undefined
+  },
+  projectId?: string,
+): HybridRoutingPolicyScope {
   if (flags.scope === 'team') return {scope: 'team'}
-  if (!flags.project)
+  if (!projectId)
     throw new PolymorfaConfigurationError(
-      'This scope requires --project.',
+      'This scope requires a project context.',
       'project',
     )
-  if (flags.scope === 'project')
-    return {scope: 'project', projectId: flags.project}
+  if (flags.scope === 'project') return {scope: 'project', projectId}
   if (flags.scope !== 'session')
     throw new PolymorfaConfigurationError('Invalid policy scope.', 'scope')
   if (!flags.session)
@@ -34,5 +35,5 @@ export function hybridPolicyScope(flags: {
       'Session scope requires --session.',
       'session',
     )
-  return {scope: 'session', projectId: flags.project, session: flags.session}
+  return {scope: 'session', projectId, session: flags.session}
 }

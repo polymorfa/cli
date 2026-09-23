@@ -57,13 +57,16 @@ export default class RoutingPolicySet extends BaseCommand {
         'allow',
       )
     })
-    const scope = hybridPolicyScope(flags)
-    const client = await this.messagingClient(
-      flags,
-      scope.scope === 'team'
-        ? {serverApiKeyOnly: 'Team Hybrid routing'}
-        : {serverCredentialOnly: 'Hybrid routing'},
-    )
+    const {client, projectId} =
+      flags.scope === 'team'
+        ? {
+            client: await this.messagingClient(flags, {
+              serverApiKeyOnly: 'Team Hybrid routing',
+            }),
+            projectId: undefined,
+          }
+        : await this.quickLinksClient(flags)
+    const scope = hybridPolicyScope(flags, projectId)
     const response = await client.hybridLink.setPolicy(scope, {
       expectedRevision: flags['expected-revision'],
       prefer,
