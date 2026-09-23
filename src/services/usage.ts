@@ -1,12 +1,16 @@
 import {
+  Client,
+  PolymorfaConfigurationError,
   PolymorfaValidationError,
-  type ClientInstance,
   type ResponseMetadata,
   type UsageGateList,
   type UsageMeter,
   type UsageRecordPage,
+  type UsageResource,
   type UsageSummary,
 } from '@polymorfa/sdk'
+
+import type {DeveloperEnvironment} from '../context/environment.js'
 
 export interface UsageResult<T> {
   readonly data: T
@@ -30,6 +34,41 @@ export interface UsageFilters {
 
 const PERIOD = /^\d{4}-(0[1-9]|1[0-2])$/
 
+export function createUsageResource(
+  environment: DeveloperEnvironment,
+): UsageResource {
+  const options = {
+    baseUrl: environment.baseUrl,
+    ...(environment.apiVersion === undefined
+      ? {}
+      : {apiVersion: environment.apiVersion}),
+    ...(environment.timeoutMs === undefined
+      ? {}
+      : {timeoutMs: environment.timeoutMs}),
+  }
+  const projectId = environment.context.projectId
+  if (environment.context.principalType === 'project_token') {
+    if (!projectId) {
+      throw new PolymorfaConfigurationError(
+        'A project token requires --project or a project-bound profile.',
+        'project',
+      )
+    }
+    return new Client({
+      ...options,
+      credential: {type: 'projectToken', value: environment.credential},
+      projectId,
+    }).usage
+  }
+  const client = new Client({
+    ...options,
+    credential: {type: 'organizationApiKey', value: environment.credential},
+  })
+  return environment.context.owner === 'project' && projectId
+    ? client.project(projectId).usage
+    : client.usage
+}
+
 export function validatePeriod(period?: string): string | undefined {
   if (period === undefined) return undefined
   if (!PERIOD.test(period)) {
@@ -42,11 +81,11 @@ export function validatePeriod(period?: string): string | undefined {
 }
 
 export async function getUsageSummary(
-  client: ClientInstance<'organization'>,
+  usage: UsageResource,
   filters: UsageFilters,
 ): Promise<UsageResult<UsageSummary>> {
   const period = validatePeriod(filters.period)
-  const response = await client.usage.summary({
+  const response = await usage.summary({
     ...(period === undefined ? {} : {period}),
     ...(filters.project === undefined ? {} : {projectId: filters.project}),
     ...(filters.session === undefined ? {} : {session: filters.session}),
@@ -55,11 +94,11 @@ export async function getUsageSummary(
 }
 
 export async function listUsageRecords(
-  client: ClientInstance<'organization'>,
+  usage: UsageResource,
   filters: UsageFilters,
 ): Promise<UsageResult<UsageRecordPage>> {
   const period = validatePeriod(filters.period)
-  const response = await client.usage.listRecords({
+  const response = await usage.listRecords({
     ...(filters.callId === undefined ? {} : {callId: filters.callId}),
     ...(filters.cursor === undefined ? {} : {cursor: filters.cursor}),
     ...(filters.limit === undefined ? {} : {limit: filters.limit}),
@@ -76,10 +115,10 @@ export async function listUsageRecords(
 }
 
 export async function listUsageGates(
-  client: ClientInstance<'organization'>,
+  usage: UsageResource,
   filters: UsageFilters,
 ): Promise<UsageResult<UsageGateList>> {
-  const response = await client.usage.listGates({
+  const response = await usage.listGates({
     ...(filters.project === undefined ? {} : {projectId: filters.project}),
     ...(filters.session === undefined ? {} : {session: filters.session}),
   })

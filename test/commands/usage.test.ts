@@ -9,6 +9,8 @@ import {
 
 const API_KEY =
   'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const PROJECT_TOKEN =
+  'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 
 const PROJECT_A = '22222222-2222-4222-8222-222222222222'
 const PROJECT_B = '33333333-3333-4333-8333-333333333333'
@@ -165,6 +167,34 @@ describe('usage commands', () => {
     ])
   })
 
+  test('uses a project token only for its explicit project', async () => {
+    server = await startHttpSequenceServer([
+      {body: {data: {...summary, projectId: PROJECT_A}, success: true}},
+      {body: {data: {nextCursor: null, records: [record]}, success: true}},
+    ])
+
+    const missing = await projectToken(() => runCommand('usage summary'))
+    const summarized = await projectToken(() =>
+      runCommand(`usage summary --project ${PROJECT_A}`),
+    )
+    const listed = await projectToken(() =>
+      runCommand(`usage records --project ${PROJECT_A}`),
+    )
+
+    expect(exitCode(missing.error)).toBe(2)
+    expect(missing.stderr).toContain('--project')
+    expect(summarized.error).toBeUndefined()
+    expect(listed.error).toBeUndefined()
+    expect(server.requests.map(({url}) => url)).toEqual([
+      `/platform/usage?projectId=${PROJECT_A}`,
+      `/platform/usage/records?projectId=${PROJECT_A}`,
+    ])
+    expect(server.requests.map(({headers}) => headers.authorization)).toEqual([
+      `Bearer ${PROJECT_TOKEN}`,
+      `Bearer ${PROJECT_TOKEN}`,
+    ])
+  })
+
   test('lists gates with their mode and limit', async () => {
     server = await startHttpSequenceServer([
       {body: {data: gates, success: true}},
@@ -251,6 +281,19 @@ describe('usage commands', () => {
         POLYMORFA_API_KEY: API_KEY,
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
+      },
+      run,
+    )
+  }
+
+  async function projectToken<T>(run: () => Promise<T>): Promise<T> {
+    if (server === undefined) throw new Error('Test server was not started.')
+    return withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN,
       },
       run,
     )

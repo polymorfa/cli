@@ -865,9 +865,9 @@ or times out, the command keeps the password on screen and exits successfully.
 ### Call usage and limits
 
 When Calls access is enabled for a team, Polymorfa measures the calls its numbers host. Usage is measured, not charged.
-Commands require a server API key with `sessions:read`; a project API key reads
-its own project's usage. `usage gates` needs a team API key, because gate state
-covers the whole team.
+Commands require `sessions:read`; a project token reads only its own project's
+usage and needs `--project` or a project-bound profile. `usage gates` needs a
+team API key, because gate state covers the whole team.
 
 ```shell
 polymorfa usage summary

@@ -1,8 +1,11 @@
 import {Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
-import {createPlatformClient} from '../../sdk/client.js'
-import {listUsageGates, renderUsageGates} from '../../services/usage.js'
+import {
+  createUsageResource,
+  listUsageGates,
+  renderUsageGates,
+} from '../../services/usage.js'
 
 export default class UsageGates extends BaseCommand {
   static override description =
@@ -24,7 +27,9 @@ export default class UsageGates extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(UsageGates)
     const result = await listUsageGates(
-      createPlatformClient(await this.platformEnvironment(flags)),
+      createUsageResource(
+        await this.developerEnvironment(flags, {inferOwner: true}),
+      ),
       {
         ...(flags.project === undefined ? {} : {project: flags.project}),
         ...(flags.session === undefined ? {} : {session: flags.session}),

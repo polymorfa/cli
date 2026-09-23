@@ -1,12 +1,15 @@
 import {Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
-import {createPlatformClient} from '../../sdk/client.js'
-import {getUsageSummary, renderUsageSummary} from '../../services/usage.js'
+import {
+  createUsageResource,
+  getUsageSummary,
+  renderUsageSummary,
+} from '../../services/usage.js'
 
 export default class UsageSummary extends BaseCommand {
   static override description =
-    'Show metered usage for one calendar month (UTC), by meter and by number. Usage is measured, not charged: no credits are deducted for it. Requires a server API key with sessions:read. A project API key reads its own project.'
+    'Show metered usage for one calendar month (UTC), by meter and by number. Usage is measured, not charged: no credits are deducted for it. Requires sessions:read. A project token reads only its own project.'
 
   static override examples = [
     '<%= config.bin %> usage summary',
@@ -25,7 +28,9 @@ export default class UsageSummary extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(UsageSummary)
     const result = await getUsageSummary(
-      createPlatformClient(await this.platformEnvironment(flags)),
+      createUsageResource(
+        await this.developerEnvironment(flags, {inferOwner: true}),
+      ),
       {
         ...(flags.period === undefined ? {} : {period: flags.period}),
         ...(flags.project === undefined ? {} : {project: flags.project}),

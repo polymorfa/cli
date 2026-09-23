@@ -1,8 +1,11 @@
 import {Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
-import {createPlatformClient} from '../../sdk/client.js'
-import {listUsageRecords, renderUsageRecords} from '../../services/usage.js'
+import {
+  createUsageResource,
+  listUsageRecords,
+  renderUsageRecords,
+} from '../../services/usage.js'
 
 export default class UsageRecords extends BaseCommand {
   static override description =
@@ -35,7 +38,9 @@ export default class UsageRecords extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(UsageRecords)
     const result = await listUsageRecords(
-      createPlatformClient(await this.platformEnvironment(flags)),
+      createUsageResource(
+        await this.developerEnvironment(flags, {inferOwner: true}),
+      ),
       {
         ...(flags.call === undefined ? {} : {callId: flags.call}),
         ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),
