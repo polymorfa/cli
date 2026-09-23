@@ -222,8 +222,9 @@ export interface ExportSummary {
  * written once, from the first page; later pages must repeat it exactly. The
  * first page is always written, even when empty, so the destination reflects a
  * zero-record export. When a
- * page fails, `onStop` receives the progress so far and the cursor that
- * resumes from the failed page, and the original error is rethrown.
+ * page fetch or validation fails, `onStop` receives the progress so far and
+ * the cursor that retries that page. A failed write may leave partial output,
+ * so it never advertises a cursor as safe to append from.
  */
 export async function exportCallRecords(input: {
   readonly api: Pick<CallAnalyticsApi, 'exportPage'>
@@ -237,13 +238,14 @@ export async function exportCallRecords(input: {
   readonly write: (chunk: string) => Promise<void>
 }): Promise<ExportSummary> {
   let cursor = input.cursor
+  const seenCursors = new Set(cursor === undefined ? [] : [cursor])
   let header: string | undefined
   let pages = 0
   let records = 0
-  const stopped = (error: unknown): never => {
+  const stopped = (error: unknown, resumeSafe = true): never => {
     input.onStop?.({
       complete: false,
-      nextCursor: cursor ?? null,
+      nextCursor: resumeSafe ? (cursor ?? null) : null,
       pages,
       records,
     })
@@ -260,8 +262,16 @@ export async function exportCallRecords(input: {
         },
         input.format,
       )
-      if (page.nextCursor !== null)
+      if (page.nextCursor !== null) {
         assertCursorAdvanced(cursor, page.nextCursor)
+        if (seenCursors.has(page.nextCursor)) {
+          throw new PolymorfaServerError(
+            'The API returned an earlier continuation cursor for the call export.',
+            {code: 'pagination_cursor_repeated'},
+          )
+        }
+        seenCursors.add(page.nextCursor)
+      }
     } catch (error) {
       return stopped(error)
     }
@@ -293,7 +303,7 @@ export async function exportCallRecords(input: {
       try {
         await input.write(chunk)
       } catch (error) {
-        return stopped(error)
+        return stopped(error, false)
       }
     }
     pages += 1

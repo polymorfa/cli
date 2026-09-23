@@ -4,6 +4,7 @@ import {join} from 'node:path'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {writeFully} from '../../src/commands/calls/export.js'
+import {exportCallRecords} from '../../src/services/call-analytics.js'
 
 import {
   startHttpSequenceServer,
@@ -583,6 +584,23 @@ describe('calls export', () => {
     expect(changed.stdout).toBe(`${HEADER}\r\n${csvRow('call_1')}\r\n`)
   })
 
+  test('rejects a cursor cycle before writing the repeated page', async () => {
+    server = await startHttpSequenceServer([
+      csvPage(['call_1'], 'cursor_a'),
+      csvPage(['call_2'], 'cursor_b'),
+      csvPage(['call_3'], 'cursor_a'),
+    ])
+
+    const result = await apiKey(() => runCommand('calls export'))
+
+    expect(exitCode(result.error)).toBe(5)
+    expect(result.stderr).toContain('earlier continuation cursor')
+    expect(result.stdout).toBe(
+      `${HEADER}\r\n${csvRow('call_1')}\r\n${csvRow('call_2')}\r\n`,
+    )
+    expect(server.requests).toHaveLength(3)
+  })
+
   test('validates flags before sending a request', async () => {
     server = await startHttpSequenceServer([csvPage([])])
 
@@ -651,5 +669,44 @@ describe('writeFully', () => {
     await expect(writeFully(file as never, 'x')).rejects.toThrow(
       'Could not write',
     )
+  })
+})
+
+describe('exportCallRecords', () => {
+  test('does not advertise a resume cursor after a partial write', async () => {
+    let partialOutput = ''
+    let stopped:
+      {nextCursor: string | null; pages: number; records: number} | undefined
+
+    await expect(
+      exportCallRecords({
+        api: {
+          exportPage: () =>
+            Promise.resolve({
+              body: '{"callId":"call_1"}\n',
+              metadata: {},
+              nextCursor: 'cursor_2',
+            }),
+        } as never,
+        format: 'ndjson',
+        limit: 1,
+        onStop: (summary) => {
+          stopped = summary
+        },
+        query: {},
+        write: (chunk) => {
+          partialOutput = chunk.slice(0, 5)
+          return Promise.reject(new Error('disk full'))
+        },
+      }),
+    ).rejects.toThrow('disk full')
+
+    expect(partialOutput).toBe('{"cal')
+    expect(stopped).toEqual({
+      complete: false,
+      nextCursor: null,
+      pages: 0,
+      records: 0,
+    })
   })
 })
