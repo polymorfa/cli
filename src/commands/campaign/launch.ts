@@ -1,6 +1,7 @@
 import {Args, Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
+import {idempotencyKey} from '../../input/idempotency.js'
 import {
   launchCampaign,
   parseCampaignSchedule,
@@ -18,7 +19,7 @@ export default class CampaignLaunch extends BaseCommand {
   static override flags = {
     'idempotency-key': Flags.string({
       description:
-        'Identify this attempt (the API does not deduplicate lifecycle commands).',
+        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).',
     }),
     'project-slug': Flags.string({
       description: 'Project slug in the Messaging API path.',
@@ -37,9 +38,7 @@ export default class CampaignLaunch extends BaseCommand {
       flags['project-slug'],
       args.campaign,
       scheduledAt,
-      flags['idempotency-key'] === undefined
-        ? {}
-        : {idempotencyKey: flags['idempotency-key']},
+      {idempotencyKey: idempotencyKey(flags['idempotency-key'])},
     )
     this.writeValue(
       result,
