@@ -13,12 +13,11 @@ permissions:
 jobs:
   verify:
     name: Verify Node ${{ matrix.node-version }}
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-2vcpu-ubuntu-2404
     strategy:
       fail-fast: false
       matrix:
         node-version:
-          - 20
           - 22
     steps:
       - uses: actions/checkout@v6

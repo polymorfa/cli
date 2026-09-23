@@ -420,6 +420,97 @@ describe('resolveEnvironment', () => {
   })
 })
 
+describe('resolveDeveloperEnvironment owner inference', () => {
+  const key =
+    'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
+
+  test('reads the whole organization despite a saved project profile', async () => {
+    const config: ProfileConfig = {
+      activeProfile: 'scoped',
+      profiles: {
+        scoped: {
+          credential: {account: 'profile:scoped:apiKey', kind: 'apiKey'},
+          owner: 'project',
+          project: PROJECT,
+        },
+      },
+      version: 2,
+    }
+    const profiles = {
+      load: () => Promise.resolve(config),
+      save: () => Promise.resolve(),
+    }
+
+    const analytics = await resolveDeveloperEnvironment(
+      {env: {}, inferOwner: true, profile: 'scoped'},
+      profiles,
+      fakeCredentials(key),
+    )
+    expect(analytics.context.owner).toBe('organization')
+    expect(analytics.context.projectId).toBeUndefined()
+
+    const explicitProfileScope = await resolveDeveloperEnvironment(
+      {env: {}, profile: 'scoped'},
+      profiles,
+      fakeCredentials(key),
+    )
+    expect(explicitProfileScope.context).toMatchObject({
+      owner: 'project',
+      projectId: PROJECT,
+    })
+  })
+
+  test('reads the organization with an organization key and no project', async () => {
+    await expect(
+      resolveDeveloperEnvironment(
+        {env: {POLYMORFA_API_KEY: key}, inferOwner: true},
+        fakeProfiles(),
+        fakeCredentials('unused'),
+      ),
+    ).resolves.toMatchObject({
+      context: {owner: 'organization', principalType: 'organization_key'},
+    })
+  })
+
+  test('reads one project when --project is given', async () => {
+    await expect(
+      resolveDeveloperEnvironment(
+        {env: {}, inferOwner: true, profile: 'work', project: PROJECT},
+        fakeProfiles(),
+        fakeCredentials(key),
+      ),
+    ).resolves.toMatchObject({
+      context: {owner: 'project', profile: 'work', projectId: PROJECT},
+    })
+  })
+
+  test('requires --project for a project token from the environment', async () => {
+    await expect(
+      resolveDeveloperEnvironment(
+        {
+          env: {
+            POLYMORFA_PROJECT_TOKEN:
+              'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          },
+          inferOwner: true,
+        },
+        fakeProfiles(),
+        fakeCredentials('unused'),
+      ),
+    ).rejects.toThrow('explicit --project')
+  })
+
+  test('keeps an explicit --owner', async () => {
+    await expect(
+      resolveDeveloperEnvironment(
+        {env: {POLYMORFA_API_KEY: key}, inferOwner: true, owner: 'project'},
+        fakeProfiles(),
+        fakeCredentials('unused'),
+      ),
+    ).rejects.toThrow('explicit --project')
+  })
+})
+
 const PROJECT = '11111111-1111-4111-8111-111111111111'
 const OTHER_PROJECT = '22222222-2222-4222-8222-222222222222'
 

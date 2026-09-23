@@ -50,6 +50,8 @@ export interface ListenerEnvironment {
 export interface ResolveListenerEnvironmentInput {
   readonly apiVersion?: string | undefined
   readonly env: Readonly<Record<string, string | undefined>>
+  /** Project from the nearest `polymorfa link` file; below --project. */
+  readonly linkedProject?: string | undefined
   readonly profile?: string | undefined
   readonly project?: string | undefined
   readonly timeoutMs?: number | undefined
@@ -66,6 +68,15 @@ export interface DeveloperEnvironment {
 export interface ResolveDeveloperEnvironmentInput {
   readonly apiVersion?: string | undefined
   readonly env: Readonly<Record<string, string | undefined>>
+  /**
+   * Choose the owner when neither --owner nor the profile names one: a
+   * project context (--project, or a project token) reads one project, and
+   * an organization key otherwise reads the whole organization. For commands
+   * whose results span projects rather than belong to one owner.
+   */
+  readonly inferOwner?: boolean | undefined
+  /** Project from the nearest `polymorfa link` file; below --project. */
+  readonly linkedProject?: string | undefined
   readonly owner?: string | undefined
   readonly profile?: string | undefined
   readonly project?: string | undefined
@@ -93,10 +104,22 @@ export async function resolveDeveloperEnvironment(
   if (explicitProfile === undefined && environmentCredential !== undefined) {
     const baseUrl =
       nonEmpty(input.env.POLYMORFA_BASE_URL) ?? 'https://api.polymorfa.com'
-    const requestedProject = nonEmpty(input.project)
+    const explicitProject = nonEmpty(input.project)
+    const environmentOwner =
+      input.owner ??
+      (input.inferOwner === true
+        ? inferredOwner(
+            environmentCredential.principalType,
+            explicitProject !== undefined,
+          )
+        : undefined)
+    const requestedProject =
+      environmentOwner === 'project'
+        ? (explicitProject ?? nonEmpty(input.linkedProject))
+        : explicitProject
     const unresolvedContext = resolveOwnerContext({
       principalType: environmentCredential.principalType,
-      ...(input.owner === undefined ? {} : {owner: input.owner}),
+      ...(environmentOwner === undefined ? {} : {owner: environmentOwner}),
       ...(requestedProject === undefined ? {} : {projectId: requestedProject}),
     })
     const projectId = await canonicalProjectId(
@@ -157,8 +180,12 @@ export async function resolveDeveloperEnvironment(
     profile.credential.kind === 'projectToken'
       ? 'project_token'
       : 'organization_key'
-  const owner = input.owner ?? profile.owner
   const explicitProject = nonEmpty(input.project)
+  const owner =
+    input.owner ??
+    (input.inferOwner === true
+      ? inferredOwner(principalType, explicitProject !== undefined)
+      : profile.owner)
   if (
     principalType === 'project_token' &&
     explicitProject !== undefined &&
@@ -169,8 +196,23 @@ export async function resolveDeveloperEnvironment(
       'project',
     )
   }
+  const linkedProject = nonEmpty(input.linkedProject)
+  if (
+    principalType === 'project_token' &&
+    owner === 'project' &&
+    explicitProject === undefined &&
+    linkedProject !== undefined &&
+    profile.project !== linkedProject
+  ) {
+    throw new PolymorfaConfigurationError(
+      `This directory is linked to project ${linkedProject}, but project-token profile ${selected} is bound to ${profile.project ?? 'another project'}. Pass --project or run polymorfa link again.`,
+      'project',
+    )
+  }
   const unresolvedProject =
-    owner === 'project' ? (explicitProject ?? profile.project) : explicitProject
+    owner === 'project'
+      ? (explicitProject ?? linkedProject ?? profile.project)
+      : explicitProject
   const baseUrl =
     nonEmpty(input.env.POLYMORFA_BASE_URL) ??
     profile.baseUrl ??
@@ -231,7 +273,7 @@ export async function resolveListenerEnvironment(
       'credential',
     )
   }
-  const project = nonEmpty(input.project)
+  const project = nonEmpty(input.project) ?? nonEmpty(input.linkedProject)
   if (projectToken !== undefined) {
     if (project === undefined) {
       throw new PolymorfaConfigurationError(
@@ -322,7 +364,7 @@ export async function resolveListenerEnvironment(
     profile.project !== project
   ) {
     throw new PolymorfaConfigurationError(
-      'A project-token profile cannot listen to a different --project context.',
+      'A project-token profile cannot listen to a different --project or linked project context.',
       'project',
     )
   }
@@ -424,6 +466,90 @@ export async function resolveCommandEnvironment(
   return {...resolved, profile: selected, source: 'profile'}
 }
 
+export interface TeamSettingEnvironment {
+  readonly apiVersion?: string
+  readonly baseUrl: string
+  readonly credential: string
+  readonly principalType: 'organization_key' | 'project_token'
+  readonly timeoutMs?: number
+}
+
+/**
+ * Credentials for a team-wide setting that project tokens may read, such as
+ * call data retention. Team API keys and project tokens both resolve, from the
+ * environment or a profile, with no project context: the API identifies the
+ * principal from the credential and decides whether it may read or change the
+ * setting (a project token's change fails with 403). Client tokens are refused.
+ */
+export async function resolveTeamSettingEnvironment(
+  input: ResolveCommandEnvironmentInput,
+  profiles: ProfileRepositoryLike = new ProfileRepository(),
+  credentials: CredentialStore = new SecureCredentialStore(),
+): Promise<TeamSettingEnvironment> {
+  const explicitProfile = nonEmpty(input.profile)
+  const baseUrl = nonEmpty(input.env.POLYMORFA_BASE_URL)
+  const optional = {
+    ...(input.timeoutMs === undefined ? {} : {timeoutMs: input.timeoutMs}),
+  }
+  if (explicitProfile === undefined) {
+    if (
+      nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN) !== undefined &&
+      nonEmpty(input.env.POLYMORFA_API_KEY) === undefined &&
+      nonEmpty(input.env.POLYMORFA_PROJECT_TOKEN) === undefined
+    ) {
+      throw new PolymorfaConfigurationError(
+        'This command requires a team API key or a project token; browser client tokens are refused.',
+        'credential',
+      )
+    }
+    const environment = durableEnvironmentCredential(input.env)
+    if (environment !== undefined) {
+      return {
+        ...(input.apiVersion === undefined
+          ? {}
+          : {apiVersion: input.apiVersion}),
+        baseUrl: baseUrl ?? 'https://api.polymorfa.com',
+        credential: environment.value,
+        principalType: environment.principalType,
+        ...optional,
+      }
+    }
+  }
+  const config = await profiles.load()
+  const selected = explicitProfile ?? config.activeProfile
+  if (selected === undefined) {
+    throw new PolymorfaConfigurationError(
+      'This command requires POLYMORFA_API_KEY, POLYMORFA_PROJECT_TOKEN, or an authentication profile.',
+      'credential',
+    )
+  }
+  const profile = config.profiles[selected]
+  if (profile === undefined) {
+    throw new PolymorfaConfigurationError(
+      `Profile ${selected} does not exist. Run polymorfa auth list to inspect configured profiles.`,
+      'profile',
+    )
+  }
+  const credential = await credentials.get(profile.credential.account)
+  if (credential === undefined) {
+    throw new PolymorfaConfigurationError(
+      `Profile ${selected} has no credential in the operating-system keyring.`,
+      'keyring',
+    )
+  }
+  const apiVersion = input.apiVersion ?? profile.apiVersion
+  return {
+    ...(apiVersion === undefined ? {} : {apiVersion}),
+    baseUrl: baseUrl ?? profile.baseUrl ?? 'https://api.polymorfa.com',
+    credential,
+    principalType:
+      profile.credential.kind === 'projectToken'
+        ? 'project_token'
+        : 'organization_key',
+    ...optional,
+  }
+}
+
 export function resolveEnvironment(
   input: ResolveEnvironmentInput,
 ): ResolvedEnvironment {
@@ -516,7 +642,7 @@ function durableEnvironmentCredential(
 const PROJECT_UUID =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
 
-async function canonicalProjectId(
+export async function canonicalProjectId(
   project: string | undefined,
   principalType: 'organization_key' | 'project_token',
   connection: Parameters<ProjectLookup>[0],
@@ -554,7 +680,7 @@ async function canonicalProjectId(
   return projectId
 }
 
-async function listProjects(
+export async function listProjects(
   input: Parameters<ProjectLookup>[0],
 ): Promise<readonly ProjectWithStats[]> {
   const client = new Client({
@@ -565,6 +691,15 @@ async function listProjects(
   })
   const response = await client.projects.list()
   return response.data.data
+}
+
+function inferredOwner(
+  principalType: 'organization_key' | 'project_token',
+  hasProject: boolean,
+): 'organization' | 'project' {
+  return principalType === 'project_token' || hasProject
+    ? 'project'
+    : 'organization'
 }
 
 function requiredProjectId(projectId: string | undefined): string {

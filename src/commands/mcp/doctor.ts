@@ -16,7 +16,7 @@ export default class McpDoctor extends BaseCommand {
       listenerProtocolSha256: LISTENER_PROTOCOL_SHA256,
       listenerProtocolVersion: LISTENER_PROTOCOL_VERSION,
       node: process.versions.node,
-      nodeSupported: major >= 20,
+      nodeSupported: major >= 22,
       tools: MCP_TOOL_NAMES.length,
     }
     this.writeValue(

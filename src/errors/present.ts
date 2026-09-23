@@ -6,6 +6,7 @@ import {
   PolymorfaConflictError,
   PolymorfaConnectionError,
   PolymorfaError,
+  PolymorfaMediaIntegrityError,
   PolymorfaNotFoundError,
   PolymorfaPaymentRequiredError,
   PolymorfaRateLimitError,
@@ -43,6 +44,10 @@ export interface PresentedError {
   readonly exitCode: number
   readonly message: string
   readonly requestId?: string
+  /** Console request log for this request, when the API returned one. */
+  readonly requestLogUrl?: string
+  /** Documentation for the error code. */
+  readonly docUrl?: string
   readonly retryable: boolean
 }
 
@@ -55,6 +60,14 @@ export function presentError(
   const requestId =
     error instanceof PolymorfaError || error instanceof ListenerProtocolError
       ? error.requestId
+      : undefined
+  const requestLogUrl =
+    error instanceof PolymorfaError && error.requestLogUrl !== undefined
+      ? redact(error.requestLogUrl, secrets)
+      : undefined
+  const docUrl =
+    error instanceof PolymorfaError && error.docUrl !== undefined
+      ? redact(error.docUrl, secrets)
       : undefined
 
   return {
@@ -69,7 +82,7 @@ export function presentError(
               error instanceof EventFilterError
             ? error.code
             : error instanceof PolymorfaError && error.code
-              ? error.code
+              ? redact(error.code, secrets)
               : `${classified.category}_error`,
     message,
     retryable:
@@ -78,12 +91,48 @@ export function presentError(
         classified.category,
       ),
     ...(requestId === undefined ? {} : {requestId}),
+    ...(requestLogUrl === undefined ? {} : {requestLogUrl}),
+    ...(docUrl === undefined ? {} : {docUrl}),
   }
+}
+
+/**
+ * API error codes with their own exit code, whatever their HTTP status, so
+ * scripts can tell a missing beta enrollment or a reached limit apart from
+ * other authorization or payment failures.
+ */
+export const CODE_EXIT_CODES: ReadonlyMap<
+  string,
+  Pick<PresentedError, 'category' | 'exitCode'>
+> = new Map<string, Pick<PresentedError, 'category' | 'exitCode'>>([
+  ['voice_not_enabled', {category: 'authorization', exitCode: 6}],
+  ['gate_limit_reached', {category: 'payment_required', exitCode: 7}],
+])
+
+/** Human stderr lines for a failure: message, then request and docs links. */
+export function renderErrorDetails(presented: PresentedError): string {
+  return [
+    `Error: ${presented.message}`,
+    ...(presented.requestId === undefined
+      ? []
+      : [`Request ID: ${presented.requestId}`]),
+    ...(presented.requestLogUrl === undefined
+      ? []
+      : [`Request log: ${presented.requestLogUrl}`]),
+    ...(presented.docUrl === undefined ? [] : [`Docs: ${presented.docUrl}`]),
+  ]
+    .map((line) => `${line}\n`)
+    .join('')
 }
 
 function classifyError(
   error: unknown,
 ): Pick<PresentedError, 'category' | 'exitCode'> {
+  if (error instanceof PolymorfaError && error.code !== undefined) {
+    const mapped = CODE_EXIT_CODES.get(error.code)
+    if (mapped !== undefined) return mapped
+  }
+
   if (error instanceof PolymorfaPaymentRequiredError) {
     return {category: 'payment_required', exitCode: 4}
   }
@@ -118,6 +167,11 @@ function classifyError(
   }
 
   if (error instanceof PolymorfaValidationError) {
+    return {category: 'validation', exitCode: 2}
+  }
+
+  // Media that fails its MAC, hash, or size checks is not retryable.
+  if (error instanceof PolymorfaMediaIntegrityError) {
     return {category: 'validation', exitCode: 2}
   }
 

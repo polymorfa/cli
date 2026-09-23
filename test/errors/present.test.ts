@@ -1,11 +1,15 @@
 import {
   PolymorfaAuthenticationError,
+  PolymorfaAuthorizationError,
+  PolymorfaRateLimitError,
   PolymorfaCancelledError,
   PolymorfaConfigurationError,
+  PolymorfaConflictError,
+  PolymorfaPaymentRequiredError,
 } from '@polymorfa/sdk'
 import {describe, expect, test} from 'vitest'
 
-import {presentError} from '../../src/errors/present.js'
+import {presentError, renderErrorDetails} from '../../src/errors/present.js'
 import {
   EventFilterError,
   CheckpointError,
@@ -98,5 +102,110 @@ describe('presentError', () => {
       category: 'server',
       retryable: true,
     })
+  })
+
+  test('keeps the stable API code of a conflict', () => {
+    const error = new PolymorfaConflictError(
+      'Another participant claimed it.',
+      {
+        code: 'call_claimed',
+        requestId: 'req_409',
+      },
+    )
+
+    expect(presentError(error)).toEqual({
+      category: 'conflict',
+      code: 'call_claimed',
+      exitCode: 4,
+      message: 'Another participant claimed it.',
+      requestId: 'req_409',
+      retryable: false,
+    })
+  })
+
+  test('gives voice_not_enabled and gate_limit_reached their own exit codes', () => {
+    expect(
+      presentError(
+        new PolymorfaAuthorizationError('Not enrolled.', {
+          code: 'voice_not_enabled',
+          status: 403,
+        }),
+      ),
+    ).toMatchObject({
+      category: 'authorization',
+      code: 'voice_not_enabled',
+      exitCode: 6,
+    })
+    expect(
+      presentError(
+        new PolymorfaPaymentRequiredError('Limit reached.', {
+          code: 'gate_limit_reached',
+          status: 402,
+        }),
+      ),
+    ).toMatchObject({
+      category: 'payment_required',
+      code: 'gate_limit_reached',
+      exitCode: 7,
+    })
+    expect(
+      presentError(
+        new PolymorfaAuthorizationError('Denied.', {code: 'toString'}),
+      ),
+    ).toMatchObject({category: 'authorization', exitCode: 3})
+  })
+
+  test('carries the request log link and doc URL from the error body', () => {
+    const error = new PolymorfaRateLimitError(
+      'WhatsApp is limiting requests.',
+      {
+        code: 'whatsapp_rate_limited',
+        requestId: 'req_body',
+        requestLogUrl:
+          'https://www.polymorfa.com/console/acme/~/logs/api?request_id=req_body',
+        docUrl: 'https://docs.polymorfa.com/api/errors#whatsapp-rate-limited',
+      },
+    )
+    const presented = presentError(error)
+    expect(presented).toEqual({
+      category: 'rate_limit',
+      code: 'whatsapp_rate_limited',
+      exitCode: 5,
+      message: 'WhatsApp is limiting requests.',
+      requestId: 'req_body',
+      requestLogUrl:
+        'https://www.polymorfa.com/console/acme/~/logs/api?request_id=req_body',
+      docUrl: 'https://docs.polymorfa.com/api/errors#whatsapp-rate-limited',
+      retryable: true,
+    })
+    expect(renderErrorDetails(presented)).toBe(
+      [
+        'Error: WhatsApp is limiting requests.',
+        'Request ID: req_body',
+        'Request log: https://www.polymorfa.com/console/acme/~/logs/api?request_id=req_body',
+        'Docs: https://docs.polymorfa.com/api/errors#whatsapp-rate-limited',
+        '',
+      ].join('\n'),
+    )
+  })
+
+  test('redacts credentials echoed in the request log and doc URLs', () => {
+    const secret = 'pmfa_secret_token_value'
+    const error = new PolymorfaRateLimitError('Limited.', {
+      requestLogUrl: `https://evil.example/logs?token=${secret}`,
+      docUrl: `https://evil.example/docs/${secret}`,
+    })
+    const presented = presentError(error, [secret])
+    expect(presented.requestLogUrl).toBe(
+      'https://evil.example/logs?token=[REDACTED]',
+    )
+    expect(presented.docUrl).toBe('https://evil.example/docs/[REDACTED]')
+    expect(renderErrorDetails(presented)).not.toContain(secret)
+  })
+
+  test('prints only the message when the API returned no links', () => {
+    expect(renderErrorDetails(presentError(new Error('socket exploded')))).toBe(
+      'Error: socket exploded\n',
+    )
   })
 })

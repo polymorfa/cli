@@ -7,9 +7,15 @@ import {
 
 import {
   resolveCommandEnvironment,
+  resolveDeveloperEnvironment,
   resolveListenerEnvironment,
+  resolveTeamSettingEnvironment,
+  type DeveloperEnvironment,
+  type TeamSettingEnvironment,
+  type ResolvedEnvironment,
 } from './context/environment.js'
-import {presentError} from './errors/present.js'
+import {findProjectLink} from './config/project-link.js'
+import {presentError, renderErrorDetails} from './errors/present.js'
 import {errorEnvelope, type OutputContext} from './output/contracts.js'
 import {renderValue, type OutputMode} from './output/render.js'
 import {createMessagingClient, createPlatformClient} from './sdk/client.js'
@@ -86,26 +92,48 @@ export abstract class BaseCommand extends Command {
   protected async developerSession(
     flags: GlobalFlags,
   ): Promise<DeveloperSession> {
-    const session = await createDeveloperSession(flags, (secret) =>
-      this.registerSecret(secret),
+    const session = await createDeveloperSession(
+      flags,
+      (secret) => this.registerSecret(secret),
+      await this.linkedProject(flags),
     )
     this.errorContext = session.context
     return session
+  }
+
+  /**
+   * Resolve an organization API key or exact-project token without building a
+   * typed client, for commands that span projects. With `inferOwner`, --project
+   * or a project token reads one project and an organization key otherwise
+   * reads the whole organization.
+   */
+  protected async developerEnvironment(
+    flags: GlobalFlags,
+    options: {readonly inferOwner?: boolean} = {},
+  ): Promise<DeveloperEnvironment> {
+    const environment = await resolveDeveloperEnvironment({
+      env: process.env,
+      ...(flags['api-version'] === undefined
+        ? {}
+        : {apiVersion: flags['api-version']}),
+      ...(options.inferOwner === undefined
+        ? {}
+        : {inferOwner: options.inferOwner}),
+      ...(flags.owner === undefined ? {} : {owner: flags.owner}),
+      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
+      ...(flags.project === undefined ? {} : {project: flags.project}),
+      ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
+    })
+    this.registerSecret(environment.credential)
+    this.errorContext = environment.context
+    return environment
   }
 
   protected async messagingClient(
     flags: GlobalFlags,
     options: {readonly serverApiKeyOnly?: string} = {},
   ): Promise<MessagingClient> {
-    const environment = await resolveCommandEnvironment({
-      env: process.env,
-      surface: 'messaging',
-      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
-      ...(flags['api-version'] === undefined
-        ? {}
-        : {apiVersion: flags['api-version']}),
-      ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
-    })
+    const environment = await this.messagingEnvironment(flags)
     if (
       options.serverApiKeyOnly !== undefined &&
       environment.credential.type !== 'apiKey'
@@ -115,7 +143,6 @@ export abstract class BaseCommand extends Command {
         'credential',
       )
     }
-    this.registerSecret(environment.credential.value)
     return createMessagingClient(environment)
   }
 
@@ -123,8 +150,10 @@ export abstract class BaseCommand extends Command {
     client: MessagingClient
     projectId: string
   }> {
+    const linkedProject = await this.linkedProject(flags)
     const environment = await resolveListenerEnvironment({
       env: process.env,
+      ...(linkedProject === undefined ? {} : {linkedProject}),
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags.project === undefined ? {} : {project: flags.project}),
       ...(flags['api-version'] === undefined
@@ -155,10 +184,42 @@ export abstract class BaseCommand extends Command {
     }
   }
 
+  /**
+   * Project from the nearest `polymorfa.json`, used only when
+   * --project is absent. It ranks above the profile's stored project.
+   */
+  protected async linkedProject(
+    flags: GlobalFlags,
+  ): Promise<string | undefined> {
+    if (flags.project !== undefined) return undefined
+    const link = await findProjectLink()
+    if (link !== undefined && flags.verbose === true) {
+      process.stderr.write(`Using project ${link.project} from ${link.path}\n`)
+    }
+    return link?.project
+  }
+
+  /** Resolve Messaging credentials once, for commands that also open sockets. */
+  protected async messagingEnvironment(
+    flags: GlobalFlags,
+  ): Promise<ResolvedEnvironment> {
+    return this.resolveEnvironment(flags, 'messaging')
+  }
+
   protected async platformClient(
     flags: GlobalFlags,
   ): Promise<ClientInstance<'organization'>> {
-    const environment = await resolveCommandEnvironment({
+    return createPlatformClient(await this.platformEnvironment(flags))
+  }
+
+  /**
+   * Resolve credentials for a team-wide setting that project tokens may read
+   * (call data retention): team API keys or project tokens; the API decides.
+   */
+  protected async teamSettingEnvironment(
+    flags: GlobalFlags,
+  ): Promise<TeamSettingEnvironment> {
+    const environment = await resolveTeamSettingEnvironment({
       env: process.env,
       surface: 'platform',
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
@@ -167,8 +228,32 @@ export abstract class BaseCommand extends Command {
         : {apiVersion: flags['api-version']}),
       ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
     })
+    this.registerSecret(environment.credential)
+    return environment
+  }
+
+  /** Resolve Platform credentials: server API keys only. */
+  protected async platformEnvironment(
+    flags: GlobalFlags,
+  ): Promise<ResolvedEnvironment> {
+    return this.resolveEnvironment(flags, 'platform')
+  }
+
+  private async resolveEnvironment(
+    flags: GlobalFlags,
+    surface: ResolvedEnvironment['surface'],
+  ): Promise<ResolvedEnvironment> {
+    const environment = await resolveCommandEnvironment({
+      env: process.env,
+      surface,
+      ...(flags.profile === undefined ? {} : {profile: flags.profile}),
+      ...(flags['api-version'] === undefined
+        ? {}
+        : {apiVersion: flags['api-version']}),
+      ...(flags.timeout === undefined ? {} : {timeoutMs: flags.timeout}),
+    })
     this.registerSecret(environment.credential.value)
-    return createPlatformClient(environment)
+    return environment
   }
 
   protected registerSecret(secret: string): void {
@@ -194,15 +279,18 @@ export abstract class BaseCommand extends Command {
             ...(presented.requestId === undefined
               ? {}
               : {requestId: presented.requestId}),
+            ...(presented.requestLogUrl === undefined
+              ? {}
+              : {requestLogUrl: presented.requestLogUrl}),
+            ...(presented.docUrl === undefined
+              ? {}
+              : {docUrl: presented.docUrl}),
             retryable: presented.retryable,
           }),
         )}\n`,
       )
     } else {
-      process.stderr.write(`Error: ${presented.message}\n`)
-      if (presented.requestId !== undefined) {
-        process.stderr.write(`Request ID: ${presented.requestId}\n`)
-      }
+      process.stderr.write(renderErrorDetails(presented))
     }
 
     this.exit(presented.exitCode)

@@ -60,8 +60,12 @@ payload.
 
 ## Explicit gaps
 
-The source exposes no call list, retrieve, accept, placement, history, watch, or
-stream route. It exposes no bulk LID resolution, identity directory, search,
+The unified Calls API is a separate surface with its own command family,
+`calls`; see [calls.md](calls.md). `call reject` remains the Linked Device
+session route and its help text points to `calls reject`.
+
+The session route exposes no call list, retrieve, accept, placement, history,
+watch, or stream operation. It exposes no bulk LID resolution, identity directory, search,
 pagination, or retained mapping history. It exposes no security-code list,
 cache, history, refresh, verification submission, or private QR operation. The
 CLI does not invent these workflows or cross credential boundaries with raw

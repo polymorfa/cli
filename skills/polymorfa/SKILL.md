@@ -16,6 +16,8 @@ Use `polymorfa --help` and `polymorfa <topic> --help` as the installed command a
 
 Organization API keys and exact-project tokens are durable principals. Browser client tokens and listener credentials are not general CLI credentials. Do not print, log, persist in project files, or pass credentials in command arguments.
 
+Voice Automation commands (`polymorfa voice audio`, `polymorfa voice credential`) are a beta for enrolled teams; `voice_not_enabled` (exit 6) means the team is not enrolled and `gate_limit_reached` (exit 7) means a voice limit is reached, so do not retry either. Pass a provider key to `polymorfa voice credential add` only through standard input or the environment variable named by `--key-env`, never as an argument.
+
 Use `polymorfa quicklink create --project PROJECT --input request.json` with an organization API key for standard number pairing. Treat the returned hosted URL as credential material; do not request direct session QR payloads or pairing codes.
 
 ## Choose an interface
@@ -23,6 +25,8 @@ Use `polymorfa quicklink create --project PROJECT --input request.json` with an 
 - Use the CLI for human work, shell automation, and JSON/JSONL pipelines.
 - Use `polymorfa mcp serve` for an agent that needs structured tools. Inspect the exposed surface with `polymorfa mcp tools` and diagnose setup with `polymorfa mcp doctor`.
 - MCP `listen` start/status/stop controls streams owned by that MCP server process. It does not create a detached daemon.
+
+Commands that stream data, such as `polymorfa calls export`, write records to standard output and progress, summaries, and resume cursors to standard error. Keep the streams separate and resume with the reported `--cursor` and the same filters.
 
 Use `--json` when another program consumes the result. Treat `schemaVersion`, `context`, `request`, pagination metadata, mutation receipts, and symbolic errors as the stable automation contract. Do not scrape human tables or prose.
 

@@ -74,6 +74,8 @@ export function errorEnvelope(input: {
   readonly category: string
   readonly message: string
   readonly requestId?: string
+  readonly requestLogUrl?: string
+  readonly docUrl?: string
   readonly retryable: boolean
   readonly context: Partial<OutputContext>
 }): {
