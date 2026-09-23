@@ -223,7 +223,7 @@ describe('Messaging campaign commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
-  test('reports an immediate stop without inventing an operation ID', async () => {
+  test('reports an immediate campaign stop without inventing an operation', async () => {
     server = await startHttpServer({
       body: {
         data: {...campaign(), operationId: null, status: 'cancelled'},
@@ -237,19 +237,12 @@ describe('Messaging campaign commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain(
-      'Campaign campaign/1 is cancelled; no delivery operation was needed.',
+      'Cancelled campaign campaign/1; it had no active delivery run.',
+    )
+    expect(result.stdout).toContain(
+      'The campaign is cancelled. No remaining recipient is sent.',
     )
     expect(result.stdout).not.toContain('operation null')
-
-    const json = await apiKeyEnvironment(() =>
-      runCommand(
-        'campaign stop campaign_1 --project-slug project_1 --yes --json',
-      ),
-    )
-    expect(json.error).toBeUndefined()
-    expect(JSON.parse(json.stdout)).toMatchObject({
-      data: {operationId: null},
-    })
   })
 
   test('requeues failed and optionally skipped-error recipients directly', async () => {

@@ -24,6 +24,8 @@ Use `polymorfa quicklink create --project PROJECT --input request.json` with an 
 - Use `polymorfa mcp serve` for an agent that needs structured tools. Inspect the exposed surface with `polymorfa mcp tools` and diagnose setup with `polymorfa mcp doctor`.
 - MCP `listen` start/status/stop controls streams owned by that MCP server process. It does not create a detached daemon.
 
+Commands that stream data, such as `polymorfa calls export`, write records to standard output and progress, summaries, and resume cursors to standard error. Keep the streams separate and resume with the reported `--cursor` and the same filters.
+
 Use `--json` when another program consumes the result. Treat `schemaVersion`, `context`, `request`, pagination metadata, mutation receipts, and symbolic errors as the stable automation contract. Do not scrape human tables or prose.
 
 ## Mutate safely
