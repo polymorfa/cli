@@ -1,6 +1,7 @@
 import {Args, Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../../base-command.js'
+import {idempotencyKey} from '../../../input/idempotency.js'
 import {reactToChannelMessage} from '../../../services/channels.js'
 
 export default class ChannelMessageReact extends BaseCommand {
@@ -17,7 +18,8 @@ export default class ChannelMessageReact extends BaseCommand {
 
   static override flags = {
     'idempotency-key': Flags.string({
-      description: 'Safely identify retries of this reaction action.',
+      description:
+        'Key that makes retries of this write safe for 24 hours. Generated when omitted.',
     }),
     reaction: Flags.string({
       description: 'Reaction text, at most 32 UTF-8 bytes; empty removes it.',
@@ -37,9 +39,7 @@ export default class ChannelMessageReact extends BaseCommand {
       args.channel,
       args['message-id'],
       flags.reaction,
-      flags['idempotency-key'] === undefined
-        ? {}
-        : {idempotencyKey: flags['idempotency-key']},
+      {idempotencyKey: idempotencyKey(flags['idempotency-key'])},
     )
     this.writeValue(
       result,
