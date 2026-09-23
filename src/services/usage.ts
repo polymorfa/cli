@@ -1,13 +1,12 @@
 import {
   PolymorfaValidationError,
-  type RawClient,
+  type ClientInstance,
   type ResponseMetadata,
+  type UsageGateList,
+  type UsageMeter,
+  type UsageRecordPage,
+  type UsageSummary,
 } from '@polymorfa/sdk'
-
-// Metered usage and usage gates (Platform API `/platform/usage`,
-// `/platform/usage/records` and `/platform/gates`). The typed SDK resource
-// lands with the next published SDK; these read through the raw client so the
-// commands work with the pinned SDK today.
 
 export interface UsageResult<T> {
   readonly data: T
@@ -17,74 +16,6 @@ export interface UsageResult<T> {
     readonly requestId?: string
     readonly status: number
   }
-}
-
-export interface UsageMeterTotal {
-  readonly keySource: string
-  readonly meter: string
-  readonly quantity: number
-  readonly records: number
-  readonly unit: string
-}
-
-export interface UsageSummary {
-  readonly billingEnabled: boolean
-  readonly end: string
-  readonly meters: readonly UsageMeterTotal[]
-  readonly numbers: readonly {
-    readonly meters: readonly UsageMeterTotal[]
-    readonly projectId: null | string
-    readonly session: string
-  }[]
-  readonly numbersTruncated: boolean
-  readonly period: string
-  readonly projectId: null | string
-  readonly session: null | string
-  readonly start: string
-}
-
-export interface UsageRecord {
-  readonly dimensions: Readonly<Record<string, boolean | number | string>>
-  readonly id: string
-  readonly keySource: string
-  readonly meter: string
-  readonly occurredAt: string
-  readonly pricedCredits: null | number
-  readonly pricingState: string
-  readonly projectId: null | string
-  readonly quantity: number
-  readonly revision: number
-  readonly session: null | string
-  readonly sourceId: string
-  readonly sourceKind: string
-  readonly unit: string
-}
-
-export interface UsageRecordPage {
-  readonly nextCursor: null | string
-  readonly records: readonly UsageRecord[]
-}
-
-export interface UsageGate {
-  readonly active: boolean
-  readonly decisions: {
-    readonly blocked: number
-    readonly evaluationError: number
-    readonly wouldBlock: number
-  }
-  readonly key: string
-  readonly kind: string
-  readonly limit: null | number
-  readonly mode: string
-  readonly overLimit: boolean | null
-  readonly subject: string
-  readonly unit: null | string
-  readonly used: null | number
-}
-
-export interface UsageGateList {
-  readonly gates: readonly UsageGate[]
-  readonly session: null | string
 }
 
 export interface UsageFilters {
@@ -111,39 +42,48 @@ export function validatePeriod(period?: string): string | undefined {
 }
 
 export async function getUsageSummary(
-  client: RawClient,
+  client: ClientInstance<'organization'>,
   filters: UsageFilters,
 ): Promise<UsageResult<UsageSummary>> {
-  return request<UsageSummary>(client, '/platform/usage', {
-    period: validatePeriod(filters.period),
-    projectId: filters.project,
-    session: filters.session,
+  const period = validatePeriod(filters.period)
+  const response = await client.usage.summary({
+    ...(period === undefined ? {} : {period}),
+    ...(filters.project === undefined ? {} : {projectId: filters.project}),
+    ...(filters.session === undefined ? {} : {session: filters.session}),
   })
+  return result(response.data, response.metadata)
 }
 
 export async function listUsageRecords(
-  client: RawClient,
+  client: ClientInstance<'organization'>,
   filters: UsageFilters,
 ): Promise<UsageResult<UsageRecordPage>> {
-  return request<UsageRecordPage>(client, '/platform/usage/records', {
-    callId: filters.callId,
-    cursor: filters.cursor,
-    limit: filters.limit,
-    meter: filters.meter,
-    period: validatePeriod(filters.period),
-    projectId: filters.project,
-    session: filters.session,
+  const period = validatePeriod(filters.period)
+  const response = await client.usage.listRecords({
+    ...(filters.callId === undefined ? {} : {callId: filters.callId}),
+    ...(filters.cursor === undefined ? {} : {cursor: filters.cursor}),
+    ...(filters.limit === undefined ? {} : {limit: filters.limit}),
+    // Keep accepting future meter names at the CLI boundary. The API validates
+    // names the installed SDK has not typed yet.
+    ...(filters.meter === undefined
+      ? {}
+      : {meter: filters.meter as UsageMeter}),
+    ...(period === undefined ? {} : {period}),
+    ...(filters.project === undefined ? {} : {projectId: filters.project}),
+    ...(filters.session === undefined ? {} : {session: filters.session}),
   })
+  return result(response.data, response.metadata)
 }
 
 export async function listUsageGates(
-  client: RawClient,
+  client: ClientInstance<'organization'>,
   filters: UsageFilters,
 ): Promise<UsageResult<UsageGateList>> {
-  return request<UsageGateList>(client, '/platform/gates', {
-    projectId: filters.project,
-    session: filters.session,
+  const response = await client.usage.listGates({
+    ...(filters.project === undefined ? {} : {projectId: filters.project}),
+    ...(filters.session === undefined ? {} : {session: filters.session}),
   })
+  return result(response.data, response.metadata)
 }
 
 export function renderUsageSummary(summary: UsageSummary): string {
@@ -223,32 +163,6 @@ export function renderUsageGates(list: UsageGateList): string {
 function limitLabel(limit: null | number): string {
   if (limit === null) return 'per number (pass --session)'
   return limit < 0 ? 'none' : String(limit)
-}
-
-async function request<T>(
-  client: RawClient,
-  path: string,
-  query: Readonly<Record<string, number | string | undefined>>,
-): Promise<UsageResult<T>> {
-  const response = await client.request<T>({
-    method: 'GET',
-    path,
-    query: Object.fromEntries(
-      Object.entries(query).filter(([, value]) => value !== undefined),
-    ),
-  })
-  return result(unwrap<T>(response.data), response.metadata)
-}
-
-function unwrap<T>(body: unknown): T {
-  if (
-    typeof body === 'object' &&
-    body !== null &&
-    'data' in (body as Record<string, unknown>)
-  ) {
-    return (body as {data: T}).data
-  }
-  return body as T
 }
 
 function result<T>(data: T, metadata: ResponseMetadata): UsageResult<T> {

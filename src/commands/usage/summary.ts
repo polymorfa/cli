@@ -1,7 +1,7 @@
 import {Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
-import {createRawClient} from '../../sdk/client.js'
+import {createPlatformClient} from '../../sdk/client.js'
 import {getUsageSummary, renderUsageSummary} from '../../services/usage.js'
 
 export default class UsageSummary extends BaseCommand {
@@ -25,7 +25,7 @@ export default class UsageSummary extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(UsageSummary)
     const result = await getUsageSummary(
-      createRawClient(await this.platformEnvironment(flags)),
+      createPlatformClient(await this.platformEnvironment(flags)),
       {
         ...(flags.period === undefined ? {} : {period: flags.period}),
         ...(flags.project === undefined ? {} : {project: flags.project}),

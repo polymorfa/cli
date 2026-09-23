@@ -1,7 +1,7 @@
 import {Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
-import {createRawClient} from '../../sdk/client.js'
+import {createPlatformClient} from '../../sdk/client.js'
 import {listUsageGates, renderUsageGates} from '../../services/usage.js'
 
 export default class UsageGates extends BaseCommand {
@@ -24,7 +24,7 @@ export default class UsageGates extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(UsageGates)
     const result = await listUsageGates(
-      createRawClient(await this.platformEnvironment(flags)),
+      createPlatformClient(await this.platformEnvironment(flags)),
       {
         ...(flags.project === undefined ? {} : {project: flags.project}),
         ...(flags.session === undefined ? {} : {session: flags.session}),

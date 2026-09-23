@@ -184,6 +184,53 @@ describe('usage commands', () => {
     ])
   })
 
+  test('keeps typed SDK data and response metadata in JSON output', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {data: {nextCursor: null, records: [record]}, success: true},
+        headers: {'x-request-id': 'usage-request-1'},
+      },
+    ])
+
+    const listed = await apiKey(() =>
+      runCommand('usage records --meter call.duration --json'),
+    )
+
+    expect(listed.error).toBeUndefined()
+    expect(JSON.parse(listed.stdout)).toMatchObject({
+      data: {nextCursor: null, records: [record]},
+      metadata: {attempts: 1, requestId: 'usage-request-1', status: 200},
+    })
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/usage/records?meter=call.duration',
+    ])
+  })
+
+  test('reports gate credential refusal without presenting an empty list', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          error: {
+            code: 'permission_denied',
+            message: 'Gate state needs a team API key.',
+            type: 'permission_error',
+          },
+          success: false,
+        },
+        status: 403,
+      },
+    ])
+
+    const denied = await apiKey(() => runCommand('usage gates'))
+
+    expect(exitCode(denied.error)).toBe(3)
+    expect(denied.stderr).toContain('Gate state needs a team API key.')
+    expect(denied.stdout).toBe('')
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/gates',
+    ])
+  })
+
   test('refuses a malformed period before any request', async () => {
     server = await startHttpSequenceServer([
       {body: {data: summary, success: true}},
