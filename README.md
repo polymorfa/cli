@@ -1086,8 +1086,9 @@ a row with other values and an empty phone cell stops the command before
 anything is sent, naming the row numbers (the header is row 1). `--input`
 entries with an empty phone, and any phone longer than 64 characters, are
 refused the same way, as is an empty `--input` array, because the API would
-reject the whole request. JSON variables must use valid names and string values
-of at most 1,024 characters. Reported invalid rows for `--csv` refer to the
+reject the whole request. JSON variables must use valid names and string values;
+CSV and JSON variable values are limited to 1,024 characters. Reported invalid
+rows for `--csv` refer to the
 original spreadsheet rows, including blank rows. `__proto__` is not accepted as a `--variable` name. Comma,
 semicolon and tab separators are detected from the header row; separators
 inside quoted fields are ignored. A phone already on the

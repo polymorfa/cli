@@ -84,8 +84,14 @@ export async function readCsvRecipients(
       )
     }
     const variables: Record<string, string> = {}
-    for (const [name, index] of variableIndexes) {
-      const value = (record[index] ?? '').trim()
+    for (const [name, column] of variableIndexes) {
+      const value = (record[column] ?? '').trim()
+      if (value.length > MAX_VARIABLE_VALUE_LENGTH) {
+        throw invalid(
+          `${path} row ${index + 2} has a ${name} value longer than ${MAX_VARIABLE_VALUE_LENGTH} characters; nothing was sent.`,
+          'invalid_recipient_variables',
+        )
+      }
       if (value !== '') variables[name] = value
     }
     recipients.push(

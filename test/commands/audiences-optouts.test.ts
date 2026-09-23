@@ -153,6 +153,25 @@ describe('Audience and opt-out commands', () => {
     expect(result.stdout).toContain('9 members remain')
   })
 
+  test('reports a no-op when the member was not in the audience', async () => {
+    server = await startHttpServer({
+      body: {
+        data: {
+          listId: 'list_1',
+          phone: '+15551234567',
+          recipientCount: 9,
+          removed: false,
+        },
+      },
+    })
+    const result = await apiKeyEnvironment(() =>
+      runCommand('audience members remove list_1 +15551234567'),
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toContain('was not in audience list_1')
+    expect(result.stdout).not.toContain('Removed')
+  })
+
   test('reads the organization keyword settings', async () => {
     server = await startHttpServer({body: {data: settings()}})
 

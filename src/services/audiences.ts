@@ -128,7 +128,9 @@ export function renderAudienceMembers(
 export function renderMemberRemoval(
   result: DeleteAudienceMemberResult,
 ): string {
-  return `Removed ${result.phone} from audience ${result.listId}. ${result.recipientCount} members remain.`
+  return result.removed
+    ? `Removed ${result.phone} from audience ${result.listId}. ${result.recipientCount} members remain.`
+    : `${result.phone} was not in audience ${result.listId}. ${result.recipientCount} members remain.`
 }
 
 function result<T>(data: T, metadata: ResponseMetadata): AudienceResult<T> {

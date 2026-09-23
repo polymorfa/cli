@@ -158,6 +158,27 @@ describe('Campaign recipient commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test('refuses an oversized mapped CSV variable before sending', async () => {
+    directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
+    const csv = join(directory, 'contacts.csv')
+    await writeFile(
+      csv,
+      `phone,Name\n\n+15551234567,${'x'.repeat(1025)}\n`,
+      'utf8',
+    )
+    server = await startHttpServer({body: {data: {}, success: true}})
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign recipients add campaign_1 --project-slug project_1 --csv ${csv} --variable firstName=Name`,
+      ),
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stderr).toContain(
+      'row 3 has a firstName value longer than 1024',
+    )
+    expect(server.requests).toHaveLength(0)
+  })
+
   test('refuses rows with an empty phone instead of dropping them', async () => {
     directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
     const csv = join(directory, 'contacts.csv')
