@@ -424,6 +424,42 @@ describe('resolveDeveloperEnvironment owner inference', () => {
   const key =
     'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
 
+  test('reads the whole organization despite a saved project profile', async () => {
+    const config: ProfileConfig = {
+      activeProfile: 'scoped',
+      profiles: {
+        scoped: {
+          credential: {account: 'profile:scoped:apiKey', kind: 'apiKey'},
+          owner: 'project',
+          project: PROJECT,
+        },
+      },
+      version: 2,
+    }
+    const profiles = {
+      load: () => Promise.resolve(config),
+      save: () => Promise.resolve(),
+    }
+
+    const analytics = await resolveDeveloperEnvironment(
+      {env: {}, inferOwner: true, profile: 'scoped'},
+      profiles,
+      fakeCredentials(key),
+    )
+    expect(analytics.context.owner).toBe('organization')
+    expect(analytics.context.projectId).toBeUndefined()
+
+    const explicitProfileScope = await resolveDeveloperEnvironment(
+      {env: {}, profile: 'scoped'},
+      profiles,
+      fakeCredentials(key),
+    )
+    expect(explicitProfileScope.context).toMatchObject({
+      owner: 'project',
+      projectId: PROJECT,
+    })
+  })
+
   test('reads the organization with an organization key and no project', async () => {
     await expect(
       resolveDeveloperEnvironment(

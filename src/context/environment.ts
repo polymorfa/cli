@@ -183,13 +183,9 @@ export async function resolveDeveloperEnvironment(
   const explicitProject = nonEmpty(input.project)
   const owner =
     input.owner ??
-    (input.inferOwner === true && explicitProject !== undefined
-      ? 'project'
-      : undefined) ??
-    profile.owner ??
     (input.inferOwner === true
-      ? inferredOwner(principalType, profile.project !== undefined)
-      : undefined)
+      ? inferredOwner(principalType, explicitProject !== undefined)
+      : profile.owner)
   if (
     principalType === 'project_token' &&
     explicitProject !== undefined &&
