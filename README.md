@@ -268,9 +268,49 @@ Add `--remove` to `message star` to unstar. Text sends accept repeatable
 `--mention` with a Polymorfa user ID, `--reply-to` with a Polymorfa message ID,
 and `--forwarded`. `--to` and `--chat` accept a conversation ID, E.164 phone
 number, or BSUID. The API resolves message direction and sender identity.
-Every mutation accepts `--idempotency-key` for safe retry identity. Server API
-keys require `messages:write`; client tokens remain subject to their live
-recipient rules, allowed actions, and rate limits.
+Server API keys require `messages:write`; client tokens remain subject to their
+live recipient rules, allowed actions, and rate limits.
+
+### Retry identity
+
+Every `message send` variant, `message react`, `message edit`, and
+`message delete` sends an `Idempotency-Key` by default. When you omit
+`--idempotency-key`, the CLI or its SDK generates a fresh key for that command
+invocation. Automatic HTTP retries within the invocation reuse it.
+
+To retry across separate CLI processes or script runs, choose a key before the
+first attempt and pass the same `--idempotency-key` on each attempt. Keep the
+request, credential, and API version unchanged. Running the command again
+without an explicit key creates a new request and can repeat the write.
+
+```shell
+# Reuse order-123-shipped only when retrying this exact notification.
+polymorfa message send text \
+  --session session_123 --to +15551234567 \
+  --body 'Your order shipped.' --idempotency-key order-123-shipped
+```
+
+For 24 hours after the first request, the API prevents the same key and request
+from running the write again:
+
+- A recorded success returns `409 idempotency_completed` with
+  `Idempotent-Replayed: true`. The CLI reports an error; the response does not
+  contain the original message or response body.
+- A recorded server error returns its status and error code with
+  `Idempotent-Replayed: true`. The write may have happened.
+- A request still running returns `409 idempotency_in_progress` with
+  `Retry-After`. An unrecorded outcome returns
+  `409 idempotency_outcome_unknown` and blocks another attempt with that key.
+- Reusing a key for a changed request returns `409 idempotency_conflict`.
+
+Keep the first response when you receive it. If the outcome is uncertain, check
+message events or webhooks before deciding whether to use a new key. A new key
+does not resolve the uncertainty and can send a duplicate. See the
+[Messaging retry contract](https://docs.polymorfa.com/guides/communicate/overview#retry-sends-safely).
+
+`message mark-seen`, `message typing`, and `message star` accept an explicit
+`--idempotency-key`, but the API does not deduplicate those actions by that
+header.
 
 ### Typed sends
 
@@ -340,16 +380,36 @@ polymorfa media view media_123
 polymorfa media download media_123 \
   --output ./attachment.bin
 
+polymorfa media download media_123 --url
+
+polymorfa media download --from-event ./message.json \
+  --output ./photo.jpg
+
 polymorfa media persist media_123 \
   --idempotency-key persist_media_123
 ```
 
-`media download` retrieves metadata before fetching bytes and rejects media
-larger than 100 MiB by default. Override the memory guard with `--max-bytes`
-only when the process has enough memory. An explicit output path is required,
-and existing files are preserved unless `--force` is passed. The SDK buffers
-the complete response before the CLI writes it; this is not a streaming or
-range-download command.
+`media download` retrieves metadata, then streams the file into a temporary
+sibling file and renames it into place when the download completes. It
+rejects media larger than 100 MiB by default, both from the declared size and
+while bytes arrive. Raise the limit with `--max-bytes`. An explicit
+`--output` path (`-o`) is required. Existing files are kept unless you pass
+`--force`, and an interrupted or rejected download leaves no partial file.
+When the API redirects to object storage, the CLI requests the storage URL
+without your API key.
+
+`--url` prints the short-lived signed storage link to stdout instead of
+downloading it, and writes a warning to stderr. Anyone who has the link can
+fetch the file until it expires, so do not log, store or share it. If the API
+streams the media itself, no link exists and the command exits with code 2.
+
+`--from-event <file>` reads a stored message webhook, either the full event
+or its `payload`. It downloads the encrypted attachment from the WhatsApp CDN
+and verifies and decrypts it locally, with no Polymorfa credential. It works
+only for messages that carry the `media` descriptor, which projects without
+media persistence receive. The event file contains the decryption key: keep
+it private. If verification fails, the command exits with code 2 and writes
+no file. The CDN link in the event expires, so older events stop working.
 
 `media persist` asks the server to copy the media into configured object
 storage. It does not write a local file. The source API has no Messaging media
@@ -738,6 +798,7 @@ SIP trunks connect a PBX to WhatsApp calls. They are part of Calls and need no
 enrollment. Commands require a server API key.
 
 ```shell
+polymorfa sip-trunk endpoint
 polymorfa sip-trunk list --project 018f0000-0000-7000-8000-000000000002
 polymorfa sip-trunk view 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
 polymorfa sip-trunk create --project 018f0000-0000-7000-8000-000000000002 --input trunk.json
@@ -754,6 +815,18 @@ passwords never appear in the command line. `create` refuses a body that names
 `rotate-credentials`, print the password once. `update --expected-revision`
 exits with code 4 when the trunk changed; `delete` exits with code 4 while a
 session routes calls to the trunk.
+
+`endpoint` prints the host your PBX sends SIP to, each transport with its port
+and whether it requires SRTP, and the UDP port range call audio uses. The
+address is the same for every trunk. Allow SIP and RTP in both directions
+between your PBX and the addresses the host resolves to. When the environment
+does not host SIP, `endpoint` prints `This environment has no SIP address.`
+and exits with code 0; `--json` returns the `sip_not_hosted` status with a null
+host and RTP range and no transports. `create` and `rotate-credentials` also
+print the password before looking up the SIP address in human output. The
+optional address lookup stops after five seconds without retrying and respects
+a shorter `--timeout`. If it fails
+or times out, the command keeps the password on screen and exits successfully.
 
 ## Session call rejection and stable identities
 
@@ -1015,8 +1088,18 @@ Follow the returned operation with `polymorfa operation wait` or
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
 is synchronous and reports only the number moved. Every mutation accepts
-`--idempotency-key`, but the API does not persist the header, so it must not be
-treated as server-side deduplication.
+`--idempotency-key`. `campaign create` and `campaign launch` send an
+`Idempotency-Key` by default, generating a fresh key for each invocation when
+you omit the flag. Pass the same explicit key from the first attempt when
+retrying either command in another process, with the same input, credential,
+and API version.
+
+Both commands use the [retry identity](#retry-identity) contract above: within
+24 hours, a recorded success returns `409 idempotency_completed` without the
+original response body; an uncertain outcome stays blocked rather than running
+again. Save the first campaign or operation response and inspect campaign
+state before using a new key. Pause, resume, stop, and requeue do not persist
+the header, so it is not server-side deduplication for them.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
 recipient, event, history, or replay route. The CLI does not substitute
@@ -1115,6 +1198,36 @@ that includes the current operation.
 response excerpt that the API records for a failed HTTP response. Human output
 escapes control characters in remote text.
 
+### Stream events
+
+`polymorfa event stream` follows a project's public event stream and prints
+each event as it happens. It needs a credential with `events:listen` and a team
+enrolled in the Event streams beta; otherwise it exits with the authorization
+code.
+
+```shell
+polymorfa event stream \
+  --owner project \
+  --project project_123 \
+  --type 'message.*' \
+  --json
+```
+
+`--json` writes one JSON line per event with its `cursor`, the event metadata,
+and the decoded webhook body (`null` when hosted message storage did not keep
+it). Human output prints the time, type, ID, and body, and prints a
+`--from <cursor>` hint on exit. Pass `--from` to resume within 24 hours. The
+command reconnects with backoff after a dropped connection. If events after
+`--from` expired before delivery, it reports the count and continues; use
+`--on-gap stop` to exit with the stream gap code instead. `--max-events` stops
+after a fixed number of events.
+
+Ctrl-C or SIGTERM stops the stream with exit code 0. If the output pipe is
+blocked, stopping discards queued output instead of waiting for the reader.
+
+Use `event stream` to consume events in a script. Use `listen` to forward exact
+bodies to a local webhook handler.
+
 ## Local event listening and forwarding
 
 `polymorfa listen` opens the project listener stream and can forward the exact
@@ -1135,6 +1248,53 @@ default; explicit redirect following revalidates each hop. The listener writes
 checkpoints only after stdout and every forwarding destination have accepted an
 event. A cursor gap stops with a nonzero exit unless `--on-gap continue` was
 selected.
+
+## Trigger test events
+
+`polymorfa trigger` sends a signed test event for a Test number. The event
+reaches your webhooks, event history, and a running `polymorfa listen` with
+`source: "test"`, and does not change the Test number. Real numbers are
+refused. Each project can trigger 30 test events per minute. It requires a
+server API key with `sandbox:write` (`sandbox:read` for `--list`) and Test
+numbers access.
+
+Run a listener in one terminal:
+
+```shell
+polymorfa listen --project PROJECT_ID --forward-to http://127.0.0.1:3000/webhooks
+```
+
+Trigger events in another:
+
+```shell
+polymorfa trigger --list --project PROJECT_ID
+polymorfa trigger message.received --project PROJECT_ID --session my-test-number --text "hi"
+polymorfa trigger message.received --project PROJECT_ID --session my-test-number \
+  --override mediaType=image --override caption=look
+polymorfa trigger message.ack --project PROJECT_ID --session my-test-number --override ackStatus=read
+polymorfa trigger message.failed --project PROJECT_ID --session my-test-number
+polymorfa trigger call.received --project PROJECT_ID --session my-test-number --override video=true
+polymorfa trigger session.restriction_updated --project PROJECT_ID --session my-test-number \
+  --override restrictionActive=false
+polymorfa trigger template.status --project PROJECT_ID --session my-test-number \
+  --override templateStatus=REJECTED --override reason=INVALID_FORMAT
+polymorfa trigger bansafe.enforcement --project PROJECT_ID --session my-test-number
+```
+
+The trigger prints the event ID. Without `--forward-to`, the listener prints
+the same line (`message.received <eventId>`) when the event arrives; with
+`--forward-to`, it prints nothing on success unless you add `--json` together
+with `--forward-secret-out <file>` (JSON forwarding requires the secret file),
+which writes one JSON line per event. Fixtures are
+`message.received`, `message.ack`, `message.failed`, `call.received`,
+`call.missed`, `call.ended`, `session.status`, `session.restriction_updated`, `template.status`,
+`bansafe.enforcement`, and `bansafe.risk_changed`. `--override key=value`
+sets one payload field and can be repeated; `--text` and `--from` are
+shortcuts. `video` and `restrictionActive` accept only `true` or `false`;
+`durationSeconds` accepts a whole number. Set `restrictionActive=false` to
+test the end of a restriction. `--from-session OTHER_TEST_NUMBER` sends a real simulated text from
+another Test number in the project instead, producing an ordinary
+`message.received` event you can reply to. Use `--json` for one JSON document.
 
 ## MCP listener controls
 
@@ -1266,6 +1426,21 @@ polymorfa api /platform/customers --surface platform \
 `--json` prints exactly one JSON document on stdout. `--quiet` suppresses
 successful output without hiding failures. Diagnostics and errors go to stderr;
 SDK request IDs are preserved and active credentials are redacted.
+
+An API failure prints the message, then the request ID, the Console request
+log link, and the documentation link for the error code when the API returned
+them:
+
+```text
+Error: WhatsApp is limiting requests from this number. Follow Retry-After when supplied.
+Request ID: 5f0c2a8e-3b1d-4c6f-9e2a-7d4b1c8f6a30
+Request log: https://www.polymorfa.com/console/acme/support-bot/logs/api?request_id=5f0c2a8e-3b1d-4c6f-9e2a-7d4b1c8f6a30
+Docs: https://docs.polymorfa.com/api/errors#whatsapp-rate-limited
+```
+
+With `--json`, the stderr error envelope carries the same values as
+`error.requestId`, `error.requestLogUrl`, and `error.docUrl`. The request log
+link is returned only for team API keys and project tokens.
 
 `POLYMORFA_BASE_URL` exists only for development and controlled testing. It
 overrides a profile endpoint and must not be placed in project files.
