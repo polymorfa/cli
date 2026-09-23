@@ -38,6 +38,17 @@ const deployment = {
   egressOrigins: [],
   createdAt: '2026-09-22T00:00:00Z',
 }
+const deploymentSummary = {
+  id: deployment.id,
+  functionId: deployment.functionId,
+  language: deployment.language,
+  region: deployment.region,
+  compatibilityDate: deployment.compatibilityDate,
+  sha256: deployment.sha256,
+  secretVersionIds: deployment.secretVersionIds,
+  egressOrigins: deployment.egressOrigins,
+  createdAt: deployment.createdAt,
+}
 const secret = {
   id: VERSION,
   name: 'PROVIDER_KEY',
@@ -143,10 +154,11 @@ describe('Function commands', () => {
     })
     expect(server.requests[4]?.body).toBe('')
   })
-  test('creates, lists, reads and promotes immutable deployments without printing source by default', async () => {
+  test('lists deployment metadata while create and view retain source', async () => {
     server = await startHttpSequenceServer([
       {body: {data: deployment}},
-      {body: {data: {items: [deployment], nextCursor: null}}},
+      {body: {data: {items: [deploymentSummary], nextCursor: null}}},
+      {body: {data: {items: [deploymentSummary], nextCursor: null}}},
       {body: {data: deployment}},
       {body: {data: fn}},
     ])
@@ -163,9 +175,20 @@ describe('Function commands', () => {
     )
     expect(created.error).toBeUndefined()
     expect(created.stdout).not.toContain('export default')
-    expect(
-      (await run(`function deployment list ${FN} --project ${PROJECT}`)).error,
-    ).toBeUndefined()
+    const listed = await run(
+      `function deployment list ${FN} --project ${PROJECT}`,
+    )
+    expect(listed.error).toBeUndefined()
+    expect(listed.stdout).toContain(`Deployment\t${DEPLOY}`)
+    expect(listed.stdout).not.toContain('export default')
+    const listedJson = await run(
+      `function deployment list ${FN} --project ${PROJECT} --json`,
+    )
+    expect(listedJson.error).toBeUndefined()
+    expect(listedJson.stdout).not.toContain('export default')
+    expect(JSON.parse(listedJson.stdout)).toMatchObject({
+      data: {items: [deploymentSummary]},
+    })
     expect(
       (
         await run(
@@ -180,7 +203,7 @@ describe('Function commands', () => {
         )
       ).error,
     ).toBeUndefined()
-    expect(JSON.parse(server.requests[3]?.body ?? '')).toEqual({
+    expect(JSON.parse(server.requests[4]?.body ?? '')).toEqual({
       deploymentId: DEPLOY,
       expectedRevision: 2,
       projectId: PROJECT,

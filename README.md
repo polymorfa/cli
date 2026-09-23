@@ -1497,4 +1497,4 @@ Invocation input contains an optional `deploymentId`, `trigger` (`test` or `http
 
 Use `function invocation list FUNCTION_UUID` and `function invocation view FUNCTION_UUID INVOCATION_UUID` to reconcile a result. Invocation inputs, responses and customer log text are not retained. `--json` includes the transient result when the initial invocation returns it. The default display prints metadata and HTTP status without response content. An uncertain, failed, running or unavailable invocation, or an HTTP response of 400 or higher, exits with code 8 after printing its receipt. Check customer effects before using a new key unless `retryable` explicitly says execution did not start.
 
-Function, deployment, secret and invocation lists accept `--limit 1..100` and `--before UUID`. `function deployment view` exposes source only with `--json`; secret reads always return metadata.
+Function, deployment, secret and invocation lists accept `--limit 1..100` and `--before UUID`. Deployment lists return metadata without source, including with `--json`. `function deployment view` exposes source with `--json`; secret reads always return metadata.

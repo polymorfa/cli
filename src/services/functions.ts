@@ -4,7 +4,7 @@ import {
   type ClientBase,
   type ClientOwner,
   type FunctionDefinition,
-  type FunctionDeployment,
+  type FunctionDeploymentSummary,
   type FunctionInvocation,
   type FunctionInvocationResult,
   type FunctionPage,
@@ -356,7 +356,7 @@ export function renderFunction(value: FunctionDefinition) {
     `Active deployment\t${value.activeDeploymentId ?? '-'}`,
   ].join('\n')
 }
-export function renderDeployment(value: FunctionDeployment) {
+export function renderDeployment(value: FunctionDeploymentSummary) {
   return [
     `Deployment\t${value.id}`,
     `Language\t${value.language}`,
