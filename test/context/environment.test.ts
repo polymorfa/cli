@@ -455,6 +455,16 @@ describe('resolveEnvironment', () => {
     expect(credentials.get).not.toHaveBeenCalled()
   })
 
+  test('names the Messaging credential boundary for a project-token profile', async () => {
+    await expect(
+      resolveCommandEnvironment(
+        {env: {}, surface: 'messaging'},
+        projectProfiles(),
+        fakeCredentials(PROJECT_TOKEN),
+      ),
+    ).rejects.toThrow('this Messaging command requires')
+  })
+
   test('prefers an environment credential over the active profile', async () => {
     const credentials = fakeCredentials(
       'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',

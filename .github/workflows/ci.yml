@@ -21,6 +21,8 @@ jobs:
           - 22
     steps:
       - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node-version }}
@@ -30,6 +32,7 @@ jobs:
       - run: npm ci --ignore-scripts
       - uses: actions/checkout@v6
         with:
+          persist-credentials: false
           repository: polymorfa/sdks
           ref: 029e0e742692e20a3f88e957b66831fb5e94038b
           path: .sdk-source

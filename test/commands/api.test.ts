@@ -14,6 +14,41 @@ describe('api', () => {
   let server: TestHttpServer | undefined
   const tempDirectories: string[] = []
 
+  test('sends raw Messaging requests with a project token', async () => {
+    server = await startHttpServer({body: {success: true, data: {ready: true}}})
+    const projectToken = `pmfa_pt_${'A'.repeat(94)}`
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: projectToken,
+        POLYMORFA_BASE_URL: server.baseUrl,
+      },
+      () => runCommand('api /messaging/health --surface messaging --json'),
+    )
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]?.headers.authorization).toBe(
+      `Bearer ${projectToken}`,
+    )
+  })
+
+  test('rejects ambiguous raw Messaging credentials before transport', async () => {
+    server = await startHttpServer({body: {success: true}})
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: `pmfa_${'A'.repeat(72)}`,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_${'A'.repeat(94)}`,
+        POLYMORFA_BASE_URL: server.baseUrl,
+      },
+      () => runCommand('api /messaging/health --surface messaging --json'),
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stderr).toContain('Messaging credentials are ambiguous')
+    expect(server.requests).toHaveLength(0)
+  })
+
   test('preserves fractional prepaid balances in JSON output', async () => {
     server = await startHttpServer({
       body: {data: {balanceCents: 17.500001, preferredCurrency: 'USD'}},

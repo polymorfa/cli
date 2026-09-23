@@ -463,7 +463,9 @@ export async function resolveCommandEnvironment(
     )
   ) {
     throw new PolymorfaConfigurationError(
-      `Profile ${selected} contains a project token; this Platform command requires an organization API key.`,
+      input.surface === 'platform'
+        ? `Profile ${selected} contains a project token; this Platform command requires an organization API key.`
+        : `Profile ${selected} contains a project token; this Messaging command requires an organization API key or a Messaging client token.`,
       'credential',
     )
   }

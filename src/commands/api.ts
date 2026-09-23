@@ -123,6 +123,7 @@ export default class Api extends BaseCommand {
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface: flags.surface,
+      allowProjectToken: flags.surface === 'messaging',
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags['api-version'] === undefined
         ? {}
