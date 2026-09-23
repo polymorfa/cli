@@ -148,8 +148,11 @@ polymorfa quicklink cancel ql_123 \
 
 Creation prints the hosted URL. Treat it as a credential and share it only with
 the person holding the phone. The CLI never retrieves direct session QR payloads
-or pairing codes. Cancel requires `--yes`, removes the pending session, and
-fails for a link that has already connected. The API does not accept an
+or pairing codes. Cancel requires `--yes` and invalidates an unconnected link.
+For an initial real link, the API returns `202` after accepting cancellation;
+Number and session cleanup can continue afterward. Supplementary and test
+links return `200` when cancellation completes. Cancellation fails for a link
+that has already connected. The API does not accept an
 idempotency key for cancellation. The API exposes no QuickLink list, recovery,
 or history operation, so the CLI does not synthesize them.
 

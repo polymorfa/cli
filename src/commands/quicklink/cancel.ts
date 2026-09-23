@@ -23,6 +23,10 @@ export default class QuickLinkCancel extends BaseCommand {
     })
     const {client} = await this.quickLinksClient(flags)
     const response = await client.quickLinks.cancel(args.quicklink)
-    this.writeValue(response, `Cancelled QuickLink ${args.quicklink}.`, flags)
+    const message =
+      response.metadata.status === 202
+        ? `QuickLink cancellation requested for ${args.quicklink}. The link is invalidated; cleanup may continue.`
+        : `Cancelled QuickLink ${args.quicklink}.`
+    this.writeValue(response, message, flags)
   }
 }
