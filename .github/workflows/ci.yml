@@ -40,4 +40,5 @@ jobs:
       - run: npm pack -w @polymorfa/sdk --pack-destination .. --ignore-scripts
         working-directory: .sdk-source
       - run: npm install --no-save --package-lock=false --ignore-scripts ./polymorfa-sdk-*.tgz
+      - run: npm run build
       - run: npm run verify
