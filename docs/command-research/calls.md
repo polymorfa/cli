@@ -54,8 +54,8 @@ calls
 | `calls invite`                 | `POST /messaging/voip/calls/{id}/participants`   | `voip.addParticipant`               |
 | `calls settings get`           | `GET /platform/sessions/{session}/call-settings` | `voip.retrieveCallSettings`         |
 | `calls settings set`           | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
-| `calls retention get`          | `GET /platform/call-retention`                   | raw request (CLI adapter)           |
-| `calls retention set`          | `PUT /platform/call-retention`                   | raw request (CLI adapter)           |
+| `calls retention get`          | `GET /platform/call-retention`                   | `callRetention.retrieve`            |
+| `calls retention set`          | `PUT /platform/call-retention`                   | `callRetention.update`              |
 | `sip-trunk endpoint`           | `GET /platform/sip/endpoint`                     | `sipTrunks.endpoint`                |
 | `sip-trunk list`               | `GET /platform/sip-trunks`                       | `sipTrunks.list`                    |
 | `sip-trunk view`               | `GET /platform/sip-trunks/{id}`                  | `sipTrunks.retrieve`                |
@@ -97,19 +97,12 @@ internal SDK module.
   revision returns 409 `state_conflict`, which exits with code 4.
 - `calls retention` resolves a team API key or a project token
   (`resolveTeamSettingEnvironment`), from the environment or a profile, with
-  no project context, and the API decides what each principal may do. The
-  pinned SDK has no call-retention resource. `createCallRetentionClient` in
-  `src/sdk/client.ts` sends `GET` and `PUT /platform/call-retention` through
-  the SDK organization client's raw transport for team API keys. The pinned
-  SDK confines a project-token client's raw paths to `/platform/projects/{id}`
-  and refuses a project token as an organization key, so project tokens use
-  `projectTokenRequest` (`src/sdk/project-token-request.ts`): one request with
-  the SDK's headers, no redirects, https except on loopback, and failures
-  mapped to the SDK error classes. Switch to the SDK's
-  `callRetention` methods (polymorfa/sdks#278, which serve both principals)
-  once a release that includes them is pinned. The API lets team API keys and
-  project tokens read the setting and only team API keys change it; the CLI
-  replaces the API's 403 text with that rule and keeps the API message.
+  no project context, and the API decides what each principal may do.
+  `createCallRetentionClient` in `src/sdk/client.ts` uses the pinned SDK's
+  `createTeamCallRetentionClient` for both credential types. The API lets team
+  API keys and project tokens read the setting and only team API keys change
+  it; the CLI replaces the API's 403 text with that rule and keeps the API
+  message.
 - `calls retention set` requires `--expected-revision`. It reads the setting
   (`GET` needs `sessions:read`, which `sessions:manage` does not imply, so the
   command needs both scopes; a 403 on either request gets the change message),
