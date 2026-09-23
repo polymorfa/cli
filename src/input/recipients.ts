@@ -40,7 +40,7 @@ export async function readCsvRecipients(
   options: CsvRecipientOptions,
 ): Promise<CampaignRecipientInput[]> {
   const text = await readCsvFile(path)
-  const records = parseCsv(text)
+  const records = parseCsv(text, options.phoneColumn)
   const header = records[0]?.map((cell) => cell.trim())
   if (header === undefined || header.every((cell) => cell === '')) {
     throw invalid(`${path} has no header row.`, 'csv_missing_header')
@@ -290,10 +290,10 @@ function columnIndex(header: readonly string[], name: string): number {
 
 /**
  * Pick the separator that occurs most often in the header record, counting
- * only separators outside quoted fields, so `"Phone, Intl";Name` is read as
- * semicolon-separated.
+ * only separators outside quoted fields. If counts tie, use the delimiter
+ * that exposes the requested phone column.
  */
-function detectDelimiter(text: string): string {
+function detectDelimiter(text: string, phoneColumn: string): string {
   const counts = new Map<string, number>([
     [',', 0],
     [';', 0],
@@ -313,20 +313,30 @@ function detectDelimiter(text: string): string {
     else if (char === '\n' || char === '\r') break
     else if (counts.has(char)) counts.set(char, counts.get(char)! + 1)
   }
-  let best = ','
-  let bestCount = 0
-  for (const [candidate, count] of counts) {
-    if (count > bestCount) {
-      best = candidate
-      bestCount = count
+  const bestCount = Math.max(...counts.values())
+  if (bestCount === 0) return ','
+  const candidates = [...counts]
+    .filter(([, count]) => count === bestCount)
+    .map(([candidate]) => candidate)
+  if (candidates.length === 1) return candidates[0]!
+  for (const candidate of candidates) {
+    const header = parseCsvWithDelimiter(text, candidate)[0]?.map((cell) =>
+      cell.trim(),
+    )
+    if (header !== undefined && columnIndex(header, phoneColumn) >= 0) {
+      return candidate
     }
   }
-  return best
+  return candidates[0]!
 }
 
-function parseCsv(input: string): string[][] {
+function parseCsv(input: string, phoneColumn: string): string[][] {
   const text = input.charCodeAt(0) === 0xfe_ff ? input.slice(1) : input
-  const delimiter = detectDelimiter(text)
+  const delimiter = detectDelimiter(text, phoneColumn)
+  return parseCsvWithDelimiter(text, delimiter)
+}
+
+function parseCsvWithDelimiter(text: string, delimiter: string): string[][] {
   const records: string[][] = []
   let record: string[] = []
   let field = ''

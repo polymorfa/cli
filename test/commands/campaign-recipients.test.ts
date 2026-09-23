@@ -237,6 +237,40 @@ describe('Campaign recipient commands', () => {
     })
   })
 
+  test('uses the phone header when comma and semicolon counts tie', async () => {
+    directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
+    const csv = join(directory, 'contacts.csv')
+    await writeFile(
+      csv,
+      'phone;Last, First\n+15551234567;Lovelace, Ada\n',
+      'utf8',
+    )
+    server = await startHttpServer({
+      body: {
+        data: {
+          added: 1,
+          campaignId: 'campaign_1',
+          duplicateCount: 0,
+          invalidCount: 0,
+          invalidRows: [],
+          recipientCount: 1,
+        },
+        success: true,
+      },
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign recipients add campaign_1 --project-slug project_1 --csv ${csv} --variable "name=Last, First"`,
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({
+      recipients: [{phone: '+15551234567', variables: {name: 'Lovelace, Ada'}}],
+    })
+  })
+
   test.each([
     ['an empty phone', '', 'Entry 2 has an empty phone'],
     ['a blank phone', '   ', 'Entry 2 has an empty phone'],
