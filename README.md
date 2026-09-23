@@ -38,12 +38,12 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.0
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260923115248
 ```
 
-The SDK component reports the version constant built into the SDK. SDK dev
-prereleases report `0.1.0-dev.0`, not their full prerelease version; run
-`npm ls @polymorfa/sdk` to see the installed build.
+The SDK component reports the version built into the installed SDK. Dev
+prereleases include their full timestamped version. Run `npm ls @polymorfa/sdk`
+to see the installed build.
 
 ## Authentication profiles
 

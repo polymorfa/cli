@@ -2,13 +2,13 @@
 
 - **Status:** Campaigns P0 slice: nine lifecycle operations plus recipients,
   audiences and opt-out settings
-- **Reviewed:** 2026-09-22
-- **SDK baseline:** `c5ea8f3933687fb677ed60d682ca19ee28ea7464`
-- **Contract:** `polymorfa/polymorfa` `8067be507dc818d2418f8724a943de138678b3db`
+- **Reviewed:** 2026-09-23
+- **SDK baseline:** `7b8b44e9cd15356724e5ba825db320d90d896b06`
+- **Contract:** `polymorfa/polymorfa` `f4a340da3b74248232ebea73f3e72b42f667beef` (merged `dev`)
 
-The API snapshot is provisional. SDK publication remains blocked on replacing
-its source pin with the final merged API `dev` revision; these notes do not
-claim package publication or deployed availability.
+The API contract is merged into `dev`, and the SDK dev prerelease
+`0.1.0-dev.20260923115248` includes the Campaigns P0 methods. These notes do
+not claim deployed availability.
 
 ## Sources reviewed
 
