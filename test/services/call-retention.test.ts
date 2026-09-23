@@ -1,5 +1,6 @@
 import {PassThrough, Readable} from 'node:stream'
 
+import {PolymorfaAuthorizationError} from '@polymorfa/sdk'
 import {describe, expect, test} from 'vitest'
 
 import {confirmDangerous} from '../../src/input/confirmation.js'
@@ -11,6 +12,7 @@ import type {
 import {
   callRetentionDays,
   updateCallRetention,
+  viewCallRetention,
 } from '../../src/services/calls.js'
 
 const CURRENT: CallRetention = {
@@ -22,6 +24,26 @@ const CURRENT: CallRetention = {
 }
 
 describe('call retention changes', () => {
+  test('preserves API diagnostic links when explaining a forbidden read', async () => {
+    const {client} = fakeClient()
+    client.retrieve = () =>
+      Promise.reject(
+        new PolymorfaAuthorizationError('Missing sessions:read', {
+          code: 'forbidden',
+          status: 403,
+          requestId: 'req_retention',
+          requestLogUrl: 'https://console.polymorfa.com/requests/req_retention',
+          docUrl: 'https://docs.polymorfa.com/api/errors',
+        }),
+      )
+
+    await expect(viewCallRetention(client)).rejects.toMatchObject({
+      requestId: 'req_retention',
+      requestLogUrl: 'https://console.polymorfa.com/requests/req_retention',
+      docUrl: 'https://docs.polymorfa.com/api/errors',
+    })
+  })
+
   test('checks periods the way the API does', () => {
     expect(callRetentionDays('short', undefined)).toBe(7)
     expect(callRetentionDays('standard', 30)).toBe(30)

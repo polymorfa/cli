@@ -475,6 +475,10 @@ async function retentionRequest<T>(
       ...(error.code === undefined ? {} : {code: error.code}),
       ...(error.status === undefined ? {} : {status: error.status}),
       ...(error.requestId === undefined ? {} : {requestId: error.requestId}),
+      ...(error.requestLogUrl === undefined
+        ? {}
+        : {requestLogUrl: error.requestLogUrl}),
+      ...(error.docUrl === undefined ? {} : {docUrl: error.docUrl}),
       ...(error.metadata === undefined ? {} : {metadata: error.metadata}),
     }
     throw error instanceof PolymorfaConflictError
