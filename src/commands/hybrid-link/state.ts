@@ -13,7 +13,7 @@ export default class HybridLinkState extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(HybridLinkState)
     const client = await this.messagingClient(flags, {
-      serverApiKeyOnly: 'Hybrid Link',
+      serverCredentialOnly: 'Hybrid Link',
     })
     const response = await client.hybridLink.state(flags.session)
     this.writeValue(

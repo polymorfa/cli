@@ -60,7 +60,7 @@ export default class QuickLinkCreate extends BaseCommand {
         'input',
       )
     const result = await createQuickLink(
-      await this.messagingClient(flags, {serverApiKeyOnly: 'QuickLink'}),
+      await this.messagingClient(flags, {serverCredentialOnly: 'QuickLink'}),
       body,
       flags.project,
     )

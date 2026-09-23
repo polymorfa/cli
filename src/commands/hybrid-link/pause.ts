@@ -17,7 +17,7 @@ export default class HybridLinkPause extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(HybridLinkPause)
     const client = await this.messagingClient(flags, {
-      serverApiKeyOnly: 'Hybrid Link',
+      serverCredentialOnly: 'Hybrid Link',
     })
     const response = await client.hybridLink.setPaused(flags.session, {
       expectedRevision: flags['expected-revision'],

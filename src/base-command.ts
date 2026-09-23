@@ -99,7 +99,10 @@ export abstract class BaseCommand extends Command {
 
   protected async messagingClient(
     flags: GlobalFlags,
-    options: {readonly serverApiKeyOnly?: string} = {},
+    options: {
+      readonly serverApiKeyOnly?: string
+      readonly serverCredentialOnly?: string
+    } = {},
   ): Promise<MessagingClient> {
     const environment = await this.messagingEnvironment(flags)
     if (
@@ -107,7 +110,16 @@ export abstract class BaseCommand extends Command {
       environment.credential.type !== 'apiKey'
     ) {
       throw new PolymorfaConfigurationError(
-        `${options.serverApiKeyOnly} commands require a server API key; Messaging client tokens do not have ${options.serverApiKeyOnly} access. Set POLYMORFA_API_KEY or select an API-key profile.`,
+        `${options.serverApiKeyOnly} commands require a server API key; project and Messaging client tokens do not have ${options.serverApiKeyOnly} access. Set POLYMORFA_API_KEY or select an API-key profile.`,
+        'credential',
+      )
+    }
+    if (
+      options.serverCredentialOnly !== undefined &&
+      environment.credential.type === 'clientToken'
+    ) {
+      throw new PolymorfaConfigurationError(
+        `${options.serverCredentialOnly} commands require a server API key or project token; Messaging client tokens do not have this access. Set POLYMORFA_API_KEY or POLYMORFA_PROJECT_TOKEN, or select a server-credential profile.`,
         'credential',
       )
     }
@@ -194,6 +206,7 @@ export abstract class BaseCommand extends Command {
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface,
+      ...(flags.project === undefined ? {} : {project: flags.project}),
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags['api-version'] === undefined
         ? {}

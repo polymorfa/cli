@@ -35,6 +35,7 @@ export interface ResolveEnvironmentInput {
 
 export interface ResolveCommandEnvironmentInput extends ResolveEnvironmentInput {
   readonly profile?: string | undefined
+  readonly project?: string | undefined
 }
 
 export interface ListenerEnvironment {
@@ -395,6 +396,7 @@ export async function resolveCommandEnvironment(
   const explicitProfile = nonEmpty(input.profile)
   const hasEnvironmentCredential =
     nonEmpty(input.env.POLYMORFA_API_KEY) !== undefined ||
+    nonEmpty(input.env.POLYMORFA_PROJECT_TOKEN) !== undefined ||
     nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN) !== undefined
 
   if (explicitProfile === undefined && hasEnvironmentCredential) {
@@ -418,17 +420,28 @@ export async function resolveCommandEnvironment(
     )
   }
 
-  if (profile.credential.kind !== 'apiKey') {
+  if (input.surface === 'platform' && profile.credential.kind !== 'apiKey') {
     throw new PolymorfaConfigurationError(
-      `Profile ${selected} contains a project token, which is accepted only by project-owned developer commands and polymorfa listen.`,
+      `Profile ${selected} contains a project token; this Platform command requires an organization API key.`,
       'credential',
     )
   }
 
-  const apiKey = await credentials.get(profile.credential.account)
-  if (apiKey === undefined) {
+  if (
+    profile.credential.kind === 'projectToken' &&
+    nonEmpty(input.project) !== undefined &&
+    profile.project !== nonEmpty(input.project)
+  ) {
     throw new PolymorfaConfigurationError(
-      `Profile ${selected} has no credential in the operating-system keyring. Run polymorfa auth login --with-api-key --profile ${selected}.`,
+      'A project-token profile cannot access a different --project.',
+      'project',
+    )
+  }
+
+  const storedCredential = await credentials.get(profile.credential.account)
+  if (storedCredential === undefined) {
+    throw new PolymorfaConfigurationError(
+      `Profile ${selected} has no credential in the operating-system keyring. Run polymorfa auth login ${profile.credential.kind === 'projectToken' ? '--with-project-token' : '--with-api-key'} --profile ${selected}.`,
       'keyring',
     )
   }
@@ -437,7 +450,9 @@ export async function resolveCommandEnvironment(
     ...input,
     apiVersion: input.apiVersion ?? profile.apiVersion,
     env: {
-      POLYMORFA_API_KEY: apiKey,
+      ...(profile.credential.kind === 'projectToken'
+        ? {POLYMORFA_PROJECT_TOKEN: storedCredential}
+        : {POLYMORFA_API_KEY: storedCredential}),
       POLYMORFA_BASE_URL:
         nonEmpty(input.env.POLYMORFA_BASE_URL) ?? profile.baseUrl,
     },
@@ -450,6 +465,7 @@ export function resolveEnvironment(
 ): ResolvedEnvironment {
   const apiKey = nonEmpty(input.env.POLYMORFA_API_KEY)
   const clientToken = nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN)
+  const projectToken = nonEmpty(input.env.POLYMORFA_PROJECT_TOKEN)
   const baseUrl = nonEmpty(input.env.POLYMORFA_BASE_URL)
 
   if (input.surface === 'platform') {
@@ -463,11 +479,18 @@ export function resolveEnvironment(
     return resolved(input, {type: 'apiKey', value: apiKey}, baseUrl)
   }
 
-  if (apiKey !== undefined && clientToken !== undefined) {
+  if (
+    [apiKey, projectToken, clientToken].filter((value) => value !== undefined)
+      .length > 1
+  ) {
     throw new PolymorfaConfigurationError(
-      'Messaging credentials are ambiguous; set only POLYMORFA_API_KEY or POLYMORFA_CLIENT_TOKEN.',
+      'Messaging credentials are ambiguous; set only one of POLYMORFA_API_KEY, POLYMORFA_PROJECT_TOKEN, or POLYMORFA_CLIENT_TOKEN.',
       'credential',
     )
+  }
+
+  if (projectToken !== undefined) {
+    return resolved(input, {type: 'projectToken', value: projectToken}, baseUrl)
   }
 
   if (clientToken !== undefined) {
@@ -479,7 +502,7 @@ export function resolveEnvironment(
   }
 
   throw new PolymorfaConfigurationError(
-    'Messaging API requests require POLYMORFA_API_KEY or POLYMORFA_CLIENT_TOKEN.',
+    'Messaging API requests require POLYMORFA_API_KEY, POLYMORFA_PROJECT_TOKEN, or POLYMORFA_CLIENT_TOKEN.',
     'credential',
   )
 }

@@ -1134,9 +1134,11 @@ export POLYMORFA_API_KEY='pmfa_...'
 polymorfa api /v1/projects --surface platform --json
 ```
 
-Messaging accepts exactly one of `POLYMORFA_API_KEY` or
-`POLYMORFA_CLIENT_TOKEN`. Platform accepts only `POLYMORFA_API_KEY`. Supplying
-both Messaging credentials is an error rather than an implicit preference.
+Messaging accepts exactly one of `POLYMORFA_API_KEY`, `POLYMORFA_PROJECT_TOKEN`,
+or `POLYMORFA_CLIENT_TOKEN`. Project tokens remain confined to their project;
+individual commands enforce their credential requirements. Raw Platform requests
+accept only `POLYMORFA_API_KEY`. Supplying multiple Messaging credentials fails
+before a request is sent.
 
 Examples:
 
@@ -1298,12 +1300,17 @@ it contains numeric values or `null`; `--field` creates string values.
 
 These additions are under development and are not available in the published
 CLI. They are tested against the companion Hybrid Link SDK source using API
-contract `c087e3496f3fcc8977d94fcba60904158c7550cf`. The registry SDK dependency
+contract `e50d2d69f0b6bec6da2b0b6719a5a498a20bf34b`. The registry SDK dependency
 must be updated after that SDK artifact is published before releasing this CLI.
+The companion SDK defaults native requests to API revision `2026-09-22`. An
+explicit `--api-version` or saved-profile version remains explicit; retired
+versions fail without an automatic upgrade or resend.
 
 These commands require API-authorized private-preview access. An installed CLI
 or a transport flag does not enable Hybrid Link. Use a team API key or project
-token; browser client tokens cannot control Hybrid Link or send through it.
+token through `POLYMORFA_PROJECT_TOKEN` or a project-token profile. Project tokens
+can control only their project and its Numbers; team routing policies require a
+team API key. Browser client tokens cannot control Hybrid Link or send through it.
 
 ```bash
 polymorfa quicklink availability --project PROJECT_UUID --session NUMBER

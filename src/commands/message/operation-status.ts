@@ -19,7 +19,7 @@ export default class MessageOperationStatus extends BaseCommand {
   async run(): Promise<void> {
     const {args, flags} = await this.parse(MessageOperationStatus)
     const client = await this.messagingClient(flags, {
-      serverApiKeyOnly: 'Message operation status',
+      serverCredentialOnly: 'Message operation status',
     })
     const response = await client.messages.operationStatus(
       flags.session,
