@@ -954,6 +954,7 @@ Other errors keep the standard exit codes: 2 for invalid input, 3 for
 authentication and authorization, 4 for conflicts, missing resources and other
 payment errors, and 5 for network, rate-limit, server and timeout failures.
 With `--json`, stderr carries the error code in `error.code`.
+
 ### Call usage and limits
 
 When Calls access is enabled for a team, Polymorfa measures the calls its numbers host. Usage is measured, not charged.
