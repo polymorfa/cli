@@ -124,6 +124,12 @@ export default class Api extends BaseCommand {
       env: process.env,
       surface: flags.surface,
       allowProjectToken: flags.surface === 'messaging',
+      ...(flags.surface === 'messaging'
+        ? {
+            project: flags.project,
+            loadLinkedProject: () => this.linkedProject(flags),
+          }
+        : {}),
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags['api-version'] === undefined
         ? {}

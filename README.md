@@ -1726,7 +1726,9 @@ Messaging accepts exactly one of `POLYMORFA_API_KEY`, `POLYMORFA_PROJECT_TOKEN`,
 or `POLYMORFA_CLIENT_TOKEN`. Project tokens remain confined to their project;
 individual commands enforce their credential requirements. Raw Platform requests
 accept only `POLYMORFA_API_KEY`. Supplying multiple Messaging credentials fails
-before a request is sent.
+before a request is sent. For a project-token profile, `--project` or the
+nearest `polymorfa.json` must match the profile's project. Raw requests with an
+API key or client token do not read the directory link.
 
 Examples:
 
