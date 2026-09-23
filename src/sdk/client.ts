@@ -2,6 +2,7 @@ import {
   Client,
   MessagingClient,
   PolymorfaConfigurationError,
+  createTeamCallRetentionClient,
   type ApiResponse,
   type CallRetention,
   type CallRetentionPolicy,
@@ -15,7 +16,6 @@ import type {
   ResolvedEnvironment,
   TeamSettingEnvironment,
 } from '../context/environment.js'
-import {projectTokenRequest} from './project-token-request.js'
 
 export function createRawClient(environment: ResolvedEnvironment): RawClient {
   return environment.surface === 'platform'
@@ -75,47 +75,28 @@ export interface CallRetentionClient {
 }
 
 /**
- * Team API keys use the typed SDK resource. Project tokens can read this
- * team-wide route without a project ID, but the SDK's project-token client
- * currently requires one; keep the narrow request bridge until the SDK has
- * an explicit team-wide project-token entrypoint.
+ * Both team API keys and project tokens use the SDK's team-wide retention
+ * resource. The API decides which credential may change the setting.
  */
 export function createCallRetentionClient(
   environment: TeamSettingEnvironment,
 ): CallRetentionClient {
-  if (environment.principalType === 'project_token') {
-    return {
-      retrieve: async () => {
-        const response = await projectTokenRequest<{
-          readonly data: CallRetention
-        }>(environment, {
-          method: 'GET',
-          path: '/platform/call-retention',
-        })
-        return {data: response.data.data, metadata: response.metadata}
-      },
-      update: async (input) => {
-        const response = await projectTokenRequest<{
-          readonly data: CallRetention
-        }>(environment, {
-          body: input,
-          method: 'PUT',
-          path: '/platform/call-retention',
-        })
-        return {data: response.data.data, metadata: response.metadata}
-      },
-    }
-  }
-  const callRetention = new Client({
+  const callRetention = createTeamCallRetentionClient({
     baseUrl: environment.baseUrl,
-    credential: {type: 'organizationApiKey', value: environment.credential},
+    credential: {
+      type:
+        environment.principalType === 'project_token'
+          ? 'projectToken'
+          : 'organizationApiKey',
+      value: environment.credential,
+    },
     ...(environment.apiVersion === undefined
       ? {}
       : {apiVersion: environment.apiVersion}),
     ...(environment.timeoutMs === undefined
       ? {}
       : {timeoutMs: environment.timeoutMs}),
-  }).callRetention
+  })
   return {
     retrieve: () => callRetention.retrieve(),
     update: (input) =>
