@@ -1498,3 +1498,37 @@ then explicitly submit its `quoteId` with `PATCH /platform/sessions/{sessionId}`
 Read `GET /platform/sessions/{sessionId}/tier-quotes/{quoteId}` until the result is
 applied or rejected. Store the full JSON request in a file and pass `--input` when
 it contains numeric values or `null`; `--field` creates string values.
+
+### Functions
+
+Functions are project-owned. Select `--project` or use the linked project/profile context. The commands accept an organization API key or a project token; browser client tokens are refused. Access also depends on the team's enabled Functions release and the configured execution region.
+
+```bash
+polymorfa function list --project PROJECT_UUID
+polymorfa function create --project PROJECT_UUID --input function.json
+polymorfa function deployment create FUNCTION_UUID --project PROJECT_UUID --input deployment.json
+polymorfa function invocation create FUNCTION_UUID --project PROJECT_UUID --input invocation.json --idempotency-key booking-42
+polymorfa function deployment promote FUNCTION_UUID DEPLOYMENT_UUID --project PROJECT_UUID --expected-revision 1
+```
+
+`function.json` contains `name` and an optional stable `functionId`. A deployment input contains a new `deploymentId`, `source`, `language` (`javascript`, `typescript` or `visual`), `region`, `compatibilityDate`, optional `secretVersionIds` and exact HTTPS `egressOrigins`. Visual source is a JSON action program encoded as the source string. Input files do not contain `projectId` or override path IDs.
+
+Use an origin such as `https://api.example.com` for each egress entry. Credentials, paths (including a trailing slash), queries, fragments and explicit ports are rejected before sending. The CLI preserves accepted origins exactly.
+
+`function update FUNCTION_UUID --input update.json` takes `expectedRevision` and `name` or `enabled`. `function delete FUNCTION_UUID --expected-revision N --yes` retires the definition and leaves invocation receipts readable. Add the selected project to each command or use the linked context.
+
+Secret values go through a JSON file or stdin, never a command-line value flag:
+
+```bash
+polymorfa function secret create FUNCTION_UUID --project PROJECT_UUID --input secret.json
+polymorfa function secret list FUNCTION_UUID --project PROJECT_UUID
+polymorfa function secret revoke FUNCTION_UUID SECRET_VERSION_UUID --project PROJECT_UUID --yes
+```
+
+The secret input is `{ "name": "PROVIDER_KEY", "value": "YOUR_EXTERNAL_SECRET" }`. Keep the file private. Values are write-only. Creating a new version leaves existing deployments pinned to their original version. Revocation stops new invocations that use that version; running code can finish. Polymorfa credentials cannot be stored as Function secrets.
+
+Invocation input contains an optional `deploymentId`, `trigger` (`test` or `http`) and `request` with `method`, a synthetic URL under `https://function.polymorfa.invalid`, selected `headers` and `bodyBase64`. Every invocation requires an explicit `--idempotency-key` of 1–128 printable ASCII characters, excluding spaces. The CLI rejects invalid keys without trimming or changing them. It never retries Function writes automatically. Reusing a key returns the original receipt without executing again, including when credentials rotate; replay does not return the original response body.
+
+Use `function invocation list FUNCTION_UUID` and `function invocation view FUNCTION_UUID INVOCATION_UUID` to reconcile a result. Invocation inputs, responses and customer log text are not retained. `--json` includes the transient result when the initial invocation returns it. The default display prints metadata and HTTP status without response content. An uncertain, failed, running or unavailable invocation, or an HTTP response of 400 or higher, exits with code 8 after printing its receipt. Check customer effects before using a new key unless `retryable` explicitly says execution did not start.
+
+Function, deployment, secret and invocation lists accept `--limit 1..100` and `--before UUID`. Deployment lists return metadata without source, including with `--json`. `function deployment view` exposes source with `--json`; secret reads always return metadata.
