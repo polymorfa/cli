@@ -685,6 +685,13 @@ never answers or declines on its own.
   the answered call. `calls reject` exits with code 4 and
   `code: "call_not_ringing"` when the call was already answered, declined, or
   ended. Declining ends the call for every participant.
+- **Number restrictions.** When WhatsApp restricts the Number to people it has
+  already chatted with, `calls place` and `calls invite` exit with code 3 and
+  `code: "number_restricted"` for anyone else; calls to people it has already
+  chatted with still work. A call WhatsApp refuses for that reason ends with
+  `reason: "call_restricted"` in `calls watch`.
+  `polymorfa listen --event session.restriction_updated` reports the
+  restriction starting and ending.
 - **Connections.** `calls leave` closes one connection, named by an 8 to 64
   character ID from `A-Z`, `a-z`, `0-9`, `_`, and `-`. The call continues.
   `calls end` ends the call for everyone.

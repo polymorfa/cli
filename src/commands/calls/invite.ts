@@ -14,7 +14,7 @@ export default class CallsInvite extends BaseCommand {
   }
 
   static override description =
-    'Ring another WhatsApp user into a call, turning a 1:1 call into a group call. The call must have a live leg.'
+    'Ring another WhatsApp user into a call, turning a 1:1 call into a group call. The call must have a live leg. While WhatsApp restricts the number to people it has already chatted with, inviting anyone else exits with code 3 and number_restricted.'
 
   static override examples = [
     '<%= config.bin %> calls invite call_123 +15550101',
