@@ -59,11 +59,15 @@ export default class QuickLinkCreate extends BaseCommand {
         'Adding a connection requires --session and --add-connection with the hybrid goal.',
         'input',
       )
-    const result = await createQuickLink(
-      await this.messagingClient(flags, {serverCredentialOnly: 'QuickLink'}),
-      body,
-      flags.project,
-    )
+    const linkedProject = await this.linkedProject(flags)
+    const selectedFlags =
+      flags.project === undefined &&
+      linkedProject === undefined &&
+      typeof body.projectId === 'string'
+        ? {...flags, project: body.projectId}
+        : flags
+    const {client, projectId} = await this.quickLinksClient(selectedFlags)
+    const result = await createQuickLink(client, body, projectId)
     this.writeValue(result, result.data.url, flags)
   }
 }

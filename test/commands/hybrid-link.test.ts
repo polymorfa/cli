@@ -95,6 +95,48 @@ test('routing policy uses linked project and resolves an explicit slug', async (
     await server.close()
   }
 })
+
+test('flag-only QuickLink creation uses the linked project', async () => {
+  const server = await startHttpSequenceServer([
+    {
+      body: {
+        success: true,
+        data: {
+          id: 'ql-1',
+          session: 'existing',
+          url: 'https://example.test/ql-1',
+          expiresAt: null,
+        },
+      },
+    },
+  ])
+  const directory = await mkdtemp(join(homedir(), '.polymorfa-cli-quicklink-'))
+  const previousDirectory = process.cwd()
+  try {
+    await writeFile(
+      join(directory, 'polymorfa.json'),
+      JSON.stringify({project, version: 1}),
+    )
+    process.chdir(directory)
+    await withEnvironment(env(server.baseUrl), async () => {
+      const result = await runCommand(
+        'quicklink create --purpose add_connection --session existing --add-connection official_api --json',
+      )
+      expect(result.error, result.stderr).toBeUndefined()
+    })
+    expect(server.requests).toHaveLength(1)
+    expect(JSON.parse(server.requests[0]!.body)).toMatchObject({
+      projectId: project,
+      purpose: 'add_connection',
+      session: 'existing',
+      addConnection: 'official_api',
+    })
+  } finally {
+    process.chdir(previousDirectory)
+    await rm(directory, {recursive: true, force: true})
+    await server.close()
+  }
+})
 test('availability output names existing connections and resumable QuickLink', async () => {
   const server = await startHttpSequenceServer([
     {

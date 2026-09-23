@@ -42,24 +42,24 @@ test('creates a QuickLink and uploads separate test history with exact project s
       },
       async () => {
         const created = await runCommand(
-          `quicklink create --project project/1 --input ${input} --json`,
+          `quicklink create --project ${projectId} --input ${input} --json`,
         )
         expect(created.error).toBeUndefined()
         expect(JSON.parse(created.stdout)).toMatchObject({
           data: {id: 'ql_test', expiresAt: null},
         })
         const uploaded = await runCommand(
-          `testing history-fixture create --project project/1 --input ${history} --json`,
+          `testing history-fixture create --project ${projectId} --input ${history} --json`,
         )
         expect(uploaded.error).toBeUndefined()
       },
     )
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
       'POST /messaging/quicklinks',
-      'POST /messaging/testing/project%2F1/history-fixtures',
+      `POST /messaging/testing/${projectId}/history-fixtures`,
     ])
     expect(JSON.parse(server.requests[0]!.body)).toEqual({
-      projectId: 'project/1',
+      projectId,
       configuration,
     })
   } finally {
