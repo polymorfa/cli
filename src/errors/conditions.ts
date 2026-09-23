@@ -5,6 +5,7 @@ export type CliCondition =
   | 'forwarding_failed'
   | 'partial_success'
   | 'authorization'
+  | 'voice_asset_failed'
 
 const EXIT_CODES: Readonly<Record<CliCondition, number>> = {
   action_required: 8,
@@ -13,6 +14,7 @@ const EXIT_CODES: Readonly<Record<CliCondition, number>> = {
   partial_success: 12,
   stream_dropped: 10,
   stream_gap: 9,
+  voice_asset_failed: 13,
 }
 
 export class CliConditionError extends Error {
