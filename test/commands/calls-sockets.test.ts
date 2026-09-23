@@ -142,6 +142,26 @@ describe('calls watch and media', () => {
     )
   })
 
+  test('keeps the BanSafe call restriction reason in watched call events', async () => {
+    server = await startCallsServer({
+      onSocket: async (socket) => {
+        await socket.next()
+        socket.sendJson({participant: 'server:default', type: 'ready'})
+        sendEvent(socket, 'call.received', 'call_3', {
+          from: '+15550103',
+          hasVideo: false,
+        })
+        sendEvent(socket, 'call.ended', 'call_3', {reason: 'call_restricted'})
+      },
+    })
+
+    const result = await apiKey(() =>
+      runCommand('calls watch --session support --count 2 --json'),
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toContain('"reason":"call_restricted"')
+  })
+
   test('exits with an authentication error when the socket is refused with 4401', async () => {
     server = await startCallsServer({
       onSocket: async (socket) => {
