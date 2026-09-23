@@ -4,9 +4,10 @@
 - **Reviewed:** 2026-09-20
 - **API baseline:** `polymorfa/polymorfa` branch `t3code/calls-consent`,
   commit `16f466066`
-- **SDK baseline:** `@polymorfa/sdk` at `polymorfa/sdks` commit
-  `94bfd09825817f842434e206e6a77adb5cc0c414`. That commit has no call consent
-  resources; see [Transport](#transport).
+- **SDK integration baseline:** `polymorfa/sdks` local consent branch commit
+  `475ea7a`. The CLI uses a temporary local pack for verification; its committed
+  npm pin stays on the existing published version until SDK #284 is merged and
+  published.
 
 ## Sources reviewed
 
@@ -51,24 +52,19 @@ calls
 | `calls permission request` | `POST /messaging/{session}/messages/send`        |
 | `calls check`              | `POST /messaging/voip/calls/check`               |
 
-## Transport
+## SDK resources
 
-Every other curated command family calls a typed SDK resource. The pinned SDK
-commit has no `callPolicy`, `callOptOuts`, `voip.check`, or
-`voip.retrieveCallPermission` resource, and `SendMessageRequest` does not yet
-accept `callPermissionRequest` content, so these commands issue their requests
-through the SDK's own raw transport (`client.raw.request`). They keep the SDK's
-credential handling, retries, API versioning, response metadata, and typed
-error classes; only the resource method is missing. `src/services/call-consent.ts`
-declares the response types and is the single place to swap once the SDK ships
-those resources.
+The commands use the SDK's typed `callPolicy`, `callOptOuts`,
+`voip.retrieveCallPermission`, `voip.check`, and `messages.send` methods. The
+CLI retains CSV/JSON import parsing, bounded batching, `--max-items` pagination,
+rendering, and command-specific validation. `messages.send` generates a unique
+idempotency key per command invocation when none is provided. The permission
+request command disables automatic network retries so a WhatsApp rate-limit
+response and its `Retry-After` value reach the operator promptly.
 
-The `polymorfa/sdks` branch `t3code/calls-consent` (commit
-`2c46d082d859e1cae657988dd3ef6890d4fec893`) does add those resources, but that
-commit cannot be pinned: the `polymorfa/sdks` repository root package is now
-the private workspace root `polymorfa-sdks` with no built `dist`, so
-`github:polymorfa/sdks#<commit>` no longer installs `@polymorfa/sdk`. Repinning
-needs a published `@polymorfa/sdk` prerelease, not a Git commit.
+SDK #284 must merge and publish before this branch can update its exact npm pin.
+A local tarball is only a verification input and does not appear in committed
+package metadata.
 
 ## Credential rules
 

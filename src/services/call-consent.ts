@@ -2,10 +2,16 @@ import {
   PolymorfaConfigurationError,
   PolymorfaValidationError,
   type ClientInstance,
-  type ConversationIdentity,
   type MessagingClient,
-  type RawClient,
-  type RawRequest,
+  type ApiResponse,
+  type CallOptOut as SdkCallOptOut,
+  type CallOptOutDeleted as SdkCallOptOutDeleted,
+  type CallOptOutImportResult as SdkCallOptOutImportResult,
+  type CallPolicy as SdkCallPolicy,
+  type CallPermission as SdkCallPermission,
+  type CallPermissionAction as SdkCallPermissionAction,
+  type CallPermissionState as SdkCallPermissionState,
+  type VoipCallCheck as SdkVoipCallCheck,
   type RequestOptions,
   type ResponseMetadata,
 } from '@polymorfa/sdk'
@@ -15,22 +21,6 @@ import {validateCallTarget} from './calls.js'
 import {assertCursorAdvanced} from '../developer/support.js'
 
 type PlatformClient = ClientInstance<'organization'>
-
-/**
- * Call consent speaks to the API through the SDK's raw transport, so it keeps
- * the SDK's credentials, retries, redirects, versioning and typed errors. The
- * typed `callPolicy`, `callOptOuts`, `voip.check` and `voip.retrieveCallPermission`
- * resources are not in a released SDK yet; the request shapes below follow the
- * same contract and move to those resources when the SDK ships them.
- */
-interface DataEnvelope<T> {
-  readonly data: T
-}
-
-interface PageEnvelope<T> {
-  readonly data: readonly T[]
-  readonly page: CallConsentPage
-}
 
 export interface CallConsentResult<T> {
   readonly data: T
@@ -51,94 +41,15 @@ export interface CallConsentListResult<T> extends CallConsentResult<T> {
   readonly page: CallConsentPage
 }
 
-// ── API resource shapes ────────────────────────────────────────────────────
-
-/** The team's call policy (`GET /platform/call-policy`). */
-export interface CallPolicy {
-  readonly blockedCountryCodes: readonly string[]
-  readonly optOutCount: number
-  readonly revision: number
-  readonly updatedAt: string | null
-}
-
-export type CallOptOutSource = 'api' | 'console' | 'import'
-
-/** One entry on the team's do-not-call list. */
-export interface CallOptOut {
-  readonly bsuid: string | null
-  readonly createdAt: string
-  readonly id: string
-  readonly note: string | null
-  readonly phoneNumber: string | null
-  readonly source: CallOptOutSource
-}
-
-export interface CallOptOutDeleted {
-  readonly deleted: true
-  readonly id: string
-}
-
-export interface CallOptOutImportResult {
-  readonly added: number
-  readonly existing: number
-  readonly rejected: readonly {
-    readonly index: number
-    readonly reason: ImportRejectionReason
-  }[]
-}
-
-export type CallPermissionStatus =
-  'none' | 'temporary' | 'permanent' | 'revoked'
-
-export type CallPermissionSource =
-  'user_action' | 'automatic' | 'sync' | 'call_refused'
-
-export interface CallPermissionLimit {
-  readonly maxAllowed: number
-  /** ISO 8601 duration of the window, for example `PT24H`. */
-  readonly period: string
-  readonly resetsAt: string | null
-  readonly used: number
-}
-
-export interface CallPermissionAction {
-  readonly allowed: boolean
-  readonly limits: readonly CallPermissionLimit[]
-}
-
-/** A person's call permission, without the conversation it belongs to. */
-export interface CallPermissionState {
-  /** WhatsApp's limits, `null` when WhatsApp could not be asked. */
-  readonly actions: {
-    readonly requestPermission: CallPermissionAction | null
-    readonly startCall: CallPermissionAction | null
-  } | null
-  readonly checkedAt: string | null
-  readonly expiresAt: string | null
-  /** True when WhatsApp answered during this request. */
-  readonly fresh: boolean
-  readonly source: CallPermissionSource | null
-  readonly status: CallPermissionStatus
-  readonly updatedAt: string | null
-}
-
-export interface CallPermission extends CallPermissionState {
-  readonly conversation: ConversationIdentity
-}
-
-export type CallRefusal =
-  | 'calls_disabled'
-  | 'call_recipient_opted_out'
-  | 'call_destination_blocked'
-  | 'call_permission_required'
-  | 'call_limit_reached'
-
-export interface CallCheck {
-  readonly allowed: boolean
-  /** `null` on a linked-device number, which does not use call permissions. */
-  readonly permission: CallPermissionState | null
-  readonly refusal: CallRefusal | null
-}
+// The SDK owns the wire contract; these names keep the CLI renderer concise.
+export type CallPolicy = SdkCallPolicy
+export type CallOptOut = SdkCallOptOut
+export type CallOptOutDeleted = SdkCallOptOutDeleted
+export type CallOptOutImportResult = SdkCallOptOutImportResult
+export type CallPermissionState = SdkCallPermissionState
+export type CallPermissionAction = SdkCallPermissionAction
+export type CallPermission = SdkCallPermission
+export type CallCheck = SdkVoipCallCheck
 
 // ── Limits the API enforces ────────────────────────────────────────────────
 
@@ -153,18 +64,12 @@ const OPT_OUT_ID =
 /** Most entries `calls opt-outs list --paginate` collects: the list limit. */
 export const MAX_LIST_ITEMS = 100_000
 
-const CALL_POLICY_PATH = '/platform/call-policy'
-const CALL_OPT_OUTS_PATH = '/platform/call-opt-outs'
-
 // ── Team call policy ───────────────────────────────────────────────────────
 
 export async function viewCallPolicy(
   client: PlatformClient,
 ): Promise<CallConsentResult<CallPolicy>> {
-  return request<CallPolicy>(client.raw, {
-    method: 'GET',
-    path: CALL_POLICY_PATH,
-  })
+  return result(await client.callPolicy.retrieve())
 }
 
 /**
@@ -204,14 +109,12 @@ export async function updateCallPolicy(
   blockedCountryCodes: readonly string[],
   expectedRevision: number | undefined,
 ): Promise<CallConsentResult<CallPolicy>> {
-  return request<CallPolicy>(client.raw, {
-    body: {
+  return result(
+    await client.callPolicy.update({
       blockedCountryCodes: [...blockedCountryCodes],
       ...(expectedRevision === undefined ? {} : {expectedRevision}),
-    },
-    method: 'PUT',
-    path: CALL_POLICY_PATH,
-  })
+    }),
+  )
 }
 
 // ── Do-not-call list ───────────────────────────────────────────────────────
@@ -256,38 +159,38 @@ export async function listCallOptOuts(
   for (;;) {
     const pageLimit =
       maxItems === 0 ? limit : Math.min(limit, maxItems - items.length)
-    const response = await client.raw.request<PageEnvelope<CallOptOut>>({
-      method: 'GET',
-      path: CALL_OPT_OUTS_PATH,
-      query: {
-        limit: pageLimit,
-        ...(cursor === undefined ? {} : {cursor}),
-        ...identity,
-      },
+    const response = await client.callOptOuts.list({
+      limit: pageLimit,
+      ...(cursor === undefined ? {} : {cursor}),
+      ...identity,
     })
-    const page = response.data.page
+    const page = {
+      hasMore: response.hasMore,
+      nextCursor: response.nextCursor ?? null,
+    }
+    const data = response.items
     if (maxItems !== 0) {
       const remaining = maxItems - items.length
-      items.push(...response.data.data.slice(0, remaining))
-      if (response.data.data.length > remaining) {
+      items.push(...data.slice(0, remaining))
+      if (data.length > remaining) {
         // The page cursor would skip the truncated entries, so do not offer it.
         return {
-          ...envelope(items, response.metadata),
+          ...envelope(items, response.response.metadata),
           page: {hasMore: true, nextCursor: null},
         }
       }
     } else {
-      items.push(...response.data.data)
+      items.push(...data)
     }
-    const done =
+    if (
       maxItems === 0 ||
       items.length >= maxItems ||
       !page.hasMore ||
       page.nextCursor === null ||
-      response.data.data.length === 0
-    if (done) {
+      data.length === 0
+    ) {
       return {
-        ...envelope(items, response.metadata),
+        ...envelope(items, response.response.metadata),
         page: {hasMore: page.hasMore, nextCursor: page.nextCursor},
       }
     }
@@ -315,11 +218,12 @@ export async function addCallOptOut(
       'note',
     )
   }
-  return request<CallOptOut>(client.raw, {
-    body: {...identity, ...(note === undefined ? {} : {note})},
-    method: 'POST',
-    path: CALL_OPT_OUTS_PATH,
-  })
+  return result(
+    await client.callOptOuts.create({
+      ...identity,
+      ...(note === undefined ? {} : {note}),
+    }),
+  )
 }
 
 export async function removeCallOptOut(
@@ -333,10 +237,7 @@ export async function removeCallOptOut(
       'optOutId',
     )
   }
-  return request<CallOptOutDeleted>(client.raw, {
-    method: 'DELETE',
-    path: `${CALL_OPT_OUTS_PATH}/${encodeURIComponent(id)}`,
-  })
+  return result(await client.callOptOuts.delete(id))
 }
 
 // ── Import ─────────────────────────────────────────────────────────────────
@@ -631,8 +532,8 @@ export async function importCallOptOuts(
     const batch = sendable.slice(start, start + batchSize)
     let response: CallConsentResult<CallOptOutImportResult>
     try {
-      response = await request<CallOptOutImportResult>(client.raw, {
-        body: {
+      response = result(
+        await client.callOptOuts.import({
           entries: batch.map(({entry}) => ({
             ...(entry.phoneNumber === undefined
               ? {}
@@ -640,10 +541,8 @@ export async function importCallOptOuts(
             ...(entry.bsuid === undefined ? {} : {bsuid: entry.bsuid}),
             ...(entry.note === undefined ? {} : {note: entry.note}),
           })),
-        },
-        method: 'POST',
-        path: `${CALL_OPT_OUTS_PATH}/import`,
-      })
+        }),
+      )
     } catch (cause) {
       return {
         error: cause instanceof Error ? cause : new Error(String(cause)),
@@ -689,12 +588,11 @@ export async function viewCallPermission(
   to: string,
 ): Promise<CallConsentResult<CallPermission>> {
   const target = validateCallTarget(to)
-  return request<CallPermission>(client.raw, {
-    method: 'GET',
-    path: `/messaging/${encodeURIComponent(
-      validateSession(session),
-    )}/call-permissions/${encodeURIComponent(target)}`,
-  })
+  const response = await client.voip.retrieveCallPermission(
+    validateSession(session),
+    target,
+  )
+  return envelope(response.data.data, response.metadata)
 }
 
 export async function checkCall(
@@ -702,11 +600,11 @@ export async function checkCall(
   session: string,
   to: string,
 ): Promise<CallConsentResult<CallCheck>> {
-  return request<CallCheck>(client.raw, {
-    body: {session: validateSession(session), to: validateCallTarget(to)},
-    method: 'POST',
-    path: '/messaging/voip/calls/check',
+  const response = await client.voip.check({
+    session: validateSession(session),
+    to: validateCallTarget(to),
   })
+  return envelope(response.data.data, response.metadata)
 }
 
 export async function requestCallPermission(
@@ -723,17 +621,15 @@ export async function requestCallPermission(
       'body',
     )
   }
-  return request<{readonly id: string}>(client.raw, {
-    body: {
+  const response = await client.messages.send(
+    validateSession(session),
+    {
       content: {callPermissionRequest: {body}},
       conversation: conversationReference(to.trim()),
     },
-    method: 'POST',
-    path: `/messaging/${encodeURIComponent(
-      validateSession(session),
-    )}/messages/send`,
-    ...options,
-  })
+    {maxNetworkRetries: 0, ...options},
+  )
+  return envelope(response.data.data, response.metadata)
 }
 
 // ── Rendering ──────────────────────────────────────────────────────────────
@@ -870,6 +766,20 @@ function optOutIdentity(
     readonly bsuid?: string | undefined
     readonly phoneNumber?: string | undefined
   },
+  required: true,
+): {phoneNumber: string} | {bsuid: string}
+function optOutIdentity(
+  input: {
+    readonly bsuid?: string | undefined
+    readonly phoneNumber?: string | undefined
+  },
+  required: false,
+): {phoneNumber: string} | {bsuid: string} | Record<string, never>
+function optOutIdentity(
+  input: {
+    readonly bsuid?: string | undefined
+    readonly phoneNumber?: string | undefined
+  },
   required: boolean,
 ): {phoneNumber: string} | {bsuid: string} | Record<string, never> {
   const phoneNumber = input.phoneNumber?.trim()
@@ -922,12 +832,8 @@ function stripByteOrderMark(contents: string): string {
   return contents.charCodeAt(0) === 0xfe_ff ? contents.slice(1) : contents
 }
 
-async function request<T>(
-  raw: RawClient,
-  input: RawRequest,
-): Promise<CallConsentResult<T>> {
-  const response = await raw.request<DataEnvelope<T>>(input)
-  return envelope(response.data.data, response.metadata)
+function result<T>(response: ApiResponse<T>): CallConsentResult<T> {
+  return envelope(response.data, response.metadata)
 }
 
 function envelope<T>(

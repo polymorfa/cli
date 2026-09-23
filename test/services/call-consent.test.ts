@@ -1,4 +1,8 @@
-import type {ClientInstance, RawRequest} from '@polymorfa/sdk'
+import type {
+  ClientInstance,
+  CallOptOutImportResult,
+  ImportCallOptOutsInput,
+} from '@polymorfa/sdk'
 import {describe, expect, test} from 'vitest'
 
 import {
@@ -11,7 +15,6 @@ import {
   renderCallOptOuts,
   renderCallPermission,
   type CallCheck,
-  type CallOptOutImportResult,
   type CallPermission,
 } from '../../src/services/call-consent.js'
 
@@ -106,7 +109,7 @@ describe('parseImportEntries', () => {
 
 describe('importCallOptOuts', () => {
   test('rejects over-long fields locally and maps API rejections to file positions', async () => {
-    const requests: RawRequest[] = []
+    const requests: ImportCallOptOutsInput[] = []
     const client = fakeClient(requests, {
       added: 1,
       existing: 1,
@@ -141,7 +144,7 @@ describe('importCallOptOuts', () => {
   })
 
   test('keeps the batches it stored when a later request fails', async () => {
-    const requests: RawRequest[] = []
+    const requests: ImportCallOptOutsInput[] = []
     const failure = new Error('The list is full.')
     const client = fakeClient(
       requests,
@@ -227,19 +230,19 @@ describe('rendering', () => {
 })
 
 function fakeClient(
-  requests: RawRequest[],
+  requests: ImportCallOptOutsInput[],
   result: CallOptOutImportResult,
   failAfterFirst?: Error,
 ): ClientInstance<'organization'> {
   return {
-    raw: {
-      request(request: RawRequest) {
-        requests.push(request)
+    callOptOuts: {
+      import(input: ImportCallOptOutsInput) {
+        requests.push(input)
         if (failAfterFirst !== undefined && requests.length > 1) {
           return Promise.reject(failAfterFirst)
         }
         return Promise.resolve({
-          data: {data: result},
+          data: result,
           metadata: {attempts: 1, headers: {}, status: 200},
         })
       },

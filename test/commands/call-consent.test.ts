@@ -158,6 +158,18 @@ describe('call consent commands', () => {
     expect(refused.stderr).toContain('organization credential')
   }, 30_000)
 
+  test('reports malformed SDK collection envelopes as server failures', async () => {
+    server = await startHttpServer({body: {data: {entries: []}, success: true}})
+
+    const listed = await apiKey(() => runCommand('calls opt-outs list --json'))
+
+    expect(exitCode(listed.error)).toBe(5)
+    expect(JSON.parse(listed.stderr)).toMatchObject({
+      error: {category: 'server', code: 'invalid_response'},
+    })
+    expect(server.requests).toHaveLength(1)
+  }, 30_000)
+
   test('lists the do-not-call list one page at a time or across pages', async () => {
     server = await startHttpSequenceServer([
       {
@@ -657,6 +669,11 @@ describe('call consent commands', () => {
     expect(granted.stderr).toContain('permanent call permission')
     expect(exitCode(empty.error)).toBe(2)
     expect(server.requests).toHaveLength(3)
+    expect(server.requests[0]?.headers['idempotency-key']).toBeTruthy()
+    expect(server.requests[1]?.headers['idempotency-key']).toBeTruthy()
+    expect(server.requests[0]?.headers['idempotency-key']).not.toBe(
+      server.requests[1]?.headers['idempotency-key'],
+    )
   }, 30_000)
 
   async function apiKey<T>(run: () => Promise<T>): Promise<T> {
