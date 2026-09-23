@@ -1116,9 +1116,11 @@ polymorfa campaign requeue campaign_123 \
   --include-skipped-error
 ```
 
-Launch, pause, resume, and stop return accepted durable work; they do not wait
-for the state transition. Check the campaign with `polymorfa campaign view`.
-Follow the returned operation with `polymorfa operation wait` or
+Launch, pause, and resume return accepted durable work; they do not wait for
+the state transition. Stop returns accepted work for an active delivery run,
+or reports an immediate cancellation with no operation ID when none is active.
+Check the campaign with `polymorfa campaign view`.
+When an operation ID is returned, follow it with `polymorfa operation wait` or
 `polymorfa operation watch`; see [Operations](#operations).
 
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601

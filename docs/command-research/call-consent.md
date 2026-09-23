@@ -2,10 +2,10 @@
 
 - **Status:** Implemented against the calls-consent API contract, unpublished
 - **Reviewed:** 2026-09-20
-- **API baseline:** `polymorfa/polymorfa` branch `t3code/calls-consent`,
-  commit `16f466066`
-- **SDK integration baseline:** `polymorfa/sdks` local consent branch commit
-  `475ea7a`. The CLI uses a temporary local pack for verification; its committed
+- **API baseline:** `polymorfa/polymorfa` local consent checkpoint
+  `677b39a4a` (unpublished)
+- **SDK integration baseline:** `polymorfa/sdks` local consent checkpoint
+  `a5acdc980` (unpublished). The CLI uses a temporary local pack for verification; its committed
   npm pin stays on the existing published version until SDK #284 is merged and
   published.
 
@@ -119,7 +119,6 @@ package metadata.
   permission request button; use the existing template send.
 - The CLI does not subscribe to `call.permission_changed`; use
   `polymorfa event` and webhook commands for that.
-- `@polymorfa/sdk` is not published, and the pinned commit predates the call
-  consent surface. These commands cannot move to typed SDK resources until a
-  prerelease that contains them can be installed; see
-  [Transport](#transport).
+- The committed SDK prerelease predates the call consent methods. Publish SDK
+  #284 after API #226 merges, then update the CLI's exact npm pin and rerun the
+  command checks before merging this branch.
