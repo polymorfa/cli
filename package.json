@@ -54,11 +54,17 @@
     "commands": "./dist/commands",
     "topicSeparator": " ",
     "topics": {
-      "auth": {
-        "description": "Manage authentication profiles and credentials."
+      "audience": {
+        "description": "Manage campaign audiences and their members."
+      },
+      "audience:members": {
+        "description": "Add, list, and remove audience members."
       },
       "audit-log": {
         "description": "Inspect organization audit activity."
+      },
+      "auth": {
+        "description": "Manage authentication profiles and credentials."
       },
       "business": {
         "description": "Manage Linked Device Business App resources."
@@ -111,6 +117,9 @@
       "campaign": {
         "description": "Inspect and manage Messaging campaigns."
       },
+      "campaign:recipients": {
+        "description": "Inspect and append campaign recipients."
+      },
       "channel": {
         "description": "Inspect and manage Messaging channels."
       },
@@ -144,6 +153,9 @@
       "group:participants": {
         "description": "List and change group participants and admins."
       },
+      "identity": {
+        "description": "Resolve phone numbers and usernames to Polymorfa user IDs."
+      },
       "key": {
         "description": "Inspect and revoke organization API keys."
       },
@@ -153,8 +165,11 @@
       "label:chat": {
         "description": "Manage the complete label set assigned to a chat."
       },
-      "identity": {
-        "description": "Resolve phone numbers and usernames to Polymorfa user IDs."
+      "media": {
+        "description": "Inspect, download, and persist Messaging media."
+      },
+      "member": {
+        "description": "Inspect organization members."
       },
       "message": {
         "description": "Send messages and perform message actions."
@@ -162,11 +177,23 @@
       "message:send": {
         "description": "Send a message by content type."
       },
-      "media": {
-        "description": "Inspect, download, and persist Messaging media."
+      "optout": {
+        "description": "Manage organization opt-out suppression."
       },
-      "member": {
-        "description": "Inspect organization members."
+      "optout:settings": {
+        "description": "Inspect and replace STOP/START keyword capture."
+      },
+      "presence": {
+        "description": "View and manage Messaging presence state."
+      },
+      "presence:chat": {
+        "description": "View and renew policy-governed chat presence observations."
+      },
+      "privacy": {
+        "description": "View and manage account-level Messaging privacy."
+      },
+      "privacy:disappearing-timer": {
+        "description": "Manage the account-default disappearing timer."
       },
       "profile": {
         "description": "View and manage the connected account profile."
@@ -179,18 +206,6 @@
       },
       "profile:status": {
         "description": "Manage the connected account profile status."
-      },
-      "privacy": {
-        "description": "View and manage account-level Messaging privacy."
-      },
-      "privacy:disappearing-timer": {
-        "description": "Manage the account-default disappearing timer."
-      },
-      "presence": {
-        "description": "View and manage Messaging presence state."
-      },
-      "presence:chat": {
-        "description": "View and renew policy-governed chat presence observations."
       },
       "project": {
         "description": "Select, list, and inspect the project context."
@@ -210,26 +225,23 @@
       "session": {
         "description": "Manage Platform sessions."
       },
-      "sip-trunk": {
-        "description": "Connect a PBX to WhatsApp calls with SIP trunks."
-      },
       "session-ban": {
         "description": "Inspect recorded organization session bans."
       },
-      "user": {
-        "description": "Inspect Linked Device user identity data."
-      },
-      "widget": {
-        "description": "Inspect and update saved QuickLink widget settings."
-      },
       "session:configuration": {
         "description": "Inspect and update inherited session configuration."
+      },
+      "sip-trunk": {
+        "description": "Connect a PBX to WhatsApp calls with SIP trunks."
       },
       "testing": {
         "description": "Manage simulated session fixtures."
       },
       "testing:history-fixture": {
         "description": "Upload project-scoped test history."
+      },
+      "user": {
+        "description": "Inspect Linked Device user identity data."
       },
       "webhook": {
         "description": "Inspect and manage developer webhooks."
@@ -242,6 +254,9 @@
       },
       "webhook:secret": {
         "description": "Manage one-time webhook signing-secret rotation."
+      },
+      "widget": {
+        "description": "Inspect and update saved QuickLink widget settings."
       },
       "function": {
         "description": "Manage project Functions and pinned deployments."

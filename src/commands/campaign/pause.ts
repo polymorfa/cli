@@ -37,7 +37,7 @@ function lifecycleFlags() {
   return {
     'idempotency-key': Flags.string({
       description:
-        'Identify this attempt (the API does not deduplicate lifecycle commands).',
+        'Deduplicate this request for 24 hours. A completed key returns 409 idempotency_completed.',
     }),
     'project-slug': Flags.string({
       description: 'Project slug in the Messaging API path.',

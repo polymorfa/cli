@@ -38,12 +38,12 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.0
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260923115544
 ```
 
-The SDK component reports the version constant built into the SDK. SDK dev
-prereleases report `0.1.0-dev.0`, not their full prerelease version; run
-`npm ls @polymorfa/sdk` to see the installed build.
+The SDK component reports the version built into the installed SDK. Dev
+prereleases include their full timestamped version. Run `npm ls @polymorfa/sdk`
+to see the installed build.
 
 ## Authentication profiles
 
@@ -1063,31 +1063,142 @@ polymorfa campaign requeue campaign_123 \
   --include-skipped-error
 ```
 
-Launch, pause, resume, and stop return accepted durable work; they do not wait
-for the state transition. Check the campaign with `polymorfa campaign view`.
+Launch, pause, and resume return accepted durable work; they do not wait for
+the state transition. Check the campaign with `polymorfa campaign view`.
 Follow the returned operation with `polymorfa operation wait` or
 `polymorfa operation watch`; see [Operations](#operations).
 
+Stop is terminal and requires `--yes`. A campaign that has an active delivery
+run answers with an operation ID, as the other lifecycle commands do. A
+campaign with no active run is cancelled immediately and answers without one;
+the CLI reports that outcome instead of printing an empty operation.
+
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
-is synchronous and reports only the number moved. Every mutation accepts
-`--idempotency-key`. `campaign create` and `campaign launch` send an
-`Idempotency-Key` by default, generating a fresh key for each invocation when
-you omit the flag. Pass the same explicit key from the first attempt when
-retrying either command in another process, with the same input, credential,
-and API version.
+is synchronous and reports only the number moved.
 
-Both commands use the [retry identity](#retry-identity) contract above: within
-24 hours, a recorded success returns `409 idempotency_completed` without the
-original response body; an uncertain outcome stays blocked rather than running
-again. Save the first campaign or operation response and inspect campaign
-state before using a new key. Pause, resume, stop, and requeue do not persist
-the header, so it is not server-side deduplication for them.
+Create, launch, pause, resume and stop accept `--idempotency-key` to deduplicate
+the same request for 24 hours. A successful request repeated with the same key
+returns `409 idempotency_completed`, not the original response. Changed input
+returns `409 idempotency_conflict`; an in-progress or uncertain result must be
+resolved before trying a new key. The SDK generates a fresh key for create and
+launch when the flag is omitted. Supply an explicit key from the first attempt
+to reuse it across CLI invocations with the same input, credential and API
+version. Save the first campaign or operation response and inspect campaign
+state before using a new key. Pause, resume and stop persist an explicit key;
+they do not generate one when the flag is omitted.
+
+Requeue also accepts the header, but the API does not deduplicate it. Each
+invocation moves recipients eligible at that time, so a retry can move newly
+failed recipients rather than returning the first result.
+
+### Campaign recipients
+
+Recipients are appended to a campaign that has not started sending, and read
+back one cursor page at a time:
+
+```shell
+polymorfa campaign recipients add campaign_123 \
+  --project-slug launch-project \
+  --csv contacts.csv \
+  --phone-column Phone \
+  --variable "firstName=First name"
+
+polymorfa campaign recipients add campaign_123 \
+  --project-slug launch-project \
+  --input recipients.json
+
+polymorfa campaign recipients list campaign_123 \
+  --project-slug launch-project \
+  --status skipped \
+  --limit 100
+```
+
+One append accepts at most 1,000 entries. `--csv` reads the file locally and
+sends the rows inline; it does not upload the file. Blank rows are ignored, but
+a row with other values and an empty phone cell stops the command before
+anything is sent, naming the row numbers (the header is row 1). `--input`
+entries with an empty phone, and any phone longer than 64 characters, are
+refused the same way, as is an empty `--input` array, because the API would
+reject the whole request. JSON variables must use valid names and string values;
+CSV and JSON variable values are limited to 1,024 characters. Reported invalid
+rows for `--csv` refer to the
+original spreadsheet rows, including blank rows. `__proto__` is not accepted as a `--variable` name. Comma,
+semicolon and tab separators are detected from the header row; separators
+inside quoted fields are ignored. A phone already on the
+campaign is skipped, and invalid entries are reported rather than added, so the
+result carries `added`, `duplicateCount`, `invalidCount` and up to 20
+`invalidRows`.
+
+The API does not replay an append, so the CLI sends it once and never retries
+it automatically, with or without `--idempotency-key`. A resent append would
+count the first attempt's rows as duplicates. If a connection drops before the
+result arrives, list the recipients before appending again.
+
+List returns `{data, page}`. Pass `page.nextCursor` back as `--cursor` while
+`page.hasMore` is true; the CLI prints the next cursor in human output. Filter
+with `--status queued|sending|sent|delivered|read|failed|skipped`. A recipient
+suppressed by an opt-out appears as `skipped` with `lastError` `opted_out`.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
-recipient, event, history, or replay route. The CLI does not substitute
-similarly named Platform campaign methods for these gaps. To follow or stop a
-campaign's operation, use the `operation` commands in [Operations](#operations).
+event, history, or replay route on the Messaging surface. The CLI does not
+substitute similarly named Platform campaign methods for these gaps. To follow
+or stop a campaign's operation, use the `operation` commands in
+[Operations](#operations).
+
+## Campaign audiences
+
+Audience commands are organization-scoped and use the Platform API:
+
+```shell
+polymorfa audience create --name "August launch" \
+  --csv contacts.csv \
+  --phone-column Phone \
+  --variable "firstName=First name"
+
+polymorfa audience create --name "August launch" \
+  --file-id upload_1 \
+  --mapping mapping.json
+
+polymorfa audience members add list_123 --csv contacts.csv
+polymorfa audience members list list_123 --limit 100
+polymorfa audience members remove list_123 +15551234567
+```
+
+`--csv` sends up to 1,000 members inline. `--file-id` imports a file that was
+already uploaded through the API and needs `--mapping`, a JSON document naming
+the phone column and any variable columns:
+
+```json
+{"phone": "Phone", "variables": {"firstName": "First name"}}
+```
+
+Creation and appends report the same import counts as campaign recipients, so a
+caller can reconcile what was accepted. Like recipient appends, `members add` is
+sent once and never retried automatically. Member listing is cursor-paged like
+recipient listing.
+
+## Campaign opt-outs
+
+Opt-out suppression is organization-wide. Keyword capture has its own settings:
+
+```shell
+polymorfa optout settings view
+polymorfa optout settings update \
+  --enabled \
+  --opt-out-keyword STOP \
+  --opt-out-keyword BAJA \
+  --opt-in-keyword START
+polymorfa optout settings update --no-enabled --opt-out-keyword STOP
+```
+
+Update replaces the whole settings document, so pass the complete keyword set
+every time; the CLI refuses a partial update rather than clearing keywords the
+caller did not mention. At least one opt-out keyword is required even when
+capture is off. When capture is on, a matching reply suppresses the contact and
+the API emits `contact.opted_out`; an opt-in keyword emits `contact.opted_in`.
+A suppressed contact is skipped at dispatch, which is visible as a `skipped`
+recipient with `lastError` `opted_out`.
 
 ## Developer events and webhooks
 

@@ -237,9 +237,11 @@ describe('Messaging campaign commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain(
-      'Campaign campaign/1 stopped immediately; no operation was created.',
+      'Cancelled campaign campaign/1; it had no active delivery run.',
     )
-    expect(result.stdout).toContain('Campaign campaign/1 is cancelled.')
+    expect(result.stdout).toContain(
+      'The campaign is cancelled. No remaining recipient is sent.',
+    )
     expect(result.stdout).not.toContain('operation null')
   })
 

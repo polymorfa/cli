@@ -1,10 +1,17 @@
 import {
+  type AddCampaignRecipientsResult,
   type Campaign,
   type CampaignAnalytics,
   type CampaignOperation,
-  type CampaignStopOperation,
+  type CampaignRecipient,
+  type CampaignRecipientInput,
+  type CampaignRecipientPage,
+  type CampaignRecipientStatus,
   type CampaignRequeueResult,
+  type CampaignStopOperation,
   type CreateCampaignRequest,
+  type InvalidRecipientRow,
+  type ListCampaignRecipientsParams,
   type MessagingClient,
   PolymorfaValidationError,
   type RequestOptions,
@@ -115,6 +122,44 @@ export async function stopCampaign(
   return result(response.data.data, response.metadata)
 }
 
+export interface CampaignRecipientPageResult {
+  readonly data: readonly CampaignRecipient[]
+  readonly page: CampaignRecipientPage
+}
+
+export async function listCampaignRecipients(
+  client: MessagingClient,
+  projectSlug: string,
+  campaignId: string,
+  params: ListCampaignRecipientsParams,
+): Promise<CampaignResult<CampaignRecipientPageResult>> {
+  const response = await client.campaigns.listRecipients(
+    projectSlug,
+    campaignId,
+    params,
+  )
+  return result(
+    {data: response.data.data, page: response.data.page},
+    response.metadata,
+  )
+}
+
+export async function addCampaignRecipients(
+  client: MessagingClient,
+  projectSlug: string,
+  campaignId: string,
+  recipients: readonly CampaignRecipientInput[],
+  options: RequestOptions = {},
+): Promise<CampaignResult<AddCampaignRecipientsResult>> {
+  const response = await client.campaigns.addRecipients(
+    projectSlug,
+    campaignId,
+    {recipients},
+    options,
+  )
+  return result(response.data.data, response.metadata)
+}
+
 export async function requeueCampaign(
   client: MessagingClient,
   projectSlug: string,
@@ -209,6 +254,83 @@ export function renderCampaignOperation(
 export function renderCampaignRequeue(result: CampaignRequeueResult): string {
   return `Requeued ${result.requeued} ${result.requeued === 1 ? 'recipient' : 'recipients'}.`
 }
+
+/**
+ * Stop answers with a null operation ID when the campaign had no delivery run
+ * to stop. Saying "accepted as operation null" would be untrue, so the two
+ * outcomes read differently.
+ */
+export function renderCampaignStop(campaign: CampaignStopOperation): string {
+  if (campaign.operationId === null) {
+    return [
+      `Cancelled campaign ${campaign.id}; it had no active delivery run.`,
+      `The campaign is ${campaign.status}. No remaining recipient is sent.`,
+    ].join('\n')
+  }
+  return [
+    `Accepted campaign stop as operation ${campaign.operationId}.`,
+    `Campaign ${campaign.id} is ${campaign.status}.`,
+    'Check the campaign status with polymorfa campaign view.',
+  ].join('\n')
+}
+
+export function renderCampaignRecipients(
+  result: CampaignRecipientPageResult,
+): string {
+  if (result.data.length === 0) return 'No recipients found.'
+  const rows = result.data.map((recipient) =>
+    [
+      recipient.id,
+      recipient.phone,
+      recipient.status,
+      String(recipient.attempts),
+      recipient.lastError ?? '',
+      formatCampaignTime(recipient.sentAt),
+    ].join('\t'),
+  )
+  if (result.page.hasMore && result.page.nextCursor !== null) {
+    rows.push(
+      `More recipients remain. Continue with --cursor ${result.page.nextCursor}.`,
+    )
+  }
+  return rows.join('\n')
+}
+
+export function renderRecipientAppend(
+  result: AddCampaignRecipientsResult,
+): string {
+  return [
+    `Added\t${result.added}`,
+    `On campaign\t${result.recipientCount}`,
+    `Duplicates skipped\t${result.duplicateCount}`,
+    `Invalid\t${result.invalidCount}`,
+    ...renderInvalidRows(result.invalidRows),
+  ].join('\n')
+}
+
+/** Report why entries were rejected instead of only counting them. */
+export function renderInvalidRows(
+  rows: readonly InvalidRecipientRow[],
+): string[] {
+  return rows.map((row) => `Row ${row.row}\t${row.reason}`)
+}
+
+export function recipientStatus(
+  value?: string,
+): CampaignRecipientStatus | undefined {
+  if (value === undefined) return undefined
+  return value as CampaignRecipientStatus
+}
+
+export const RECIPIENT_STATUSES = [
+  'queued',
+  'sending',
+  'sent',
+  'delivered',
+  'read',
+  'failed',
+  'skipped',
+] as const
 
 function campaignInput(input: unknown): CreateCampaignRequest {
   if (!isRecord(input)) {
