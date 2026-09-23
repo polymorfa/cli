@@ -3,7 +3,10 @@
 - **Status:** Implemented against Calls contract revision 1, unpublished
 - **Reviewed:** 2026-09-17
 - **SDK baseline:** `@polymorfa/sdk` (including the `@polymorfa/sdk/calls`
-  subpath) `0.1.0-dev.20260922102711` from npm. The research was done against
+  subpath) `0.1.0-dev.20260922115749` from npm, published from `polymorfa/sdks`
+  commit `8bc00778b3b3aaf05b09369c3f7840eb24cf6a56` by
+  [workflow run 35724232746](https://github.com/polymorfa/sdks/actions/runs/35724232746).
+  The research was done against
   `polymorfa/sdks` commit `94bfd09825817f842434e206e6a77adb5cc0c414`; the npm
   build also reports a `claim` activity when the placed call is answered.
 
@@ -53,6 +56,7 @@ calls
 | `calls settings set`           | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
 | `calls retention get`          | `GET /platform/call-retention`                   | raw request (CLI adapter)           |
 | `calls retention set`          | `PUT /platform/call-retention`                   | raw request (CLI adapter)           |
+| `sip-trunk endpoint`           | `GET /platform/sip/endpoint`                     | `sipTrunks.endpoint`                |
 | `sip-trunk list`               | `GET /platform/sip-trunks`                       | `sipTrunks.list`                    |
 | `sip-trunk view`               | `GET /platform/sip-trunks/{id}`                  | `sipTrunks.retrieve`                |
 | `sip-trunk create`             | `POST /platform/sip-trunks`                      | `sipTrunks.create`                  |
@@ -61,6 +65,14 @@ calls
 | `sip-trunk rotate-credentials` | `POST /platform/sip-trunks/{id}/credentials`     | `sipTrunks.rotateCredentials`       |
 | `calls watch`                  | Lifecycle socket                                 | `CallsClient` events                |
 | `calls media`                  | Place or accept, then the media socket           | `CallsClient`, `Call`, `call.audio` |
+
+`sip-trunk endpoint` reads the address with `sipTrunks.endpoint` and checks
+the response shape before printing it, so a malformed answer fails instead of
+printing a partial address. The human output of `sip-trunk create` and
+`sip-trunk rotate-credentials` prints the one-time credentials before looking up
+this address. That optional lookup has a five-second deadline and no retries;
+a timeout omits the appendix and leaves the successful credential operation's
+exit status unchanged. JSON output does not perform the optional lookup.
 
 The CLI uses only the neutral public calling surface. It does not expose
 offers, candidates, session descriptions, or media framing, and it imports no
@@ -157,5 +169,8 @@ internal SDK module.
 - `calls watch` does not report outbound calls placed by other participants.
 - `@polymorfa/sdk` (with its `@polymorfa/sdk/calls` subpath) is published to
   npm only as dev prereleases; the CLI pins exactly
-  `0.1.0-dev.20260922102711`. The CLI cannot release until a stable
+  `0.1.0-dev.20260922115749`. The CLI cannot release until a stable
   `@polymorfa/sdk` is published with a compatible semver range.
+
+The optional SIP address appendix respects a shorter global `--timeout`; its
+five-second abort signal is an upper bound, not a per-request timeout override.
