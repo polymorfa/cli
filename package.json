@@ -207,18 +207,6 @@
       "profile:status": {
         "description": "Manage the connected account profile status."
       },
-      "privacy": {
-        "description": "View and manage account-level Messaging privacy."
-      },
-      "privacy:disappearing-timer": {
-        "description": "Manage the account-default disappearing timer."
-      },
-      "presence": {
-        "description": "View and manage Messaging presence state."
-      },
-      "presence:chat": {
-        "description": "View and renew policy-governed chat presence observations."
-      },
       "project": {
         "description": "Select, list, and inspect the project context."
       },
