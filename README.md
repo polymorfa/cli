@@ -1147,6 +1147,36 @@ that includes the current operation.
 response excerpt that the API records for a failed HTTP response. Human output
 escapes control characters in remote text.
 
+### Stream events
+
+`polymorfa event stream` follows a project's public event stream and prints
+each event as it happens. It needs a credential with `events:listen` and a team
+enrolled in the Event streams beta; otherwise it exits with the authorization
+code.
+
+```shell
+polymorfa event stream \
+  --owner project \
+  --project project_123 \
+  --type 'message.*' \
+  --json
+```
+
+`--json` writes one JSON line per event with its `cursor`, the event metadata,
+and the decoded webhook body (`null` when hosted message storage did not keep
+it). Human output prints the time, type, ID, and body, and prints a
+`--from <cursor>` hint on exit. Pass `--from` to resume within 24 hours. The
+command reconnects with backoff after a dropped connection. If events after
+`--from` expired before delivery, it reports the count and continues; use
+`--on-gap stop` to exit with the stream gap code instead. `--max-events` stops
+after a fixed number of events.
+
+Ctrl-C or SIGTERM stops the stream with exit code 0. If the output pipe is
+blocked, stopping discards queued output instead of waiting for the reader.
+
+Use `event stream` to consume events in a script. Use `listen` to forward exact
+bodies to a local webhook handler.
+
 ## Local event listening and forwarding
 
 `polymorfa listen` opens the project listener stream and can forward the exact
