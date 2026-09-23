@@ -1,0 +1,179 @@
+import {once} from 'node:events'
+import {Flags} from '@oclif/core'
+import type {EventStreamItem} from '@polymorfa/sdk'
+
+import {BaseCommand} from '../../base-command.js'
+import {CliConditionError} from '../../errors/conditions.js'
+
+export default class EventStream extends BaseCommand {
+  static override description =
+    "Stream a project's events as they happen, with automatic reconnect and resume. Requires events:listen and the Event streams beta."
+
+  static override examples = [
+    '<%= config.bin %> event stream --owner project --project 11111111-1111-4111-8111-111111111111 --type "message.*"',
+    '<%= config.bin %> event stream --owner project --project 11111111-1111-4111-8111-111111111111 --from "$CURSOR" --json',
+  ]
+
+  static override flags = {
+    from: Flags.string({
+      description:
+        'Resume after this cursor from a previous run; valid for 24 hours.',
+    }),
+    'max-events': Flags.integer({
+      description: 'Stop after this many events.',
+      min: 1,
+    }),
+    'on-gap': Flags.string({
+      default: 'continue',
+      description:
+        'Continue or stop when events after --from expired before delivery.',
+      options: ['continue', 'stop'],
+    }),
+    type: Flags.string({
+      description:
+        'Stream an event type or trailing-wildcard pattern such as message.*.',
+      multiple: true,
+    }),
+  }
+
+  async run(): Promise<void> {
+    const {flags} = await this.parse(EventStream)
+    const session = await this.developerSession(flags)
+    if (session.context.owner !== 'project') {
+      throw new CliConditionError(
+        'action_required',
+        'Event streams belong to a project. Pass --owner project and --project.',
+      )
+    }
+    const json = flags.json === true
+    const quiet = flags.quiet === true
+    const controller = new AbortController()
+    let interrupted = false
+    const stop = () => {
+      interrupted = true
+      controller.abort()
+    }
+    process.once('SIGINT', stop)
+    process.once('SIGTERM', stop)
+    // A consumer that closes the pipe (for example `| head -n 1`) ends the
+    // stream normally instead of failing the command.
+    const stdoutClosed = (error: unknown) => {
+      if (isClosedPipe(error)) controller.abort()
+      else throw error
+    }
+    process.stdout.on('error', stdoutClosed)
+    let gap: {missedEvents: number} | undefined
+    let delivered = 0
+    let lastCursor: string | undefined = flags.from
+    try {
+      const stream = session.client.events.stream({
+        ...(flags.type === undefined ? {} : {types: flags.type}),
+        ...(flags.from === undefined ? {} : {since: flags.from}),
+        signal: controller.signal,
+        onGap: (value) => {
+          gap = value
+          if (json) {
+            process.stdout.write(
+              `${JSON.stringify({
+                schemaVersion: 1,
+                type: 'gap',
+                reason: value.reason,
+                missedEvents: value.missedEvents,
+                requestedCursor: value.requestedCursor,
+              })}\n`,
+            )
+          } else {
+            process.stderr.write(
+              `${value.missedEvents} events after the resume cursor expired before delivery. Use "event list" to read them.\n`,
+            )
+          }
+          if (flags['on-gap'] === 'stop') controller.abort()
+        },
+        onReconnect: (_error, delayMs) => {
+          if (!json && !quiet) {
+            process.stderr.write(`Reconnecting in ${delayMs} ms...\n`)
+          }
+        },
+      })
+      for await (const item of stream) {
+        delivered += 1
+        lastCursor = item.cursor
+        if (json)
+          await writeStdout(
+            `${JSON.stringify(jsonLine(item))}\n`,
+            controller.signal,
+          )
+        else if (!quiet)
+          await writeStdout(`${humanLine(item)}\n`, controller.signal)
+        if (controller.signal.aborted) break
+        if (
+          flags['max-events'] !== undefined &&
+          delivered >= flags['max-events']
+        )
+          break
+      }
+    } finally {
+      process.removeListener('SIGINT', stop)
+      process.removeListener('SIGTERM', stop)
+      process.stdout.removeListener('error', stdoutClosed)
+      if (!json && !quiet && lastCursor !== undefined) {
+        process.stderr.write(`Resume with --from ${lastCursor}\n`)
+      }
+      // Aborting the drain wait does not cancel Node's pending stdout write.
+      // stdout.destroy() also leaves that write alive. After closing the
+      // iterator and removing listeners, discard the cancelled output so an
+      // unread pipe cannot keep an interrupted command running indefinitely.
+      if (interrupted && process.stdout.writableNeedDrain) process.exit(0)
+    }
+    if (gap !== undefined && flags['on-gap'] === 'stop') {
+      throw new CliConditionError(
+        'stream_gap',
+        `${gap.missedEvents} events expired before delivery; the stream stopped.`,
+      )
+    }
+  }
+}
+
+/**
+ * Waits for stdout to accept each line so a slow consumer pauses the stream
+ * instead of growing the process's output buffer without bound. An abort
+ * (Ctrl-C, SIGTERM or a closed stdout pipe) ends the wait.
+ */
+async function writeStdout(value: string, signal: AbortSignal): Promise<void> {
+  if (process.stdout.write(value)) return
+  try {
+    // SIGINT/SIGTERM abort the controller; stop waiting so the command exits
+    // even when the consumer never drains stdout.
+    await once(process.stdout, 'drain', {signal})
+  } catch (error) {
+    if (isClosedPipe(error)) return
+    if (signal.aborted) return
+    throw error
+  }
+}
+
+function isClosedPipe(error: unknown): boolean {
+  return (
+    error instanceof Error &&
+    'code' in error &&
+    (error.code === 'EPIPE' || error.code === 'ERR_STREAM_DESTROYED')
+  )
+}
+
+function jsonLine(item: EventStreamItem) {
+  return {
+    schemaVersion: 1,
+    type: 'event',
+    cursor: item.cursor,
+    event: {...item.event, payload: undefined},
+    webhook: item.webhook,
+  }
+}
+
+function humanLine(item: EventStreamItem): string {
+  const body =
+    item.webhook === null
+      ? `(no body: ${item.event.payloadAvailability})`
+      : JSON.stringify(item.webhook.payload)
+  return `${item.event.createdAt}\t${item.event.type}\t${item.event.id}\t${body}`
+}
