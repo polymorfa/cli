@@ -93,7 +93,7 @@ export abstract class BaseCommand extends Command {
     const session = await createDeveloperSession(
       flags,
       (secret) => this.registerSecret(secret),
-      await this.linkedProject(flags),
+      () => this.linkedProject(flags),
     )
     this.errorContext = session.context
     return session
@@ -225,7 +225,8 @@ export abstract class BaseCommand extends Command {
     flags: GlobalFlags,
     surface: ResolvedEnvironment['surface'],
   ): Promise<ResolvedEnvironment> {
-    const linkedProject = await this.linkedProject(flags)
+    const linkedProject =
+      surface === 'messaging' ? await this.linkedProject(flags) : undefined
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface,

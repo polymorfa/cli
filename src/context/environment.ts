@@ -72,6 +72,7 @@ export interface ResolveDeveloperEnvironmentInput {
   readonly env: Readonly<Record<string, string | undefined>>
   /** Project from the nearest `polymorfa link` file; below --project. */
   readonly linkedProject?: string | undefined
+  readonly loadLinkedProject?: (() => Promise<string | undefined>) | undefined
   readonly owner?: string | undefined
   readonly profile?: string | undefined
   readonly project?: string | undefined
@@ -101,7 +102,9 @@ export async function resolveDeveloperEnvironment(
       nonEmpty(input.env.POLYMORFA_BASE_URL) ?? 'https://api.polymorfa.com'
     const requestedProject =
       nonEmpty(input.project) ??
-      (input.owner === 'project' ? nonEmpty(input.linkedProject) : undefined)
+      (input.owner === 'project'
+        ? await developerLinkedProject(input)
+        : undefined)
     const unresolvedContext = resolveOwnerContext({
       principalType: environmentCredential.principalType,
       ...(input.owner === undefined ? {} : {owner: input.owner}),
@@ -177,7 +180,10 @@ export async function resolveDeveloperEnvironment(
       'project',
     )
   }
-  const linkedProject = nonEmpty(input.linkedProject)
+  const linkedProject =
+    owner === 'project' && explicitProject === undefined
+      ? await developerLinkedProject(input)
+      : undefined
   if (
     principalType === 'project_token' &&
     owner === 'project' &&
@@ -227,6 +233,12 @@ export async function resolveDeveloperEnvironment(
     ...(apiVersion === undefined ? {} : {apiVersion}),
     ...(input.timeoutMs === undefined ? {} : {timeoutMs: input.timeoutMs}),
   }
+}
+
+async function developerLinkedProject(
+  input: ResolveDeveloperEnvironmentInput,
+): Promise<string | undefined> {
+  return nonEmpty(input.linkedProject ?? (await input.loadLinkedProject?.()))
 }
 
 export async function resolveListenerEnvironment(
