@@ -11,7 +11,7 @@ import {
   type ResolvedEnvironment,
 } from './context/environment.js'
 import {findProjectLink} from './config/project-link.js'
-import {presentError} from './errors/present.js'
+import {presentError, renderErrorDetails} from './errors/present.js'
 import {errorEnvelope, type OutputContext} from './output/contracts.js'
 import {renderValue, type OutputMode} from './output/render.js'
 import {createMessagingClient, createPlatformClient} from './sdk/client.js'
@@ -227,15 +227,18 @@ export abstract class BaseCommand extends Command {
             ...(presented.requestId === undefined
               ? {}
               : {requestId: presented.requestId}),
+            ...(presented.requestLogUrl === undefined
+              ? {}
+              : {requestLogUrl: presented.requestLogUrl}),
+            ...(presented.docUrl === undefined
+              ? {}
+              : {docUrl: presented.docUrl}),
             retryable: presented.retryable,
           }),
         )}\n`,
       )
     } else {
-      process.stderr.write(`Error: ${presented.message}\n`)
-      if (presented.requestId !== undefined) {
-        process.stderr.write(`Request ID: ${presented.requestId}\n`)
-      }
+      process.stderr.write(renderErrorDetails(presented))
     }
 
     this.exit(presented.exitCode)

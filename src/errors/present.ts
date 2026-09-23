@@ -44,6 +44,10 @@ export interface PresentedError {
   readonly exitCode: number
   readonly message: string
   readonly requestId?: string
+  /** Console request log for this request, when the API returned one. */
+  readonly requestLogUrl?: string
+  /** Documentation for the error code. */
+  readonly docUrl?: string
   readonly retryable: boolean
 }
 
@@ -56,6 +60,14 @@ export function presentError(
   const requestId =
     error instanceof PolymorfaError || error instanceof ListenerProtocolError
       ? error.requestId
+      : undefined
+  const requestLogUrl =
+    error instanceof PolymorfaError && error.requestLogUrl !== undefined
+      ? redact(error.requestLogUrl, secrets)
+      : undefined
+  const docUrl =
+    error instanceof PolymorfaError && error.docUrl !== undefined
+      ? redact(error.docUrl, secrets)
       : undefined
 
   return {
@@ -79,7 +91,25 @@ export function presentError(
         classified.category,
       ),
     ...(requestId === undefined ? {} : {requestId}),
+    ...(requestLogUrl === undefined ? {} : {requestLogUrl}),
+    ...(docUrl === undefined ? {} : {docUrl}),
   }
+}
+
+/** Human stderr lines for a failure: message, then request and docs links. */
+export function renderErrorDetails(presented: PresentedError): string {
+  return [
+    `Error: ${presented.message}`,
+    ...(presented.requestId === undefined
+      ? []
+      : [`Request ID: ${presented.requestId}`]),
+    ...(presented.requestLogUrl === undefined
+      ? []
+      : [`Request log: ${presented.requestLogUrl}`]),
+    ...(presented.docUrl === undefined ? [] : [`Docs: ${presented.docUrl}`]),
+  ]
+    .map((line) => `${line}\n`)
+    .join('')
 }
 
 function classifyError(
