@@ -282,15 +282,13 @@ export abstract class BaseCommand extends Command {
       readonly readProjectLink?: boolean
     } = {},
   ): Promise<ResolvedEnvironment> {
-    const linkedProject =
-      surface === 'messaging' && options.readProjectLink === true
-        ? await this.linkedProject(flags)
-        : undefined
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface,
       ...(options.allowProjectToken === true ? {allowProjectToken: true} : {}),
-      ...(linkedProject === undefined ? {} : {linkedProject}),
+      ...(surface === 'messaging' && options.readProjectLink === true
+        ? {loadLinkedProject: () => this.linkedProject(flags)}
+        : {}),
       ...(flags.project === undefined ? {} : {project: flags.project}),
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags['api-version'] === undefined

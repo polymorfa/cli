@@ -185,6 +185,61 @@ test('flag-only QuickLink creation uses the linked project', async () => {
     await server.close()
   }
 })
+test('QuickLink creation accepts a project slug from the input file', async () => {
+  const server = await startHttpSequenceServer([
+    {
+      body: {
+        success: true,
+        data: [
+          {
+            _creationTime: 0,
+            _id: project,
+            name: 'App',
+            orgId: 'org_1',
+            slug: 'app',
+            stage: 'development',
+          },
+        ],
+      },
+    },
+    {
+      body: {
+        success: true,
+        data: {
+          id: 'ql-1',
+          session: 'existing',
+          url: 'https://example.test/ql-1',
+          expiresAt: null,
+        },
+      },
+    },
+  ])
+  const directory = await mkdtemp(join(homedir(), '.polymorfa-cli-quicklink-'))
+  const input = join(directory, 'quicklink.json')
+  try {
+    await writeFile(
+      input,
+      JSON.stringify({projectId: 'app', purpose: 'initial'}),
+    )
+    await withEnvironment(env(server.baseUrl), async () => {
+      const result = await runCommand(
+        `quicklink create --input ${input} --json`,
+      )
+      expect(result.error, result.stderr).toBeUndefined()
+    })
+    expect(server.requests.map(({url}) => url)).toEqual([
+      '/platform/projects',
+      '/messaging/quicklinks',
+    ])
+    expect(JSON.parse(server.requests[1]!.body)).toMatchObject({
+      projectId: project,
+      purpose: 'initial',
+    })
+  } finally {
+    await rm(directory, {recursive: true, force: true})
+    await server.close()
+  }
+})
 test('availability output names existing connections and resumable QuickLink', async () => {
   const server = await startHttpSequenceServer([
     {

@@ -36,6 +36,7 @@ export interface ResolveEnvironmentInput {
 
 export interface ResolveCommandEnvironmentInput extends ResolveEnvironmentInput {
   readonly linkedProject?: string | undefined
+  readonly loadLinkedProject?: (() => Promise<string | undefined>) | undefined
   readonly profile?: string | undefined
   readonly project?: string | undefined
 }
@@ -478,14 +479,14 @@ export async function resolveCommandEnvironment(
     )
   }
 
-  if (
+  const linkedProject =
     profile.credential.kind === 'projectToken' &&
-    nonEmpty(input.project) === undefined &&
-    nonEmpty(input.linkedProject) !== undefined &&
-    profile.project !== nonEmpty(input.linkedProject)
-  ) {
+    nonEmpty(input.project) === undefined
+      ? nonEmpty(input.linkedProject ?? (await input.loadLinkedProject?.()))
+      : undefined
+  if (linkedProject !== undefined && profile.project !== linkedProject) {
     throw new PolymorfaConfigurationError(
-      `This directory is linked to project ${input.linkedProject}, but project-token profile ${selected} is bound to ${profile.project ?? 'another project'}. Pass --project or run polymorfa link again.`,
+      `This directory is linked to project ${linkedProject}, but project-token profile ${selected} is bound to ${profile.project ?? 'another project'}. Pass --project or run polymorfa link again.`,
       'project',
     )
   }

@@ -1945,7 +1945,7 @@ Fix the access or routing cause before creating a new operation with a new
 idempotency key. The rejected operation itself cannot be resumed.
 
 Policy writes require the revision returned by `routing-policy get` (`default`
-for an unsaved policy). Pause/resume requires the UUID returned by
+for an unsaved policy). Pause/resume requires the revision returned by
 `hybrid-link state`. A stale write fails without replacing later changes.
 `--prefer inherit` sends no local preference. `--deny-all` disallows both transports at the selected scope. Repeating `--allow` permits both
 transports within the restrictions inherited from the team and project.

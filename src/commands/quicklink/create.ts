@@ -60,12 +60,14 @@ export default class QuickLinkCreate extends BaseCommand {
         'input',
       )
     const linkedProject = await this.linkedProject(flags)
-    const selectedFlags =
+    const useInputProject =
       flags.project === undefined &&
       linkedProject === undefined &&
       typeof body.projectId === 'string'
-        ? {...flags, project: body.projectId}
-        : flags
+    const selectedFlags = useInputProject
+      ? {...flags, project: body.projectId as string}
+      : flags
+    if (useInputProject) delete body.projectId
     const {client, projectId} = await this.quickLinksClient(selectedFlags)
     const result = await createQuickLink(client, body, projectId)
     this.writeValue(result, result.data.url, flags)

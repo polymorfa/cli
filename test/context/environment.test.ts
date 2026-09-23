@@ -344,12 +344,16 @@ describe('resolveEnvironment', () => {
 
   test('uses an environment project token before the active API-key profile', async () => {
     const credentials = fakeCredentials('unused')
+    const loadLinkedProject = vi.fn(() =>
+      Promise.reject(new Error('invalid link')),
+    )
     await expect(
       resolveCommandEnvironment(
         {
           env: {POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN},
           surface: 'messaging',
           allowProjectToken: true,
+          loadLinkedProject,
         },
         fakeProfiles(),
         credentials,
@@ -359,6 +363,24 @@ describe('resolveEnvironment', () => {
       source: 'environment',
     })
     expect(credentials.get).not.toHaveBeenCalled()
+    expect(loadLinkedProject).not.toHaveBeenCalled()
+  })
+
+  test('loads a link only to check a project-token profile binding', async () => {
+    const loadLinkedProject = vi.fn(() => Promise.resolve(OTHER_PROJECT))
+    await expect(
+      resolveCommandEnvironment(
+        {
+          env: {},
+          surface: 'messaging',
+          allowProjectToken: true,
+          loadLinkedProject,
+        },
+        projectProfiles(),
+        fakeCredentials(PROJECT_TOKEN),
+      ),
+    ).rejects.toThrow('This directory is linked to project')
+    expect(loadLinkedProject).toHaveBeenCalledOnce()
   })
 
   test.each([
