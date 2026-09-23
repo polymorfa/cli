@@ -182,6 +182,43 @@ describe('unified calls commands', () => {
     expect(server.requests).toHaveLength(2)
   })
 
+  test('reports number restrictions for place and invite in human and JSON output', async () => {
+    server = await startHttpServer(
+      apiError(
+        403,
+        'number_restricted',
+        'This number can call only people it has already chatted with.',
+        'req_restricted',
+      ),
+    )
+
+    for (const command of [
+      'calls place +15550100 --session support',
+      'calls invite call_1 +15550101',
+    ]) {
+      const human = await apiKey(() => runCommand(command))
+      const json = await apiKey(() => runCommand(`${command} --json`))
+
+      expect(exitCode(human.error)).toBe(3)
+      expect(human.stderr).toContain('already chatted with')
+      expect(human.stderr).toContain('Request ID: req_restricted')
+      expect(exitCode(json.error)).toBe(3)
+      expect(JSON.parse(json.stderr)).toMatchObject({
+        error: {
+          category: 'authorization',
+          code: 'number_restricted',
+          requestId: 'req_restricted',
+        },
+      })
+    }
+    expect(server.requests.map((request) => request.url)).toEqual([
+      '/messaging/voip/calls',
+      '/messaging/voip/calls',
+      '/messaging/voip/calls/call_1/participants',
+      '/messaging/voip/calls/call_1/participants',
+    ])
+  })
+
   test('reports an authentication failure with the credential redacted', async () => {
     server = await startHttpServer(
       apiError(401, 'invalid_credential', `Key ${API_KEY} is invalid.`),
