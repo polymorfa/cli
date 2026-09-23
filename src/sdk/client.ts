@@ -3,9 +3,12 @@ import {
   MessagingClient,
   PolymorfaConfigurationError,
   type ApiResponse,
+  type CallRetention,
+  type CallRetentionPolicy,
   type ClientInstance,
   type RawClient,
   type SharedClientOptions,
+  type UpdateCallRetentionRequest,
 } from '@polymorfa/sdk'
 
 import type {
@@ -58,17 +61,7 @@ export function createCallSettingsClient(
   })
 }
 
-export type CallRetentionPolicy =
-  'short' | 'standard' | 'extended' | 'compliance' | 'custom'
-
-/** Team call data retention, as `/platform/call-retention` returns it. */
-export interface CallRetention {
-  readonly appliesTo: readonly string[]
-  readonly policy: CallRetentionPolicy
-  readonly retentionDays: number
-  readonly revision: number
-  readonly updatedAt: string | null
-}
+export type {CallRetention, CallRetentionPolicy}
 
 export interface UpdateCallRetentionInput {
   readonly expectedRevision?: number
@@ -77,41 +70,43 @@ export interface UpdateCallRetentionInput {
 }
 
 export interface CallRetentionClient {
-  retrieve(): Promise<ApiResponse<{readonly data: CallRetention}>>
-  update(
-    input: UpdateCallRetentionInput,
-  ): Promise<ApiResponse<{readonly data: CallRetention}>>
+  retrieve(): Promise<ApiResponse<CallRetention>>
+  update(input: UpdateCallRetentionInput): Promise<ApiResponse<CallRetention>>
 }
 
 /**
- * Team call data retention on the Platform API. The pinned SDK has no typed
- * resource for it yet. Team API keys use the SDK organization client's raw
- * transport, which keeps its credential, retry, and error mapping. Project
- * tokens may read this team-wide route, but the pinned SDK confines a
- * project-token client to `/platform/projects/{id}`, so they use
- * `projectTokenRequest`; the API decides what each principal may do. Replace
- * both with the SDK's `callRetention` resource once a release that includes
- * it is pinned (polymorfa/sdks#278).
+ * Team API keys use the typed SDK resource. Project tokens can read this
+ * team-wide route without a project ID, but the SDK's project-token client
+ * currently requires one; keep the narrow request bridge until the SDK has
+ * an explicit team-wide project-token entrypoint.
  */
 export function createCallRetentionClient(
   environment: TeamSettingEnvironment,
 ): CallRetentionClient {
   if (environment.principalType === 'project_token') {
     return {
-      retrieve: () =>
-        projectTokenRequest<{readonly data: CallRetention}>(environment, {
+      retrieve: async () => {
+        const response = await projectTokenRequest<{
+          readonly data: CallRetention
+        }>(environment, {
           method: 'GET',
           path: '/platform/call-retention',
-        }),
-      update: (input) =>
-        projectTokenRequest<{readonly data: CallRetention}>(environment, {
+        })
+        return {data: response.data.data, metadata: response.metadata}
+      },
+      update: async (input) => {
+        const response = await projectTokenRequest<{
+          readonly data: CallRetention
+        }>(environment, {
           body: input,
           method: 'PUT',
           path: '/platform/call-retention',
-        }),
+        })
+        return {data: response.data.data, metadata: response.metadata}
+      },
     }
   }
-  const raw = new Client({
+  const callRetention = new Client({
     baseUrl: environment.baseUrl,
     credential: {type: 'organizationApiKey', value: environment.credential},
     ...(environment.apiVersion === undefined
@@ -120,19 +115,11 @@ export function createCallRetentionClient(
     ...(environment.timeoutMs === undefined
       ? {}
       : {timeoutMs: environment.timeoutMs}),
-  }).raw
+  }).callRetention
   return {
-    retrieve: () =>
-      raw.request<{readonly data: CallRetention}>({
-        method: 'GET',
-        path: '/platform/call-retention',
-      }),
+    retrieve: () => callRetention.retrieve(),
     update: (input) =>
-      raw.request<{readonly data: CallRetention}>({
-        body: input,
-        method: 'PUT',
-        path: '/platform/call-retention',
-      }),
+      callRetention.update(input as UpdateCallRetentionRequest),
   }
 }
 

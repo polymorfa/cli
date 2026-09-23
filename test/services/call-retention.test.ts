@@ -97,20 +97,15 @@ function fakeClient(): {
   return {
     updates,
     client: {
-      retrieve: () => Promise.resolve({data: {data: CURRENT}, metadata}),
+      retrieve: () => Promise.resolve({data: CURRENT, metadata}),
       update: (input) => {
         updates.push(input)
         return Promise.resolve({
           data: {
-            data: {
-              ...CURRENT,
-              policy: input.policy,
-              retentionDays: callRetentionDays(
-                input.policy,
-                input.retentionDays,
-              ),
-              revision: 1,
-            },
+            ...CURRENT,
+            policy: input.policy,
+            retentionDays: callRetentionDays(input.policy, input.retentionDays),
+            revision: 1,
           },
           metadata,
         })

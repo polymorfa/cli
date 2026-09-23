@@ -348,7 +348,7 @@ export async function viewCallRetention(
   client: CallRetentionClient,
 ): Promise<CallsResult<CallRetention>> {
   const response = await retentionRequest('read', () => client.retrieve())
-  return result(response.data.data, response.metadata)
+  return result(response.data, response.metadata)
 }
 
 export interface CallRetentionChange {
@@ -379,7 +379,7 @@ export async function updateCallRetention(
 ): Promise<CallsResult<CallRetention>> {
   const retentionDays = callRetentionDays(change.policy, change.retentionDays)
   const current = (await retentionRequest('change', () => client.retrieve()))
-    .data.data
+    .data
   if (current.revision !== change.expectedRevision) {
     throw new PolymorfaConflictError(retentionConflict, {
       code: 'state_conflict',
@@ -405,7 +405,7 @@ export async function updateCallRetention(
         : {retentionDays: change.retentionDays}),
     }),
   )
-  return result(response.data.data, response.metadata)
+  return result(response.data, response.metadata)
 }
 
 /** The period a change sets, checked the way the API checks it. */

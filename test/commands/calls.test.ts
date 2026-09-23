@@ -589,6 +589,22 @@ describe('unified calls commands', () => {
     expect(server.requests[0]?.headers.authorization).toBe(`Bearer ${API_KEY}`)
   })
 
+  test('rejects a malformed retention envelope without printing a setting', async () => {
+    server = await startHttpServer({
+      body: {success: true},
+      headers: {'x-request-id': 'req_bad_retention'},
+    })
+
+    const result = await apiKey(() => runCommand('calls retention get --json'))
+
+    expect(exitCode(result.error)).not.toBe(0)
+    expect(JSON.parse(result.stderr.trim())).toMatchObject({
+      error: {code: 'invalid_response'},
+    })
+    expect(result.stdout).toBe('')
+    expect(server.requests).toHaveLength(1)
+  })
+
   test('changes team call retention after checking the revision', async () => {
     const saved = {
       ...DEFAULT_RETENTION,
