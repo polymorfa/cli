@@ -623,7 +623,7 @@ async function messageServer(): Promise<TestHttpServer> {
         status: 'sent',
         timestamp: '2026-09-19T00:00:00.000Z',
         type: 'image',
-        whatsapp_id: '3A0000',
+        whatsapp_ids: {linked_devices: '3A0000'},
       },
       success: true,
     },

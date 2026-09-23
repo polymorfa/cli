@@ -13,6 +13,10 @@ export async function createQuickLink(
   const body = input as Record<string, unknown>
   const allowed = new Set([
     'projectId',
+    'purpose',
+    'connectionGoal',
+    'session',
+    'addConnection',
     'customerId',
     'externalId',
     'configuration',

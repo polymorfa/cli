@@ -1,8 +1,9 @@
 import {runCommand} from '@oclif/test'
-import {mkdtemp, rm, writeFile} from 'node:fs/promises'
-import {tmpdir} from 'node:os'
+import {AsyncEntry} from '@napi-rs/keyring'
+import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {homedir, tmpdir} from 'node:os'
 import {join} from 'node:path'
-import {afterEach, describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 
 import {
   startHttpServer,
@@ -13,6 +14,130 @@ import {
 describe('api', () => {
   let server: TestHttpServer | undefined
   const tempDirectories: string[] = []
+
+  test('sends raw Messaging requests with a project token', async () => {
+    server = await startHttpServer({body: {success: true, data: {ready: true}}})
+    const projectToken = `pmfa_pt_${'A'.repeat(94)}`
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: projectToken,
+        POLYMORFA_BASE_URL: server.baseUrl,
+      },
+      () => runCommand('api /messaging/health --surface messaging --json'),
+    )
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]?.headers.authorization).toBe(
+      `Bearer ${projectToken}`,
+    )
+  })
+
+  test('rejects ambiguous raw Messaging credentials before transport', async () => {
+    server = await startHttpServer({body: {success: true}})
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: `pmfa_${'A'.repeat(72)}`,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_${'A'.repeat(94)}`,
+        POLYMORFA_BASE_URL: server.baseUrl,
+      },
+      () => runCommand('api /messaging/health --surface messaging --json'),
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stderr).toContain('Messaging credentials are ambiguous')
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('raw Messaging rejects a project-token profile in a different project context', async () => {
+    server = await startHttpServer({body: {success: true}})
+    const directory = await mkdtemp(join(homedir(), '.polymorfa-cli-raw-'))
+    const configDirectory = join(directory, 'config')
+    const previousDirectory = process.cwd()
+    const keyring = vi
+      .spyOn(AsyncEntry.prototype, 'getPassword')
+      .mockResolvedValue(`pmfa_pt_${'A'.repeat(94)}`)
+    tempDirectories.push(directory)
+    try {
+      await mkdir(configDirectory)
+      await writeFile(
+        join(configDirectory, 'config.json'),
+        JSON.stringify({
+          version: 2,
+          activeProfile: 'project',
+          profiles: {
+            project: {
+              credential: {
+                kind: 'projectToken',
+                account: 'profile:project:projectToken',
+              },
+              owner: 'project',
+              project: '11111111-1111-4111-8111-111111111111',
+            },
+          },
+        }),
+      )
+      await writeFile(
+        join(directory, 'polymorfa.json'),
+        JSON.stringify({
+          project: '22222222-2222-4222-8222-222222222222',
+          version: 1,
+        }),
+      )
+      process.chdir(directory)
+      await withEnvironment(
+        {
+          POLYMORFA_CONFIG_DIR: configDirectory,
+          POLYMORFA_API_KEY: undefined,
+          POLYMORFA_CLIENT_TOKEN: undefined,
+          POLYMORFA_PROJECT_TOKEN: undefined,
+          POLYMORFA_BASE_URL: server.baseUrl,
+        },
+        async () => {
+          const explicit = await runCommand(
+            'api /messaging/quicklinks --surface messaging --project 22222222-2222-4222-8222-222222222222 -X POST --json',
+          )
+          expect(explicit.error).toBeDefined()
+          expect(explicit.stderr).toContain('different --project')
+          const linked = await runCommand(
+            'api /messaging/quicklinks --surface messaging -X POST --json',
+          )
+          expect(linked.error).toBeDefined()
+          expect(linked.stderr).toContain('This directory is linked to project')
+        },
+      )
+      expect(server.requests).toHaveLength(0)
+      expect(keyring).not.toHaveBeenCalled()
+    } finally {
+      process.chdir(previousDirectory)
+      keyring.mockRestore()
+    }
+  })
+
+  test('raw Messaging API keys ignore malformed directory links', async () => {
+    server = await startHttpServer({body: {success: true}})
+    const directory = await mkdtemp(join(homedir(), '.polymorfa-cli-raw-'))
+    const previousDirectory = process.cwd()
+    tempDirectories.push(directory)
+    try {
+      await writeFile(join(directory, 'polymorfa.json'), '{invalid')
+      process.chdir(directory)
+      const result = await withEnvironment(
+        {
+          POLYMORFA_API_KEY: `pmfa_${'A'.repeat(72)}`,
+          POLYMORFA_CLIENT_TOKEN: undefined,
+          POLYMORFA_PROJECT_TOKEN: undefined,
+          POLYMORFA_BASE_URL: server.baseUrl,
+        },
+        () => runCommand('api /messaging/health --surface messaging --json'),
+      )
+      expect(result.error, result.stderr).toBeUndefined()
+      expect(server.requests).toHaveLength(1)
+    } finally {
+      process.chdir(previousDirectory)
+    }
+  })
 
   test('preserves fractional prepaid balances in JSON output', async () => {
     server = await startHttpServer({

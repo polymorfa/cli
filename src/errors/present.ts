@@ -44,6 +44,7 @@ export interface PresentedError {
   readonly exitCode: number
   readonly message: string
   readonly requestId?: string
+  readonly operationId?: string
   /** Console request log for this request, when the API returned one. */
   readonly requestLogUrl?: string
   /** Documentation for the error code. */
@@ -93,12 +94,19 @@ export function presentError(
             : error instanceof PolymorfaError && error.code
               ? redact(error.code, secrets)
               : `${classified.category}_error`,
-    message,
+    message:
+      error instanceof PolymorfaError && error.code === 'send_outcome_unknown'
+        ? `${message} Read message operation status; do not resend or change transport.`
+        : message,
+    ...(error instanceof PolymorfaError && error.metadata?.operationId
+      ? {operationId: redact(error.metadata.operationId, secrets)}
+      : {}),
     retryable:
-      (error instanceof ListenerProtocolError && error.retryable) ||
-      ['network', 'rate_limit', 'server', 'timeout'].includes(
-        classified.category,
-      ),
+      !(error instanceof PolymorfaError && error.metadata?.operationId) &&
+      ((error instanceof ListenerProtocolError && error.retryable) ||
+        ['network', 'rate_limit', 'server', 'timeout'].includes(
+          classified.category,
+        )),
     ...(requestId === undefined ? {} : {requestId}),
     ...(retryAfterSeconds === undefined ? {} : {retryAfterSeconds}),
     ...(requestLogUrl === undefined ? {} : {requestLogUrl}),
@@ -134,6 +142,9 @@ export const CODE_EXIT_CODES: ReadonlyMap<
 export function renderErrorDetails(presented: PresentedError): string {
   return [
     `Error: ${presented.message}`,
+    ...(presented.operationId === undefined
+      ? []
+      : [`Operation ID: ${presented.operationId}`]),
     ...(presented.requestId === undefined
       ? []
       : [`Request ID: ${presented.requestId}`]),

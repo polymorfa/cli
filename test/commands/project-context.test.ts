@@ -1,4 +1,4 @@
-import {mkdtemp, readFile, rm} from 'node:fs/promises'
+import {mkdir, mkdtemp, readFile, rm, writeFile} from 'node:fs/promises'
 import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 
@@ -86,5 +86,56 @@ describe('link and project commands', () => {
     )
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain('No project selected')
+  })
+
+  test.each(['malformed', 'unreadable'])(
+    'organization commands ignore a %s project link',
+    async (kind) => {
+      const link = join(directory, 'polymorfa.json')
+      if (kind === 'malformed') await writeFile(link, '{invalid json')
+      else await mkdir(link)
+      server = await startHttpServer({body: {data: []}})
+
+      const result = await withEnvironment(
+        {
+          POLYMORFA_API_KEY: API_KEY,
+          POLYMORFA_BASE_URL: server.baseUrl,
+          POLYMORFA_CLIENT_TOKEN: undefined,
+          POLYMORFA_CONFIG_DIR: join(directory, 'config'),
+          POLYMORFA_PROJECT_TOKEN: undefined,
+        },
+        () => runCommand('key list --json --verbose'),
+      )
+
+      expect(result.error, result.stderr).toBeUndefined()
+      expect(JSON.parse(result.stdout)).toMatchObject({data: []})
+      expect(result.stderr).not.toContain('Using project')
+      expect(
+        server.requests.map(({method, url}) => `${method} ${url}`),
+      ).toEqual(['GET /platform/keys'])
+    },
+  )
+
+  test('organization developer commands ignore a malformed project link', async () => {
+    await writeFile(join(directory, 'polymorfa.json'), '{invalid json')
+    server = await startHttpServer({body: {data: []}})
+
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: API_KEY,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_CONFIG_DIR: join(directory, 'config'),
+        POLYMORFA_PROJECT_TOKEN: undefined,
+      },
+      () => runCommand('webhook list --owner organization --json --verbose'),
+    )
+
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toMatchObject({data: []})
+    expect(result.stderr).not.toContain('Using project')
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/webhooks?limit=25',
+    ])
   })
 })

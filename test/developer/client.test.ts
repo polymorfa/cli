@@ -1,10 +1,33 @@
 import {Client} from '@polymorfa/sdk'
-import {describe, expect, test} from 'vitest'
+import {describe, expect, test, vi} from 'vitest'
 
 import {createDeveloperSession} from '../../src/developer/client.js'
 import {withEnvironment} from '../helpers/http-server.js'
 
 describe('createDeveloperSession', () => {
+  test('ignores a broken project link for organization-owned resources', async () => {
+    const loadLinkedProject = vi.fn(() =>
+      Promise.reject(new Error('Broken project link')),
+    )
+    const session = await withEnvironment(
+      {
+        POLYMORFA_API_KEY:
+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: undefined,
+      },
+      () =>
+        createDeveloperSession(
+          {owner: 'organization'},
+          undefined,
+          loadLinkedProject,
+        ),
+    )
+
+    expect(session.context.owner).toBe('organization')
+    expect(loadLinkedProject).not.toHaveBeenCalled()
+  })
+
   test('creates an immutable project view from an organization key', async () => {
     const session = await withEnvironment(
       {
