@@ -16,9 +16,15 @@ export default class HybridLinkState extends BaseCommand {
       serverCredentialOnly: 'Hybrid Link',
     })
     const response = await client.hybridLink.state(flags.session)
+    const connections = response.data.data.connections
+      .map(
+        ({kind, status, enabled}) =>
+          `${kind}: ${status} (${enabled ? 'enabled' : 'disabled'})`,
+      )
+      .join(', ')
     this.writeValue(
       response,
-      `${response.data.data.revision}\t${response.data.data.paused ? 'paused' : 'active'}`,
+      `${response.data.data.revision}\t${response.data.data.paused ? 'paused' : 'active'}\t${connections || 'no connections'}`,
       flags,
     )
   }

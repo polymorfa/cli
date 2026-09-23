@@ -11,6 +11,34 @@ const env = (url: string) => ({
   POLYMORFA_CLIENT_TOKEN: undefined,
   POLYMORFA_PROJECT_TOKEN: undefined,
 })
+test('state output shows both connection readiness and enablement', async () => {
+  const server = await startHttpSequenceServer([
+    {
+      body: {
+        success: true,
+        data: {
+          revision: 'pair-4',
+          paused: false,
+          connections: [
+            {kind: 'linked_devices', status: 'connected', enabled: true},
+            {kind: 'official_api', status: 'disconnected', enabled: false},
+          ],
+        },
+      },
+    },
+  ])
+  try {
+    await withEnvironment(env(server.baseUrl), async () => {
+      const result = await runCommand('hybrid-link state --session existing')
+      expect(result.error, result.stderr).toBeUndefined()
+      expect(result.stdout).toContain('pair-4\tactive')
+      expect(result.stdout).toContain('linked_devices: connected (enabled)')
+      expect(result.stdout).toContain('official_api: disconnected (disabled)')
+    })
+  } finally {
+    await server.close()
+  }
+})
 test('supplementary QuickLink flags preserve the Number and availability scope', async () => {
   const server = await startHttpSequenceServer([
     {
