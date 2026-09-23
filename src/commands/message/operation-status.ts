@@ -26,9 +26,18 @@ export default class MessageOperationStatus extends BaseCommand {
       args.operation,
     )
     const value = response.data.data
+    // The preview server can return this terminal state before the registry
+    // SDK release carries its widened MessageOperation type.
+    const outcome = value as {status: string; rejectionCode?: string}
+    const guidance =
+      outcome.status === 'rejected'
+        ? `\nRejected before provider send (${outcome.rejectionCode ?? 'hybrid_authority_unavailable'}). Fix the cause, then start a new operation with a new idempotency key.`
+        : outcome.status === 'completed'
+          ? ''
+          : '\nOutcome pending. Read this operation again; do not resend.'
     this.writeValue(
       response,
-      `${value.operationId}\t${value.status}${value.transport ? `\t${value.transport}` : ''}${value.status === 'completed' ? '' : '\nOutcome pending. Read this operation again; do not resend.'}`,
+      `${value.operationId}\t${value.status}${value.transport ? `\t${value.transport}` : ''}${guidance}`,
       flags,
     )
   }

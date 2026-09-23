@@ -151,3 +151,32 @@ test('unknown outcome is printed with its operation ID and never resends', async
     await server.close()
   }
 })
+test('proven pre-send rejection is terminal and does not advise polling', async () => {
+  const server = await startHttpSequenceServer([
+    {
+      body: {
+        success: true,
+        data: {
+          operationId: 'op-rejected',
+          status: 'rejected',
+          transport: 'linked_devices',
+          rejectionCode: 'hybrid_authority_unavailable',
+        },
+      },
+    },
+  ])
+  try {
+    await withEnvironment(env(server.baseUrl), async () => {
+      const result = await runCommand(
+        'message operation-status op-rejected --session existing',
+      )
+      expect(result.error, result.stderr).toBeUndefined()
+      expect(result.stdout).toContain('Rejected before provider send')
+      expect(result.stdout).toContain('new idempotency key')
+      expect(result.stdout).not.toContain('Outcome pending')
+    })
+    expect(server.requests.map((request) => request.method)).toEqual(['GET'])
+  } finally {
+    await server.close()
+  }
+})

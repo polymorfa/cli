@@ -1330,6 +1330,9 @@ All message send types, reactions, edits, and deletions accept `--transport auto
 preserves route metadata and the operation ID. If a send reports an unknown
 outcome, inspect `message operation-status`; do not resend with a new key or change
 transport. Status reads do not send. `pending` and `unknown` are unresolved outcomes.
+`rejected` means the runtime proved it denied the send before a provider attempt.
+Fix the access or routing cause before creating a new operation with a new
+idempotency key. The rejected operation itself cannot be resumed.
 
 Policy writes require the revision returned by `routing-policy get` (`default`
 for an unsaved policy). Pause/resume requires the UUID returned by
