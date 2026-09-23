@@ -235,9 +235,7 @@ describe('voice transfers', () => {
     const secret = preview.url
     const networkClient = createVoiceClient(
       environment(50),
-      vi.fn(() =>
-        Promise.reject(new Error(`GET ${secret} failed`)),
-      ) as typeof fetch,
+      vi.fn(() => Promise.reject(new Error(`GET ${secret} failed`))),
     )
     const networkError = await networkClient
       .downloadPreview(preview, 1_000)
