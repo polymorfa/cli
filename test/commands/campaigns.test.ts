@@ -240,6 +240,16 @@ describe('Messaging campaign commands', () => {
       'Campaign campaign/1 is cancelled; no delivery operation was needed.',
     )
     expect(result.stdout).not.toContain('operation null')
+
+    const json = await apiKeyEnvironment(() =>
+      runCommand(
+        'campaign stop campaign_1 --project-slug project_1 --yes --json',
+      ),
+    )
+    expect(json.error).toBeUndefined()
+    expect(JSON.parse(json.stdout)).toMatchObject({
+      data: {operationId: null},
+    })
   })
 
   test('requeues failed and optionally skipped-error recipients directly', async () => {

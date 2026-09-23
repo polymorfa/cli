@@ -1087,10 +1087,12 @@ polymorfa campaign requeue campaign_123 \
   --include-skipped-error
 ```
 
-Launch, pause, resume, and stop return accepted durable work; they do not wait
-for the state transition. Check the campaign with `polymorfa campaign view`.
-Follow the returned operation with `polymorfa operation wait` or
-`polymorfa operation watch`; see [Operations](#operations).
+Launch, pause, and resume return accepted durable work; they do not wait for
+the state transition. Stop also returns an operation ID when it has an active
+delivery run to stop. If no delivery run is active, stop cancels the campaign
+immediately and returns `operationId: null`. Check the campaign with
+`polymorfa campaign view`. Messaging campaign operation IDs are not available
+to the CLI's Platform operation commands.
 
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
@@ -1108,10 +1110,9 @@ again. Save the first campaign or operation response and inspect campaign
 state before using a new key. Pause, resume, stop, and requeue do not persist
 the header, so it is not server-side deduplication for them.
 
-The source exposes no campaign update, delete, validate, archive, duplicate,
-recipient, event, history, or replay route. The CLI does not substitute
-similarly named Platform campaign methods for these gaps. To follow or stop a
-campaign's operation, use the `operation` commands in [Operations](#operations).
+The CLI does not substitute similarly named Platform campaign methods for
+Messaging campaign workflows. The Messaging API does not expose these campaign
+operation IDs through the CLI's Platform operation commands.
 
 ## Developer events and webhooks
 

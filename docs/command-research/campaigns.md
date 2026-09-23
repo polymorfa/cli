@@ -59,9 +59,11 @@ rejects timezone-ambiguous local timestamps. Pause, resume, and stop remain
 distinct commands because the server enforces different source states. Stop is
 a terminal transition and requires `--yes`.
 
-Launch, pause, resume, and stop append durable commands and return an operation
-ID plus the campaign's present state. Human output says “Accepted” and does not
-say the transition completed. The returned IDs belong to the Messaging campaign
+Launch, pause, and resume append durable commands and return an operation ID
+plus the campaign's present state. Stop returns an operation ID when it has an
+active delivery run; without one, it cancels immediately and returns
+`operationId: null`. Human output reports the immediate cancellation without
+inventing an operation. The returned IDs belong to the Messaging campaign
 API. Operation inspection is console-only, so the CLI cannot poll them. The
 unpublished `--surface messaging` selector was removed rather than retained as
 a compatibility alias.
