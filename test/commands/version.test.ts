@@ -1,12 +1,22 @@
+import {readFileSync} from 'node:fs'
 import {runCommand} from '@oclif/test'
 import {describe, expect, test} from 'vitest'
+
+const manifest = JSON.parse(
+  readFileSync(new URL('../../package.json', import.meta.url), 'utf8'),
+) as {
+  dependencies: {'@polymorfa/sdk': string}
+}
+const pinnedSdkVersion = manifest.dependencies['@polymorfa/sdk']
 
 describe('version', () => {
   test('prints the CLI and SDK development versions', async () => {
     const result = await runCommand('version')
 
     expect(result.error).toBeUndefined()
-    expect(result.stdout).toBe('polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.0\n')
+    expect(result.stdout).toBe(
+      `polymorfa/0.1.0-dev.0 sdk/${pinnedSdkVersion}\n`,
+    )
     expect(result.stderr).toBe('')
   })
 
@@ -16,7 +26,7 @@ describe('version', () => {
     expect(result.error).toBeUndefined()
     expect(JSON.parse(result.stdout)).toEqual({
       cli: '0.1.0-dev.0',
-      sdk: '0.1.0-dev.0',
+      sdk: pinnedSdkVersion,
     })
     expect(result.stderr).toBe('')
   })
