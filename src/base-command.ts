@@ -137,10 +137,14 @@ export abstract class BaseCommand extends Command {
       readonly serverCredentialOnly?: string
     } = {},
   ): Promise<MessagingClient> {
-    const environment = await this.messagingEnvironment(
-      flags,
-      options.ignoreProjectLink,
-    )
+    const environment = await this.messagingEnvironment(flags, {
+      allowProjectToken:
+        options.serverCredentialOnly !== undefined ||
+        options.serverApiKeyOnly !== undefined,
+      readProjectLink:
+        options.serverCredentialOnly !== undefined &&
+        options.ignoreProjectLink !== true,
+    })
     if (
       options.serverApiKeyOnly !== undefined &&
       environment.credential.type !== 'apiKey'
@@ -160,6 +164,17 @@ export abstract class BaseCommand extends Command {
       )
     }
     return createMessagingClient(environment)
+  }
+
+  /** History reads also accept exact-project server tokens. */
+  protected async historyMessagingClient(
+    flags: GlobalFlags,
+  ): Promise<MessagingClient> {
+    return createMessagingClient(
+      await this.resolveEnvironment(flags, 'messaging', {
+        allowProjectToken: true,
+      }),
+    )
   }
 
   protected async quickLinksClient(flags: GlobalFlags): Promise<{
@@ -218,9 +233,12 @@ export abstract class BaseCommand extends Command {
   /** Resolve Messaging credentials once, for commands that also open sockets. */
   protected async messagingEnvironment(
     flags: GlobalFlags,
-    ignoreProjectLink = false,
+    options: {
+      readonly allowProjectToken?: boolean
+      readonly readProjectLink?: boolean
+    } = {},
   ): Promise<ResolvedEnvironment> {
-    return this.resolveEnvironment(flags, 'messaging', ignoreProjectLink)
+    return this.resolveEnvironment(flags, 'messaging', options)
   }
 
   protected async platformClient(
@@ -259,15 +277,19 @@ export abstract class BaseCommand extends Command {
   private async resolveEnvironment(
     flags: GlobalFlags,
     surface: ResolvedEnvironment['surface'],
-    ignoreProjectLink = false,
+    options: {
+      readonly allowProjectToken?: boolean
+      readonly readProjectLink?: boolean
+    } = {},
   ): Promise<ResolvedEnvironment> {
     const linkedProject =
-      surface === 'messaging' && !ignoreProjectLink
+      surface === 'messaging' && options.readProjectLink === true
         ? await this.linkedProject(flags)
         : undefined
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface,
+      ...(options.allowProjectToken === true ? {allowProjectToken: true} : {}),
       ...(linkedProject === undefined ? {} : {linkedProject}),
       ...(flags.project === undefined ? {} : {project: flags.project}),
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
@@ -313,6 +335,9 @@ export abstract class BaseCommand extends Command {
             ...(presented.operationId === undefined
               ? {}
               : {operationId: presented.operationId}),
+            ...(presented.retryAfterSeconds === undefined
+              ? {}
+              : {retryAfterSeconds: presented.retryAfterSeconds}),
           }),
         )}\n`,
       )

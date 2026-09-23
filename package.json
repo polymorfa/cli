@@ -33,7 +33,7 @@
     "@modelcontextprotocol/server": "2.0.0",
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "0.1.0-dev.20260923144429",
+    "@polymorfa/sdk": "0.1.0-dev.20260923162255",
     "jq-wasm": "3.0.0-jq-1.8.2",
     "zod": "4.2.0"
   },
@@ -106,7 +106,16 @@
         "description": "Reject incoming calls through the Linked Device session route."
       },
       "calls": {
-        "description": "Place, answer, join, decline, leave, end, and watch calls, carry call audio, and report on past calls."
+        "description": "Place and manage calls, check consent, carry audio, and report on past calls."
+      },
+      "calls:opt-outs": {
+        "description": "Manage the team do-not-call list."
+      },
+      "calls:permission": {
+        "description": "Inspect and request call permission on Cloud API numbers."
+      },
+      "calls:policy": {
+        "description": "Inspect and replace the team call policy."
       },
       "calls:retention": {
         "description": "Inspect and change how long Polymorfa keeps your team's call data."
@@ -128,6 +137,12 @@
       },
       "channel:message": {
         "description": "Inspect and act on channel messages."
+      },
+      "chat": {
+        "description": "Read stored chats on enrolled HMS Numbers (beta)."
+      },
+      "chat:message": {
+        "description": "Read stored messages on enrolled HMS Numbers (beta)."
       },
       "contact": {
         "description": "Inspect contacts and manage the contact blocklist."

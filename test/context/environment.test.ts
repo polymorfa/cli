@@ -339,9 +339,7 @@ describe('resolveEnvironment', () => {
         },
         surface: 'messaging',
       }),
-    ).toThrow(
-      'Messaging credentials are ambiguous; set only one of POLYMORFA_API_KEY, POLYMORFA_PROJECT_TOKEN, or POLYMORFA_CLIENT_TOKEN.',
-    )
+    ).toThrow('Messaging credentials are ambiguous')
   })
 
   test('uses an environment project token before the active API-key profile', async () => {
@@ -351,6 +349,7 @@ describe('resolveEnvironment', () => {
         {
           env: {POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN},
           surface: 'messaging',
+          allowProjectToken: true,
         },
         fakeProfiles(),
         credentials,
@@ -366,9 +365,9 @@ describe('resolveEnvironment', () => {
     {POLYMORFA_API_KEY: 'key', POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN},
     {POLYMORFA_CLIENT_TOKEN: 'client', POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN},
   ])('rejects ambiguous Messaging environment credentials %o', (env) => {
-    expect(() => resolveEnvironment({env, surface: 'messaging'})).toThrow(
-      'ambiguous',
-    )
+    expect(() =>
+      resolveEnvironment({env, surface: 'messaging', allowProjectToken: true}),
+    ).toThrow('ambiguous')
   })
 
   test.each([undefined, 'project'])(
@@ -384,6 +383,7 @@ describe('resolveEnvironment', () => {
                 }
               : {},
             surface: 'messaging',
+            allowProjectToken: true,
             profile,
             project: PROJECT,
           },
@@ -402,7 +402,12 @@ describe('resolveEnvironment', () => {
     const credentials = fakeCredentials(PROJECT_TOKEN)
     await expect(
       resolveCommandEnvironment(
-        {env: {}, surface: 'messaging', project: OTHER_PROJECT},
+        {
+          env: {},
+          surface: 'messaging',
+          project: OTHER_PROJECT,
+          allowProjectToken: true,
+        },
         projectProfiles(),
         credentials,
       ),
