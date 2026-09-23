@@ -193,6 +193,30 @@ test('requires a session and a fixture before any request', async () => {
   expect(unknown.requests).toHaveLength(0)
 })
 
+test.each([
+  'bansafe.risk_changed',
+  'bansafe.health_changed',
+  'bansafe.enforcement',
+])('rejects retired %s test fixtures before any request', async (fixture) => {
+  const {result, requests} = await run(
+    `trigger ${fixture} --project ${projectId} --session test-a`,
+    [
+      {
+        status: 202,
+        body: {
+          event: fixture,
+          session: 'test-a',
+          delivery: 'generated',
+          eventId,
+          source: 'test',
+        },
+      },
+    ],
+  )
+  expect(result.error).toBeDefined()
+  expect(requests).toHaveLength(0)
+})
+
 test('parses typed overrides and rejects malformed ones', () => {
   expect(
     parseOverrides(['video=true', 'durationSeconds=12', 'reason=a=b']),
