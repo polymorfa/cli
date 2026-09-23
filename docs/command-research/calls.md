@@ -64,8 +64,10 @@ calls
 | `calls invite`                 | `POST /messaging/voip/calls/{id}/participants`   | `voip.addParticipant`               |
 | `calls settings get`           | `GET /platform/sessions/{session}/call-settings` | `voip.retrieveCallSettings`         |
 | `calls settings set`           | `PUT /platform/sessions/{session}/call-settings` | `voip.updateCallSettings`           |
-| `calls stats`                  | `GET /platform/calls/stats`                      | raw transport (see below)           |
-| `calls export`                 | `GET /platform/calls/export`                     | raw transport (see below)           |
+| `calls stats`                  | `GET /platform/calls/stats`                      | `calls.stats`                        |
+| `calls export`                 | `GET /platform/calls/export`                     | `calls.export`                       |
+| `calls retention get`          | `GET /platform/call-retention`                   | `callRetention.retrieve`            |
+| `calls retention set`          | `PUT /platform/call-retention`                   | `callRetention.update`              |
 | `sip-trunk endpoint`           | `GET /platform/sip/endpoint`                     | `sipTrunks.endpoint`                |
 | `sip-trunk list`               | `GET /platform/sip-trunks`                       | `sipTrunks.list`                    |
 | `sip-trunk view`               | `GET /platform/sip-trunks/{id}`                  | `sipTrunks.retrieve`                |
@@ -110,6 +112,22 @@ internal SDK module.
   commands. `--project` (or a project token, which requires it) reads one
   project; an organization key without `--project` reads the whole
   organization. `--owner` still overrides the inferred owner.
+- `calls retention` resolves a team API key or a project token
+  (`resolveTeamSettingEnvironment`), from the environment or a profile, with
+  no project context, and the API decides what each principal may do.
+  `createCallRetentionClient` in `src/sdk/client.ts` uses the pinned SDK's
+  `createTeamCallRetentionClient` for both credential types. The API lets team
+  API keys and project tokens read the setting and only team API keys change
+  it; the CLI replaces the API's 403 text with that rule and keeps the API
+  message.
+- `calls retention set` requires `--expected-revision`. It reads the setting
+  (`GET` needs `sessions:read`, which `sessions:manage` does not imply, so the
+  command needs both scopes; a 403 on either request gets the change message),
+  fails locally with `state_conflict` (exit 4) when the revision differs, asks
+  for confirmation when the new period is shorter (`--yes`, or exit 2
+  `confirmation_required` without a terminal), then sends `policy`,
+  `retentionDays` (only when `--days` is given) and `expectedRevision`. A 409
+  from the `PUT` also exits 4 and tells the user to read the setting again.
 - Sockets carry the credential in their first frame. The CLI requires an HTTPS
   base URL, or HTTP on a loopback host, before opening any Calls connection.
 
@@ -167,14 +185,11 @@ internal SDK module.
   `--json`). `--cursor` is sent with the filters because the API expects the
   same filters on every page. A failed page keeps earlier records, reports
   the cursor for the failed page, and exits with the API error's exit code.
-- **Interim transport.** The pinned SDK has no typed call statistics or export
-  methods, its project-token `Client` confines raw requests to project paths,
-  and its response metadata drops `Polymorfa-Next-Cursor`. Until an SDK
-  revision with typed methods is pinned, `src/services/call-analytics.ts`
-  sends both operations through `MessagingClient.raw` (which keeps the SDK's
-  authentication, retries, and error mapping) with a `fetch` wrapper that
-  reads the cursor header. Replace that class with the typed resource when the
-  SDK is released; the command contract does not change.
+- **SDK publication gate.** `src/services/call-analytics.ts` uses typed
+  `calls.stats` and `calls.export`. The published SDK pin in `package.json`
+  predates those methods. Verify this branch with the local SDK package until
+  the exact analytics SDK revision is published, then pin that version before
+  merging the CLI change.
 
 ## Explicit gaps
 

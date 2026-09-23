@@ -38,12 +38,12 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.0
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260923115544
 ```
 
-The SDK component reports the version constant built into the SDK. SDK dev
-prereleases report `0.1.0-dev.0`, not their full prerelease version; run
-`npm ls @polymorfa/sdk` to see the installed build.
+The SDK component reports the version built into the installed SDK. Dev
+prereleases include their full timestamped version. Run `npm ls @polymorfa/sdk`
+to see the installed build.
 
 ## Authentication profiles
 
@@ -663,6 +663,10 @@ polymorfa calls settings set --session support --calls-enabled=false \
   --expected-revision 3
 polymorfa calls settings set --session support \
   --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+
+polymorfa calls retention get
+polymorfa calls retention set --policy compliance --expected-revision 0
+polymorfa calls retention set --policy custom --days 14 --expected-revision 1 --yes
 ```
 
 Every inbound call rings until a participant answers or declines it. The CLI
@@ -716,6 +720,29 @@ never answers or declines on its own.
   change only if the settings still have that revision; if someone changed
   them first, the command exits with code 4 (`state_conflict`) and changes
   nothing.
+- **Call data retention.** `calls retention` reads and changes how long
+  Polymorfa keeps your team's call data. It uses the Platform API with a team
+  API key or a project token (`POLYMORFA_API_KEY`, `POLYMORFA_PROJECT_TOKEN`,
+  or a profile); client tokens are refused. `--policy short`,
+  `standard`, `extended`, or `compliance` keeps call data for 7, 30, 90, or
+  365 days; `--policy custom --days <n>` keeps it for 1 to 2555 days. Teams
+  without a saved setting use `extended` (90 days) at revision `0`. Deletion
+  of call data older than the period starts on a date Polymorfa announces in
+  its changelog; until then the setting records a choice and nothing is
+  deleted.
+  `calls retention get` prints the policy, period, the kinds of call data it
+  applies to, and the `revision`. `calls retention set` requires
+  `--expected-revision <n>`: it reads the setting first and changes it only if
+  it still has that revision; otherwise it exits with code 4
+  (`state_conflict`) and changes nothing, so read the setting again and retry.
+  Once deletion runs, a shorter period also applies to call data already
+  stored, and deleted call data cannot be recovered. The command asks you to type `yes` before it
+  shortens the period; `--yes` confirms without a prompt, and without a
+  terminal the command exits with code 2 (`confirmation_required`) unless you
+  pass `--yes`. Changing retention requires a team API key with the
+  `sessions:read` and `sessions:manage` scopes, because the command reads the
+  setting before it changes it. Project tokens can read the setting; the API
+  refuses their changes, and the command exits with code 3.
 
 `calls watch` streams inbound calls and their progress: `incoming`, `claim`,
 `state`, `participant_joined`, `participant_state`, `participant_left`, and
@@ -1087,31 +1114,142 @@ polymorfa campaign requeue campaign_123 \
   --include-skipped-error
 ```
 
-Launch, pause, resume, and stop return accepted durable work; they do not wait
-for the state transition. Check the campaign with `polymorfa campaign view`.
+Launch, pause, and resume return accepted durable work; they do not wait for
+the state transition. Check the campaign with `polymorfa campaign view`.
 Follow the returned operation with `polymorfa operation wait` or
 `polymorfa operation watch`; see [Operations](#operations).
 
+Stop is terminal and requires `--yes`. A campaign that has an active delivery
+run answers with an operation ID, as the other lifecycle commands do. A
+campaign with no active run is cancelled immediately and answers without one;
+the CLI reports that outcome instead of printing an empty operation.
+
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
-is synchronous and reports only the number moved. Every mutation accepts
-`--idempotency-key`. `campaign create` and `campaign launch` send an
-`Idempotency-Key` by default, generating a fresh key for each invocation when
-you omit the flag. Pass the same explicit key from the first attempt when
-retrying either command in another process, with the same input, credential,
-and API version.
+is synchronous and reports only the number moved.
 
-Both commands use the [retry identity](#retry-identity) contract above: within
-24 hours, a recorded success returns `409 idempotency_completed` without the
-original response body; an uncertain outcome stays blocked rather than running
-again. Save the first campaign or operation response and inspect campaign
-state before using a new key. Pause, resume, stop, and requeue do not persist
-the header, so it is not server-side deduplication for them.
+Create, launch, pause, resume and stop accept `--idempotency-key` to deduplicate
+the same request for 24 hours. A successful request repeated with the same key
+returns `409 idempotency_completed`, not the original response. Changed input
+returns `409 idempotency_conflict`; an in-progress or uncertain result must be
+resolved before trying a new key. The SDK generates a fresh key for create and
+launch when the flag is omitted. Supply an explicit key from the first attempt
+to reuse it across CLI invocations with the same input, credential and API
+version. Save the first campaign or operation response and inspect campaign
+state before using a new key. Pause, resume and stop persist an explicit key;
+they do not generate one when the flag is omitted.
+
+Requeue also accepts the header, but the API does not deduplicate it. Each
+invocation moves recipients eligible at that time, so a retry can move newly
+failed recipients rather than returning the first result.
+
+### Campaign recipients
+
+Recipients are appended to a campaign that has not started sending, and read
+back one cursor page at a time:
+
+```shell
+polymorfa campaign recipients add campaign_123 \
+  --project-slug launch-project \
+  --csv contacts.csv \
+  --phone-column Phone \
+  --variable "firstName=First name"
+
+polymorfa campaign recipients add campaign_123 \
+  --project-slug launch-project \
+  --input recipients.json
+
+polymorfa campaign recipients list campaign_123 \
+  --project-slug launch-project \
+  --status skipped \
+  --limit 100
+```
+
+One append accepts at most 1,000 entries. `--csv` reads the file locally and
+sends the rows inline; it does not upload the file. Blank rows are ignored, but
+a row with other values and an empty phone cell stops the command before
+anything is sent, naming the row numbers (the header is row 1). `--input`
+entries with an empty phone, and any phone longer than 64 characters, are
+refused the same way, as is an empty `--input` array, because the API would
+reject the whole request. JSON variables must use valid names and string values;
+CSV and JSON variable values are limited to 1,024 characters. Reported invalid
+rows for `--csv` refer to the
+original spreadsheet rows, including blank rows. `__proto__` is not accepted as a `--variable` name. Comma,
+semicolon and tab separators are detected from the header row; separators
+inside quoted fields are ignored. A phone already on the
+campaign is skipped, and invalid entries are reported rather than added, so the
+result carries `added`, `duplicateCount`, `invalidCount` and up to 20
+`invalidRows`.
+
+The API does not replay an append, so the CLI sends it once and never retries
+it automatically, with or without `--idempotency-key`. A resent append would
+count the first attempt's rows as duplicates. If a connection drops before the
+result arrives, list the recipients before appending again.
+
+List returns `{data, page}`. Pass `page.nextCursor` back as `--cursor` while
+`page.hasMore` is true; the CLI prints the next cursor in human output. Filter
+with `--status queued|sending|sent|delivered|read|failed|skipped`. A recipient
+suppressed by an opt-out appears as `skipped` with `lastError` `opted_out`.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
-recipient, event, history, or replay route. The CLI does not substitute
-similarly named Platform campaign methods for these gaps. To follow or stop a
-campaign's operation, use the `operation` commands in [Operations](#operations).
+event, history, or replay route on the Messaging surface. The CLI does not
+substitute similarly named Platform campaign methods for these gaps. To follow
+or stop a campaign's operation, use the `operation` commands in
+[Operations](#operations).
+
+## Campaign audiences
+
+Audience commands are organization-scoped and use the Platform API:
+
+```shell
+polymorfa audience create --name "August launch" \
+  --csv contacts.csv \
+  --phone-column Phone \
+  --variable "firstName=First name"
+
+polymorfa audience create --name "August launch" \
+  --file-id upload_1 \
+  --mapping mapping.json
+
+polymorfa audience members add list_123 --csv contacts.csv
+polymorfa audience members list list_123 --limit 100
+polymorfa audience members remove list_123 +15551234567
+```
+
+`--csv` sends up to 1,000 members inline. `--file-id` imports a file that was
+already uploaded through the API and needs `--mapping`, a JSON document naming
+the phone column and any variable columns:
+
+```json
+{"phone": "Phone", "variables": {"firstName": "First name"}}
+```
+
+Creation and appends report the same import counts as campaign recipients, so a
+caller can reconcile what was accepted. Like recipient appends, `members add` is
+sent once and never retried automatically. Member listing is cursor-paged like
+recipient listing.
+
+## Campaign opt-outs
+
+Opt-out suppression is organization-wide. Keyword capture has its own settings:
+
+```shell
+polymorfa optout settings view
+polymorfa optout settings update \
+  --enabled \
+  --opt-out-keyword STOP \
+  --opt-out-keyword BAJA \
+  --opt-in-keyword START
+polymorfa optout settings update --no-enabled --opt-out-keyword STOP
+```
+
+Update replaces the whole settings document, so pass the complete keyword set
+every time; the CLI refuses a partial update rather than clearing keywords the
+caller did not mention. At least one opt-out keyword is required even when
+capture is off. When capture is on, a matching reply suppresses the contact and
+the API emits `contact.opted_out`; an opt-in keyword emits `contact.opted_in`.
+A suppressed contact is skipped at dispatch, which is visible as a `skipped`
+recipient with `lastError` `opted_out`.
 
 ## Developer events and webhooks
 
@@ -1522,3 +1660,37 @@ then explicitly submit its `quoteId` with `PATCH /platform/sessions/{sessionId}`
 Read `GET /platform/sessions/{sessionId}/tier-quotes/{quoteId}` until the result is
 applied or rejected. Store the full JSON request in a file and pass `--input` when
 it contains numeric values or `null`; `--field` creates string values.
+
+### Functions
+
+Functions are project-owned. Select `--project` or use the linked project/profile context. The commands accept an organization API key or a project token; browser client tokens are refused. Access also depends on the team's enabled Functions release and the configured execution region.
+
+```bash
+polymorfa function list --project PROJECT_UUID
+polymorfa function create --project PROJECT_UUID --input function.json
+polymorfa function deployment create FUNCTION_UUID --project PROJECT_UUID --input deployment.json
+polymorfa function invocation create FUNCTION_UUID --project PROJECT_UUID --input invocation.json --idempotency-key booking-42
+polymorfa function deployment promote FUNCTION_UUID DEPLOYMENT_UUID --project PROJECT_UUID --expected-revision 1
+```
+
+`function.json` contains `name` and an optional stable `functionId`. A deployment input contains a new `deploymentId`, `source`, `language` (`javascript`, `typescript` or `visual`), `region`, `compatibilityDate`, optional `secretVersionIds` and exact HTTPS `egressOrigins`. Visual source is a JSON action program encoded as the source string. Input files do not contain `projectId` or override path IDs.
+
+Use an origin such as `https://api.example.com` for each egress entry. Credentials, paths (including a trailing slash), queries, fragments and explicit ports are rejected before sending. The CLI preserves accepted origins exactly.
+
+`function update FUNCTION_UUID --input update.json` takes `expectedRevision` and `name` or `enabled`. `function delete FUNCTION_UUID --expected-revision N --yes` retires the definition and leaves invocation receipts readable. Add the selected project to each command or use the linked context.
+
+Secret values go through a JSON file or stdin, never a command-line value flag:
+
+```bash
+polymorfa function secret create FUNCTION_UUID --project PROJECT_UUID --input secret.json
+polymorfa function secret list FUNCTION_UUID --project PROJECT_UUID
+polymorfa function secret revoke FUNCTION_UUID SECRET_VERSION_UUID --project PROJECT_UUID --yes
+```
+
+The secret input is `{ "name": "PROVIDER_KEY", "value": "YOUR_EXTERNAL_SECRET" }`. Keep the file private. Values are write-only. Creating a new version leaves existing deployments pinned to their original version. Revocation stops new invocations that use that version; running code can finish. Polymorfa credentials cannot be stored as Function secrets.
+
+Invocation input contains an optional `deploymentId`, `trigger` (`test` or `http`) and `request` with `method`, a synthetic URL under `https://function.polymorfa.invalid`, selected `headers` and `bodyBase64`. Every invocation requires an explicit `--idempotency-key` of 1–128 printable ASCII characters, excluding spaces. The CLI rejects invalid keys without trimming or changing them. It never retries Function writes automatically. Reusing a key returns the original receipt without executing again, including when credentials rotate; replay does not return the original response body.
+
+Use `function invocation list FUNCTION_UUID` and `function invocation view FUNCTION_UUID INVOCATION_UUID` to reconcile a result. Invocation inputs, responses and customer log text are not retained. `--json` includes the transient result when the initial invocation returns it. The default display prints metadata and HTTP status without response content. An uncertain, failed, running or unavailable invocation, or an HTTP response of 400 or higher, exits with code 8 after printing its receipt. Check customer effects before using a new key unless `retryable` explicitly says execution did not start.
+
+Function, deployment, secret and invocation lists accept `--limit 1..100` and `--before UUID`. Deployment lists return metadata without source, including with `--json`. `function deployment view` exposes source with `--json`; secret reads always return metadata.
