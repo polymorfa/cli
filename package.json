@@ -138,6 +138,12 @@
       "channel:message": {
         "description": "Inspect and act on channel messages."
       },
+      "chat": {
+        "description": "Read stored chats on enrolled HMS Numbers (beta)."
+      },
+      "chat:message": {
+        "description": "Read stored messages on enrolled HMS Numbers (beta)."
+      },
       "contact": {
         "description": "Inspect contacts and manage the contact blocklist."
       },

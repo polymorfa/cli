@@ -27,6 +27,7 @@ export interface ResolvedEnvironment {
 }
 
 export interface ResolveEnvironmentInput {
+  readonly allowProjectToken?: boolean | undefined
   readonly apiVersion?: string | undefined
   readonly env: Readonly<Record<string, string | undefined>>
   readonly surface: ApiSurface
@@ -416,7 +417,9 @@ export async function resolveCommandEnvironment(
   const explicitProfile = nonEmpty(input.profile)
   const hasEnvironmentCredential =
     nonEmpty(input.env.POLYMORFA_API_KEY) !== undefined ||
-    nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN) !== undefined
+    nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN) !== undefined ||
+    (input.allowProjectToken === true &&
+      nonEmpty(input.env.POLYMORFA_PROJECT_TOKEN) !== undefined)
 
   if (explicitProfile === undefined && hasEnvironmentCredential) {
     return {
@@ -439,7 +442,13 @@ export async function resolveCommandEnvironment(
     )
   }
 
-  if (profile.credential.kind !== 'apiKey') {
+  if (
+    profile.credential.kind !== 'apiKey' &&
+    !(
+      input.allowProjectToken === true &&
+      profile.credential.kind === 'projectToken'
+    )
+  ) {
     throw new PolymorfaConfigurationError(
       `Profile ${selected} contains a project token, which is accepted only by project-owned developer commands and polymorfa listen.`,
       'credential',
@@ -458,7 +467,9 @@ export async function resolveCommandEnvironment(
     ...input,
     apiVersion: input.apiVersion ?? profile.apiVersion,
     env: {
-      POLYMORFA_API_KEY: apiKey,
+      ...(profile.credential.kind === 'projectToken'
+        ? {POLYMORFA_PROJECT_TOKEN: apiKey}
+        : {POLYMORFA_API_KEY: apiKey}),
       POLYMORFA_BASE_URL:
         nonEmpty(input.env.POLYMORFA_BASE_URL) ?? profile.baseUrl,
     },
@@ -555,6 +566,10 @@ export function resolveEnvironment(
 ): ResolvedEnvironment {
   const apiKey = nonEmpty(input.env.POLYMORFA_API_KEY)
   const clientToken = nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN)
+  const projectToken =
+    input.allowProjectToken === true
+      ? nonEmpty(input.env.POLYMORFA_PROJECT_TOKEN)
+      : undefined
   const baseUrl = nonEmpty(input.env.POLYMORFA_BASE_URL)
 
   if (input.surface === 'platform') {
@@ -568,11 +583,17 @@ export function resolveEnvironment(
     return resolved(input, {type: 'apiKey', value: apiKey}, baseUrl)
   }
 
-  if (apiKey !== undefined && clientToken !== undefined) {
+  if ([apiKey, clientToken, projectToken].filter(Boolean).length > 1) {
     throw new PolymorfaConfigurationError(
-      'Messaging credentials are ambiguous; set only POLYMORFA_API_KEY or POLYMORFA_CLIENT_TOKEN.',
+      input.allowProjectToken === true
+        ? 'Messaging credentials are ambiguous; set only one credential environment variable.'
+        : 'Messaging credentials are ambiguous; set only POLYMORFA_API_KEY or POLYMORFA_CLIENT_TOKEN.',
       'credential',
     )
+  }
+
+  if (projectToken !== undefined) {
+    return resolved(input, {type: 'projectToken', value: projectToken}, baseUrl)
   }
 
   if (clientToken !== undefined) {

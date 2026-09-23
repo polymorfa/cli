@@ -367,8 +367,36 @@ polymorfa message delete 740000000001 --session session_123 --chat 730000000001 
 Edit and delete require `chats:manage`. Delete asks for confirmation; pass
 `--yes` in scripts.
 
-The API does not expose message history, list, or search operations. Those
-commands are not synthesized by the CLI.
+### Stored chat history (beta)
+
+For a Number with hosted message storage (HMS) enabled, an enrolled team can
+read stored chats and messages. An owner or admin enrolls the team on the
+Console **Numbers** page. Storage includes only messages sent or received after
+HMS was enabled. Test Numbers have no stored history. These read commands
+require a server API key or project token; client tokens cannot read history.
+
+```shell
+polymorfa chat list --session NUMBER_ID --limit 20 --kind direct
+polymorfa chat view +15550001111 --session NUMBER_ID
+polymorfa chat message list +15550001111 --session NUMBER_ID --limit 20 --order desc
+polymorfa chat message view +15550001111 739182640518204 --session NUMBER_ID
+```
+
+Chat reads require `chats:read`; message reads require `messages:read`. Older
+credentials, including full-access keys created before `messages:read` existed,
+need a new credential with that scope explicitly selected. Use `--json` to keep
+the page's `hasMore`, `nextCursor`, and `previousCursor` fields. Human output
+also prints non-null cursors. Pass `--cursor` back with the same path and filters;
+changing either produces `400 invalid_parameter`. Message filters include
+`--since`, `--until`, `--direction`, and comma-separated `--types`; chat filters
+include `--kind`, `--active-since`, and `--active-before`. The API defaults to a
+page of 50 and permits `--limit` from 1 through 100.
+
+Without enrollment, the API returns `403 permission_denied`; without HMS on
+the Number it returns `404 hms_not_enabled`. `503 service_unavailable` means
+the Number's regional history service cannot be reached. No search command is
+available. See the [message history guide](https://docs.polymorfa.com/guides/communicate/message-history)
+for retention and media download behavior.
 
 ## Media
 
