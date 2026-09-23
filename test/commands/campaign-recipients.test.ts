@@ -237,14 +237,23 @@ describe('Campaign recipient commands', () => {
     })
   })
 
-  test('uses the phone header when comma and semicolon counts tie', async () => {
+  test.each([
+    [
+      'equal separator counts',
+      'phone;Last, First\n+15551234567;Lovelace, Ada\n',
+      'Last, First',
+      'Lovelace, Ada',
+    ],
+    [
+      'more commas than semicolons',
+      'phone;Last, First, Suffix\n+15551234567;Lovelace, Ada, Jr\n',
+      'Last, First, Suffix',
+      'Lovelace, Ada, Jr',
+    ],
+  ])('uses the phone header with %s', async (_case, content, header, name) => {
     directory = await mkdtemp(join(tmpdir(), 'polymorfa-recipients-'))
     const csv = join(directory, 'contacts.csv')
-    await writeFile(
-      csv,
-      'phone;Last, First\n+15551234567;Lovelace, Ada\n',
-      'utf8',
-    )
+    await writeFile(csv, content, 'utf8')
     server = await startHttpServer({
       body: {
         data: {
@@ -261,13 +270,13 @@ describe('Campaign recipient commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        `campaign recipients add campaign_1 --project-slug project_1 --csv ${csv} --variable "name=Last, First"`,
+        `campaign recipients add campaign_1 --project-slug project_1 --csv ${csv} --variable "name=${header}"`,
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(JSON.parse(server.requests[0]!.body)).toEqual({
-      recipients: [{phone: '+15551234567', variables: {name: 'Lovelace, Ada'}}],
+      recipients: [{phone: '+15551234567', variables: {name}}],
     })
   })
 

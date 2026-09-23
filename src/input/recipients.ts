@@ -289,9 +289,9 @@ function columnIndex(header: readonly string[], name: string): number {
 }
 
 /**
- * Pick the separator that occurs most often in the header record, counting
- * only separators outside quoted fields. If counts tie, use the delimiter
- * that exposes the requested phone column.
+ * Count separators outside quoted fields in the header record. Choose the
+ * most frequent one that exposes the requested phone column; otherwise use
+ * the most frequent separator so the missing-column error can name the fields.
  */
 function detectDelimiter(text: string, phoneColumn: string): string {
   const counts = new Map<string, number>([
@@ -313,13 +313,10 @@ function detectDelimiter(text: string, phoneColumn: string): string {
     else if (char === '\n' || char === '\r') break
     else if (counts.has(char)) counts.set(char, counts.get(char)! + 1)
   }
-  const bestCount = Math.max(...counts.values())
-  if (bestCount === 0) return ','
   const candidates = [...counts]
-    .filter(([, count]) => count === bestCount)
-    .map(([candidate]) => candidate)
-  if (candidates.length === 1) return candidates[0]!
-  for (const candidate of candidates) {
+    .filter(([, count]) => count > 0)
+    .sort((left, right) => right[1] - left[1])
+  for (const [candidate] of candidates) {
     const header = parseCsvWithDelimiter(text, candidate)[0]?.map((cell) =>
       cell.trim(),
     )
@@ -327,7 +324,7 @@ function detectDelimiter(text: string, phoneColumn: string): string {
       return candidate
     }
   }
-  return candidates[0]!
+  return candidates[0]?.[0] ?? ','
 }
 
 function parseCsv(input: string, phoneColumn: string): string[][] {
