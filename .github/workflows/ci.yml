@@ -27,5 +27,21 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
+      # Hybrid Link tier transitions need the companion SDK PR. Verify this PR
+      # against that immutable source revision until its package is published.
+      - run: npm ci --ignore-scripts
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          repository: polymorfa/sdks
+          ref: b4434ad571e98fdb9a85fa8f91ba9c364361eb20
+          path: .sdk-source
       - run: npm ci
+        working-directory: .sdk-source
+      - run: npm run build -w @polymorfa/sdk
+        working-directory: .sdk-source
+      - run: npm pack -w @polymorfa/sdk --pack-destination .. --ignore-scripts
+        working-directory: .sdk-source
+      - run: npm install --no-save --package-lock=false --ignore-scripts ./polymorfa-sdk-*.tgz
+      - run: npm run build
       - run: npm run verify

@@ -97,7 +97,10 @@ export function presentError(
     message:
       error instanceof PolymorfaError && error.code === 'send_outcome_unknown'
         ? `${message} Read message operation status; do not resend or change transport.`
-        : message,
+        : error instanceof PolymorfaError &&
+            error.code === 'hybrid_resolution_required'
+          ? `${message} Choose --keep linked_devices|official_api, or --split --stay linked_devices|official_api --new-number-name NAME, and quote again.`
+          : message,
     ...(error instanceof PolymorfaError && error.metadata?.operationId
       ? {operationId: redact(error.metadata.operationId, secrets)}
       : {}),

@@ -255,6 +255,9 @@
       "session:configuration": {
         "description": "Inspect and update inherited session configuration."
       },
+      "session:tier": {
+        "description": "Quote, confirm, and follow Number tier changes, including Hybrid Link choices."
+      },
       "sip-trunk": {
         "description": "Connect a PBX to WhatsApp calls with SIP trunks."
       },

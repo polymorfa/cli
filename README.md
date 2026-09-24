@@ -1894,12 +1894,56 @@ server error. Add credit or resolve the billing restriction in the Console befor
 retrying. HTTP 409 from an expired tier quote also requires reviewing a new quote;
 the CLI never creates or confirms a replacement purchase automatically.
 
-For a tier change, use the raw API command to create a quote with
-`POST /platform/sessions/{sessionId}/tier-quotes`, review the returned charge,
-then explicitly submit its `quoteId` with `PATCH /platform/sessions/{sessionId}`.
-Read `GET /platform/sessions/{sessionId}/tier-quotes/{quoteId}` until the result is
-applied or rejected. Store the full JSON request in a file and pass `--input` when
-it contains numeric values or `null`; `--field` creates string values.
+### Number tier changes
+
+Tier changes use an organization API key. Quote first, review the credit charge
+and effective time, then confirm that exact quote:
+
+```shell
+polymorfa session tier quote support --tier pro
+polymorfa session tier confirm support --quote QUOTE_UUID --yes
+polymorfa session tier status support QUOTE_UUID
+```
+
+`--tier inherit` restores the project default tier. A quote does not change the
+Number or spend credit. `confirm` requires `--yes` and accepts
+`--idempotency-key`; it never creates a replacement quote. Read `status` until
+the change is applied or rejected.
+
+A Hybrid Link Number leaving Pro needs a choice. Without one, the quote fails
+with `hybrid_resolution_required` (exit code 4) and the CLI names the flags to
+add. This includes `--tier inherit` when the project default lacks Hybrid Link.
+
+```shell
+# Keep one connection; the other is disconnected when Pro ends.
+polymorfa session tier quote support --tier standard --keep linked_devices
+# Split into two Standard Numbers. This Number keeps the Official API; Linked
+# Devices moves to a new Number named support-linked without re-pairing.
+polymorfa session tier quote support --tier standard --split --stay official_api --new-number-name support-linked
+```
+
+The choice runs when the paid Pro window ends. To merge two Numbers that are the
+same WhatsApp Business number into one Hybrid Link Number, list the pairs, then
+quote Pro on the Number that keeps its ID:
+
+```shell
+polymorfa session hybrid-merge-candidates --project PROJECT_UUID
+polymorfa session tier quote KEEP_UUID --tier pro --merge-with OTHER_UUID
+```
+
+`--keep`, `--split` and `--merge-with` are mutually exclusive, and invalid
+combinations exit with code 2 before any request. The quote, confirm and status
+output shows the Hybrid Link plan and its status (`scheduled`, `running`,
+`completed`, `failed` or `cancelled`) separately from the tier change, plus the
+new Number ID after a split. When the output says action is required, disconnect
+the Official API in the WhatsApp Business app under Settings > Account >
+Business Platform > Disconnect Account. An ineligible Number or pair fails with
+`hybrid_transition_ineligible` (exit code 4) and the API's reason in the message.
+Merging requires Hybrid Link access, which the API enforces.
+
+These commands are tested against the companion SDK source, which pins API
+contract `feaf0734a99e24124e06cc04af52b46fdc5158f1`. Update the registry SDK
+dependency after that SDK is published and before releasing this CLI.
 
 ### Hybrid Link controls
 
