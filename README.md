@@ -1274,7 +1274,15 @@ polymorfa widget view --project project_123
 polymorfa widget update --project project_123 --input widget-patch.json
 polymorfa session stop session_1 session_2 --project project_123
 polymorfa session delete session_1 session_2 --project project_123 --yes
+polymorfa session capabilities support-line
 ```
+
+`session capabilities` shows the WhatsApp features and limits WhatsApp has
+enabled for one number, as of the number's last configuration sync. Each line
+is the capability key, its value (`enabled`, `off`, a limit, or `unknown`), and
+whether WhatsApp sent the setting (`server`) or its default applies
+(`client_default`). Before the number's first sync every value is `unknown`.
+It is a beta: the team must be enrolled, and it needs `sessions:read`.
 
 Key and project-token lists contain metadata only; neither command returns raw
 bearer material. The API's reported API-key scope mask is retained in JSON but

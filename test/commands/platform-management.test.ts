@@ -341,6 +341,60 @@ describe('Platform management commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test("reads a number's WhatsApp capabilities", async () => {
+    server = await startHttpServer({
+      body: {
+        data: {
+          session: 'support/line',
+          projectId: 'project_1',
+          status: 'synced',
+          syncedAt: '2026-09-24T10:00:00.000Z',
+          checkedAt: '2026-09-24T11:00:00.000Z',
+          accountType: 'personal',
+          capabilities: [
+            {
+              key: 'channels',
+              kind: 'feature',
+              unit: null,
+              value: true,
+              source: 'server',
+            },
+            {
+              key: 'messageEdit.windowSeconds',
+              kind: 'limit',
+              unit: 'seconds',
+              value: 1200,
+              source: 'client_default',
+            },
+            {
+              key: 'metaAi',
+              kind: 'feature',
+              unit: null,
+              value: null,
+              source: null,
+            },
+          ],
+        },
+      },
+    })
+
+    const result = await platformEnvironment(() =>
+      runCommand('session capabilities support/line'),
+    )
+
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/platform/sessions/support%2Fline/capabilities',
+    })
+    expect(result.stdout).toContain('Status\tsynced')
+    expect(result.stdout).toContain('channels\tenabled\tserver')
+    expect(result.stdout).toContain(
+      'messageEdit.windowSeconds\t1200 seconds\tclient_default',
+    )
+    expect(result.stdout).toContain('metaAi\tunknown\t-')
+  })
+
   test('requests asynchronous stops for a bounded session batch', async () => {
     server = await startHttpServer({body: {data: {stopping: 1}}})
 
