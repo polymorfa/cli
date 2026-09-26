@@ -147,11 +147,24 @@ export function completionScript(shell: CompletionShell): string {
 _polymorfa_completion() {
   local current="\${COMP_WORDS[COMP_CWORD]}"
   local -a prior=("\${COMP_WORDS[@]:1:$((COMP_CWORD-1))}")
-  local output candidate
+  local output candidate option_prefix=""
+  if (( COMP_CWORD >= 3 )) && [[ \${COMP_WORDS[COMP_CWORD-1]} == '=' && \${COMP_WORDS[COMP_CWORD-2]} == --* ]]; then
+    option_prefix="\${COMP_WORDS[COMP_CWORD-2]}="
+    current="$option_prefix$current"
+    prior=("\${COMP_WORDS[@]:1:$((COMP_CWORD-3))}")
+  elif (( COMP_CWORD >= 2 )) && [[ $current == '=' && \${COMP_WORDS[COMP_CWORD-1]} == --* ]]; then
+    option_prefix="\${COMP_WORDS[COMP_CWORD-1]}="
+    current="$option_prefix"
+    prior=("\${COMP_WORDS[@]:1:$((COMP_CWORD-2))}")
+  fi
   COMPREPLY=()
   output="$(command polymorfa completion suggest --current="$current" -- "\${prior[@]}" 2>/dev/null)" || return
   while IFS= read -r candidate; do
-    [[ -n "$candidate" ]] && COMPREPLY+=("$candidate")
+    [[ -n "$candidate" ]] || continue
+    if [[ -n "$option_prefix" && $candidate == "$option_prefix"* ]]; then
+      candidate="\${candidate#"$option_prefix"}"
+    fi
+    COMPREPLY+=("$candidate")
   done <<< "$output"
 }
 complete -o bashdefault -o default -F _polymorfa_completion polymorfa`

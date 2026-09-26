@@ -1,4 +1,13 @@
 import {spawnSync} from 'node:child_process'
+import {
+  chmodSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 import {describe, expect, test} from 'vitest'
 
 import {
@@ -95,6 +104,42 @@ describe('shell completion', () => {
         continue
       }
       expect(syntax.status, syntax.stderr).toBe(0)
+    }
+  })
+
+  test('Bash reconstructs a flag value split by COMP_WORDBREAKS', () => {
+    const directory = mkdtempSync(join(tmpdir(), 'polymorfa-completion-'))
+    const command = join(directory, 'polymorfa')
+    const argumentsFile = join(directory, 'arguments')
+    try {
+      writeFileSync(
+        command,
+        '#!/bin/sh\nprintf "%s\\n" "$@" > "$COMP_TEST_ARGS"\nprintf "%s\\n" --surface=platform\n',
+      )
+      chmodSync(command, 0o755)
+      const result = spawnSync(
+        'bash',
+        [
+          '-c',
+          'eval "$POLYMORFA_SCRIPT"; COMP_WORDS=(polymorfa api --surface = p); COMP_CWORD=4; _polymorfa_completion; printf "%s\\n" "${COMPREPLY[@]}"',
+        ],
+        {
+          encoding: 'utf8',
+          env: {
+            ...process.env,
+            COMP_TEST_ARGS: argumentsFile,
+            PATH: `${directory}:${process.env.PATH ?? ''}`,
+            POLYMORFA_SCRIPT: completionScript('bash'),
+          },
+        },
+      )
+      expect(result.status, result.stderr).toBe(0)
+      expect(result.stdout).toBe('platform\n')
+      expect(readFileSync(argumentsFile, 'utf8')).toBe(
+        'completion\nsuggest\n--current=--surface=p\n--\napi\n',
+      )
+    } finally {
+      rmSync(directory, {force: true, recursive: true})
     }
   })
 
