@@ -1,4 +1,5 @@
 import {runCommand} from '@oclif/test'
+import {MessagingClient} from '@polymorfa/sdk'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {
@@ -78,6 +79,43 @@ describe('unified calls commands', () => {
     }
     expect(server.requests).toHaveLength(0)
   })
+
+  test.skipIf(
+    !(
+      'sendReaction' in
+      new MessagingClient({credential: {type: 'apiKey', value: API_KEY}}).voip
+    ),
+  )(
+    'sends call reactions and hand state through a locally built SDK',
+    async () => {
+      server = await startHttpServer({body: {success: true}, status: 202})
+      const reaction = await apiKey(() =>
+        runCommand(
+          'calls react call_1 --connection-id connection-1 --emoji 👍 --participant agent --json',
+        ),
+      )
+      expect(reaction.error).toBeUndefined()
+      expect(server.requests[0]?.url).toBe(
+        '/messaging/voip/calls/call_1/reaction',
+      )
+      expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+        connectionId: 'connection-1',
+        emoji: '👍',
+        participant: 'agent',
+      })
+      const hand = await apiKey(() =>
+        runCommand(
+          'calls hand call_1 --connection-id connection-1 --raised --json',
+        ),
+      )
+      expect(hand.error).toBeUndefined()
+      expect(server.requests[1]?.url).toBe('/messaging/voip/calls/call_1/hand')
+      expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
+        connectionId: 'connection-1',
+        raised: true,
+      })
+    },
+  )
 
   test('places a call from a named session with a claim and participant', async () => {
     server = await startHttpServer({
