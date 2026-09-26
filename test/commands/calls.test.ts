@@ -31,6 +31,54 @@ describe('unified calls commands', () => {
     server = undefined
   })
 
+  test('places one group request and rings an existing participant', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          success: true,
+          data: {callId: 'group_1', session: 'support', video: false},
+        },
+        status: 201,
+      },
+      {body: {success: true}, status: 202},
+    ])
+    const group = await apiKey(() =>
+      runCommand(
+        'calls place-group --to +15550100 --to +15550101 --session support --json',
+      ),
+    )
+    expect(group.error).toBeUndefined()
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+      session: 'support',
+      participants: ['+15550100', '+15550101'],
+    })
+    const ring = await apiKey(() =>
+      runCommand('calls ring group_1 +15550100 --json'),
+    )
+    expect(ring.error).toBeUndefined()
+    expect(server.requests[1]?.url).toBe(
+      '/messaging/voip/calls/group_1/participants/ring',
+    )
+    expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
+      to: '+15550100',
+    })
+    expect(server.requests).toHaveLength(2)
+  })
+
+  test('rejects too few or duplicate group participants before transport', async () => {
+    server = await startHttpServer({body: {success: true}})
+    for (const recipients of [
+      '--to +15550100',
+      '--to +15550100 --to +15550100',
+    ]) {
+      const response = await apiKey(() =>
+        runCommand(`calls place-group ${recipients} --session support --json`),
+      )
+      expect(exitCode(response.error)).toBe(2)
+    }
+    expect(server.requests).toHaveLength(0)
+  })
+
   test('places a call from a named session with a claim and participant', async () => {
     server = await startHttpServer({
       body: {

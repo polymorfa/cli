@@ -138,7 +138,7 @@ export interface PlaceCallInput {
   readonly exclusive?: boolean | undefined
   readonly participant?: string | undefined
   readonly session?: string | undefined
-  readonly to: string
+  readonly to: string | readonly string[]
   readonly video?: boolean | undefined
 }
 
@@ -147,7 +147,18 @@ export async function placeCall(
   credential: CallsCredential,
   input: PlaceCallInput,
 ): Promise<CallsResult<VoipPlaceCallResult>> {
-  const to = validateCallTarget(input.to)
+  const to =
+    typeof input.to === 'string'
+      ? validateCallTarget(input.to)
+      : input.to.map((target) => validateCallTarget(target))
+  if (
+    typeof to !== 'string' &&
+    (to.length < 2 || to.length > 31 || new Set(to).size !== to.length)
+  ) {
+    throw new PolymorfaValidationError(
+      'A group call needs 2 to 31 distinct participants.',
+    )
+  }
   const session = requireServerSession(
     credential,
     input.session,
@@ -156,7 +167,7 @@ export async function placeCall(
   const participant = validateParticipant(credential, input.participant)
   const response = await callRequest(() =>
     client.voip.place({
-      to,
+      ...(typeof to === 'string' ? {to} : {participants: to}),
       ...(session === undefined ? {} : {session}),
       ...(input.video === undefined ? {} : {video: input.video}),
       ...(input.exclusive === undefined ? {} : {exclusive: input.exclusive}),
@@ -245,6 +256,19 @@ export async function inviteToCall(
     client.voip.addParticipant(callId, {to}),
   )
   return result(response.data.data, response.metadata)
+}
+
+export async function ringCallParticipant(
+  client: MessagingClient,
+  callId: string,
+  target: string,
+): Promise<CallsResult<SuccessResponse>> {
+  validateCallId(callId)
+  const to = validateCallTarget(target, 'target')
+  const response = await callRequest(() =>
+    client.voip.ringParticipant(callId, {to}),
+  )
+  return result(response.data, response.metadata)
 }
 
 export async function viewCallSettings(
