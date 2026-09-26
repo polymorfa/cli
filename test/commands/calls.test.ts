@@ -1,5 +1,6 @@
 import {runCommand} from '@oclif/test'
 import {MessagingClient} from '@polymorfa/sdk'
+import {Readable} from 'node:stream'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {
@@ -30,6 +31,101 @@ describe('unified calls commands', () => {
   afterEach(async () => {
     await server?.close()
     server = undefined
+  })
+
+  test('creates and previews private call links without a token argument', async () => {
+    const token = 'private_link_test_token'
+    server = await startHttpSequenceServer([
+      {
+        status: 201,
+        body: {
+          success: true,
+          data: {
+            session: 'support',
+            token,
+            url: `https://call.whatsapp.com/voice/${token}`,
+            video: false,
+          },
+        },
+      },
+      {
+        body: {
+          success: true,
+          data: {
+            session: 'support',
+            video: false,
+            creator: {id: '9007199254740993'},
+            approvalRequired: true,
+            isAdmin: false,
+          },
+        },
+      },
+    ])
+    const created = await apiKey(() =>
+      runCommand('calls links create --session support --json'),
+    )
+    expect(created.error).toBeUndefined()
+    expect((JSON.parse(created.stdout) as {data: {url: string}}).data.url).toBe(
+      `https://call.whatsapp.com/voice/${token}`,
+    )
+    const previewed = await withCallLinkStdin(token, () =>
+      apiKey(() => runCommand('calls links preview --session support --json')),
+    )
+    expect(previewed.error).toBeUndefined()
+    expect(previewed.stdout).not.toContain(token)
+    expect(
+      (JSON.parse(previewed.stdout) as {data: unknown}).data,
+    ).toMatchObject({
+      approvalRequired: true,
+      isAdmin: false,
+    })
+    expect(
+      server.requests.map(({method, url, body}) => ({
+        method,
+        url,
+        body: JSON.parse(body) as unknown,
+      })),
+    ).toEqual([
+      {
+        method: 'POST',
+        url: '/messaging/voip/call-links',
+        body: {session: 'support', video: false},
+      },
+      {
+        method: 'POST',
+        url: '/messaging/voip/call-links/preview',
+        body: {session: 'support', token, video: false},
+      },
+    ])
+  })
+
+  test('refuses client tokens, missing sessions and invalid link tokens before transport', async () => {
+    server = await startHttpServer({body: {success: true}})
+    const client = await clientToken(() =>
+      runCommand('calls links create --session support --json'),
+    )
+    const missing = await apiKey(() => runCommand('calls links create --json'))
+    const invalid = await withCallLinkStdin('private/bad/token', () =>
+      apiKey(() => runCommand('calls links preview --session support --json')),
+    )
+    for (const response of [client, missing, invalid])
+      expect(exitCode(response.error)).toBe(2)
+    expect(invalid.stderr).not.toContain('private/bad/token')
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('does not retry a call-link creation failure', async () => {
+    server = await startHttpServer({
+      status: 502,
+      body: {
+        error: {code: 'upstream_failure', message: 'Call provider failed'},
+      },
+    })
+    const response = await apiKey(() =>
+      runCommand('calls links create --session support --json'),
+    )
+    expect(response.error).toBeDefined()
+    expect(server.requests).toHaveLength(1)
   })
 
   test.skipIf(
@@ -1128,6 +1224,22 @@ describe('unified calls commands', () => {
     )
   }
 })
+
+async function withCallLinkStdin<T>(
+  value: string,
+  run: () => Promise<T>,
+): Promise<T> {
+  const descriptor = Object.getOwnPropertyDescriptor(process, 'stdin')
+  Object.defineProperty(process, 'stdin', {
+    configurable: true,
+    value: Readable.from([value]),
+  })
+  try {
+    return await run()
+  } finally {
+    if (descriptor) Object.defineProperty(process, 'stdin', descriptor)
+  }
+}
 
 function apiError(
   status: number,

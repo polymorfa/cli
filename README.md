@@ -675,6 +675,24 @@ pagination. Block and unblock are reversible actions and accept
 
 ## Calls
 
+### Call links in this source revision
+
+The source adds `calls links create` and `calls links preview`. They require
+this contract's deployed API and a published SDK with call-link methods; local
+builds do not establish availability.
+
+```sh
+polymorfa calls links create --session support --json
+polymorfa calls links preview --session support --json < call-link-token.txt
+```
+
+Use a server API key with `sessions:manage` and a Linked Device Number with
+calling enabled. Client tokens and Cloud API-only Numbers are refused. Add
+`--video` for a video link. Create prints a private URL; preview reads the token
+from standard input to keep it out of command arguments and shell history.
+Neither command joins a call or changes approval settings. Requests are sent
+once. Do not retry an unknown creation outcome; there is no idempotency receipt.
+
 The `calls` commands place, answer, join, decline, leave, and end calls, invite
 participants, follow a session's calls, and carry call audio. `calls stats` and
 `calls export` report on past calls; see
