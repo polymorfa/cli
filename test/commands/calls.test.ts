@@ -65,6 +65,37 @@ describe('unified calls commands', () => {
     expect(server.requests).toHaveLength(2)
   })
 
+  test('places a stored group by public ID and rejects mixed destinations', async () => {
+    server = await startHttpServer({
+      body: {
+        success: true,
+        data: {callId: 'stored-group', session: 'support', video: false},
+      },
+      status: 201,
+    })
+    const result = await apiKey(() =>
+      runCommand(
+        'calls place-group --group-id 9007199254740996 --session support --json',
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+      session: 'support',
+      groupId: '9007199254740996',
+    })
+    for (const args of [
+      '--group-id 123@g.us',
+      '--group-id 9007199254740996 --to +15550100',
+      '',
+    ]) {
+      const denied = await apiKey(() =>
+        runCommand(`calls place-group ${args} --session support --json`),
+      )
+      expect(exitCode(denied.error)).toBe(2)
+    }
+    expect(server.requests).toHaveLength(1)
+  })
+
   test('rejects too few or duplicate group participants before transport', async () => {
     server = await startHttpServer({body: {success: true}})
     for (const recipients of [

@@ -710,11 +710,15 @@ the release must update the pinned SDK dependency before these commands ship.
 
 ```shell
 polymorfa calls place-group --session support --to +15550100 --to +15550101
+polymorfa calls place-group --session support --group-id 9007199254740996
 polymorfa calls ring call_123 +15550101
 ```
 
 Group placement accepts 2 to 31 distinct recipients and checks every recipient's
-calling permissions. Group calls require a Linked Device Number. `calls ring`
+calling permissions. Use `--group-id` instead of `--to` to call every remote
+member of an existing group using its public ID. The Number must belong to the
+group, and it must have 2 to 31 remote members. Membership changes during
+placement refuse the call. Group calls require a Linked Device Number. `calls ring`
 only rings a non-connected participant already in the call roster; successful
 submission does not mean that the participant answered.
 

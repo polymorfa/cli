@@ -138,7 +138,8 @@ export interface PlaceCallInput {
   readonly exclusive?: boolean | undefined
   readonly participant?: string | undefined
   readonly session?: string | undefined
-  readonly to: string | readonly string[]
+  readonly to?: string | readonly string[] | undefined
+  readonly groupId?: string | undefined
   readonly video?: boolean | undefined
 }
 
@@ -147,11 +148,23 @@ export async function placeCall(
   credential: CallsCredential,
   input: PlaceCallInput,
 ): Promise<CallsResult<VoipPlaceCallResult>> {
+  const groupId = input.groupId
+  if (
+    groupId !== undefined &&
+    (input.to !== undefined || !/^[1-9][0-9]{0,18}$/.test(groupId))
+  ) {
+    throw new PolymorfaValidationError(
+      'Provide one public group ID without --to.',
+    )
+  }
+  if (groupId === undefined && input.to === undefined)
+    throw new PolymorfaValidationError('Provide --to or --group-id.')
   const to =
     typeof input.to === 'string'
       ? validateCallTarget(input.to)
-      : input.to.map((target) => validateCallTarget(target))
+      : input.to?.map((target) => validateCallTarget(target))
   if (
+    to !== undefined &&
     typeof to !== 'string' &&
     (to.length < 2 || to.length > 31 || new Set(to).size !== to.length)
   ) {
@@ -167,7 +180,11 @@ export async function placeCall(
   const participant = validateParticipant(credential, input.participant)
   const response = await callRequest(() =>
     client.voip.place({
-      ...(typeof to === 'string' ? {to} : {participants: to}),
+      ...(groupId
+        ? {groupId}
+        : typeof to === 'string'
+          ? {to}
+          : {participants: to!}),
       ...(session === undefined ? {} : {session}),
       ...(input.video === undefined ? {} : {video: input.video}),
       ...(input.exclusive === undefined ? {} : {exclusive: input.exclusive}),
