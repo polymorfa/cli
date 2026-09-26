@@ -127,6 +127,13 @@ describe('stored call record commands', () => {
       const invalid = await run('calls view call_1 --json')
       expect(invalid.error).toBeDefined()
       expect(invalid.stderr).toContain('invalid call detail')
+      await server.close()
+      server = await startHttpServer({
+        body: {data: {...detail, history: {events: [null], truncated: false}}},
+      })
+      const malformedHistory = await run('calls view call_1')
+      expect(malformedHistory.error).toBeDefined()
+      expect(malformedHistory.stderr).toContain('invalid call detail')
     },
   )
   test('renders bounded history without terminal control characters', () => {
