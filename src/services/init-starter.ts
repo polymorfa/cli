@@ -8,7 +8,7 @@ const FILE_NAMES = [
   'src/index.ts',
 ] as const
 
-export const STARTER_SDK_VERSION = '0.1.0-dev.20260926224018'
+export const STARTER_SDK_VERSION = '0.1.0-dev.20260926231105'
 
 export interface InitResult {
   directory: string
