@@ -154,6 +154,14 @@ export class CallAnalyticsApi {
       typeof data.call.state !== 'string' ||
       typeof data.call.live !== 'boolean' ||
       !Array.isArray(data.history?.events) ||
+      !data.history.events.every(
+        (event) =>
+          event !== null &&
+          typeof event === 'object' &&
+          typeof event.eventId === 'string' &&
+          typeof event.type === 'string' &&
+          typeof event.occurredAt === 'string',
+      ) ||
       typeof data.history.truncated !== 'boolean'
     ) {
       throw new PolymorfaServerError(
