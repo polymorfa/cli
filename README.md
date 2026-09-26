@@ -1527,6 +1527,13 @@ polymorfa webhook delivery attempt list delivery_123 \
   --project project_123
 ```
 
+`webhook test` requires `--event`. Team tests accept that event type only.
+Project tests can also read a JSON object with `body` and `sessionId` from
+`--input`; supply both fields together. The CLI rejects a team body or an
+incomplete project body before requesting a delivery. The `body` must be an
+exact base64-encoded native event for an HMS-enabled Number in the same
+project. See the [webhook guide](https://docs.polymorfa.com/api/webhooks#send-a-test-delivery).
+
 Webhook creation and secret rotation return a signing secret once. JSON and
 noninteractive runs require `--secret-out`; the CLI preflights a new path and
 writes it atomically with mode `0600`. Interactive runs can reveal the secret
