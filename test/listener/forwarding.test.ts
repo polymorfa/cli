@@ -43,6 +43,7 @@ describe('local event forwarding', () => {
       'Content-Length: 0',
       'Polymorfa-Local-Signature: forged',
       'X-Mode: ok\r\nInjected: true',
+      'X-Mode: 🚀',
       'invalid',
     ]) {
       expect(() => parseForwardHeaders([value])).toThrow()

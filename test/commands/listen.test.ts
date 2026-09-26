@@ -154,10 +154,20 @@ describe('listen', () => {
   })
 
   test('rejects a reserved custom header without echoing its value', async () => {
-    const result = await runCommand(
-      `listen --project ${PROJECT} --forward-to http://127.0.0.1:1 -H 'Authorization: hidden-value'`,
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN:
+          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+      () =>
+        runCommand(
+          `listen --project ${PROJECT} --forward-to http://127.0.0.1:1 -H 'Authorization: hidden-value'`,
+        ),
     )
     expect(result.error).toBeDefined()
+    expect(result.stderr).toContain('invalid or reserved')
     expect(result.stderr).not.toContain('hidden-value')
   })
 

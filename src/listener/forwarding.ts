@@ -173,7 +173,7 @@ export function parseForwardHeaders(
       !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name) ||
       [...rawValue].some((character) => {
         const code = character.charCodeAt(0)
-        return code < 32 || code === 127
+        return code < 32 || code === 127 || code > 255
       }) ||
       RESERVED_FORWARD_HEADERS.has(name.toLowerCase()) ||
       name.toLowerCase().startsWith('polymorfa-')
