@@ -1795,15 +1795,20 @@ polymorfa api /platform/customers --surface platform \
   page bodies and whose `metadata.pages` is the page count.
 - `--slurp` requires `--paginate` and combines the page bodies into one array
   before `--jq` or `--template` runs. Without `--slurp`, filters run on each page.
+  In human output, `--slurp --include` prints an array with each page's body and
+  response metadata. `--json` prints one document with an array of page bodies
+  and the final response metadata plus the page count; `--include` only changes
+  human output.
 - `-q/--jq` runs a jq 1.8 program with an embedded WebAssembly jq, so no `jq`
-  binary is required. Strings print without quotes. The jq runtime has its own
+  binary is required. Strings print without quotes and keep leading and trailing
+  whitespace. The jq runtime has its own
   environment, so `$ENV` does not expose your shell variables or credentials.
 - `-t/--template` renders a Go-style template: `{{.path.to.value}}`,
   `{{range .list}}…{{else}}…{{end}}`, `{{if .value}}…{{else}}…{{end}}`,
   `{{$.root}}` inside a range, `{{json .x}}`, `{{len .x}}`, `{{upper .x}}`,
   `{{lower .x}}`, `{{join ", " .list}}`, string literals such as `{{"\n"}}`,
   comments, and `{{-`/`-}}` whitespace trimming. Missing values render as an
-  empty string.
+  empty string. Quoted strings can contain `}}`.
 - `--jq`, `--template`, and `--json` are mutually exclusive, as are `--include`
   and a filter.
 
