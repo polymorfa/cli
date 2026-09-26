@@ -517,6 +517,7 @@ polymorfa chat list --session NUMBER_ID --limit 20 --kind direct
 polymorfa chat view +15550001111 --session NUMBER_ID
 polymorfa chat message list +15550001111 --session NUMBER_ID --limit 20 --order desc
 polymorfa chat message view +15550001111 739182640518204 --session NUMBER_ID
+polymorfa chat message media +15550001111 739182640518204 --session NUMBER_ID --output ./attachment.bin
 ```
 
 Chat reads require `chats:read`; message reads require `messages:read`. Older
@@ -534,6 +535,14 @@ the Number it returns `404 hms_not_enabled`. `503 service_unavailable` means
 the Number's regional history service cannot be reached. No search command is
 available. See the [message history guide](https://docs.polymorfa.com/guides/communicate/message-history)
 for retention and media download behavior.
+
+For a stored Official API media copy, `chat message media` streams the bytes to
+a temporary sibling file and moves it into place only after the download
+finishes. It requires both `messages:read` and `media:read`; the message's
+`mediaRetrieval.state` is `stored` when a copy is available. Use `--force` to
+replace an existing file and `--max-bytes` to change the 32 MiB local limit.
+The API returns 404 if no copy exists and 503 if the regional service is
+unavailable. The command does not create a signed URL.
 
 ## Media
 
