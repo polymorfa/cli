@@ -176,6 +176,25 @@ installed CLI. It does not look up profile names, project IDs, credentials, or
 other argument values, and it does not contact the API. Add the command for
 your shell to its startup file if you want completion in later sessions.
 
+## Inspect sessions
+
+Use an organization API key with `sessions:read` to inspect stored session
+metadata:
+
+```shell
+polymorfa session list
+polymorfa session list --project PROJECT_ID --json
+polymorfa session view SESSION_ID
+polymorfa session status SESSION_ID --json
+```
+
+`session list` reads every session in the team unless you pass a project UUID.
+Use a session ID from the list for `view` or `status`; these commands do not
+accept `--project`. `status` reads the stored status and optional reason from
+the session record. It does not probe the device or wait for a connection.
+Key metadata listing and revocation are available through `key list` and
+`key revoke`; the CLI does not mint or rotate organization keys.
+
 ## QuickLinks
 
 A QuickLink is a persistent hosted link that connects one WhatsApp number to a
