@@ -385,6 +385,7 @@ beta feature.
 
 ```shell
 polymorfa cloud catalog list --waba WABA_ID --graph-version v26.0 --limit 25
+polymorfa cloud catalog products --waba WABA_ID --catalog CATALOG_ID --graph-version v26.0 --limit 25
 polymorfa cloud template list --session number_123
 polymorfa cloud template get order_update --session number_123 --language en_US
 polymorfa cloud template create --session number_123 --input template.json
@@ -414,6 +415,11 @@ Credential reads use `sessions:read`; reauthorization uses `quicklink:manage`.
 `cloud catalog list` reads linked product-catalog IDs and names with `sessions:read`
 and Graph access. Pass the returned opaque cursor using `--after` for another
 page. Catalog visibility does not grant merchant ownership or permission to sell.
+`cloud catalog products` reads only IDs, optional retailer IDs, names and
+availability from one catalog linked to the authenticated WABA. Pass its
+`paging.cursors.after` value as `--after` to read the next page. The API rejects
+unlinked catalogs and simulated Numbers. This read does not send a product or
+establish that the merchant may sell it.
 
 Reauthorization creates a QuickLink for a stopped or disconnected standalone
 Official Number. It never stops the Number or opens the link automatically.
