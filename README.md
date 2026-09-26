@@ -84,6 +84,22 @@ in this development slice and does not yet claim remote identity validation.
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
 
+## Start a Node project
+
+Create a Node.js and TypeScript starter in an existing directory:
+
+```shell
+polymorfa init
+```
+
+The command writes `package.json`, `src/index.ts`, `.env.example`, and
+`README.md`. It pins an exact published SDK development version. It does not
+read or write credentials, select a project, or overwrite
+any existing starter file. If a target already exists, it stops before writing
+anything. Set the example's `POLYMORFA_API_KEY` through your shell or secret
+manager when you choose to run it. Use `polymorfa link` separately to associate
+the directory with a project for CLI commands.
+
 ## Project context
 
 Select a default project per profile, or link a directory so every command run
