@@ -1,6 +1,9 @@
 import {
   Client,
   PolymorfaServerError,
+  PolymorfaConfigurationError,
+  type ApiResponse,
+  type CallRecord,
   PolymorfaValidationError,
   type CallStats,
   type CallStatsHeatmapCell,
@@ -113,6 +116,52 @@ export class CallAnalyticsApi {
           ? root.project(environment.context.projectId).calls
           : root.calls
     }
+  }
+
+  async list(query: Query) {
+    const page = await this.calls.list(query)
+    return {
+      data: page.items,
+      metadata: page.response.metadata,
+      nextCursor: page.nextCursor ?? null,
+      hasMore: page.hasMore,
+    }
+  }
+
+  async retrieve(callId: string, query: Query) {
+    if (!/^[A-Za-z0-9_-]{1,128}$/.test(callId))
+      throw invalid(
+        'Call ID must contain 1 to 128 letters, digits, underscores or hyphens.',
+      )
+    const calls = this.calls as typeof this.calls & {
+      retrieve?: (
+        id: string,
+        params: Query,
+      ) => Promise<ApiResponse<StoredCallDetail>>
+    }
+    if (typeof calls.retrieve !== 'function') {
+      throw new PolymorfaConfigurationError(
+        'Call detail requires a published SDK version that includes Client.calls.retrieve. This CLI has not activated a source-only SDK pin.',
+        'sdk',
+      )
+    }
+    const response = await calls.retrieve(callId, query)
+    const data = response.data
+    if (
+      !data ||
+      typeof data.call?.callId !== 'string' ||
+      typeof data.call.sessionId !== 'string' ||
+      typeof data.call.state !== 'string' ||
+      typeof data.call.live !== 'boolean' ||
+      !Array.isArray(data.history?.events) ||
+      typeof data.history.truncated !== 'boolean'
+    ) {
+      throw new PolymorfaServerError(
+        'The API returned an invalid call detail.',
+        {code: 'invalid_response'},
+      )
+    }
+    return response
   }
 
   async stats(
@@ -492,4 +541,65 @@ function statsData(value: unknown): CallStats {
 
 function invalid(message: string): PolymorfaValidationError {
   return new PolymorfaValidationError(message, {code: 'invalid_call_filter'})
+}
+
+/** Fields used by human output; JSON retains the complete SDK response. */
+export interface StoredCallDetail {
+  readonly call: {
+    readonly callId: string
+    readonly sessionId: string
+    readonly state: string
+    readonly live: boolean
+  }
+  readonly history: {
+    readonly events: readonly {
+      readonly eventId: string
+      readonly type: string
+      readonly occurredAt: string
+    }[]
+    readonly truncated: boolean
+  }
+}
+
+export function renderCallRecords(
+  records: readonly CallRecord[],
+  nextCursor: string | null,
+): string {
+  const lines =
+    records.length === 0
+      ? ['No call records found.']
+      : [
+          'Call ID\tNumber\tDirection\tOutcome\tConnected seconds',
+          ...records.map((record) =>
+            [
+              record.callId,
+              record.sessionId,
+              record.direction,
+              record.outcome,
+              record.durationSeconds ?? 'unknown',
+            ]
+              .map(String)
+              .map(terminalText)
+              .join('\t'),
+          ),
+        ]
+  if (nextCursor !== null)
+    lines.push(`More records: --cursor ${terminalText(nextCursor)}`)
+  return lines.join('\n')
+}
+
+export function renderCallDetail(detail: StoredCallDetail): string {
+  return [
+    `Call\t${terminalText(detail.call.callId)}`,
+    `Number\t${terminalText(detail.call.sessionId)}`,
+    `State\t${terminalText(detail.call.state)}`,
+    `Live\t${detail.call.live ? 'yes' : 'no'}`,
+    ...detail.history.events.map(
+      (event) =>
+        `${terminalText(event.occurredAt)}\t${terminalText(event.type)}\t${terminalText(event.eventId)}`,
+    ),
+    ...(detail.history.truncated
+      ? ['History is truncated; some events were not retained.']
+      : []),
+  ].join('\n')
 }

@@ -2023,3 +2023,23 @@ The source group-placement and participant re-ring commands also require the
 matching SDK publication. Until its exact registry version is pinned, they
 refuse before sending a request. Testing a local package does not establish
 registry or deployed availability.
+
+### Stored call records
+
+```sh
+polymorfa calls list --outcome missed --limit 25 --json
+polymorfa calls list --outcome missed --limit 25 --cursor CURSOR --json
+polymorfa calls view CALL_ID --json
+```
+
+`calls list` reads one page through the existing Calls records API. Reuse the
+same filters when following a cursor. These reads need `sessions:read` and a
+server credential. Project tokens only read calls originally owned by their
+project. Human output labels unmeasured duration as `unknown`.
+
+The source `calls view` command requires the SDK publication containing
+`Client.calls.retrieve` and the matching API deployment. Until that exact
+registry release is pinned, it reports an SDK dependency error before transport.
+Its JSON output includes bounded event history, participant and connection
+lifetimes, and allowlisted diagnostics. It does not retrieve media or webhook
+deliveries. Local package tests do not establish published availability.
