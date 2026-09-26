@@ -45,6 +45,19 @@ The SDK component reports the version built into the installed SDK. Dev
 prereleases include their full timestamped version. Run `npm ls @polymorfa/sdk`
 to see the installed build.
 
+## Documentation from the terminal
+
+```shell
+polymorfa docs search "rate limits"
+polymorfa docs open api/rate-limits
+polymorfa docs open api/rate-limits --print
+```
+
+Search reads the published documentation index and prints matching titles,
+paths, and links. `--json` prints a result array. Open launches the exact page
+in a browser; `--print` emits its URL instead. These commands use network
+access but do not use your Polymorfa credentials.
+
 ## Authentication profiles
 
 Until the backend exposes a revocable CLI device-authorization flow, login
