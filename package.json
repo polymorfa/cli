@@ -293,9 +293,6 @@
       },
       "function:invocation": {
         "description": "Invoke Functions once and inspect metadata receipts."
-      },
-      "calls:links": {
-        "description": "Create and preview private WhatsApp call links with a server API key."
       }
     }
   },
