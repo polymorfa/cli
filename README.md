@@ -38,7 +38,7 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260923115544
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260926005918
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
