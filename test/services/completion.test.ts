@@ -82,10 +82,15 @@ describe('shell completion', () => {
   test('generates Bash and Zsh scripts with valid syntax', () => {
     for (const shell of ['bash', 'zsh'] as const) {
       const script = completionScript(shell)
-      const syntax = spawnSync(shell, ['-n'], {encoding: 'utf8', input: script})
-      expect(syntax.status, syntax.stderr).toBe(0)
       expect(script).toContain('polymorfa completion suggest')
       expect(script).not.toContain('POLYMORFA_API_KEY')
+      const syntax = spawnSync(shell, ['-n'], {encoding: 'utf8', input: script})
+      if (
+        (syntax.error as NodeJS.ErrnoException | undefined)?.code === 'ENOENT'
+      ) {
+        continue
+      }
+      expect(syntax.status, syntax.stderr).toBe(0)
     }
   })
 
