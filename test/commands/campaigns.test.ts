@@ -175,6 +175,123 @@ describe('Messaging campaign commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test.each([
+    ['2026-09-02T12:00:00Z', 1_788_350_400_000],
+    ['1788350400000', 1_788_350_400_000],
+  ])('reschedules with a precise instant (%s)', async (at, milliseconds) => {
+    server = await startHttpServer({
+      body: {
+        data: {
+          ...campaign(),
+          operationId: 'op_reschedule',
+          status: 'scheduled',
+        },
+        success: true,
+      },
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign reschedule campaign/1 --project-slug project/main --scheduled-at ${at} --idempotency-key move_1 --json`,
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      data: {operationId: 'op_reschedule', status: 'scheduled'},
+      metadata: {status: 200},
+    })
+    expect(server.requests[0]).toMatchObject({
+      body: JSON.stringify({scheduledAt: milliseconds}),
+      method: 'POST',
+      url: '/messaging/projects/project%2Fmain/campaigns/campaign%2F1/reschedule',
+    })
+    expect(server.requests[0]?.headers['idempotency-key']).toBe('move_1')
+  })
+
+  test('starts a scheduled campaign now and generates an idempotency key', async () => {
+    server = await startHttpServer({
+      body: {data: {...campaign(), operationId: 'op_now'}, success: true},
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'campaign reschedule campaign_1 --project-slug project_1 --now',
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toContain(
+      'Accepted campaign reschedule as operation op_now.',
+    )
+    expect(server.requests[0]).toMatchObject({
+      body: JSON.stringify({scheduledAt: null}),
+      method: 'POST',
+      url: '/messaging/projects/project_1/campaigns/campaign_1/reschedule',
+    })
+    expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+      /^pmfa_cli_[0-9a-f-]{36}$/,
+    )
+  })
+
+  test.each([
+    '',
+    '--now --scheduled-at 2026-09-02T12:00:00Z',
+    '--scheduled-at someday',
+    '--scheduled-at 2026-09-02T12:00:00',
+  ])(
+    'rejects invalid reschedule flags before transport (%s)',
+    async (flags) => {
+      server = await startHttpServer({body: {data: campaign(), success: true}})
+
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `campaign reschedule campaign_1 --project-slug project_1 ${flags} --json`,
+        ),
+      )
+
+      expect(exitCode(result.error)).toBe(2)
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
+  test('rejects a browser client token before reschedule transport', async () => {
+    server = await startHttpServer({body: {data: campaign(), success: true}})
+
+    const result = await clientTokenEnvironment(() =>
+      runCommand(
+        'campaign reschedule campaign_1 --project-slug project_1 --now',
+      ),
+    )
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('reports a changed campaign state as a failed reschedule', async () => {
+    server = await startHttpServer({
+      status: 409,
+      body: {
+        success: false,
+        error: {
+          code: 'campaign_state_conflict',
+          message:
+            'This campaign has already started, so its start time can no longer be changed.',
+        },
+      },
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'campaign reschedule campaign_1 --project-slug project_1 --now --json',
+      ),
+    )
+
+    expect(result.error).toBeDefined()
+    expect(result.stderr).toContain('already started')
+    expect(server.requests).toHaveLength(1)
+  })
+
   test('pauses, resumes, and explicitly stops through distinct lifecycle routes', async () => {
     server = await startHttpSequenceServer([
       {body: {data: {...campaign(), operationId: 'op_pause'}, success: true}},
