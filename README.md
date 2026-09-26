@@ -1355,6 +1355,24 @@ Check the campaign with `polymorfa campaign view`. When an operation ID is
 returned, follow it with `polymorfa operation wait` or
 `polymorfa operation watch`; see [Operations](#operations).
 
+To create a template campaign, set `templateId` in `campaign.json`. Add
+`variableMapping` when template variables use different recipient field names
+or need a fallback:
+
+```json
+{
+  "name": "September launch",
+  "templateId": "template_123",
+  "variableMapping": {
+    "firstName": {"source": "name", "fallback": "friend"}
+  }
+}
+```
+
+Launch refuses recipients whose variables have no value or fallback. Pass
+`--skip-missing-variables` to skip those recipients instead; their result has
+`lastError` `missing_variable`. The flag is never enabled by default.
+
 Stop is terminal and requires `--yes`. A campaign that has an active delivery
 run answers with an operation ID, as the other lifecycle commands do. A
 campaign with no active run is cancelled immediately and answers without one;

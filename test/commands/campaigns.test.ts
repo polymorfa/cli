@@ -52,6 +52,7 @@ describe('Messaging campaign commands', () => {
         recipientListId: 'recipients_1',
         senderConfig: {session: 'session_1'},
         templateId: 'template_1',
+        variableMapping: {firstName: {source: 'name', fallback: 'friend'}},
       })
       server = await startHttpServer({body: {data: campaign(), success: true}})
 
@@ -67,6 +68,7 @@ describe('Messaging campaign commands', () => {
         recipientListId: 'recipients_1',
         senderConfig: {session: 'session_1'},
         templateId: 'template_1',
+        variableMapping: {firstName: {source: 'name', fallback: 'friend'}},
       })
       expect(server.requests[0]).toMatchObject({
         method: 'POST',
@@ -173,6 +175,28 @@ describe('Messaging campaign commands', () => {
       'Scheduled time must be epoch milliseconds or an ISO 8601 instant',
     )
     expect(server.requests).toHaveLength(0)
+  })
+
+  test('passes the explicit missing-variable skip policy on launch', async () => {
+    server = await startHttpServer({
+      body: {
+        data: {...campaign(), operationId: 'operation_1', status: 'draft'},
+        success: true,
+      },
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'campaign launch campaign_1 --project-slug project_1 --skip-missing-variables --idempotency-key launch_skip_1',
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(server.requests[0]).toMatchObject({
+      body: JSON.stringify({skipMissingVariables: true}),
+      method: 'POST',
+      url: '/messaging/projects/project_1/campaigns/campaign_1/launch',
+    })
   })
 
   test('pauses, resumes, and explicitly stops through distinct lifecycle routes', async () => {
