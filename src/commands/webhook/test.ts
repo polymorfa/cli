@@ -1,4 +1,5 @@
 import {Args, Flags} from '@oclif/core'
+import {PolymorfaValidationError} from '@polymorfa/sdk'
 
 import {readJsonInput} from '../../api/request.js'
 import {BaseCommand} from '../../base-command.js'
@@ -19,7 +20,7 @@ export default class WebhookTest extends BaseCommand {
     'idempotency-key': idempotencyFlag,
     input: Flags.string({
       description:
-        'Read an optional TestWebhookInput JSON object from a file or stdin (-).',
+        'Read optional test input from a file or stdin (-). Project tests accept body and sessionId together; team tests accept only eventType.',
     }),
   }
 
@@ -33,6 +34,7 @@ export default class WebhookTest extends BaseCommand {
             ...record(await readJsonInput(flags.input), 'Webhook test input'),
             eventType: flags.event,
           }
+    validateTestInput(session.context.owner, input)
     const response = await session.client.webhooks.test(args.webhook, input, {
       ...session.requestOptions,
       idempotencyKey: idempotencyKey(flags['idempotency-key']),
@@ -46,5 +48,28 @@ export default class WebhookTest extends BaseCommand {
       resource: {id: deliveryId, type: 'webhook_delivery'},
     })
     this.writeValue(output, `Created test delivery ${deliveryId}.`, flags)
+  }
+}
+
+function validateTestInput(
+  owner: 'organization' | 'project',
+  input: Record<string, unknown>,
+): void {
+  const allowed =
+    owner === 'organization'
+      ? new Set(['eventType'])
+      : new Set(['eventType', 'body', 'sessionId'])
+  const unexpected = Object.keys(input).find((key) => !allowed.has(key))
+  if (unexpected !== undefined) {
+    throw new PolymorfaValidationError(
+      `${owner === 'organization' ? 'Team' : 'Project'} webhook tests do not accept ${unexpected}.`,
+      {code: 'invalid_parameter'},
+    )
+  }
+  if (owner === 'project' && 'body' in input !== 'sessionId' in input) {
+    throw new PolymorfaValidationError(
+      'Project webhook test bodies require sessionId, and sessionId requires a body.',
+      {code: 'invalid_parameter'},
+    )
   }
 }

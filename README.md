@@ -3,9 +3,9 @@
 The official command-line interface for Polymorfa.
 
 The package is under active development. `@polymorfa/cli` is not published to
-npm yet, so `npm install --global @polymorfa/cli` does not work. Once the CLI is
-published, that command will be the supported installation. Until then, install
-from the private source repository, which requires repository access.
+npm yet. When a development prerelease is available, install it explicitly with
+`npm install --global @polymorfa/cli@dev`. Until then, install from the private
+source repository, which requires repository access.
 
 ## Requirements
 
@@ -1551,6 +1551,13 @@ polymorfa webhook delivery attempt list delivery_123 \
   --project project_123
 ```
 
+`webhook test` requires `--event`. Team tests accept that event type only.
+Project tests can also read a JSON object with `body` and `sessionId` from
+`--input`; supply both fields together. The CLI rejects a team body or an
+incomplete project body before requesting a delivery. The `body` must be an
+exact base64-encoded native event for an HMS-enabled Number in the same
+project. See the [webhook guide](https://docs.polymorfa.com/api/webhooks#send-a-test-delivery).
+
 Webhook creation and secret rotation return a signing secret once. JSON and
 noninteractive runs require `--secret-out`; the CLI preflights a new path and
 writes it atomically with mode `0600`. Interactive runs can reveal the secret
@@ -1819,15 +1826,20 @@ polymorfa api /platform/customers --surface platform \
   page bodies and whose `metadata.pages` is the page count.
 - `--slurp` requires `--paginate` and combines the page bodies into one array
   before `--jq` or `--template` runs. Without `--slurp`, filters run on each page.
+  In human output, `--slurp --include` prints an array with each page's body and
+  response metadata. `--json` prints one document with an array of page bodies
+  and the final response metadata plus the page count; `--include` only changes
+  human output.
 - `-q/--jq` runs a jq 1.8 program with an embedded WebAssembly jq, so no `jq`
-  binary is required. Strings print without quotes. The jq runtime has its own
+  binary is required. Strings print without quotes and keep leading and trailing
+  whitespace. The jq runtime has its own
   environment, so `$ENV` does not expose your shell variables or credentials.
 - `-t/--template` renders a Go-style template: `{{.path.to.value}}`,
   `{{range .list}}…{{else}}…{{end}}`, `{{if .value}}…{{else}}…{{end}}`,
   `{{$.root}}` inside a range, `{{json .x}}`, `{{len .x}}`, `{{upper .x}}`,
   `{{lower .x}}`, `{{join ", " .list}}`, string literals such as `{{"\n"}}`,
   comments, and `{{-`/`-}}` whitespace trimming. Missing values render as an
-  empty string.
+  empty string. Quoted strings can contain `}}`.
 - `--jq`, `--template`, and `--json` are mutually exclusive, as are `--include`
   and a filter.
 
