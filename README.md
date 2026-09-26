@@ -38,7 +38,7 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260923115544
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260926005918
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
@@ -1659,7 +1659,6 @@ polymorfa trigger session.restriction_updated --project PROJECT_ID --session my-
   --override restrictionActive=false
 polymorfa trigger template.status --project PROJECT_ID --session my-test-number \
   --override templateStatus=REJECTED --override reason=INVALID_FORMAT
-polymorfa trigger bansafe.enforcement --project PROJECT_ID --session my-test-number
 ```
 
 The trigger prints the event ID. Without `--forward-to`, the listener prints
@@ -1668,8 +1667,8 @@ the same line (`message.received <eventId>`) when the event arrives; with
 with `--forward-secret-out <file>` (JSON forwarding requires the secret file),
 which writes one JSON line per event. Fixtures are
 `message.received`, `message.ack`, `message.failed`, `call.received`,
-`call.missed`, `call.ended`, `session.status`, `session.restriction_updated`, `template.status`,
-`bansafe.enforcement`, and `bansafe.risk_changed`. `--override key=value`
+`call.missed`, `call.ended`, `session.status`, `session.restriction_updated`,
+and `template.status`. `--override key=value`
 sets one payload field and can be repeated; `--text` and `--from` are
 shortcuts. `video` and `restrictionActive` accept only `true` or `false`;
 `durationSeconds` accepts a whole number. Set `restrictionActive=false` to
