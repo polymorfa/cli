@@ -31,7 +31,11 @@ export default class CloudCatalogProducts extends BaseCommand {
 
   async run(): Promise<void> {
     const {flags} = await this.parse(CloudCatalogProducts)
-    if (!flags.waba.trim() || !/^[0-9]+$/.test(flags.catalog) || !flags['graph-version'].trim())
+    if (
+      !flags.waba.trim() ||
+      !/^[0-9]+$/.test(flags.catalog) ||
+      !flags['graph-version'].trim()
+    )
       throw new PolymorfaConfigurationError(
         'Provide a WABA ID, numeric catalog ID, and Graph version.',
       )
