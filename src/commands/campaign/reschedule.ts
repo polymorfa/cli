@@ -53,6 +53,15 @@ export default class CampaignReschedule extends BaseCommand {
         {code: 'invalid_campaign_schedule'},
       )
     }
+    if (
+      scheduledAt !== null &&
+      (scheduledAt <= 0 || scheduledAt > 8_640_000_000_000_000)
+    ) {
+      throw new PolymorfaValidationError(
+        'Scheduled time must be a positive, representable Unix timestamp in milliseconds.',
+        {code: 'invalid_campaign_schedule'},
+      )
+    }
 
     const result = await rescheduleCampaign(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Campaign'}),

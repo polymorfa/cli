@@ -238,6 +238,8 @@ describe('Messaging campaign commands', () => {
     '',
     '--now --scheduled-at 2026-09-02T12:00:00Z',
     '--scheduled-at someday',
+    '--scheduled-at 0',
+    '--scheduled-at 8640000000000001',
     '--scheduled-at 2026-09-02T12:00:00',
   ])(
     'rejects invalid reschedule flags before transport (%s)',
