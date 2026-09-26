@@ -105,18 +105,21 @@ polymorfa doctor
 polymorfa doctor --profile work --json
 ```
 
-`doctor` runs five checks and exits with code 1 if any fails:
+`doctor` runs five checks and exits with code 1 if any fails or credential
+validation is skipped. A successful run needs one server API key. It does not
+change credentials or configuration.
 
-| Check        | What it does                                                                                                                                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `node`       | Requires Node.js 22 or newer.                                                                                                                                                                                                        |
-| `config`     | Loads and validates the profile config and reports the active profile.                                                                                                                                                               |
-| `keyring`    | Reads the selected profile's entry from the operating-system keyring. A locked or unavailable keyring fails, or warns when an environment credential is in use.                                                                      |
-| `api`        | Calls the unauthenticated `/ping` on the configured base URL, without retries.                                                                                                                                                       |
-| `credential` | For a server API key, lists projects as an authenticated ping. `401` fails; `403` warns that the key authenticated but project listing was denied. Project and client tokens are reported as present but are not validated remotely. |
+| Check        | What it does                                                                                                                                                                                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `node`       | Requires Node.js 22 or newer.                                                                                                                                                                                                                                                             |
+| `config`     | Loads and validates the profile config and reports the active profile.                                                                                                                                                                                                                    |
+| `keyring`    | Reads the selected profile's entry from the operating-system keyring. A locked or unavailable keyring fails, or warns when an environment credential is in use.                                                                                                                           |
+| `api`        | Calls the unauthenticated `/ping` on the configured base URL, without retries.                                                                                                                                                                                                            |
+| `credential` | For a server API key, lists projects as an authenticated ping. `401` fails; `403` warns that the key authenticated but project listing was denied. Missing credentials fail. Project and client tokens are reported as present, but remote validation is skipped and the command exits 1. |
 
-Environment credentials take precedence over the active profile, as for other
-commands. Output never contains credential values.
+An explicit `--profile` selects that profile. Otherwise, one environment
+credential takes precedence over the active profile; multiple credential
+environment variables fail as ambiguous. Output never contains credential values.
 
 ## QuickLinks
 
