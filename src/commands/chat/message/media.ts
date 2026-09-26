@@ -27,7 +27,10 @@ export default class ChatMessageMedia extends BaseCommand {
   ]
 
   static override flags = {
-    session: Flags.string({description: 'Messaging Number ID.', required: true}),
+    session: Flags.string({
+      description: 'Messaging Number ID.',
+      required: true,
+    }),
     output: Flags.string({
       char: 'o',
       description: 'Destination file path.',
