@@ -3,9 +3,9 @@
 The official command-line interface for Polymorfa.
 
 The package is under active development. `@polymorfa/cli` is not published to
-npm yet, so `npm install --global @polymorfa/cli` does not work. Once the CLI is
-published, that command will be the supported installation. Until then, install
-from the private source repository, which requires repository access.
+npm yet. When a development prerelease is available, install it explicitly with
+`npm install --global @polymorfa/cli@dev`. Until then, install from the private
+source repository, which requires repository access.
 
 ## Requirements
 
