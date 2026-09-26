@@ -24,6 +24,11 @@ describe('completion commands', () => {
     )
     expect(flags.error, flags.stderr).toBeUndefined()
     expect(flags.stdout.split('\n')).toContain('--json')
+    const negated = await runCommand(
+      'completion suggest --current=--no- -- calls settings set',
+    )
+    expect(negated.error, negated.stderr).toBeUndefined()
+    expect(negated.stdout.split('\n')).toContain('--no-conference-mode')
     expect(fetch).not.toHaveBeenCalled()
     expect(keyring).not.toHaveBeenCalled()
   })

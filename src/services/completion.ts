@@ -1,5 +1,6 @@
 /** Completion uses only local command metadata. It never resolves a profile or calls an API. */
 export interface CompletionFlag {
+  readonly allowNo?: boolean
   readonly char?: string
   readonly hidden?: boolean
   readonly options?: readonly string[]
@@ -116,6 +117,9 @@ function availableFlags(
         ? []
         : [
             [`--${name}`, flag] as [string, CompletionFlag],
+            ...(flag.type === 'boolean' && flag.allowNo
+              ? [[`--no-${name}`, flag] as [string, CompletionFlag]]
+              : []),
             ...(flag.char === undefined || !SAFE_WORD.test(flag.char)
               ? []
               : [[`-${flag.char}`, flag] as [string, CompletionFlag]]),

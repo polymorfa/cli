@@ -22,6 +22,7 @@ const commands: CompletionCommand[] = [
       profile: {type: 'option'},
       surface: {options: ['messaging', 'platform'], type: 'option'},
       token: {type: 'option'},
+      verbose: {allowNo: true, type: 'boolean'},
     },
   },
   {id: 'auth:login', flags: {json: {type: 'boolean'}}},
@@ -37,6 +38,9 @@ describe('shell completion', () => {
       'login',
     ])
     expect(suggestCompletions(commands, ['api'], '--s')).toEqual(['--surface'])
+    expect(suggestCompletions(commands, ['api'], '--no-v')).toEqual([
+      '--no-verbose',
+    ])
     expect(
       suggestCompletions(commands, ['api', '/platform/projects'], ''),
     ).toEqual([])
