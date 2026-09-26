@@ -959,6 +959,10 @@ Both commands filter with `--session`, `--direction` (`inbound` or
 
 ### SIP trunks
 
+`sip-trunk view` displays a null `outbound.fromUser` as automatic caller
+identity. Set `outbound.fromUser` in your trunk JSON when your PBX needs a fixed
+From user.
+
 SIP trunks connect a PBX to WhatsApp calls. They are part of Calls and need no
 enrollment. Commands require a server API key.
 
