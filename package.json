@@ -300,6 +300,9 @@
       "cloud:template": {
         "description": "Manage Meta templates, separate from Polymorfa project drafts."
       },
+      "template": {
+        "description": "Submit saved project templates for approval."
+      },
       "cloud:credentials": {
         "description": "Read redacted credential health and create guided reauthorization links."
       },

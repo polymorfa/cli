@@ -360,6 +360,22 @@ submitting another replacement. Reading requires `sessions:read`; registration
 requires `sessions:manage`, an eligible Official API Number, and Graph access.
 These commands do not enable dynamic Flow publishing.
 
+### Submit a project template
+
+```shell
+polymorfa template submit TEMPLATE_ID --project-slug support --session number_123 --yes
+```
+
+This command uses a server API key or project token with `templates:manage`.
+The saved project template and Number must belong to the same project. The API
+checks the definition before submitting it to Meta. A successful response
+records the submission, not approval. Read the Number's template with
+`polymorfa cloud template get NAME --session number_123 --language en_US` to
+check its status. If the request times out or its response is lost, read the
+template before choosing whether to submit again. The command makes one
+network attempt and requires `--yes` because a second submission can create a
+duplicate provider effect.
+
 ### Official API observations and templates
 
 The `cloud` commands require an organization API key or a project token with the
