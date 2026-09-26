@@ -121,6 +121,32 @@ An explicit `--profile` selects that profile. Otherwise, one environment
 credential takes precedence over the active profile; multiple credential
 environment variables fail as ambiguous. Output never contains credential values.
 
+## Shell completion
+
+Generate and load completion for your shell after installing a CLI source build:
+
+```bash
+source <(polymorfa completion bash)
+```
+
+For Zsh, initialize its completion system before loading the script:
+
+```zsh
+autoload -Uz compinit && compinit
+source <(polymorfa completion zsh)
+```
+
+For Fish:
+
+```fish
+polymorfa completion fish | source
+```
+
+Completion suggests command names, flags, and fixed flag choices from the
+installed CLI. It does not look up profile names, project IDs, credentials, or
+other argument values, and it does not contact the API. Add the command for
+your shell to its startup file if you want completion in later sessions.
+
 ## QuickLinks
 
 A QuickLink is a persistent hosted link that connects one WhatsApp number to a
