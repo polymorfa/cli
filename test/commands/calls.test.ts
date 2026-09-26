@@ -1,4 +1,5 @@
 import {runCommand} from '@oclif/test'
+import {MessagingClient} from '@polymorfa/sdk'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {
@@ -30,6 +31,160 @@ describe('unified calls commands', () => {
     await server?.close()
     server = undefined
   })
+
+  test.skipIf(
+    !(
+      'ringParticipant' in
+      new MessagingClient({credential: {type: 'apiKey', value: API_KEY}}).voip
+    ),
+  )('places one group request and rings an existing participant', async () => {
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          success: true,
+          data: {callId: 'group_1', session: 'support', video: false},
+        },
+        status: 201,
+      },
+      {body: {success: true}, status: 202},
+    ])
+    const group = await apiKey(() =>
+      runCommand(
+        'calls place-group --to +15550100 --to +15550101 --session support --json',
+      ),
+    )
+    expect(group.error).toBeUndefined()
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+      session: 'support',
+      participants: ['+15550100', '+15550101'],
+    })
+    const ring = await apiKey(() =>
+      runCommand('calls ring group_1 +15550100 --json'),
+    )
+    expect(ring.error).toBeUndefined()
+    expect(server.requests[1]?.url).toBe(
+      '/messaging/voip/calls/group_1/participants/ring',
+    )
+    expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
+      to: '+15550100',
+    })
+    expect(server.requests).toHaveLength(2)
+  })
+
+  test.skipIf(
+    'ringParticipant' in
+      new MessagingClient({credential: {type: 'apiKey', value: API_KEY}}).voip,
+  )(
+    'refuses group controls with an older installed SDK before transport',
+    async () => {
+      server = await startHttpServer({body: {success: true}})
+      for (const command of [
+        'calls place-group --to +15550100 --to +15550101 --session support --json',
+        'calls place-group --group-id 9007199254740996 --session support --json',
+        'calls ring call_1 +15550100 --json',
+        'calls react call_1 --connection-id connection-1 --emoji 👍 --json',
+        'calls hand call_1 --connection-id connection-1 --raised --json',
+      ]) {
+        const response = await apiKey(() => runCommand(command))
+        expect(response.error).toBeDefined()
+        expect(`${response.stderr} ${response.error}`).toContain(
+          'published SDK version',
+        )
+      }
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+  test.skipIf(
+    !(
+      'ringParticipant' in
+      new MessagingClient({credential: {type: 'apiKey', value: API_KEY}}).voip
+    ),
+  )('places a stored group by public ID', async () => {
+    server = await startHttpServer({
+      body: {
+        success: true,
+        data: {callId: 'stored-group', session: 'support', video: false},
+      },
+      status: 201,
+    })
+    const result = await apiKey(() =>
+      runCommand(
+        'calls place-group --group-id 9007199254740996 --session support --json',
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+      session: 'support',
+      groupId: '9007199254740996',
+    })
+    expect(server.requests).toHaveLength(1)
+  })
+
+  test('rejects invalid group IDs and mixed destinations before transport', async () => {
+    server = await startHttpServer({body: {success: true}})
+    for (const args of [
+      '--group-id 123@g.us',
+      '--group-id 9007199254740996 --to +15550100',
+      '',
+    ]) {
+      const denied = await apiKey(() =>
+        runCommand(`calls place-group ${args} --session support --json`),
+      )
+      expect(exitCode(denied.error)).toBe(2)
+    }
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('rejects too few or duplicate group participants before transport', async () => {
+    server = await startHttpServer({body: {success: true}})
+    for (const recipients of [
+      '--to +15550100',
+      '--to +15550100 --to +15550100',
+    ]) {
+      const response = await apiKey(() =>
+        runCommand(`calls place-group ${recipients} --session support --json`),
+      )
+      expect(exitCode(response.error)).toBe(2)
+    }
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test.skipIf(
+    !(
+      'sendReaction' in
+      new MessagingClient({credential: {type: 'apiKey', value: API_KEY}}).voip
+    ),
+  )(
+    'sends call reactions and hand state through a locally built SDK',
+    async () => {
+      server = await startHttpServer({body: {success: true}, status: 202})
+      const reaction = await apiKey(() =>
+        runCommand(
+          'calls react call_1 --connection-id connection-1 --emoji 👍 --participant agent --json',
+        ),
+      )
+      expect(reaction.error).toBeUndefined()
+      expect(server.requests[0]?.url).toBe(
+        '/messaging/voip/calls/call_1/reaction',
+      )
+      expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+        connectionId: 'connection-1',
+        emoji: '👍',
+        participant: 'agent',
+      })
+      const hand = await apiKey(() =>
+        runCommand(
+          'calls hand call_1 --connection-id connection-1 --raised --json',
+        ),
+      )
+      expect(hand.error).toBeUndefined()
+      expect(server.requests[1]?.url).toBe('/messaging/voip/calls/call_1/hand')
+      expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
+        connectionId: 'connection-1',
+        raised: true,
+      })
+    },
+  )
 
   test('places a call from a named session with a claim and participant', async () => {
     server = await startHttpServer({

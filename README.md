@@ -762,6 +762,24 @@ polymorfa calls retention set --policy compliance --expected-revision 0
 polymorfa calls retention set --policy custom --days 14 --expected-revision 1 --yes
 ```
 
+This source revision also adds `calls place-group` and `calls ring`. They require
+the matching Calls API and a published SDK version that includes group controls;
+the release must update the pinned SDK dependency before these commands ship.
+
+```shell
+polymorfa calls place-group --session support --to +15550100 --to +15550101
+polymorfa calls place-group --session support --group-id 9007199254740996
+polymorfa calls ring call_123 +15550101
+```
+
+Group placement accepts 2 to 31 distinct recipients and checks every recipient's
+calling permissions. Use `--group-id` instead of `--to` to call every remote
+member of an existing group using its public ID. The Number must belong to the
+group, and it must have 2 to 31 remote members. Membership changes during
+placement refuse the call. Group calls require a Linked Device Number. `calls ring`
+only rings a non-connected participant already in the call roster; successful
+submission does not mean that the participant answered.
+
 Every inbound call rings until a participant answers or declines it. The CLI
 never answers or declines on its own.
 
@@ -860,7 +878,9 @@ placed call that is still ringing. If the `--output` file cannot be written,
 or the `--input` file cannot be read, the command leaves the call and exits
 with code 2. It exits with code 2 before connecting when the `--input` file
 cannot be opened or when `--input` and `--output` name the same file. The
-command carries audio only.
+command carries audio only. `--muted` receives audio with this connection muted;
+it cannot be combined with `--input`. The command refuses `--muted` before
+connecting when its pinned Calls SDK lacks media-control support.
 
 Convert audio with any tool that writes raw PCM, for example:
 
@@ -1000,6 +1020,10 @@ Both commands filter with `--session`, `--direction` (`inbound` or
   number.
 
 ### SIP trunks
+
+`sip-trunk view` displays a null `outbound.fromUser` as automatic caller
+identity. Set `outbound.fromUser` in your trunk JSON when your PBX needs a fixed
+From user.
 
 SIP trunks connect a PBX to WhatsApp calls. They are part of Calls and need no
 enrollment. Commands require a server API key.
@@ -2063,3 +2087,42 @@ Invocation input contains an optional `deploymentId`, `trigger` (`test` or `http
 Use `function invocation list FUNCTION_UUID` and `function invocation view FUNCTION_UUID INVOCATION_UUID` to reconcile a result. Invocation inputs, responses and customer log text are not retained. `--json` includes the transient result when the initial invocation returns it. The default display prints metadata and HTTP status without response content. An uncertain, failed, running or unavailable invocation, or an HTTP response of 400 or higher, exits with code 8 after printing its receipt. Check customer effects before using a new key unless `retryable` explicitly says execution did not start.
 
 Function, deployment, secret and invocation lists accept `--limit 1..100` and `--before UUID`. Deployment lists return metadata without source, including with `--json`. `function deployment view` exposes source with `--json`; secret reads always return metadata.
+
+### Call reaction and hand commands
+
+`calls react CALL --connection-id CONNECTION --emoji '👍'` sends a reaction;
+`--clear` clears it. `calls hand CALL --connection-id CONNECTION --raised`
+raises the Number's hand; omit `--raised` to lower it. A server credential may
+name `--participant`; a client token acts as its own participant. The named
+connection must still be attached to the call.
+
+These source commands require the SDK release containing `sendReaction` and
+`setHandRaised`, followed by an exact registry dependency update. Until that
+release is pinned, they return a specific SDK dependency error. Local package
+tests do not establish published availability. Reactions are transient and
+are never retried automatically. Hand state is shared by the Number's clients.
+
+The source group-placement and participant re-ring commands also require the
+matching SDK publication. Until its exact registry version is pinned, they
+refuse before sending a request. Testing a local package does not establish
+registry or deployed availability.
+
+### Stored call records
+
+```sh
+polymorfa calls list --outcome missed --limit 25 --json
+polymorfa calls list --outcome missed --limit 25 --cursor CURSOR --json
+polymorfa calls view CALL_ID --json
+```
+
+`calls list` reads one page through the existing Calls records API. Reuse the
+same filters when following a cursor. These reads need `sessions:read` and a
+server credential. Project tokens only read calls originally owned by their
+project. Human output labels unmeasured duration as `unknown`.
+
+The source `calls view` command requires the SDK publication containing
+`Client.calls.retrieve` and the matching API deployment. Until that exact
+registry release is pinned, it reports an SDK dependency error before transport.
+Its JSON output includes bounded event history, participant and connection
+lifetimes, and allowlisted diagnostics. It does not retrieve media or webhook
+deliveries. Local package tests do not establish published availability.
