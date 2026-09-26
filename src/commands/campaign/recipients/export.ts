@@ -19,20 +19,20 @@ export default class CampaignRecipientsExport extends BaseCommand {
 
   static override description = `Export campaign recipient outcomes as CSV.
 
-The command reads cursor pages with the same filters and writes one header. Use --max-pages to stop early; the remaining cursor is printed on standard error. Resume with --cursor and the same filters. This read reflects each recipient when its page was fetched.`
+Unfiltered exports read cursor pages and write one header. Use --max-pages to stop early; the remaining cursor is printed on standard error. Resume with --cursor. Filtered exports contain up to 1,000 matches in one request and return an error for larger results. Clear filters to export all recipients, then filter the file locally. Each page reflects outcomes when fetched.`
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> campaign_1 --project-slug launch --output recipients.csv',
-    '<%= config.bin %> <%= command.id %> campaign_1 --project-slug launch --status failed --reason send_failed --max-pages 1',
+    '<%= config.bin %> <%= command.id %> campaign_1 --project-slug launch --status failed --reason send_failed',
   ]
 
   static override flags = {
     cursor: Flags.string({
-      description: 'Continue from an earlier export cursor.',
+      description: 'Continue from an earlier unfiltered export cursor.',
     }),
     force: Flags.boolean({description: 'Overwrite an existing --output file.'}),
     limit: Flags.integer({
-      description: 'Rows per API page.',
+      description: 'Rows per unfiltered API page. Filtered exports require 1000.',
       min: 1,
       max: 1000,
       default: 1000,

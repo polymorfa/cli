@@ -160,6 +160,11 @@ export async function exportCampaignRecipients(
   params: ExportCampaignRecipientsParams,
   maxPages = 500,
 ): Promise<CampaignRecipientCsvResult> {
+  const filtered = params.status !== undefined || params.reason !== undefined
+  if (filtered && (params.cursor !== undefined || (params.limit !== undefined && params.limit !== 1000)))
+    throw new PolymorfaValidationError(
+      'Filtered exports use one page of up to 1,000 matches. Remove --cursor and use --limit 1000.',
+    )
   const chunks: string[] = []
   let header: string | null = null
   let cursor = params.cursor
@@ -174,6 +179,10 @@ export async function exportCampaignRecipients(
       },
     )
     const {csv, nextCursor} = response.data
+    if (filtered && nextCursor !== null)
+      throw new PolymorfaValidationError(
+        'The filtered export returned an unexpected cursor. No partial CSV was written.',
+      )
     const headerEnd = csv.indexOf('\r\n')
     if (headerEnd < 0)
       throw new PolymorfaValidationError(

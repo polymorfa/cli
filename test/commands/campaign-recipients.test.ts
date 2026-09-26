@@ -70,7 +70,7 @@ describe('Campaign recipient commands', () => {
     expect(server.requests[0]?.url).toContain('reason=opted_out')
   })
 
-  test('exports paged CSV with one header and a stable filter', async () => {
+  test('exports unfiltered CSV pages with one header', async () => {
     server = await startHttpSequenceServer([
       {
         rawBody: 'recipientId,phone\r\nr1,+14155550100\r\n',
@@ -86,7 +86,7 @@ describe('Campaign recipient commands', () => {
     ])
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'campaign recipients export campaign_1 --project-slug project_1 --reason send_failed --limit 1',
+        'campaign recipients export campaign_1 --project-slug project_1 --limit 1',
       ),
     )
     expect(result.error).toBeUndefined()
@@ -94,9 +94,28 @@ describe('Campaign recipient commands', () => {
       'recipientId,phone\r\nr1,+14155550100\r\nr2,+14155550101\r\n',
     )
     expect(server.requests.map((request) => request.url)).toEqual([
-      '/messaging/projects/project_1/campaigns/campaign_1/recipients/export?reason=send_failed&limit=1',
-      '/messaging/projects/project_1/campaigns/campaign_1/recipients/export?reason=send_failed&cursor=next_2&limit=1',
+      '/messaging/projects/project_1/campaigns/campaign_1/recipients/export?limit=1',
+      '/messaging/projects/project_1/campaigns/campaign_1/recipients/export?cursor=next_2&limit=1',
     ])
+  })
+
+  test('exports one filtered page and rejects filtered cursors before requesting', async () => {
+    server = await startHttpServer({
+      rawBody: "recipientId,phone\r\nr1,'+14155550100\r\n",
+      headers: {'content-type': 'text/csv'},
+    })
+    const result = await apiKeyEnvironment(() =>
+      runCommand('campaign recipients export campaign_1 --project-slug project_1 --reason send_failed'),
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toBe("recipientId,phone\r\nr1,'+14155550100\r\n")
+    expect(server.requests).toHaveLength(1)
+
+    const invalid = await apiKeyEnvironment(() =>
+      runCommand('campaign recipients export campaign_1 --project-slug project_1 --reason send_failed --cursor c2'),
+    )
+    expect(invalid.error).toBeDefined()
+    expect(server.requests).toHaveLength(1)
   })
 
   test('refuses to replace an export file before making an API request', async () => {

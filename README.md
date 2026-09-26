@@ -1434,11 +1434,15 @@ with `--status queued|sending|sent|delivered|read|failed|skipped` and `--reason`
 for a normalized failure reason. A recipient suppressed by an opt-out appears
 as `skipped` with `failureReason` and `lastError` `opted_out`.
 
-`recipients export` fetches up to 1,000 rows per API page and joins them into
-one CSV header. It writes to standard output unless `--output` names a file;
-an existing file requires `--force`. Use `--max-pages` to stop early, then pass
-the cursor printed on standard error back with `--cursor` and the same filters.
-Each page reflects recipient outcomes when that page was read.
+`recipients export` fetches unfiltered pages of up to 1,000 rows and joins them
+under one CSV header. It writes to standard output unless `--output` names a
+file; an existing file requires `--force`. Use `--max-pages` to stop early,
+then resume with the cursor printed on standard error. A filtered export
+(`--status` or `--reason`) reads one page of up to 1,000 matches; a larger
+filtered result fails without writing a partial file. Clear filters to export
+all recipients, then filter the file locally. Each page reflects recipient
+outcomes when read. Phone cells have a leading apostrophe to preserve their
+text in spreadsheets; strip it when processing phone values in code.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
 event, history, or replay route on the Messaging surface. The CLI does not
