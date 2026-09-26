@@ -1,3 +1,7 @@
+import {
+  assertCallMediaMuteSupported,
+  muteCallMedia,
+} from './call-media-controls.js'
 import {randomBytes} from 'node:crypto'
 
 import {
@@ -914,6 +918,7 @@ export async function watchCalls(
 }
 
 export interface CallMediaInput extends CallsClientInput {
+  readonly muted?: boolean | undefined
   /** Answer this inbound call; without it, the next inbound call. */
   readonly callId?: string | undefined
   readonly exclusive?: boolean | undefined
@@ -974,6 +979,7 @@ export async function bridgeCallMedia(
   const target =
     input.place === undefined ? undefined : validateCallTarget(input.place)
   if (input.callId !== undefined) validateCallId(input.callId)
+  if (input.muted === true) assertCallMediaMuteSupported()
   const client = createCallsClient(input, 'Carrying call media')
 
   let bytesReceived = 0
@@ -1071,36 +1077,41 @@ export async function bridgeCallMedia(
       input.output(bytes)
     })
     call.once('connected', () => {
-      status({
-        type: 'connected',
-        callId: call.id,
-        connectionId: call.connectionId,
-        sampleRate: call.audio.sampleRate,
-      })
-      if (input.input === undefined) return
-      pacePcm({
-        input: input.input,
-        isClosed: () => finished || call.ended,
-        now: input.now ?? Date.now,
-        sampleRate: () => call.audio.sampleRate,
-        write: (pcm) => {
-          if (call.audio.write(pcm)) bytesSent += pcm.length * 2
-        },
-      }).then(
-        (bytes) => {
-          if (finished || call.ended) return
-          status({type: 'input_ended', bytes})
-          if (input.leaveOnEnd === true) hangUp(call)
-        },
-        (error: unknown) => {
-          status({
-            type: 'notice',
-            code: 'input_failed',
-            message: error instanceof Error ? error.message : String(error),
-          })
-          hangUp(call)
-        },
-      )
+      const start = async (): Promise<void> => {
+        if (input.muted === true) await muteCallMedia(call)
+        if (finished || call.ended) return
+        status({
+          type: 'connected',
+          callId: call.id,
+          connectionId: call.connectionId,
+          sampleRate: call.audio.sampleRate,
+        })
+        if (input.input === undefined) return
+        pacePcm({
+          input: input.input,
+          isClosed: () => finished || call.ended,
+          now: input.now ?? Date.now,
+          sampleRate: () => call.audio.sampleRate,
+          write: (pcm) => {
+            if (call.audio.write(pcm)) bytesSent += pcm.length * 2
+          },
+        }).then(
+          (bytes) => {
+            if (finished || call.ended) return
+            status({type: 'input_ended', bytes})
+            if (input.leaveOnEnd === true) hangUp(call)
+          },
+          (error: unknown) => {
+            status({
+              type: 'notice',
+              code: 'input_failed',
+              message: error instanceof Error ? error.message : String(error),
+            })
+            hangUp(call)
+          },
+        )
+      }
+      void start().catch((error: unknown) => finish(callsClientError(error)))
     })
   }
 

@@ -802,7 +802,9 @@ placed call that is still ringing. If the `--output` file cannot be written,
 or the `--input` file cannot be read, the command leaves the call and exits
 with code 2. It exits with code 2 before connecting when the `--input` file
 cannot be opened or when `--input` and `--output` name the same file. The
-command carries audio only.
+command carries audio only. `--muted` receives audio with this connection muted;
+it cannot be combined with `--input`. The command refuses `--muted` before
+connecting when its pinned Calls SDK lacks media-control support.
 
 Convert audio with any tool that writes raw PCM, for example:
 
