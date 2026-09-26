@@ -8,7 +8,8 @@ export default class CloudMarketingStatus extends BaseCommand {
 
   static override flags = {
     waba: Flags.string({
-      description: 'WhatsApp Business Account ID from an Official API Number in your project.',
+      description:
+        'WhatsApp Business Account ID from an Official API Number in your project.',
       required: true,
     }),
     'graph-version': Flags.string({
@@ -20,7 +21,9 @@ export default class CloudMarketingStatus extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(CloudMarketingStatus)
     if (!flags.waba.trim() || !flags['graph-version'].trim())
-      throw new PolymorfaConfigurationError('Provide a WABA ID and Graph version.')
+      throw new PolymorfaConfigurationError(
+        'Provide a WABA ID and Graph version.',
+      )
     const client = await this.messagingClient(flags, {
       serverCredentialOnly: 'Official API',
     })
