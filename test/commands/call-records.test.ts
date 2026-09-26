@@ -121,7 +121,9 @@ describe('stored call record commands', () => {
       expect(server.requests[0]?.url).toBe(
         `/platform/calls/call_1?projectId=${PROJECT}`,
       )
-      expect(JSON.parse(result.stdout).data).toEqual(detail)
+      expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual(
+        detail,
+      )
       await server.close()
       server = await startHttpServer({body: {data: {call: {callId: 'call_1'}}}})
       const invalid = await run('calls view call_1 --json')

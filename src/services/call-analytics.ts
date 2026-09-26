@@ -155,9 +155,12 @@ export class CallAnalyticsApi {
       typeof data.call.live !== 'boolean' ||
       !Array.isArray(data.history?.events) ||
       !data.history.events.every(
-        (event) =>
+        (event: unknown) =>
           event !== null &&
           typeof event === 'object' &&
+          'eventId' in event &&
+          'type' in event &&
+          'occurredAt' in event &&
           typeof event.eventId === 'string' &&
           typeof event.type === 'string' &&
           typeof event.occurredAt === 'string',
