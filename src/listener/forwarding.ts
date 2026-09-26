@@ -51,6 +51,8 @@ export interface ForwardEventInput {
   readonly targets: readonly string[]
   readonly allowRemote?: boolean
   readonly followRedirects?: boolean
+  readonly headers?: Readonly<Record<string, string>>
+  readonly skipVerify?: boolean
   readonly signal?: AbortSignal
 }
 
@@ -91,7 +93,7 @@ export async function validateForwardDestination(
   value: string,
   allowRemote: boolean,
   resolveHost: DestinationResolver = resolve,
-): Promise<{address: string; family: 4 | 6; url: URL}> {
+): Promise<{address: string; family: 4 | 6; loopback: boolean; url: URL}> {
   let url: URL
   try {
     url = new URL(value)
@@ -134,7 +136,56 @@ export async function validateForwardDestination(
   const selected = addresses[0]
   if (!selected)
     throw new ForwardingError('The forwarding destination has no address.')
-  return {address: selected.address, family: selected.family, url}
+  return {
+    address: selected.address,
+    family: selected.family,
+    loopback: allLoopback,
+    url,
+  }
+}
+
+const RESERVED_FORWARD_HEADERS = new Set([
+  'accept',
+  'authorization',
+  'connection',
+  'content-length',
+  'content-type',
+  'cookie',
+  'host',
+  'proxy-authorization',
+  'te',
+  'trailer',
+  'transfer-encoding',
+  'upgrade',
+])
+
+export function parseForwardHeaders(
+  values: readonly string[],
+): Record<string, string> {
+  const headers = Object.create(null) as Record<string, string>
+  for (const value of values) {
+    const separator = value.indexOf(':')
+    const name = value.slice(0, separator).trim()
+    const rawValue = value.slice(separator + 1)
+    const headerValue = rawValue.trim()
+    if (
+      separator < 1 ||
+      !/^[!#$%&'*+.^_`|~0-9A-Za-z-]+$/.test(name) ||
+      [...rawValue].some((character) => {
+        const code = character.charCodeAt(0)
+        return code < 32 || code === 127
+      }) ||
+      RESERVED_FORWARD_HEADERS.has(name.toLowerCase()) ||
+      name.toLowerCase().startsWith('polymorfa-')
+    ) {
+      throw new ForwardingError('A forwarding header is invalid or reserved.')
+    }
+    const key = name.toLowerCase()
+    if (Object.hasOwn(headers, key))
+      throw new ForwardingError('A forwarding header was repeated.')
+    headers[key] = headerValue
+  }
+  return headers
 }
 
 export async function forwardEvent(input: ForwardEventInput): Promise<void> {
@@ -159,6 +210,11 @@ async function forwardTarget(
       target,
       input.allowRemote ?? false,
     )
+    if (input.skipVerify && !destination.loopback) {
+      throw new ForwardingError(
+        '--skip-verify requires a loopback forwarding destination.',
+      )
+    }
     const timestamp = Math.floor(Date.now() / 1000)
     let response: ResponseSummary
     try {
@@ -186,6 +242,15 @@ async function forwardTarget(
         throw new ForwardingError('The forwarding redirect limit was exceeded.')
       }
       target = new URL(response.location, destination.url).toString()
+      if (
+        input.headers &&
+        Object.keys(input.headers).length > 0 &&
+        new URL(target).origin !== destination.url.origin
+      ) {
+        throw new ForwardingError(
+          'Custom forwarding headers cannot follow a cross-origin redirect.',
+        )
+      }
       redirects += 1
       attempt -= 1
       continue
@@ -217,6 +282,7 @@ async function forwardTarget(
 interface ResolvedDestination {
   readonly address: string
   readonly family: 4 | 6
+  readonly loopback: boolean
   readonly url: URL
 }
 
@@ -238,6 +304,7 @@ function send(
       {
         family: destination.family,
         headers: {
+          ...input.headers,
           Accept: '*/*',
           'Content-Length': input.body.byteLength,
           'Content-Type': 'application/json',
@@ -254,6 +321,7 @@ function send(
         method: 'POST',
         path: `${destination.url.pathname}${destination.url.search}`,
         port: destination.url.port || undefined,
+        rejectUnauthorized: !(input.skipVerify && destination.loopback),
         servername: hostname(destination.url),
         signal: input.signal,
         timeout: 10_000,

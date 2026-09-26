@@ -8,6 +8,7 @@ import {loadCheckpoint} from '../listener/checkpoint.js'
 import {
   createForwardingSecret,
   forwardEvent,
+  parseForwardHeaders,
   validateForwardDestination,
 } from '../listener/forwarding.js'
 import {ListenerProtocolClient} from '../listener/protocol.js'
@@ -44,6 +45,17 @@ export default class Listen extends BaseCommand {
     'forward-to': Flags.string({
       description: 'Forward exact event payloads to this destination.',
       multiple: true,
+    }),
+    header: Flags.string({
+      char: 'H',
+      dependsOn: ['forward-to'],
+      description: 'Add a custom header to forwarded requests (Name: value).',
+      multiple: true,
+    }),
+    'skip-verify': Flags.boolean({
+      dependsOn: ['forward-to'],
+      description:
+        'Accept a self-signed HTTPS certificate from a loopback forwarding destination.',
     }),
     from: Flags.string({
       description: 'Resume after this opaque listener cursor.',
@@ -116,9 +128,10 @@ export default class Listen extends BaseCommand {
     }
 
     const targets = flags['forward-to'] ?? []
+    const headers = parseForwardHeaders(flags.header ?? [])
     let forwardingSecret: string | undefined
     if (targets.length > 0) {
-      await Promise.all(
+      const destinations = await Promise.all(
         targets.map((target) =>
           validateForwardDestination(
             target,
@@ -126,6 +139,15 @@ export default class Listen extends BaseCommand {
           ),
         ),
       )
+      if (
+        flags['skip-verify'] &&
+        destinations.some(({loopback}) => !loopback)
+      ) {
+        throw new CliConditionError(
+          'action_required',
+          '--skip-verify requires loopback forwarding destinations.',
+        )
+      }
       const interactive =
         process.stdin.isTTY === true && process.stderr.isTTY === true
       if (
@@ -173,7 +195,9 @@ export default class Listen extends BaseCommand {
                   eventId: stringField(event, 'id'),
                   eventType: stringField(event, 'type'),
                   followRedirects: flags['follow-redirects'],
+                  headers,
                   secret: forwardingSecret,
+                  skipVerify: flags['skip-verify'],
                   targets,
                   signal: controller.signal,
                 }),

@@ -1,6 +1,8 @@
 import {createServer} from 'node:http'
+import {createServer as createHttpsServer} from 'node:https'
 import {createHmac} from 'node:crypto'
 import {once} from 'node:events'
+import {readFile} from 'node:fs/promises'
 
 import {afterEach, describe, expect, test, vi} from 'vitest'
 
@@ -8,11 +10,14 @@ import {
   createForwardingSecret,
   delayForRetry,
   forwardEvent,
+  parseForwardHeaders,
   signLocalPayload,
   validateForwardDestination,
 } from '../../src/listener/forwarding.js'
 
-const servers: ReturnType<typeof createServer>[] = []
+const servers: Array<
+  ReturnType<typeof createServer> | ReturnType<typeof createHttpsServer>
+> = []
 
 afterEach(async () => {
   vi.restoreAllMocks()
@@ -27,6 +32,97 @@ afterEach(async () => {
 })
 
 describe('local event forwarding', () => {
+  test('validates custom header names and protects signing and framing headers', () => {
+    expect(parseForwardHeaders(['X-Mode: local', 'X-Path: a:b'])).toEqual({
+      'x-mode': 'local',
+      'x-path': 'a:b',
+    })
+    for (const value of [
+      'Authorization: Bearer hidden',
+      'Cookie: session=hidden',
+      'Content-Length: 0',
+      'Polymorfa-Local-Signature: forged',
+      'X-Mode: ok\r\nInjected: true',
+      'invalid',
+    ]) {
+      expect(() => parseForwardHeaders([value])).toThrow()
+    }
+    expect(() => parseForwardHeaders(['X-Mode: a', 'x-mode: b'])).toThrow(
+      'repeated',
+    )
+  })
+
+  test('accepts a self-signed loopback HTTPS target only with skipVerify', async () => {
+    const [key, cert] = await Promise.all([
+      readFile(new URL('../fixtures/listener-tls/key.pem', import.meta.url)),
+      readFile(new URL('../fixtures/listener-tls/cert.pem', import.meta.url)),
+    ])
+    let receivedHeader: string | undefined
+    const server = createHttpsServer({key, cert}, (request, response) => {
+      receivedHeader = request.headers['x-mode'] as string | undefined
+      request.resume()
+      response.writeHead(204).end()
+    })
+    servers.push(server)
+    server.listen(0, '127.0.0.1')
+    await once(server, 'listening')
+    const address = server.address()
+    if (!address || typeof address === 'string')
+      throw new Error('missing address')
+    const input = {
+      body: new TextEncoder().encode('{}'),
+      eventId: 'evt_1',
+      eventType: 'message.received',
+      headers: parseForwardHeaders(['X-Mode: local']),
+      secret: Buffer.alloc(32, 7).toString('base64url'),
+      targets: [`https://127.0.0.1:${address.port}/hook`],
+    }
+    await expect(forwardEvent(input)).rejects.toThrow('could not be reached')
+    await expect(
+      forwardEvent({...input, skipVerify: true}),
+    ).resolves.toBeUndefined()
+    expect(receivedHeader).toBe('local')
+  })
+
+  test('does not send custom headers through an origin-changing redirect', async () => {
+    let reachedSecond = false
+    const second = createServer((_request, response) => {
+      reachedSecond = true
+      response.writeHead(204).end()
+    })
+    servers.push(second)
+    second.listen(0, '127.0.0.1')
+    await once(second, 'listening')
+    const secondAddress = second.address()
+    if (!secondAddress || typeof secondAddress === 'string')
+      throw new Error('missing address')
+    const first = createServer((_request, response) => {
+      response
+        .writeHead(307, {
+          Location: `http://127.0.0.1:${secondAddress.port}/hook`,
+        })
+        .end()
+    })
+    servers.push(first)
+    first.listen(0, '127.0.0.1')
+    await once(first, 'listening')
+    const firstAddress = first.address()
+    if (!firstAddress || typeof firstAddress === 'string')
+      throw new Error('missing address')
+    await expect(
+      forwardEvent({
+        body: new TextEncoder().encode('{}'),
+        eventId: 'evt_1',
+        eventType: 'message.received',
+        followRedirects: true,
+        headers: parseForwardHeaders(['X-Mode: local']),
+        secret: Buffer.alloc(32, 7).toString('base64url'),
+        targets: [`http://127.0.0.1:${firstAddress.port}/hook`],
+      }),
+    ).rejects.toThrow('cross-origin')
+    expect(reachedSecond).toBe(false)
+  })
+
   test('forwards exact bytes to loopback with a verifiable local signature', async () => {
     let received:
       | {body: Buffer; headers: Record<string, string | string[] | undefined>}
