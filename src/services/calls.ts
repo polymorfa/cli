@@ -142,18 +142,23 @@ export interface PlaceCallInput {
   readonly exclusive?: boolean | undefined
   readonly participant?: string | undefined
   readonly session?: string | undefined
-  readonly to: string | readonly string[]
+  readonly to?: string | readonly string[] | undefined
+  readonly groupId?: string | undefined
   readonly video?: boolean | undefined
 }
 
 interface GroupCallsResource {
-  place(input: {
-    participants: readonly string[]
-    session?: string
-    video?: boolean
-    exclusive?: boolean
-    participant?: string
-  }): ReturnType<MessagingClient['voip']['place']>
+  place(
+    input: (
+      | {participants: readonly string[]; groupId?: never}
+      | {groupId: string; participants?: never}
+    ) & {
+      session?: string
+      video?: boolean
+      exclusive?: boolean
+      participant?: string
+    },
+  ): ReturnType<MessagingClient['voip']['place']>
   ringParticipant(
     callId: string,
     input: {to: string},
@@ -182,11 +187,23 @@ export async function placeCall(
   credential: CallsCredential,
   input: PlaceCallInput,
 ): Promise<CallsResult<VoipPlaceCallResult>> {
+  const groupId = input.groupId
+  if (
+    groupId !== undefined &&
+    (input.to !== undefined || !/^[1-9][0-9]{0,18}$/.test(groupId))
+  ) {
+    throw new PolymorfaValidationError(
+      'Provide one public group ID without --to.',
+    )
+  }
+  if (groupId === undefined && input.to === undefined)
+    throw new PolymorfaValidationError('Provide --to or --group-id.')
   const to =
     typeof input.to === 'string'
       ? validateCallTarget(input.to)
-      : input.to.map((target) => validateCallTarget(target))
+      : input.to?.map((target) => validateCallTarget(target))
   if (
+    to !== undefined &&
     typeof to !== 'string' &&
     (to.length < 2 || to.length > 31 || new Set(to).size !== to.length)
   ) {
@@ -207,9 +224,11 @@ export async function placeCall(
     ...(participant === undefined ? {} : {participant}),
   }
   const response = await callRequest(() =>
-    typeof to === 'string'
-      ? client.voip.place({to, ...options})
-      : groupResource(client.voip).place({participants: to, ...options}),
+    groupId
+      ? groupResource(client.voip).place({groupId, ...options})
+      : typeof to === 'string'
+        ? client.voip.place({to, ...options})
+        : groupResource(client.voip).place({participants: to!, ...options}),
   )
   return result(response.data.data, response.metadata)
 }

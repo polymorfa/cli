@@ -80,6 +80,7 @@ describe('unified calls commands', () => {
       server = await startHttpServer({body: {success: true}})
       for (const command of [
         'calls place-group --to +15550100 --to +15550101 --session support --json',
+        'calls place-group --group-id 9007199254740996 --session support --json',
         'calls ring call_1 +15550100 --json',
         'calls react call_1 --connection-id connection-1 --emoji 👍 --json',
         'calls hand call_1 --connection-id connection-1 --raised --json',
@@ -93,6 +94,46 @@ describe('unified calls commands', () => {
       expect(server.requests).toHaveLength(0)
     },
   )
+  test.skipIf(
+    !(
+      'ringParticipant' in
+      new MessagingClient({credential: {type: 'apiKey', value: API_KEY}}).voip
+    ),
+  )('places a stored group by public ID', async () => {
+    server = await startHttpServer({
+      body: {
+        success: true,
+        data: {callId: 'stored-group', session: 'support', video: false},
+      },
+      status: 201,
+    })
+    const result = await apiKey(() =>
+      runCommand(
+        'calls place-group --group-id 9007199254740996 --session support --json',
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+      session: 'support',
+      groupId: '9007199254740996',
+    })
+    expect(server.requests).toHaveLength(1)
+  })
+
+  test('rejects invalid group IDs and mixed destinations before transport', async () => {
+    server = await startHttpServer({body: {success: true}})
+    for (const args of [
+      '--group-id 123@g.us',
+      '--group-id 9007199254740996 --to +15550100',
+      '',
+    ]) {
+      const denied = await apiKey(() =>
+        runCommand(`calls place-group ${args} --session support --json`),
+      )
+      expect(exitCode(denied.error)).toBe(2)
+    }
+    expect(server.requests).toHaveLength(0)
+  })
 
   test('rejects too few or duplicate group participants before transport', async () => {
     server = await startHttpServer({body: {success: true}})
