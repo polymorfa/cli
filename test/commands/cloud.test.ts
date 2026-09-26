@@ -83,6 +83,42 @@ describe('Official API commands', () => {
     expect(JSON.parse(server.requests[0]!.body)).toEqual(body)
   })
 
+  test('uses the explicit template project when a different directory is linked', async () => {
+    directory = await mkdtemp(
+      join(homedir(), '.polymorfa-agent-work', 'cloud-cli-test-'),
+    )
+    await writeFile(
+      join(directory, 'polymorfa.json'),
+      JSON.stringify({
+        project: '11111111-1111-4111-8111-111111111111',
+        version: 1,
+      }),
+    )
+    server = await startHttpServer({
+      status: 202,
+      body: {success: true, data: {accepted: true}},
+    })
+    const previousDirectory = process.cwd()
+    try {
+      process.chdir(directory)
+      const result = await credential(
+        () =>
+          runCommand(
+            'template submit template_123 --project-slug support --session number_123 --yes --json',
+          ),
+        'project',
+      )
+      expect(result.error, result.stderr).toBeUndefined()
+      expect(server.requests).toHaveLength(1)
+      expect(server.requests[0]).toMatchObject({
+        method: 'POST',
+        url: '/messaging/projects/support/templates/template_123/submit',
+      })
+    } finally {
+      process.chdir(previousDirectory)
+    }
+  })
+
   test('edits a selected template language and reports acceptance', async () => {
     directory = await mkdtemp(
       join(homedir(), '.polymorfa-agent-work', 'cloud-cli-test-'),
