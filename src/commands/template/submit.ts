@@ -39,6 +39,7 @@ export default class TemplateSubmit extends BaseCommand {
 
     const client = await this.messagingClient(flags, {
       serverCredentialOnly: 'Project template submission',
+      ignoreProjectLink: true,
     })
     const response = await client.templates.submit(
       flags['project-slug'],
