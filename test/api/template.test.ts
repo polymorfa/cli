@@ -38,6 +38,18 @@ describe('api template', () => {
     )
   })
 
+  test('keeps closing braces inside quoted action strings', () => {
+    expect(renderTemplate('{{"a}}b"}}/{{join "}}" .data.0.tags}}', data)).toBe(
+      'a}}b/x}}y',
+    )
+    expect(renderTemplate('{{"escaped \\"}} still quoted"}}', data)).toBe(
+      'escaped "}} still quoted',
+    )
+    expect(renderTemplate('a{{/* }} stays in the comment */}}b', data)).toBe(
+      'ab',
+    )
+  })
+
   test('rejects malformed templates', () => {
     expect(() => renderTemplate('{{range .data}}', data)).toThrow(
       'missing {{end}}',
