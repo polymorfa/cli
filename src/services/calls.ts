@@ -146,6 +146,37 @@ export interface PlaceCallInput {
   readonly video?: boolean | undefined
 }
 
+interface GroupCallsResource {
+  place(input: {
+    participants: readonly string[]
+    session?: string
+    video?: boolean
+    exclusive?: boolean
+    participant?: string
+  }): ReturnType<MessagingClient['voip']['place']>
+  ringParticipant(
+    callId: string,
+    input: {to: string},
+  ): Promise<{data: SuccessResponse; metadata: ResponseMetadata}>
+}
+
+function groupResource(value: unknown): GroupCallsResource {
+  if (
+    value === null ||
+    typeof value !== 'object' ||
+    !('place' in value) ||
+    typeof value.place !== 'function' ||
+    !('ringParticipant' in value) ||
+    typeof value.ringParticipant !== 'function'
+  ) {
+    throw new PolymorfaConfigurationError(
+      'Group calls and participant re-ring require a published SDK version with these controls. This CLI build has not received that SDK release.',
+      'sdk',
+    )
+  }
+  return value as GroupCallsResource
+}
+
 export async function placeCall(
   client: MessagingClient,
   credential: CallsCredential,
@@ -169,14 +200,16 @@ export async function placeCall(
     'Placing a call',
   )
   const participant = validateParticipant(credential, input.participant)
+  const options = {
+    ...(session === undefined ? {} : {session}),
+    ...(input.video === undefined ? {} : {video: input.video}),
+    ...(input.exclusive === undefined ? {} : {exclusive: input.exclusive}),
+    ...(participant === undefined ? {} : {participant}),
+  }
   const response = await callRequest(() =>
-    client.voip.place({
-      ...(typeof to === 'string' ? {to} : {participants: to}),
-      ...(session === undefined ? {} : {session}),
-      ...(input.video === undefined ? {} : {video: input.video}),
-      ...(input.exclusive === undefined ? {} : {exclusive: input.exclusive}),
-      ...(participant === undefined ? {} : {participant}),
-    }),
+    typeof to === 'string'
+      ? client.voip.place({to, ...options})
+      : groupResource(client.voip).place({participants: to, ...options}),
   )
   return result(response.data.data, response.metadata)
 }
@@ -270,7 +303,7 @@ export async function ringCallParticipant(
   validateCallId(callId)
   const to = validateCallTarget(target, 'target')
   const response = await callRequest(() =>
-    client.voip.ringParticipant(callId, {to}),
+    groupResource(client.voip).ringParticipant(callId, {to}),
   )
   return result(response.data, response.metadata)
 }

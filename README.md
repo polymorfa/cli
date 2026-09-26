@@ -2018,3 +2018,8 @@ These source commands require the SDK release containing `sendReaction` and
 release is pinned, they return a specific SDK dependency error. Local package
 tests do not establish published availability. Reactions are transient and
 are never retried automatically. Hand state is shared by the Number's clients.
+
+The source group-placement and participant re-ring commands also require the
+matching SDK publication. Until its exact registry version is pinned, they
+refuse before sending a request. Testing a local package does not establish
+registry or deployed availability.

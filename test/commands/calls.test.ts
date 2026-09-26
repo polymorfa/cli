@@ -32,7 +32,12 @@ describe('unified calls commands', () => {
     server = undefined
   })
 
-  test('places one group request and rings an existing participant', async () => {
+  test.skipIf(
+    !(
+      'ringParticipant' in
+      new MessagingClient({credential: {type: 'apiKey', value: API_KEY}}).voip
+    ),
+  )('places one group request and rings an existing participant', async () => {
     server = await startHttpSequenceServer([
       {
         body: {
@@ -65,6 +70,29 @@ describe('unified calls commands', () => {
     })
     expect(server.requests).toHaveLength(2)
   })
+
+  test.skipIf(
+    'ringParticipant' in
+      new MessagingClient({credential: {type: 'apiKey', value: API_KEY}}).voip,
+  )(
+    'refuses group controls with an older installed SDK before transport',
+    async () => {
+      server = await startHttpServer({body: {success: true}})
+      for (const command of [
+        'calls place-group --to +15550100 --to +15550101 --session support --json',
+        'calls ring call_1 +15550100 --json',
+        'calls react call_1 --connection-id connection-1 --emoji 👍 --json',
+        'calls hand call_1 --connection-id connection-1 --raised --json',
+      ]) {
+        const response = await apiKey(() => runCommand(command))
+        expect(response.error).toBeDefined()
+        expect(`${response.stderr} ${response.error}`).toContain(
+          'published SDK version',
+        )
+      }
+      expect(server.requests).toHaveLength(0)
+    },
+  )
 
   test('rejects too few or duplicate group participants before transport', async () => {
     server = await startHttpServer({body: {success: true}})
