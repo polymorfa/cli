@@ -704,6 +704,20 @@ polymorfa calls retention set --policy compliance --expected-revision 0
 polymorfa calls retention set --policy custom --days 14 --expected-revision 1 --yes
 ```
 
+This source revision also adds `calls place-group` and `calls ring`. They require
+the matching Calls API and a published SDK version that includes group controls;
+the release must update the pinned SDK dependency before these commands ship.
+
+```shell
+polymorfa calls place-group --session support --to +15550100 --to +15550101
+polymorfa calls ring call_123 +15550101
+```
+
+Group placement accepts 2 to 31 distinct recipients and checks every recipient's
+calling permissions. Group calls require a Linked Device Number. `calls ring`
+only rings a non-connected participant already in the call roster; successful
+submission does not mean that the participant answered.
+
 Every inbound call rings until a participant answers or declines it. The CLI
 never answers or declines on its own.
 
