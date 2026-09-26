@@ -306,6 +306,9 @@
       "flow": {
         "description": "Manage project Flow drafts and their Official API lifecycle."
       },
+      "flow:key": {
+        "description": "Read and register phone-scoped Flow encryption public keys."
+      },
       "cloud:catalog": {
         "description": "Read Meta product catalogs visible to a WhatsApp Business Account."
       }

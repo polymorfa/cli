@@ -348,6 +348,18 @@ can still carry an `uncertain` operation: read its receipt and use `sync` to
 reconcile. Preserve `--request-id` for the exact same operation; a new ID does
 not resolve an uncertain outcome.
 
+Customer-hosted dynamic Flow endpoints use a public key registered to the Meta
+phone number. Read that key with `polymorfa flow key get --phone-number-id
+PHONE_NUMBER_ID --graph-version v26.0`. Register or replace it with `polymorfa
+flow key register --phone-number-id PHONE_NUMBER_ID --graph-version v26.0
+--input public-key.json --yes`, where the JSON file contains only
+`business_public_key` as a 2048-bit RSA public key in PEM format. The matching
+private key stays on your endpoint. Registration affects every dynamic Flow on
+the phone number, so read the registered key after an uncertain outcome before
+submitting another replacement. Reading requires `sessions:read`; registration
+requires `sessions:manage`, an eligible Official API Number, and Graph access.
+These commands do not enable dynamic Flow publishing.
+
 ### Official API observations and templates
 
 The `cloud` commands require an organization API key or a project token with the
