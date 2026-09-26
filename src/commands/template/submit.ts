@@ -8,7 +8,10 @@ export default class TemplateSubmit extends BaseCommand {
     'Submit a saved project template for Meta approval (beta). Requires templates:manage. Makes one attempt; an accepted submission is not approval.'
 
   static override args = {
-    template: Args.string({description: 'Saved project template ID.', required: true}),
+    template: Args.string({
+      description: 'Saved project template ID.',
+      required: true,
+    }),
   }
 
   static override flags = {
