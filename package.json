@@ -293,6 +293,21 @@
       },
       "function:invocation": {
         "description": "Invoke Functions once and inspect metadata receipts."
+      },
+      "cloud": {
+        "description": "Official API Number operations (beta). Team enrollment and scopes apply."
+      },
+      "cloud:template": {
+        "description": "Manage Meta templates, separate from Polymorfa project drafts."
+      },
+      "cloud:credentials": {
+        "description": "Read redacted credential health and create guided reauthorization links."
+      },
+      "flow": {
+        "description": "Manage project Flow drafts and their Official API lifecycle."
+      },
+      "cloud:catalog": {
+        "description": "Read Meta product catalogs visible to a WhatsApp Business Account."
       }
     }
   },
