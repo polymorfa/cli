@@ -13,11 +13,14 @@ existing package, so the npm organization owner must create the first package
 with an owner credential and any required two-factor challenge. The workflow in
 this repository deliberately refuses to publish while the package is absent.
 
-**The first publication may also create npm's `latest` dist-tag even when the
-command specifies `--tag dev`.** The owner must decide whether that exposure is
-acceptable before the bootstrap. Do not assume the `dev` tag isolates the first
-version. Do not create the first version or move `latest` as part of preparing a
-pull request.
+The first publication is public and makes its name and version immutable. The
+owner must approve that visibility before bootstrap. npm documents `--tag dev`
+as overriding the default `latest` tag and does not list a first-publication
+exception. The expected result is that `@dev` and the exact version become
+installable while an untagged install remains unsupported. See [npm's dist-tag guide](https://docs.npmjs.com/adding-dist-tags-to-packages/)
+and [dist-tag command reference](https://docs.npmjs.com/cli/v11/commands/npm-dist-tag/).
+Do not create the first version or move `latest` as part of preparing a pull
+request.
 
 For an approved bootstrap, use a reviewed `dev` commit with a unique package
 version and exact published SDK dependency. Run `npm ci`, `npm run verify`, pack
@@ -26,8 +29,10 @@ installation from that tarball in a clean directory on supported Node versions.
 The owner then publishes that exact tarball publicly with the `dev` tag and
 provenance disabled. Use an interactive owner session or a short-lived credential;
 do not place an npm write token in source or GitHub Actions. Verify the registry
-version, integrity, `dev` and `latest` tags, and a fresh `@dev` install after the
-publish. Record any `latest` exposure in the release decision.
+version and integrity, confirm that `dev` points to the published version and
+that `latest` was not created, then test a fresh `@dev` install. If registry
+tags differ from the intended state, stop and reconcile them before another
+publish.
 
 ## Subsequent development releases
 
