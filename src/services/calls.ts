@@ -1305,3 +1305,82 @@ function samplesFor(sampleRate: number, milliseconds: number): number {
 function bytesFor(sampleRate: number, milliseconds: number): number {
   return samplesFor(sampleRate, milliseconds) * 2
 }
+
+export type CallReactionEmoji = '' | '👍' | '❤️' | '😂' | '😮' | '😢' | '🙏'
+interface SocialInput {
+  readonly connectionId: string
+  readonly participant?: string | undefined
+}
+type SocialReply = {data: SuccessResponse; metadata: ResponseMetadata}
+interface SocialCallsResource {
+  sendReaction(
+    callId: string,
+    input: {
+      connectionId: string
+      participant?: string
+      emoji: CallReactionEmoji
+    },
+  ): Promise<SocialReply>
+  setHandRaised(
+    callId: string,
+    input: {connectionId: string; participant?: string; raised: boolean},
+  ): Promise<SocialReply>
+}
+function socialResource(value: unknown): SocialCallsResource {
+  if (
+    value === null ||
+    typeof value !== 'object' ||
+    !('sendReaction' in value) ||
+    typeof value.sendReaction !== 'function' ||
+    !('setHandRaised' in value) ||
+    typeof value.setHandRaised !== 'function'
+  ) {
+    throw new PolymorfaConfigurationError(
+      'Call reactions and hands require a published SDK version with these controls. This CLI build has not received that SDK release.',
+      'sdk',
+    )
+  }
+  return value as SocialCallsResource
+}
+export async function reactToCall(
+  client: MessagingClient,
+  credential: CallsCredential,
+  callId: string,
+  input: SocialInput & {readonly emoji: string},
+): Promise<CallsResult<SuccessResponse>> {
+  validateCallId(callId)
+  const connectionId = validateConnectionId(input.connectionId)
+  const participant = validateParticipant(credential, input.participant)
+  if (!['', '👍', '❤️', '😂', '😮', '😢', '🙏'].includes(input.emoji))
+    throw new PolymorfaConfigurationError(
+      'Reaction must be 👍, ❤️, 😂, 😮, 😢, 🙏, or empty to clear.',
+      'emoji',
+    )
+  const resource = socialResource(client.voip)
+  const response = await callRequest(() =>
+    resource.sendReaction(callId, {
+      connectionId,
+      emoji: input.emoji as CallReactionEmoji,
+      ...(participant === undefined ? {} : {participant}),
+    }),
+  )
+  return result(response.data, response.metadata)
+}
+export async function setCallHand(
+  client: MessagingClient,
+  credential: CallsCredential,
+  callId: string,
+  input: SocialInput & {readonly raised: boolean},
+): Promise<CallsResult<SuccessResponse>> {
+  validateCallId(callId)
+  const connectionId = validateConnectionId(input.connectionId)
+  const participant = validateParticipant(credential, input.participant)
+  const response = await callRequest(() =>
+    socialResource(client.voip).setHandRaised(callId, {
+      connectionId,
+      raised: input.raised,
+      ...(participant === undefined ? {} : {participant}),
+    }),
+  )
+  return result(response.data, response.metadata)
+}
