@@ -82,6 +82,82 @@ describe('Messaging campaign commands', () => {
     },
   )
 
+  test('updates a campaign with a partial JSON body through Messaging PATCH', async () => {
+    const input = await jsonInput('campaign-update.json', {
+      name: 'Autumn launch',
+      recipientListId: null,
+      scheduledAt: null,
+    })
+    server = await startHttpServer({
+      body: {data: {...campaign(), name: 'Autumn launch'}, success: true},
+      headers: {'request-id': 'req_campaign_update'},
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign update 0198a2cb-0000-7000-8000-0000000000e3 --project-slug project/main --input ${input} --json`,
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      data: {name: 'Autumn launch'},
+      metadata: {attempts: 1, requestId: 'req_campaign_update', status: 200},
+    })
+    expect(server.requests[0]).toMatchObject({
+      method: 'PATCH',
+      url: '/messaging/projects/project%2Fmain/campaigns/0198a2cb-0000-7000-8000-0000000000e3',
+      body: JSON.stringify({
+        name: 'Autumn launch',
+        recipientListId: null,
+        scheduledAt: null,
+      }),
+    })
+  })
+
+  test.each([{}, {status: 'sent'}, []])(
+    'rejects unsupported or empty campaign patches before transport',
+    async (value) => {
+      const input = await jsonInput('campaign-update-invalid.json', value)
+      server = await startHttpServer({body: {data: campaign(), success: true}})
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `campaign update 0198a2cb-0000-7000-8000-0000000000e3 --project-slug project_1 --input ${input}`,
+        ),
+      )
+      expect(exitCode(result.error)).toBe(2)
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
+  test('reports a launched-audience conflict without replaying the PATCH', async () => {
+    const input = await jsonInput('campaign-update-conflict.json', {
+      recipientListId: null,
+    })
+    server = await startHttpServer({
+      body: {
+        error: {
+          code: 'state_conflict',
+          message: 'The audience is fixed after launch.',
+        },
+        success: false,
+      },
+      status: 409,
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign update 0198a2cb-0000-7000-8000-0000000000e3 --project-slug project_1 --input ${input} --json`,
+      ),
+    )
+
+    expect(exitCode(result.error)).toBe(4)
+    expect(JSON.parse(result.stderr)).toMatchObject({
+      error: {category: 'conflict', code: 'state_conflict'},
+    })
+    expect(server.requests).toHaveLength(1)
+  })
+
   test('views one campaign and its exact live analytics counters', async () => {
     server = await startHttpSequenceServer([
       {body: {data: campaign(), success: true}},
