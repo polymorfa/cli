@@ -51,7 +51,7 @@ describe('init starter', () => {
       dependencies: {'@polymorfa/sdk': STARTER_SDK_VERSION},
       private: true,
     })
-    expect(await readdir(directory)).toEqual([
+    expect((await readdir(directory)).sort()).toEqual([
       '.env.example',
       'README.md',
       'package.json',
