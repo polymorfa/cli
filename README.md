@@ -1369,7 +1369,8 @@ is synchronous and reports only the number moved.
 Update reads one JSON object with at least one of `name`, `recipientListId`,
 `senderConfig`, or `scheduledAt`. Send only fields to change. Set
 `recipientListId` or `scheduledAt` to `null` to detach the audience or start at
-launch. The API refuses audience and start-time changes after launch. A sender
+launch. A non-null `scheduledAt` must be integer Unix milliseconds within the
+JavaScript Date range. The API refuses audience and start-time changes after launch. A sender
 change after launch requires the sending numbers to pass live eligibility
 checks. If a PATCH result is lost, view the campaign before deciding whether
 to send another update.
