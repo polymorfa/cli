@@ -1666,6 +1666,15 @@ checkpoints only after stdout and every forwarding destination have accepted an
 event. A cursor gap stops with a nonzero exit unless `--on-gap continue` was
 selected.
 
+Use `-H 'X-Local-Mode: test'` to add a custom header to forwarded requests.
+Repeat `-H` for multiple headers. Reserved authentication, framing, and
+Polymorfa signature headers cannot be overridden; custom headers cannot follow
+a cross-origin redirect. Avoid passing secrets in command arguments. For a
+self-signed loopback HTTPS handler, add `--skip-verify`. This option never
+changes verification for the Polymorfa API or a public forwarding destination.
+`--json` already provides JSONL output. Noninteractive and JSON forwarding
+require `--forward-secret-out`; the per-run secret is not printed to stdout.
+
 ## Trigger test events
 
 `polymorfa trigger` sends a signed test event for a Test number. The event
