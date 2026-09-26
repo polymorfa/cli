@@ -1,4 +1,5 @@
 import {
+  PolymorfaValidationError,
   type ClientInstance,
   type StopConfirmationSettings,
   type StopConfirmationSummary,
@@ -76,13 +77,18 @@ export function confirmationPreference(flags: {
   revision: number
   locale?: string | undefined
 }): UpdateStopConfirmationSettingsRequest {
-  const value = Preference.parse({
+  const parsed = Preference.safeParse({
     teamId: flags['team-id'],
     enabled: flags.enabled,
     locale: flags.locale ?? null,
     revision: flags.revision,
   })
-  return value as UpdateStopConfirmationSettingsRequest
+  if (!parsed.success)
+    throw new PolymorfaValidationError(
+      'Invalid STOP confirmation preference. Check the team UUID, revision, and language.',
+      {code: 'invalid_confirmation_preference'},
+    )
+  return parsed.data as UpdateStopConfirmationSettingsRequest
 }
 export async function updateConfirmationSettings(
   client: Client,

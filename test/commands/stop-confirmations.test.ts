@@ -107,9 +107,12 @@ describe('STOP confirmation commands', () => {
     'rejects malformed or incomplete preference %s before HTTP',
     async (args) => {
       server = await startHttpServer({body: {data: settings}})
-      expect(
-        (await run(`optout confirmations update ${args}`)).error,
-      ).toBeDefined()
+      const result = await run(`optout confirmations update ${args} --json`)
+      expect(result.error).toBeDefined()
+      expect((result.error as {oclif?: {exit?: number}}).oclif?.exit).toBe(2)
+      expect(JSON.parse(result.stderr)).toMatchObject({
+        error: {category: 'validation'},
+      })
       expect(server.requests).toHaveLength(0)
     },
   )
