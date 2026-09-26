@@ -118,6 +118,19 @@ describe('Campaign recipient commands', () => {
     expect(server.requests).toHaveLength(1)
   })
 
+  test('reports an oversized filtered export without writing CSV', async () => {
+    server = await startHttpServer({
+      status: 409,
+      body: {error: 'More than 1,000 recipients match this filter. Export all recipients, then filter the CSV.'},
+    })
+    const result = await apiKeyEnvironment(() =>
+      runCommand('campaign recipients export campaign_1 --project-slug project_1 --status failed'),
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stdout).toBe('')
+    expect(result.stderr).toContain('More than 1,000 recipients')
+  })
+
   test('refuses to replace an export file before making an API request', async () => {
     directory = await mkdtemp(join(tmpdir(), 'polymorfa-export-'))
     const output = join(directory, 'recipients.csv')
