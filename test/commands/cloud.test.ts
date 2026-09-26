@@ -1,8 +1,9 @@
-import {mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {AsyncEntry} from '@napi-rs/keyring'
 import {homedir} from 'node:os'
 import {join} from 'node:path'
 import {runCommand} from '@oclif/test'
-import {afterEach, describe, expect, test} from 'vitest'
+import {afterEach, describe, expect, test, vi} from 'vitest'
 import {
   startHttpServer,
   withEnvironment,
@@ -94,6 +95,28 @@ describe('Official API commands', () => {
         version: 1,
       }),
     )
+    const configDirectory = join(directory, 'config')
+    await mkdir(configDirectory)
+    await writeFile(
+      join(configDirectory, 'config.json'),
+      JSON.stringify({
+        version: 2,
+        activeProfile: 'template',
+        profiles: {
+          template: {
+            credential: {
+              kind: 'projectToken',
+              account: 'profile:template:projectToken',
+            },
+            owner: 'project',
+            project: '22222222-2222-4222-8222-222222222222',
+          },
+        },
+      }),
+    )
+    const keyring = vi
+      .spyOn(AsyncEntry.prototype, 'getPassword')
+      .mockResolvedValue(`pmfa_pt_${'A'.repeat(94)}`)
     server = await startHttpServer({
       status: 202,
       body: {success: true, data: {accepted: true}},
@@ -101,14 +124,21 @@ describe('Official API commands', () => {
     const previousDirectory = process.cwd()
     try {
       process.chdir(directory)
-      const result = await credential(
+      const result = await withEnvironment(
+        {
+          POLYMORFA_API_KEY: undefined,
+          POLYMORFA_PROJECT_TOKEN: undefined,
+          POLYMORFA_CLIENT_TOKEN: undefined,
+          POLYMORFA_BASE_URL: server.baseUrl,
+          POLYMORFA_CONFIG_DIR: configDirectory,
+        },
         () =>
           runCommand(
             'template submit template_123 --project-slug support --session number_123 --yes --json',
           ),
-        'project',
       )
       expect(result.error, result.stderr).toBeUndefined()
+      expect(keyring).toHaveBeenCalledOnce()
       expect(server.requests).toHaveLength(1)
       expect(server.requests[0]).toMatchObject({
         method: 'POST',
@@ -116,6 +146,7 @@ describe('Official API commands', () => {
       })
     } finally {
       process.chdir(previousDirectory)
+      keyring.mockRestore()
     }
   })
 
