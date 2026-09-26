@@ -293,6 +293,9 @@
       },
       "function:invocation": {
         "description": "Invoke Functions once and inspect metadata receipts."
+      },
+      "optout:confirmations": {
+        "description": "Read and configure optional STOP acknowledgements (beta). Disabled by default."
       }
     }
   },
