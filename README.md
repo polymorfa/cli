@@ -375,6 +375,8 @@ check its status. If the request times out or its response is lost, read the
 template before choosing whether to submit again. The command makes one
 network attempt and requires `--yes` because a second submission can create a
 duplicate provider effect.
+`--project-slug` selects the target project even when the current directory is
+linked to another project; the API checks that the credential can access it.
 
 ### Official API observations and templates
 
