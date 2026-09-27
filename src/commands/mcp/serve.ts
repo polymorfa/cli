@@ -3,8 +3,7 @@ import {createListenerManager} from '../../mcp/factory.js'
 import {serveMcp} from '../../mcp/server.js'
 
 export default class McpServe extends BaseCommand {
-  static override description =
-    'Serve Polymorfa listener controls over MCP stdio.'
+  static override description = 'Serve local Polymorfa tools over MCP stdio.'
 
   async run(): Promise<void> {
     await this.parse(McpServe)
