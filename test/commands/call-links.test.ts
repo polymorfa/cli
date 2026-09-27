@@ -2,6 +2,8 @@ import {runCommand} from '@oclif/test'
 import {Readable} from 'node:stream'
 import {afterEach, describe, expect, test} from 'vitest'
 
+import {parseCallLink} from '../../src/services/call-links.js'
+
 import {
   startHttpServer,
   withEnvironment,
@@ -198,6 +200,53 @@ describe('call link commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test('parses pasted links and refuses ambiguous input', () => {
+    expect(
+      parseCallLink(
+        `Join my call: HTTPS://Call.WhatsApp.com/Video/${TOKEN}?lang=en#x.`,
+      ),
+    ).toEqual({token: TOKEN, video: true})
+    expect(parseCallLink(`https://call.whatsapp.com/voice/${TOKEN}/`)).toEqual({
+      token: TOKEN,
+      video: false,
+    })
+    expect(parseCallLink(` ${TOKEN}\n`)).toEqual({token: TOKEN})
+    // The same link twice is one link.
+    const link = `https://call.whatsapp.com/voice/${TOKEN}`
+    expect(parseCallLink(`${link} ${link}`)).toEqual({
+      token: TOKEN,
+      video: false,
+    })
+    expect(() =>
+      parseCallLink(`${link} https://call.whatsapp.com/video/${TOKEN}`),
+    ).toThrow('more than one call link')
+    for (const input of [
+      'video',
+      `http://call.whatsapp.com/voice/${TOKEN}`,
+      'https://call.whatsapp.com/voice/short',
+      `https://call.whatsapp.com/voice/${TOKEN}extra$`,
+    ])
+      expect(() => parseCallLink(input)).toThrow('Standard input must contain')
+  })
+
+  test('refuses an interactive terminal and empty input with link messages', async () => {
+    server = await startHttpServer({body: {success: true}})
+    const terminal = Object.assign(Readable.from([]), {isTTY: true})
+    const interactive = await withStdinStream(terminal, () =>
+      apiKey(() => runCommand('calls link preview --session support')),
+    )
+    const empty = await withStdin('', () =>
+      apiKey(() => runCommand('calls link preview --session support')),
+    )
+
+    expect(exitCode(interactive.error)).toBe(2)
+    expect(interactive.stderr).toContain('Pipe the call link')
+    expect(exitCode(empty.error)).toBe(2)
+    expect(empty.stderr).toContain('one call link or token')
+    expect(empty.stderr).not.toContain('credential')
+    expect(server.requests).toHaveLength(0)
+  })
+
   async function apiKey<T>(run: () => Promise<T>): Promise<T> {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
@@ -228,10 +277,17 @@ function exitCode(error: unknown): number | undefined {
 }
 
 async function withStdin<T>(value: string, run: () => Promise<T>): Promise<T> {
+  return withStdinStream(Readable.from(value.length === 0 ? [] : [value]), run)
+}
+
+async function withStdinStream<T>(
+  stream: Readable,
+  run: () => Promise<T>,
+): Promise<T> {
   const descriptor = Object.getOwnPropertyDescriptor(process, 'stdin')
   Object.defineProperty(process, 'stdin', {
     configurable: true,
-    value: Readable.from([value]),
+    value: stream,
   })
   try {
     return await run()

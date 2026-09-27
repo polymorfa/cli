@@ -1,16 +1,18 @@
 import {
   type MessagingClient,
-  PolymorfaConfigurationError,
   PolymorfaValidationError,
   type VoipCreatedCallLink,
   type VoipPreviewedCallLink,
 } from '@polymorfa/sdk'
 
-import type {CallsResult} from './calls.js'
+import {type CallsResult, result, validateSession, yesNo} from './calls.js'
 
-const TOKEN_PATTERN = /^[A-Za-z0-9_-]{1,256}$/
+// A pasted link may sit in share text and carry a query or fragment; only its
+// path names the media type and token.
 const LINK_PATTERN =
-  /^https:\/\/call\.whatsapp\.com\/(voice|video)\/([A-Za-z0-9_-]{1,256})\/?$/
+  /https:\/\/call\.whatsapp\.com\/(voice|video)\/([A-Za-z0-9_-]{8,256})(?=$|[/?#\s.,;:!)"'>\]])/gi
+// Bare tokens are much longer; a short word is a paste mistake, not a token.
+const TOKEN_PATTERN = /^[A-Za-z0-9_-]{8,256}$/
 
 export interface ParsedCallLink {
   readonly token: string
@@ -18,26 +20,24 @@ export interface ParsedCallLink {
   readonly video?: boolean
 }
 
-/** Accept a full WhatsApp call link or its bare token. */
+/** Accept one WhatsApp call link, possibly inside share text, or its token. */
 export function parseCallLink(input: string): ParsedCallLink {
   const value = input.trim()
-  const link = LINK_PATTERN.exec(value)
-  if (link !== null) return {token: link[2]!, video: link[1] === 'video'}
+  const links = new Map<string, ParsedCallLink>()
+  for (const [, kind, token] of value.matchAll(LINK_PATTERN))
+    links.set(`${kind!.toLowerCase()}/${token!}`, {
+      token: token!,
+      video: kind!.toLowerCase() === 'video',
+    })
+  if (links.size === 1) return [...links.values()][0]!
+  if (links.size > 1)
+    throw new PolymorfaValidationError(
+      'Standard input contains more than one call link; pipe exactly one.',
+    )
   if (TOKEN_PATTERN.test(value)) return {token: value}
   throw new PolymorfaValidationError(
     'Standard input must contain one https://call.whatsapp.com/voice/… or /video/… link, or its token.',
   )
-}
-
-function session(value: string): string {
-  const trimmed = value.trim()
-  if (trimmed.length === 0 || trimmed.length > 128) {
-    throw new PolymorfaConfigurationError(
-      'Session must contain 1 to 128 characters.',
-      'session',
-    )
-  }
-  return trimmed
 }
 
 export async function createCallLink(
@@ -45,10 +45,10 @@ export async function createCallLink(
   input: {readonly session: string; readonly video?: boolean},
 ): Promise<CallsResult<VoipCreatedCallLink>> {
   const response = await client.voip.createCallLink({
-    session: session(input.session),
+    session: validateSession(input.session),
     video: input.video === true,
   })
-  return {data: response.data.data, metadata: metadata(response.metadata)}
+  return result(response.data.data, response.metadata)
 }
 
 export async function previewCallLink(
@@ -66,22 +66,22 @@ export async function previewCallLink(
     link.video !== input.video
   ) {
     throw new PolymorfaValidationError(
-      `The link is a ${link.video ? 'video' : 'voice'} link; remove --video or pass the matching link.`,
+      `The link is a ${link.video ? 'video' : 'voice'} link; remove --video or pipe the matching link.`,
     )
   }
   const response = await client.voip.previewCallLink({
-    session: session(input.session),
+    session: validateSession(input.session),
     token: link.token,
     video: link.video ?? input.video === true,
   })
-  return {data: response.data.data, metadata: metadata(response.metadata)}
+  return result(response.data.data, response.metadata)
 }
 
 export function renderCreatedCallLink(link: VoipCreatedCallLink): string {
   return [
     `Link\t${link.url}`,
     `Session\t${link.session}`,
-    `Video\t${link.video ? 'yes' : 'no'}`,
+    `Video\t${yesNo(link.video)}`,
     'Anyone with this link can use it in WhatsApp. Keep it private. Creating it did not place or join a call.',
   ].join('\n')
 }
@@ -91,23 +91,9 @@ export function renderPreviewedCallLink(link: VoipPreviewedCallLink): string {
     link.creator.phoneNumber ?? link.creator.username ?? link.creator.id
   return [
     `Session\t${link.session}`,
-    `Video\t${link.video ? 'yes' : 'no'}`,
+    `Video\t${yesNo(link.video)}`,
     `Creator\t${creator}`,
-    `Approval required\t${link.approvalRequired ? 'yes' : 'no'}`,
-    `Number is link admin\t${link.isAdmin ? 'yes' : 'no'}`,
+    `Approval required\t${yesNo(link.approvalRequired)}`,
+    `Number is link admin\t${yesNo(link.isAdmin)}`,
   ].join('\n')
-}
-
-function metadata(value: {
-  readonly apiVersion?: string
-  readonly attempts: number
-  readonly requestId?: string
-  readonly status: number
-}): CallsResult<unknown>['metadata'] {
-  return {
-    attempts: value.attempts,
-    status: value.status,
-    ...(value.apiVersion === undefined ? {} : {apiVersion: value.apiVersion}),
-    ...(value.requestId === undefined ? {} : {requestId: value.requestId}),
-  }
 }

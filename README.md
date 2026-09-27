@@ -2160,9 +2160,6 @@ same filters when following a cursor. These reads need `sessions:read` and a
 server credential. Project tokens only read calls originally owned by their
 project. Human output labels unmeasured duration as `unknown`.
 
-The source `calls view` command requires the SDK publication containing
-`Client.calls.retrieve` and the matching API deployment. Until that exact
-registry release is pinned, it reports an SDK dependency error before transport.
-Its JSON output includes bounded event history, participant and connection
-lifetimes, and allowlisted diagnostics. It does not retrieve media or webhook
-deliveries. Local package tests do not establish published availability.
+`calls view` reads one stored call. Its JSON output includes bounded event
+history, participant and connection lifetimes, and allowlisted diagnostics. It
+does not retrieve media or webhook deliveries.

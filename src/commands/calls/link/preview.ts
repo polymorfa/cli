@@ -1,4 +1,5 @@
 import {Flags} from '@oclif/core'
+import {PolymorfaConfigurationError} from '@polymorfa/sdk'
 
 import {BaseCommand} from '../../../base-command.js'
 import {readSecretFromStdin} from '../../../input/stdin.js'
@@ -35,7 +36,7 @@ export default class CallsLinkPreview extends BaseCommand {
     const client = await this.messagingClient(flags, {
       serverCredentialOnly: 'Call link',
     })
-    const input = await readSecretFromStdin()
+    const input = await readCallLinkFromStdin()
     this.registerSecret(input)
     const link = parseCallLink(input)
     this.registerSecret(link.token)
@@ -45,5 +46,24 @@ export default class CallsLinkPreview extends BaseCommand {
       ...(flags.video ? {video: true} : {}),
     })
     this.writeValue(result, renderPreviewedCallLink(result.data), flags)
+  }
+}
+
+async function readCallLinkFromStdin(): Promise<string> {
+  if (process.stdin.isTTY === true) {
+    throw new PolymorfaConfigurationError(
+      'Pipe the call link on standard input; it is never read from an argument or typed at a visible prompt.',
+      'stdin',
+    )
+  }
+  try {
+    return await readSecretFromStdin()
+  } catch (error) {
+    if (error instanceof PolymorfaConfigurationError)
+      throw new PolymorfaConfigurationError(
+        'Standard input must contain one call link or token, up to 64 KiB.',
+        'stdin',
+      )
+    throw error
   }
 }
