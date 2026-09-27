@@ -11,14 +11,16 @@ describe('MCP stdio server', () => {
 
   afterEach(async () => close?.())
 
-  test('negotiates and lists the three in-process listener tools', async () => {
+  test('negotiates listener controls and project-scoped session discovery', async () => {
     const input = new PassThrough()
     const output = new PassThrough()
     const transport = new StdioServerTransport(input, output)
     const manager = new ListenerManager(
       async () => new Promise<never>(() => {}),
     )
-    const handle = serveMcp(manager, '0.1.0-test', transport)
+    const handle = serveMcp(manager, '0.1.0-test', transport, () =>
+      Promise.resolve({sessions: [], status: 200}),
+    )
     close = () => handle.close()
 
     const messages = collectMessages(output)
@@ -56,6 +58,7 @@ describe('MCP stdio server', () => {
       'polymorfa_listen_start',
       'polymorfa_listen_status',
       'polymorfa_listen_stop',
+      'polymorfa_session_list',
     ])
     const start = (
       messages[1] as {
@@ -73,6 +76,101 @@ describe('MCP stdio server', () => {
     expect(pattern.test('11111111-1111-4111-8111-111111111111')).toBe(true)
     expect(pattern.test('project_123')).toBe(false)
     expect(pattern.test('11111111-1111-4111-8111-11111111111G')).toBe(false)
+    const sessions = (
+      messages[1] as {
+        result: {
+          tools: Array<{
+            name: string
+            annotations?: {readOnlyHint?: boolean}
+            inputSchema: {properties: Record<string, {pattern?: string}>}
+          }>
+        }
+      }
+    ).result.tools.find(({name}) => name === 'polymorfa_session_list')
+    expect(sessions?.annotations?.readOnlyHint).toBe(true)
+    expect(
+      new RegExp(
+        sessions?.inputSchema.properties.projectId?.pattern ?? '',
+      ).test('project_123'),
+    ).toBe(false)
+  })
+
+  test('returns only curated session fields and hides failures', async () => {
+    const input = new PassThrough()
+    const output = new PassThrough()
+    const transport = new StdioServerTransport(input, output)
+    const manager = new ListenerManager(
+      async () => new Promise<never>(() => {}),
+    )
+    const projectId = '11111111-1111-4111-8111-111111111111'
+    let requests = 0
+    const handle = serveMcp(manager, '0.1.0-test', transport, (project) => {
+      expect(project).toBe(projectId)
+      if (requests++ > 0) {
+        return Promise.reject(new Error('Bearer pmfa_secret_value'))
+      }
+      return Promise.resolve({
+        sessions: [
+          {
+            sessionId: 'session_1',
+            name: 'Support',
+            status: 'CONNECTED',
+            testMode: false,
+          },
+        ],
+        status: 200,
+      })
+    })
+    close = () => handle.close()
+
+    const messages = collectMessages(output)
+    input.write(
+      `${JSON.stringify({
+        id: 1,
+        jsonrpc: '2.0',
+        method: 'initialize',
+        params: {
+          capabilities: {},
+          clientInfo: {name: 'test', version: '1.0.0'},
+          protocolVersion: '2025-06-18',
+        },
+      })}\n`,
+    )
+    await waitFor(messages, 1)
+    input.write(
+      `${JSON.stringify({jsonrpc: '2.0', method: 'notifications/initialized'})}\n`,
+    )
+    input.write(
+      `${JSON.stringify({
+        id: 2,
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {name: 'polymorfa_session_list', arguments: {projectId}},
+      })}\n`,
+    )
+    await waitFor(messages, 2)
+    expect(messages[1]).toMatchObject({
+      id: 2,
+      result: {
+        structuredContent: {
+          sessions: [{sessionId: 'session_1', status: 'CONNECTED'}],
+          status: 200,
+        },
+      },
+    })
+    expect(JSON.stringify(messages[1])).not.toContain('phone')
+
+    input.write(
+      `${JSON.stringify({
+        id: 3,
+        jsonrpc: '2.0',
+        method: 'tools/call',
+        params: {name: 'polymorfa_session_list', arguments: {projectId}},
+      })}\n`,
+    )
+    await waitFor(messages, 3)
+    expect(messages[2]).toMatchObject({id: 3, result: {isError: true}})
+    expect(JSON.stringify(messages[2])).not.toContain('pmfa_secret_value')
   })
 })
 
