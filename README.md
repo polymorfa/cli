@@ -38,7 +38,7 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260926005918
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260926235309
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
@@ -781,9 +781,8 @@ polymorfa calls retention set --policy compliance --expected-revision 0
 polymorfa calls retention set --policy custom --days 14 --expected-revision 1 --yes
 ```
 
-This source revision also adds `calls place-group` and `calls ring`. They require
-the matching Calls API and a published SDK version that includes group controls;
-the release must update the pinned SDK dependency before these commands ship.
+`calls place-group` places a group call and `calls ring` rings an existing
+participant again:
 
 ```shell
 polymorfa calls place-group --session support --to +15550100 --to +15550101
@@ -2122,16 +2121,31 @@ raises the Number's hand; omit `--raised` to lower it. A server credential may
 name `--participant`; a client token acts as its own participant. The named
 connection must still be attached to the call.
 
-These source commands require the SDK release containing `sendReaction` and
-`setHandRaised`, followed by an exact registry dependency update. Until that
-release is pinned, they return a specific SDK dependency error. Local package
-tests do not establish published availability. Reactions are transient and
-are never retried automatically. Hand state is shared by the Number's clients.
+Reactions are transient and are never retried automatically. Hand state is
+shared by the Number's clients.
 
-The source group-placement and participant re-ring commands also require the
-matching SDK publication. Until its exact registry version is pinned, they
-refuse before sending a request. Testing a local package does not establish
-registry or deployed availability.
+### Call links
+
+```sh
+polymorfa calls link create --session support
+polymorfa calls link create --session support --video --json
+printf '%s' "$CALL_LINK" | polymorfa calls link preview --session support
+```
+
+`calls link create` creates a WhatsApp call link from a Linked Device Number
+and prints its URL. It does not place or join a call. The request is never
+retried; if the outcome is unknown, check before creating another link.
+Anyone with the link can use it in WhatsApp, so keep it private.
+
+`calls link preview` reads a link without joining the call and prints its
+creator, whether joining needs approval, and whether WhatsApp reports the
+Number as a link administrator. It reads the link, or its bare token, from
+standard input, so the token stays out of shell history and process listings.
+A full link sets voice or video; pass `--video` with a bare video-link token.
+
+Both commands require a server API key or project token, a Linked Device
+Number, and calling enabled for that Number. Client tokens are refused before
+a request is sent, and Cloud API-only Numbers are refused by the API.
 
 ### Stored call records
 
