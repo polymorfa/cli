@@ -1793,7 +1793,7 @@ test the end of a restriction. `--from-session OTHER_TEST_NUMBER` sends a real s
 another Test number in the project instead, producing an ordinary
 `message.received` event you can reply to. Use `--json` for one JSON document.
 
-## MCP listener controls
+## Local MCP tools
 
 The package includes a standards-based stdio MCP server for Codex and Claude:
 
@@ -1810,6 +1810,13 @@ The MCP tools `polymorfa_listen_start`, `polymorfa_listen_status`, and
 They do not create detached daemons. MCP responses contain listener IDs,
 status, and safe counters, never primary credentials, listener credentials,
 forwarding secrets, or unrestricted payloads.
+
+`polymorfa_session_list` is a read-only discovery tool for one explicit project
+UUID. It uses the selected CLI organization API key with `sessions:read` and
+returns session ID, name, stored status, and test-mode flag. It omits phone
+numbers, credentials, and message data. The tool does not probe the live device.
+Project tokens and Messaging client tokens cannot use this tool. A failed read
+returns a generic error without exposing the credential or API response body.
 
 ## Agent skills
 
