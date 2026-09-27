@@ -56,7 +56,7 @@ A Hybrid Link Number leaving Pro needs a choice: --keep one connection, or --spl
     }),
     'merge-with': Flags.string({
       description:
-        'With --tier pro: UUID of the same-number Number to merge into this one. It is removed after its connection moves.',
+        'With --tier pro: UUID of the same-number Number to merge into this one. It is removed after its connection moves, so it must not use hosted message storage.',
       exclusive: ['keep', 'split'],
     }),
   }

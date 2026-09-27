@@ -173,22 +173,44 @@ function renderHybridTransition(transition: NumberHybridTransition): string[] {
   return lines
 }
 
+/** Customer wording for each candidate `ineligibleReason`. */
+const MERGE_INELIGIBLE_REASONS: Readonly<Record<string, string>> = {
+  deletion_in_progress: 'a Number is being deleted',
+  transition_in_progress: 'a tier or Hybrid Link change is already running',
+  pairing_in_progress: 'a Number is still pairing',
+  hms_enabled:
+    'both Numbers use hosted message storage; disable it on one Number',
+  not_coexistence:
+    'the Official API Number does not share the number with the WhatsApp Business app',
+  different_customer: 'the Numbers belong to different Customers',
+  connection_disabled: 'a connection is disabled',
+  not_connected: 'both Numbers must be connected',
+}
+
 export function renderMergeCandidates(
   candidates: readonly HybridMergeCandidate[],
 ): string {
   if (candidates.length === 0) return 'No same-number pairs found.'
   return candidates
-    .map((candidate) =>
-      [
+    .map((candidate) => {
+      const reason = candidate.ineligibleReason
+      const verdict = candidate.eligible
+        ? 'eligible'
+        : `ineligible: ${reason === undefined ? 'unknown' : `${reason} (${MERGE_INELIGIBLE_REASONS[reason] ?? 'see the API reason'})`}`
+      const keep = candidate.numbers.filter((number) => !number.canBeAbsorbed)
+      return [
         ...candidate.numbers.map(
           (number) =>
-            `${number.id} (${number.name}, ${number.transport}, ${number.status})`,
+            `${number.id} (${number.name}, ${number.transport}, ${number.status}, ${number.canBeAbsorbed ? 'can be absorbed' : 'must be kept'})`,
         ),
-        candidate.eligible
-          ? 'eligible'
-          : `ineligible: ${candidate.ineligibleReason ?? 'unknown'}`,
-      ].join('\t'),
-    )
+        verdict,
+        ...(candidate.eligible && keep.length === 1
+          ? [
+              `merge with: session tier quote ${keep[0]!.id} --tier pro --merge-with ${candidate.numbers.find((number) => number.canBeAbsorbed)!.id}`,
+            ]
+          : []),
+      ].join('\t')
+    })
     .join('\n')
 }
 

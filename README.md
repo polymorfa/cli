@@ -2059,6 +2059,14 @@ polymorfa session hybrid-merge-candidates --project PROJECT_UUID
 polymorfa session tier quote KEEP_UUID --tier pro --merge-with OTHER_UUID
 ```
 
+`hybrid-merge-candidates` marks each Number "can be absorbed" or "must be
+kept". A Number that uses hosted message storage must be kept, so quote the
+merge on it and pass the other Number to `--merge-with`; the output prints that
+command for eligible pairs. An ineligible pair shows its reason, such as
+`pairing_in_progress`, `transition_in_progress` or `hms_enabled`. Listing
+candidates requires Hybrid Link access; without it the command exits with code 3
+(`feature_unavailable`).
+
 `--keep`, `--split` and `--merge-with` are mutually exclusive, and invalid
 combinations exit with code 2 before any request. The quote, confirm and status
 output shows the Hybrid Link plan and its status (`scheduled`, `running`,
@@ -2070,7 +2078,7 @@ Business Platform > Disconnect Account. An ineligible Number or pair fails with
 Merging requires Hybrid Link access, which the API enforces.
 
 These commands are tested against the companion SDK source, which pins API
-contract `feaf0734a99e24124e06cc04af52b46fdc5158f1`. Update the registry SDK
+contract `d831bf9c662f6fb1763a9de259612a4553ab5a02`. Update the registry SDK
 dependency after that SDK is published and before releasing this CLI.
 
 ### Hybrid Link controls

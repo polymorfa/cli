@@ -34,7 +34,7 @@ jobs:
         with:
           persist-credentials: false
           repository: polymorfa/sdks
-          ref: b4434ad571e98fdb9a85fa8f91ba9c364361eb20
+          ref: f89365c07b87adf10e324e823859507f73d9b5f0
           path: .sdk-source
       - run: npm ci
         working-directory: .sdk-source

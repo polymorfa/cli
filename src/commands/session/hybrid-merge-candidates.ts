@@ -9,7 +9,7 @@ import {
 export default class SessionHybridMergeCandidates extends BaseCommand {
   static override description = `List same-number Number pairs that can merge into one Hybrid Link Number.
 
-Each pair is one Linked Devices Number and one Official API Number that shares the number with the WhatsApp Business app. Merge an eligible pair with \`session tier quote KEEP_UUID --tier pro --merge-with OTHER_UUID\`.`
+Each pair is one Linked Devices Number and one Official API Number that shares the number with the WhatsApp Business app. Merge an eligible pair with \`session tier quote KEEP_UUID --tier pro --merge-with OTHER_UUID\`. A Number marked "must be kept" uses hosted message storage and cannot be the one merged away. Requires Hybrid Link access.`
 
   static override examples = [
     '<%= config.bin %> session hybrid-merge-candidates --project PROJECT_UUID',

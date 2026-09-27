@@ -133,6 +133,8 @@ export class CallAnalyticsApi {
       throw invalid(
         'Call ID must contain 1 to 128 letters, digits, underscores or hyphens.',
       )
+    // Newer SDK builds declare `retrieve`; the published pin may not yet.
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
     const calls = this.calls as typeof this.calls & {
       retrieve?: (
         id: string,

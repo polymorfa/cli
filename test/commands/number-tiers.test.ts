@@ -322,12 +322,14 @@ describe('session tier commands', () => {
             name: 'support',
             transport: 'linked_devices',
             status: 'connected',
+            canBeAbsorbed: false,
           },
           {
             id: ABSORBED,
             name: 'support-cloud',
             transport: 'official_api',
             status: 'connected',
+            canBeAbsorbed: true,
           },
         ],
         eligible: true,
@@ -339,16 +341,18 @@ describe('session tier commands', () => {
             name: 'sales',
             transport: 'linked_devices',
             status: 'disconnected',
+            canBeAbsorbed: true,
           },
           {
             id: '01994234-0000-7000-8000-00000000000d',
             name: 'sales-cloud',
             transport: 'official_api',
             status: 'connected',
+            canBeAbsorbed: true,
           },
         ],
         eligible: false,
-        ineligibleReason: 'not_connected',
+        ineligibleReason: 'pairing_in_progress',
       },
     ]
     server = await startHttpSequenceServer([{body: {data: candidates}}])
@@ -367,14 +371,62 @@ describe('session tier commands', () => {
       `GET /platform/projects/${PROJECT}/hybrid-merge-candidates`,
     ])
     expect(human.stdout).toContain(
-      `${SURVIVOR} (support, linked_devices, connected)\t${ABSORBED} (support-cloud, official_api, connected)\teligible`,
+      `${SURVIVOR} (support, linked_devices, connected, must be kept)\t${ABSORBED} (support-cloud, official_api, connected, can be absorbed)\teligible\tmerge with: session tier quote ${SURVIVOR} --tier pro --merge-with ${ABSORBED}`,
     )
-    expect(human.stdout).toContain('ineligible: not_connected')
+    expect(human.stdout).toContain(
+      'ineligible: pairing_in_progress (a Number is still pairing)',
+    )
 
     const json = await platform(() =>
       runCommand(`session hybrid-merge-candidates --project ${PROJECT} --json`),
     )
     expect(JSON.parse(json.stdout)).toMatchObject({data: candidates})
+  })
+
+  test('explains a merge that would absorb a hosted-storage Number', async () => {
+    server = await startHttpSequenceServer([
+      conflict(
+        'hybrid_transition_ineligible',
+        'Hybrid Link change unavailable: hms_enabled',
+      ),
+    ])
+    const result = await platform(() =>
+      runCommand(
+        `session tier quote ${SURVIVOR} --tier pro --merge-with ${ABSORBED}`,
+      ),
+    )
+    expect(exitCode(result.error)).toBe(4)
+    expect(result.stderr).toContain(
+      'A Number with hosted message storage must be kept: quote the merge on it and pass the other Number to --merge-with.',
+    )
+  })
+
+  test('candidate listing without Hybrid Link access exits as an authorization failure', async () => {
+    server = await startHttpSequenceServer([
+      {
+        status: 403,
+        headers: {'x-request-id': 'req_forbidden'},
+        body: {
+          error: {
+            type: 'permission_error',
+            code: 'feature_unavailable',
+            message: 'Hybrid Link is not enabled for this team.',
+            param: null,
+            request_id: 'req_forbidden',
+          },
+          data: null,
+          docs: 'https://docs.polymorfa.com/api/errors#feature_unavailable',
+        },
+      },
+    ])
+    const result = await platform(() =>
+      runCommand(`session hybrid-merge-candidates --project ${PROJECT} --json`),
+    )
+    expect(exitCode(result.error)).toBe(3)
+    expect(JSON.parse(result.stderr)).toMatchObject({
+      error: {category: 'authorization', code: 'feature_unavailable'},
+    })
+    expect(server.requests).toHaveLength(1)
   })
 
   async function platform<T>(run: () => Promise<T>): Promise<T> {
