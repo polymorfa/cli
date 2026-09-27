@@ -1280,8 +1280,10 @@ polymorfa session capabilities support-line
 `session capabilities` shows the WhatsApp features and limits WhatsApp has
 enabled for one number, as of the number's last configuration sync. Each line
 is the capability key, its value (`enabled`, `off`, a limit, or `unknown`), and
-whether WhatsApp sent the setting (`server`) or its default applies
-(`client_default`). Before the number's first sync every value is `unknown`.
+its source: `server` (WhatsApp sent the setting), `client_default` (WhatsApp
+sent none, so its default applies) or `account_type` (the capability does not
+apply to this kind of account, for example a business-only feature on a
+personal number). Before the number's first sync every value is `unknown`.
 It is a beta: the team must be enrolled, and it needs `sessions:read`.
 
 Key and project-token lists contain metadata only; neither command returns raw
