@@ -234,6 +234,9 @@
       "quicklink": {
         "description": "Create, inspect, and cancel persistent onboarding QuickLinks."
       },
+      "referral": {
+        "description": "Read your team's referral link."
+      },
       "security-incident": {
         "description": "Inspect and acknowledge organization security incidents."
       },

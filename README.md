@@ -1427,6 +1427,22 @@ best effort. Neither operation returns an operation ID or supports status,
 watch, stream, cancellation, history, or per-item results. Retrying stop can
 enqueue another request, while repeated deletion counts only rows still present.
 
+### Referral link
+
+`referral link` prints your team's referral link. It reads
+`GET /platform/referral` with a team API key that has `sessions:read`; the API
+creates the team's shared link on the first read.
+
+```shell
+polymorfa referral link
+polymorfa referral link --json
+```
+
+`--json` also returns the referral code, whether the program accepts new
+referrals (`enabled`), the welcome bonus, reward tiers, the per-referral
+maximum, the waiting period in days, and whether group sharing is on. Credit
+amounts are decimal strings. A team without referral access exits with code 3.
+
 ## Messaging campaigns
 
 Campaign commands use organization Messaging API keys and require an explicit
