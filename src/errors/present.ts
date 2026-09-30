@@ -98,7 +98,7 @@ export function presentError(
       error instanceof PolymorfaError && error.code === 'send_outcome_unknown'
         ? `${message} Read message operation status; do not resend or change transport.`
         : error instanceof PolymorfaError &&
-            error.code === 'hybrid_resolution_required'
+            error.code === 'hybrid_choice_required'
           ? `${message} Choose --keep linked_devices|official_api, or --split --stay linked_devices|official_api --new-number-name NAME, and quote again.`
           : error instanceof PolymorfaError &&
               error.code === 'hybrid_transition_ineligible' &&

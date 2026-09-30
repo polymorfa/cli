@@ -2039,7 +2039,7 @@ Number or spend credit. `confirm` requires `--yes` and accepts
 the change is applied or rejected.
 
 A Hybrid Link Number leaving Pro needs a choice. Without one, the quote fails
-with `hybrid_resolution_required` (exit code 4) and the CLI names the flags to
+with `hybrid_choice_required` (exit code 4) and the CLI names the flags to
 add. This includes `--tier inherit` when the project default lacks Hybrid Link.
 
 ```shell
@@ -2050,7 +2050,9 @@ polymorfa session tier quote support --tier standard --keep linked_devices
 polymorfa session tier quote support --tier standard --split --stay official_api --new-number-name support-linked
 ```
 
-The choice runs when the paid Pro window ends. To merge two Numbers that are the
+The choice runs when the paid Pro window ends. A queued change that is rejected
+because no choice is recorded shows `rejected (hybrid_choice_required)` in
+`session tier status`; quote again with a choice. To merge two Numbers that are the
 same WhatsApp Business number into one Hybrid Link Number, list the pairs, then
 quote Pro on the Number that keeps its ID:
 
@@ -2078,7 +2080,7 @@ Business Platform > Disconnect Account. An ineligible Number or pair fails with
 Merging requires Hybrid Link access, which the API enforces.
 
 These commands are tested against the companion SDK source, which pins API
-contract `d831bf9c662f6fb1763a9de259612a4553ab5a02`. Update the registry SDK
+contract `4be41e2b467dc488980499d60076fcfb3d87c44d`. Update the registry SDK
 dependency after that SDK is published and before releasing this CLI.
 
 ### Hybrid Link controls

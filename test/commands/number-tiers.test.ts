@@ -153,10 +153,10 @@ describe('session tier commands', () => {
     )
   })
 
-  test('explains hybrid_resolution_required with the flags to add', async () => {
+  test('explains hybrid_choice_required with the flags to add', async () => {
     server = await startHttpSequenceServer([
       conflict(
-        'hybrid_resolution_required',
+        'hybrid_choice_required',
         'choose which Hybrid Link connection to keep, or split the Number, before leaving Pro',
       ),
     ])
@@ -176,7 +176,7 @@ describe('session tier commands', () => {
     expect(JSON.parse(json.stderr)).toMatchObject({
       error: {
         category: 'conflict',
-        code: 'hybrid_resolution_required',
+        code: 'hybrid_choice_required',
         retryable: false,
       },
     })
@@ -283,6 +283,24 @@ describe('session tier commands', () => {
     expect(result.stdout).toContain('Hybrid Link status: completed')
     expect(result.stdout).toContain(
       'Action required: disconnect the Official API in the WhatsApp Business app',
+    )
+  })
+
+  test('status explains a queued change rejected for a missing Hybrid Link choice', async () => {
+    const rejected = {
+      ...tierChange(undefined, 'rejected'),
+      failureReason: 'hybrid_choice_required',
+    }
+    server = await startHttpSequenceServer([{body: {data: rejected}}])
+    const human = await platform(() =>
+      runCommand(`session tier status support ${QUOTE}`),
+    )
+    expect(human.error).toBeUndefined()
+    expect(human.stdout).toContain(
+      `Tier change ${QUOTE}: rejected (hybrid_choice_required)`,
+    )
+    expect(human.stdout).toContain(
+      'Quote again with --keep linked_devices|official_api, or --split',
     )
   })
 

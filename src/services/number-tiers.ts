@@ -151,6 +151,13 @@ export function renderTierChange(
     lines.push(`Quote expires ${isoTime(change.expiresAtMs)}`)
   if (quote.hybridTransition !== undefined)
     lines.push(...renderHybridTransition(quote.hybridTransition))
+  if (
+    change.status === 'rejected' &&
+    change.failureReason === 'hybrid_choice_required'
+  )
+    lines.push(
+      'This Hybrid Link Number needs a choice before leaving Pro. Quote again with --keep linked_devices|official_api, or --split --stay linked_devices|official_api --new-number-name NAME.',
+    )
   if (next !== undefined) lines.push(next)
   return lines.join('\n')
 }
