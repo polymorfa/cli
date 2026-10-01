@@ -412,7 +412,7 @@ describe('Official API commands', () => {
       'project',
     )
     expect(result.error).toBeUndefined()
-    expect(JSON.parse(result.stdout).data).toEqual(data)
+    expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual(data)
     expect(server.requests).toHaveLength(1)
     expect(server.requests[0]).toMatchObject({
       method: 'GET',
