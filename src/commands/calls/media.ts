@@ -1,3 +1,4 @@
+import {assertCallMediaMuteSupported} from '../../services/call-media-controls.js'
 import {createWriteStream, type ReadStream, type WriteStream} from 'node:fs'
 import {open, stat} from 'node:fs/promises'
 import {once} from 'node:events'
@@ -36,6 +37,11 @@ export default class CallsMedia extends BaseCommand {
   ]
 
   static override flags = {
+    muted: Flags.boolean({
+      exclusive: ['input'],
+      description:
+        'Mute this connection while receiving call audio. Requires media-control support.',
+    }),
     exclusive: Flags.boolean({
       description:
         'Claim the call so no other participant can answer or join it.',
@@ -74,6 +80,7 @@ export default class CallsMedia extends BaseCommand {
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(CallsMedia)
+    if (flags.muted) assertCallMediaMuteSupported()
     if (flags.output === '-' && process.stdout.isTTY) {
       throw new PolymorfaConfigurationError(
         'Received audio is binary. Redirect standard output or pass --output <file>.',
@@ -168,6 +175,7 @@ export default class CallsMedia extends BaseCommand {
           callId: args.callId,
           credential: environment.credential,
           exclusive: flags.exclusive,
+          muted: flags.muted,
           input,
           leaveOnEnd: flags['leave-on-eof'],
           output,

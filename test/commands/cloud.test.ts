@@ -76,12 +76,13 @@ describe('Official API commands', () => {
     })
     const result = await credential(() =>
       runCommand(
-        `cloud template create --session number --input ${path} --json`,
+        `cloud template create --session number --input ${path} --idempotency-key tpl-1 --json`,
       ),
     )
     expect(exitCode(result.error)).toBe(5)
     expect(server.requests).toHaveLength(1)
     expect(JSON.parse(server.requests[0]!.body)).toEqual(body)
+    expect(server.requests[0]!.headers['idempotency-key']).toBe('tpl-1')
   })
 
   test('uses the explicit template project when a different directory is linked', async () => {
@@ -274,6 +275,7 @@ describe('Official API commands', () => {
       method: 'DELETE',
       url: '/messaging/number/templates/order_update',
     })
+    expect(server.requests[0]!.headers['idempotency-key']).toBeUndefined()
   })
 
   test('preserves unknown service-window observations for a project token', async () => {

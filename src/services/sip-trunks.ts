@@ -209,7 +209,7 @@ export function renderSipTrunk(trunk: SipTrunk): string {
       `Transport\t${trunk.outbound.transport}`,
       `Auth username\t${trunk.outbound.authUsername ?? '-'}`,
       `Password stored\t${yesNo(trunk.outbound.hasPassword)}`,
-      `From user\t${trunk.outbound.fromUser ?? 'whatsapp'}`,
+      `From user\t${trunk.outbound.fromUser ?? 'caller identity (automatic)'}`,
     )
   }
   if (trunk.inbound !== null) {
