@@ -249,6 +249,124 @@ describe('typed message send commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test('sends a Brazil order from a JSON file unchanged', async () => {
+    const order = {
+      referenceId: 'order-1522',
+      type: 'digital-goods',
+      body: 'Your order',
+      currency: 'BRL',
+      totalAmount: {value: 5000, offset: 100},
+      paymentSettings: {paymentLink: {uri: 'https://pay.example.com/c/1522'}},
+    }
+    const path = join(directory, 'order.json')
+    await writeFile(path, JSON.stringify(order))
+    server = await messageServer()
+
+    const result = await send([
+      'message',
+      'send',
+      'order',
+      '--session',
+      'session_1',
+      '--to',
+      '+5511987654321',
+      '--order',
+      path,
+      '--idempotency-key',
+      'order-1522',
+      '--json',
+    ])
+
+    expect(result.error).toBeUndefined()
+    expect(sentBody()).toEqual({
+      conversation: {phoneNumber: '+5511987654321'},
+      content: {orderDetails: order},
+    })
+    expect(server.requests[0]?.headers['idempotency-key']).toBe('order-1522')
+  })
+
+  test('rejects an order file that is not a JSON object', async () => {
+    const path = join(directory, 'order.json')
+    await writeFile(path, '[]')
+    server = await messageServer()
+
+    const result = await send([
+      'message',
+      'send',
+      'order',
+      '--session',
+      'session_1',
+      '--to',
+      '+5511987654321',
+      '--order',
+      path,
+      '--json',
+    ])
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('sends an order status update from flags', async () => {
+    server = await messageServer()
+
+    const result = await send([
+      'message',
+      'send',
+      'order-status',
+      '--session',
+      'session_1',
+      '--to',
+      '+5511987654321',
+      '--reference-id',
+      'order-1522',
+      '--body',
+      'Paid',
+      '--order-status',
+      'processing',
+      '--payment-status',
+      'captured',
+      '--payment-timestamp',
+      '1790000000',
+      '--json',
+    ])
+
+    expect(result.error).toBeUndefined()
+    expect(sentBody()).toEqual({
+      conversation: {phoneNumber: '+5511987654321'},
+      content: {
+        orderStatus: {
+          referenceId: 'order-1522',
+          body: 'Paid',
+          order: {status: 'processing'},
+          payment: {status: 'captured', timestamp: 1790000000},
+        },
+      },
+    })
+  })
+
+  test('requires an order or payment status before sending', async () => {
+    server = await messageServer()
+
+    const result = await send([
+      'message',
+      'send',
+      'order-status',
+      '--session',
+      'session_1',
+      '--to',
+      '+5511987654321',
+      '--reference-id',
+      'order-1522',
+      '--body',
+      'Nothing',
+      '--json',
+    ])
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(server.requests).toHaveLength(0)
+  })
+
   test('sends a location with signed coordinates', async () => {
     server = await messageServer()
 

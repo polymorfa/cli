@@ -38,7 +38,7 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261001204803
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261001215108
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
@@ -595,6 +595,32 @@ polymorfa message send list --session session_123 --to +15551234567 \
   `url:<text>=<url>`, `call:<text>=<+E.164>`, or `copy:<text>=<code>`.
 - `list` takes repeatable `--row` values `[<section>/]<id>=<title>[|<description>]`.
   Rows with the same section are grouped in order.
+
+### Brazil payment orders (beta)
+
+Teams enrolled in the beta can send Brazil orders from Official API Numbers
+that Meta has made eligible for payments in Brazil. Polymorfa relays the order
+and payment reports; it does not collect, hold or confirm funds.
+
+```sh
+polymorfa message send order --session session_123 --to +5511987654321 \
+  --order order.json --idempotency-key order-1522
+polymorfa message send order-status --session session_123 --to +5511987654321 \
+  --reference-id order-1522 --body 'Payment received' \
+  --order-status processing --payment-status captured
+```
+
+- `order --order` reads the `orderDetails` JSON object from a file or `-`:
+  `referenceId`, `type`, `body`, `currency: "BRL"`, `totalAmount` in centavos
+  with `offset: 100`, at least one of `paymentSettings.pixDynamicCode`,
+  `paymentLink` or `boleto`, and an optional itemized `order`. The API checks
+  totals, the Pix key and the dynamic Pix code, and names the failing field.
+- `order-status` needs `--order-status`, `--payment-status`, or both. Send a
+  payment status only after your payment provider confirms it.
+- WhatsApp refuses invalid status changes with `order_status_transition_invalid`
+  and refused cancellations with `order_cancellation_failed`. Teams outside the
+  beta receive `feature_unavailable`. Never resend an order after an uncertain
+  result; use a new `referenceId` for every order.
 
 The API has no sticker send kind, so the CLI has no `message send sticker`.
 
