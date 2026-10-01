@@ -144,11 +144,48 @@ describe('listen', () => {
     '--allow-remote-forward',
     '--follow-redirects',
     '--forward-secret-out /tmp/unused-listener-secret',
+    '-H X-Mode:local',
+    '--skip-verify',
   ])('requires --forward-to when using %s', async (flag) => {
     const result = await runCommand(`listen --project ${PROJECT} ${flag}`)
 
     expect(exitCode(result.error)).toBe(2)
     expect(result.stderr).toContain('--forward-to')
+  })
+
+  test('rejects a reserved custom header without echoing its value', async () => {
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN:
+          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+      () =>
+        runCommand(
+          `listen --project ${PROJECT} --forward-to http://127.0.0.1:1 -H 'Authorization: hidden-value'`,
+        ),
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stderr).toContain('invalid or reserved')
+    expect(result.stderr).not.toContain('hidden-value')
+  })
+
+  test('rejects skip-verify for a public forwarding destination', async () => {
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN:
+          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      },
+      () =>
+        runCommand(
+          `listen --project ${PROJECT} --forward-to https://1.1.1.1/hook --allow-remote-forward --skip-verify`,
+        ),
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stderr).toContain('loopback')
   })
 
   test('reports an actionable machine error when forwarding has no secret destination', async () => {

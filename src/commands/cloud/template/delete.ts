@@ -1,6 +1,6 @@
 import {Args, Flags} from '@oclif/core'
 import {BaseCommand} from '../../../base-command.js'
-import {cloudResult} from '../../../services/cloud.js'
+import {cloudResult, requestKey} from '../../../services/cloud.js'
 import {PolymorfaConfigurationError} from '@polymorfa/sdk'
 
 export default class CloudTemplateDelete extends BaseCommand {
@@ -21,6 +21,10 @@ export default class CloudTemplateDelete extends BaseCommand {
       description: 'Confirm deletion of all language variants.',
       required: true,
     }),
+    'idempotency-key': Flags.string({
+      description:
+        'Key that fences a manual retry: reuse it after an unknown outcome and the API returns idempotency_completed instead of writing again.',
+    }),
   }
   async run(): Promise<void> {
     const {args, flags} = await this.parse(CloudTemplateDelete)
@@ -35,6 +39,7 @@ export default class CloudTemplateDelete extends BaseCommand {
     const response = await client.cloudTemplates.delete(
       flags.session,
       args.name,
+      requestKey(flags['idempotency-key']),
     )
     const result = cloudResult(response)
     this.writeValue(result, JSON.stringify(result.data, null, 2), flags)

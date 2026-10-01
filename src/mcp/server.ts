@@ -7,16 +7,21 @@ import {z} from 'zod'
 
 import {LISTENER_PROJECT_ID_PATTERN} from '../listener/protocol.js'
 import type {ListenerManager} from './listener-manager.js'
+import {listMcpSessions, type McpSessionList} from './session-discovery.js'
 
 export const MCP_TOOL_NAMES = [
   'polymorfa_listen_start',
   'polymorfa_listen_status',
   'polymorfa_listen_stop',
+  'polymorfa_session_list',
 ] as const
+
+export type McpSessionLister = (projectId: string) => Promise<McpSessionList>
 
 export function createMcpServer(
   manager: ListenerManager,
   version: string,
+  sessionLister: McpSessionLister = listMcpSessions,
 ): McpServer {
   const server = new McpServer({name: '@polymorfa/cli', version})
   server.registerTool(
@@ -77,6 +82,38 @@ export function createMcpServer(
     },
     async ({listenerId}) => result(await manager.stop(listenerId)),
   )
+  server.registerTool(
+    'polymorfa_session_list',
+    {
+      annotations: {
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: true,
+        readOnlyHint: true,
+      },
+      description:
+        'List stored session summaries in one project. Requires a CLI organization API key with sessions:read.',
+      inputSchema: z.object({
+        projectId: z.string().regex(LISTENER_PROJECT_ID_PATTERN),
+      }),
+      title: 'List Polymorfa project sessions',
+    },
+    async ({projectId}) => {
+      try {
+        return result(await sessionLister(projectId))
+      } catch {
+        return {
+          content: [
+            {
+              text: 'Could not list project sessions with the selected CLI organization API key.',
+              type: 'text' as const,
+            },
+          ],
+          isError: true,
+        }
+      }
+    },
+  )
   return server
 }
 
@@ -84,13 +121,17 @@ export function serveMcp(
   manager: ListenerManager,
   version: string,
   transport?: StdioServerTransport,
+  sessionLister?: McpSessionLister,
 ): {close(): Promise<void>} {
-  const handle = serveStdio(() => createMcpServer(manager, version), {
-    onerror(error) {
-      process.stderr.write(`MCP error: ${error.message}\n`)
+  const handle = serveStdio(
+    () => createMcpServer(manager, version, sessionLister),
+    {
+      onerror(error) {
+        process.stderr.write(`MCP error: ${error.message}\n`)
+      },
+      ...(transport === undefined ? {} : {transport}),
     },
-    ...(transport === undefined ? {} : {transport}),
-  })
+  )
   return {
     async close(): Promise<void> {
       await manager.close()

@@ -76,12 +76,13 @@ describe('Official API commands', () => {
     })
     const result = await credential(() =>
       runCommand(
-        `cloud template create --session number --input ${path} --json`,
+        `cloud template create --session number --input ${path} --idempotency-key tpl-1 --json`,
       ),
     )
     expect(exitCode(result.error)).toBe(5)
     expect(server.requests).toHaveLength(1)
     expect(JSON.parse(server.requests[0]!.body)).toEqual(body)
+    expect(server.requests[0]!.headers['idempotency-key']).toBe('tpl-1')
   })
 
   test('uses the explicit template project when a different directory is linked', async () => {
@@ -274,6 +275,7 @@ describe('Official API commands', () => {
       method: 'DELETE',
       url: '/messaging/number/templates/order_update',
     })
+    expect(server.requests[0]!.headers['idempotency-key']).toBeUndefined()
   })
 
   test('preserves unknown service-window observations for a project token', async () => {
@@ -394,6 +396,39 @@ describe('Official API commands', () => {
     )
     expect(exitCode(result.error)).toBe(expected)
     expect(result.stdout).not.toContain('"success":true')
+  })
+
+  test('lists linked catalog products with an exact cursor', async () => {
+    const data = {
+      data: [{id: '111', retailer_id: 'sku-1', name: 'Mug'}],
+      paging: {cursors: {after: 'next+/='}},
+    }
+    server = await startHttpServer({body: data})
+    const result = await credential(
+      () =>
+        runCommand(
+          'cloud catalog products --waba 1234 --catalog 98765432109876543210 --graph-version v26.0 --limit 10 --after next+/= --json',
+        ),
+      'project',
+    )
+    expect(result.error).toBeUndefined()
+    expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual(data)
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/graph/whatsapp/v26.0/1234/product_catalogs/98765432109876543210/products?limit=10&after=next%2B%2F%3D',
+    })
+  })
+
+  test('rejects a non-numeric catalog ID before any request', async () => {
+    server = await startHttpServer({body: {data: []}})
+    const result = await credential(() =>
+      runCommand(
+        'cloud catalog products --waba 1234 --catalog ../x --graph-version v26.0 --json',
+      ),
+    )
+    expect(result.error).toBeDefined()
+    expect(server.requests).toHaveLength(0)
   })
 
   async function credential<T>(

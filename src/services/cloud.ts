@@ -1,3 +1,4 @@
+import {idempotencyKey} from '../input/idempotency.js'
 import {
   PolymorfaConfigurationError,
   type ApiResponse,
@@ -65,4 +66,11 @@ export function parseCloudTemplateEdit(
       'input',
     )
   return parsed.data
+}
+
+/** Forwards a caller-supplied Idempotency-Key; the SDK still sends once. */
+export function requestKey(value: string | undefined): {
+  idempotencyKey?: string
+} {
+  return value === undefined ? {} : {idempotencyKey: idempotencyKey(value)}
 }
