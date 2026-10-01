@@ -5,7 +5,7 @@ import {runDoctor} from '../services/doctor.js'
 
 export default class Doctor extends BaseCommand {
   static override description =
-    'Check Node.js, config, keyring access, API reachability, and API key validity.'
+    'Check Node.js, config, keyring access, API reachability, and server API key validity. Exits 1 if validation fails or is skipped.'
 
   static override examples = [
     '<%= config.bin %> doctor',

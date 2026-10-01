@@ -316,7 +316,9 @@
   },
   "publishConfig": {
     "access": "public",
-    "provenance": true
+    "registry": "https://registry.npmjs.org/",
+    "tag": "dev",
+    "provenance": false
   },
   "repository": {
     "type": "git",

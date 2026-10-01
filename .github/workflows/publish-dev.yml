@@ -1,0 +1,122 @@
+name: Publish CLI dev prerelease
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Full commit SHA at the current dev head
+        required: true
+        type: string
+      version:
+        description: Exact prerelease version in package.json
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cli-npm-dev
+  cancel-in-progress: false
+
+jobs:
+  package:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    outputs:
+      tarball: ${{ steps.pack.outputs.tarball }}
+      sha256: ${{ steps.pack.outputs.sha256 }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.commit }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Check immutable release source
+        env:
+          RELEASE_COMMIT: ${{ inputs.commit }}
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          [[ "$RELEASE_COMMIT" =~ ^[0-9a-f]{40}$ ]]
+          git fetch origin dev
+          test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"
+          test "$(git rev-parse origin/dev)" = "$RELEASE_COMMIT"
+          test -z "$(git status --porcelain)"
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.15.0
+          registry-url: https://registry.npmjs.org/
+          package-manager-cache: false
+      - name: Check release manifest and lockfile
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: node scripts/check-prerelease.mjs "$RELEASE_VERSION"
+      - name: Verify published SDK artifact
+        run: |
+          set -euo pipefail
+          node --input-type=module <<'NODE'
+          import {execFileSync} from 'node:child_process'
+          import {readFileSync} from 'node:fs'
+          const lock = JSON.parse(readFileSync('package-lock.json'))
+          const sdk = lock.packages['node_modules/@polymorfa/sdk']
+          const actual = JSON.parse(execFileSync('npm', ['view', `@polymorfa/sdk@${sdk.version}`, 'dist.integrity', '--json'], {encoding: 'utf8'}))
+          if (actual !== sdk.integrity) throw new Error('Published SDK integrity differs from the lockfile')
+          NODE
+      - run: npm ci
+      - run: npm run verify
+      - name: Pack and smoke test the release artifact
+        id: pack
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          npm pack --ignore-scripts --json > pack.json
+          tarball="$(node --input-type=module -e "import {readFileSync} from 'node:fs'; console.log(JSON.parse(readFileSync('pack.json'))[0].filename)")"
+          test "$tarball" = "polymorfa-cli-$RELEASE_VERSION.tgz"
+          mkdir -p "$RUNNER_TEMP/cli-smoke"
+          npm install --prefix "$RUNNER_TEMP/cli-smoke" --ignore-scripts "$(pwd)/$tarball"
+          "$RUNNER_TEMP/cli-smoke/node_modules/.bin/polymorfa" version --json > "$RUNNER_TEMP/cli-smoke/version.json"
+          node --input-type=module -e "import {readFileSync} from 'node:fs'; const v=JSON.parse(readFileSync(process.argv[1])); if(v.cli!==process.argv[2] || v.sdk!==process.argv[3]) process.exit(1)" "$RUNNER_TEMP/cli-smoke/version.json" "$RELEASE_VERSION" "$(node -p "require('./package.json').dependencies['@polymorfa/sdk']")"
+          echo "tarball=$tarball" >> "$GITHUB_OUTPUT"
+          echo "sha256=$(sha256sum "$tarball" | cut -d ' ' -f 1)" >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cli-prerelease
+          path: ${{ steps.pack.outputs.tarball }}
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: package
+    runs-on: ubuntu-latest
+    environment: npm-prerelease
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24.15.0
+          registry-url: https://registry.npmjs.org/
+          package-manager-cache: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: cli-prerelease
+      - name: Publish the verified tarball to the dev tag
+        env:
+          RELEASE_VERSION: ${{ inputs.version }}
+          EXPECTED_TARBALL: ${{ needs.package.outputs.tarball }}
+          EXPECTED_SHA256: ${{ needs.package.outputs.sha256 }}
+        run: |
+          set -euo pipefail
+          test "$EXPECTED_TARBALL" = "polymorfa-cli-$RELEASE_VERSION.tgz"
+          echo "$EXPECTED_SHA256  $EXPECTED_TARBALL" | sha256sum --check -
+          node -e "const v=process.versions.node.split('.').map(Number); if(v[0]<22 || (v[0]===22 && v[1]<14)) process.exit(1)"
+          node -e "const v=process.argv[1].split('.').map(Number); if(v[0]<11 || (v[0]===11 && (v[1]<5 || (v[1]===5 && v[2]<1)))) process.exit(1)" "$(npm --version)"
+          npm view "@polymorfa/cli" version --json > /dev/null
+          if npm view "@polymorfa/cli@$RELEASE_VERSION" version --json > /dev/null 2>&1; then
+            echo "Version already exists in npm" >&2
+            exit 1
+          fi
+          npm publish "$EXPECTED_TARBALL" --access public --tag dev --provenance=false --ignore-scripts
