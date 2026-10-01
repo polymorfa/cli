@@ -1,6 +1,6 @@
 import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
 import {AsyncEntry} from '@napi-rs/keyring'
-import {homedir} from 'node:os'
+import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {runCommand} from '@oclif/test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -55,7 +55,7 @@ describe('Official API commands', () => {
 
   test('submits bounded template JSON once', async () => {
     directory = await mkdtemp(
-      join(homedir(), '.polymorfa-agent-work', 'cloud-cli-test-'),
+      join(tmpdir(), 'cloud-cli-test-'),
     )
     const path = join(directory, 'template.json')
     const body = {
@@ -87,7 +87,7 @@ describe('Official API commands', () => {
 
   test('uses the explicit template project when a different directory is linked', async () => {
     directory = await mkdtemp(
-      join(homedir(), '.polymorfa-agent-work', 'cloud-cli-test-'),
+      join(tmpdir(), 'cloud-cli-test-'),
     )
     await writeFile(
       join(directory, 'polymorfa.json'),
@@ -153,7 +153,7 @@ describe('Official API commands', () => {
 
   test('edits a selected template language and reports acceptance', async () => {
     directory = await mkdtemp(
-      join(homedir(), '.polymorfa-agent-work', 'cloud-cli-test-'),
+      join(tmpdir(), 'cloud-cli-test-'),
     )
     const path = join(directory, 'edit.json')
     const body = {components: [{type: 'BODY', text: 'Ready'}]}
@@ -184,7 +184,7 @@ describe('Official API commands', () => {
 
   test('rejects an edit containing a renamed template before dispatch', async () => {
     directory = await mkdtemp(
-      join(homedir(), '.polymorfa-agent-work', 'cloud-cli-test-'),
+      join(tmpdir(), 'cloud-cli-test-'),
     )
     const path = join(directory, 'invalid.json')
     await writeFile(path, JSON.stringify({name: 'renamed', components: [{}]}))
