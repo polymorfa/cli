@@ -54,9 +54,7 @@ describe('Official API commands', () => {
   })
 
   test('submits bounded template JSON once', async () => {
-    directory = await mkdtemp(
-      join(tmpdir(), 'cloud-cli-test-'),
-    )
+    directory = await mkdtemp(join(tmpdir(), 'cloud-cli-test-'))
     const path = join(directory, 'template.json')
     const body = {
       name: 'order_update',
@@ -86,9 +84,7 @@ describe('Official API commands', () => {
   })
 
   test('uses the explicit template project when a different directory is linked', async () => {
-    directory = await mkdtemp(
-      join(tmpdir(), 'cloud-cli-test-'),
-    )
+    directory = await mkdtemp(join(tmpdir(), 'cloud-cli-test-'))
     await writeFile(
       join(directory, 'polymorfa.json'),
       JSON.stringify({
@@ -152,9 +148,7 @@ describe('Official API commands', () => {
   })
 
   test('edits a selected template language and reports acceptance', async () => {
-    directory = await mkdtemp(
-      join(tmpdir(), 'cloud-cli-test-'),
-    )
+    directory = await mkdtemp(join(tmpdir(), 'cloud-cli-test-'))
     const path = join(directory, 'edit.json')
     const body = {components: [{type: 'BODY', text: 'Ready'}]}
     await writeFile(path, JSON.stringify(body))
@@ -183,9 +177,7 @@ describe('Official API commands', () => {
   })
 
   test('rejects an edit containing a renamed template before dispatch', async () => {
-    directory = await mkdtemp(
-      join(tmpdir(), 'cloud-cli-test-'),
-    )
+    directory = await mkdtemp(join(tmpdir(), 'cloud-cli-test-'))
     const path = join(directory, 'invalid.json')
     await writeFile(path, JSON.stringify({name: 'renamed', components: [{}]}))
     server = await startHttpServer({body: {success: true}})

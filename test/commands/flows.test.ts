@@ -88,9 +88,7 @@ describe('project Flow commands', () => {
     })
   })
   test('rejects project override in a draft file before dispatch', async () => {
-    directory = await mkdtemp(
-      join(tmpdir(), 'flows-cli-test-'),
-    )
+    directory = await mkdtemp(join(tmpdir(), 'flows-cli-test-'))
     const path = join(directory, 'draft.json')
     await writeFile(
       path,
