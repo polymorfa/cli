@@ -395,6 +395,97 @@ describe('developer webhook commands', () => {
     })
   })
 
+  test('rejects a supplied team webhook body before calling the SDK', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'polymorfa-command-'))
+    directories.push(directory)
+    const input = join(directory, 'test.json')
+    await writeFile(
+      input,
+      JSON.stringify({
+        body: {
+          encoding: 'base64',
+          contentType: 'application/json',
+          data: 'e30=',
+        },
+        sessionId: 'session_1',
+      }),
+    )
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+
+    const error = await developerEnvironment(() =>
+      WebhookTest.run([
+        'wh_1',
+        '--owner',
+        'organization',
+        '--event',
+        'customer.created',
+        '--input',
+        input,
+        '--json',
+      ]),
+    ).catch((caught: unknown) => caught)
+
+    expect(exitCode(error)).toBe(2)
+    expect(state.calls.some(({method}) => method === 'webhooks.test')).toBe(
+      false,
+    )
+  })
+
+  test('requires a project session ID with a supplied test body', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'polymorfa-command-'))
+    directories.push(directory)
+    const input = join(directory, 'test.json')
+    const body = {
+      encoding: 'base64',
+      contentType: 'application/json',
+      data: 'e30=',
+    }
+    await writeFile(input, JSON.stringify({body}))
+    vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+
+    const error = await developerEnvironment(() =>
+      WebhookTest.run([
+        'wh_1',
+        '--owner',
+        'project',
+        '--project',
+        '11111111-1111-4111-8111-111111111111',
+        '--event',
+        'message.received',
+        '--input',
+        input,
+        '--json',
+      ]),
+    ).catch((caught: unknown) => caught)
+
+    expect(exitCode(error)).toBe(2)
+    expect(state.calls.some(({method}) => method === 'webhooks.test')).toBe(
+      false,
+    )
+
+    await writeFile(input, JSON.stringify({body, sessionId: 'session_1'}))
+    stdout()
+    await developerEnvironment(() =>
+      WebhookTest.run([
+        'wh_1',
+        '--owner',
+        'project',
+        '--project',
+        '11111111-1111-4111-8111-111111111111',
+        '--event',
+        'message.received',
+        '--input',
+        input,
+        '--json',
+      ]),
+    )
+    expect(findCall('webhooks.test').args[1]).toEqual({
+      body,
+      eventType: 'message.received',
+      sessionId: 'session_1',
+    })
+  })
+
   test('rotates with confirmation, a bounded overlap, and no secret in JSON', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'polymorfa-command-'))
     directories.push(directory)

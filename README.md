@@ -3,9 +3,9 @@
 The official command-line interface for Polymorfa.
 
 The package is under active development. `@polymorfa/cli` is not published to
-npm yet, so `npm install --global @polymorfa/cli` does not work. Once the CLI is
-published, that command will be the supported installation. Until then, install
-from the private source repository, which requires repository access.
+npm yet. When a development prerelease is available, install it explicitly with
+`npm install --global @polymorfa/cli@dev`. Until then, install from the private
+source repository, which requires repository access.
 
 ## Requirements
 
@@ -38,12 +38,25 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260926005918
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261001124422
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
 prereleases include their full timestamped version. Run `npm ls @polymorfa/sdk`
 to see the installed build.
+
+## Documentation from the terminal
+
+```shell
+polymorfa docs search "rate limits"
+polymorfa docs open api/rate-limits
+polymorfa docs open api/rate-limits --print
+```
+
+Search reads the published documentation index and prints matching titles,
+paths, and links. `--json` prints a result array. Open launches the exact page
+in a browser; `--print` emits its URL instead. These commands use network
+access but do not use your Polymorfa credentials.
 
 ## Authentication profiles
 
@@ -70,6 +83,22 @@ in this development slice and does not yet claim remote identity validation.
 
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
+
+## Start a Node project
+
+Create a Node.js and TypeScript starter in an existing directory:
+
+```shell
+polymorfa init
+```
+
+The command writes `package.json`, `src/index.ts`, `.env.example`, and
+`README.md`. It pins an exact published SDK development version. It does not
+read or write credentials, select a project, or overwrite
+any existing starter file. If a target already exists, it stops before writing
+anything. Set the example's `POLYMORFA_API_KEY` through your shell or secret
+manager when you choose to run it. Use `polymorfa link` separately to associate
+the directory with a project for CLI commands.
 
 ## Project context
 
@@ -105,18 +134,66 @@ polymorfa doctor
 polymorfa doctor --profile work --json
 ```
 
-`doctor` runs five checks and exits with code 1 if any fails:
+`doctor` runs five checks and exits with code 1 if any fails or credential
+validation is skipped. A successful run needs one server API key. It does not
+change credentials or configuration.
 
-| Check        | What it does                                                                                                                                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `node`       | Requires Node.js 22 or newer.                                                                                                                                                                                                        |
-| `config`     | Loads and validates the profile config and reports the active profile.                                                                                                                                                               |
-| `keyring`    | Reads the selected profile's entry from the operating-system keyring. A locked or unavailable keyring fails, or warns when an environment credential is in use.                                                                      |
-| `api`        | Calls the unauthenticated `/ping` on the configured base URL, without retries.                                                                                                                                                       |
-| `credential` | For a server API key, lists projects as an authenticated ping. `401` fails; `403` warns that the key authenticated but project listing was denied. Project and client tokens are reported as present but are not validated remotely. |
+| Check        | What it does                                                                                                                                                                                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `node`       | Requires Node.js 22 or newer.                                                                                                                                                                                                                                                             |
+| `config`     | Loads and validates the profile config and reports the active profile.                                                                                                                                                                                                                    |
+| `keyring`    | Reads the selected profile's entry from the operating-system keyring. A locked or unavailable keyring fails, or warns when an environment credential is in use.                                                                                                                           |
+| `api`        | Calls the unauthenticated `/ping` on the configured base URL, without retries.                                                                                                                                                                                                            |
+| `credential` | For a server API key, lists projects as an authenticated ping. `401` fails; `403` warns that the key authenticated but project listing was denied. Missing credentials fail. Project and client tokens are reported as present, but remote validation is skipped and the command exits 1. |
 
-Environment credentials take precedence over the active profile, as for other
-commands. Output never contains credential values.
+An explicit `--profile` selects that profile. Otherwise, one environment
+credential takes precedence over the active profile; multiple credential
+environment variables fail as ambiguous. Output never contains credential values.
+
+## Shell completion
+
+Generate and load completion for your shell after installing a CLI source build:
+
+```bash
+source <(polymorfa completion bash)
+```
+
+For Zsh, initialize its completion system before loading the script:
+
+```zsh
+autoload -Uz compinit && compinit
+source <(polymorfa completion zsh)
+```
+
+For Fish:
+
+```fish
+polymorfa completion fish | source
+```
+
+Completion suggests command names, flags, and fixed flag choices from the
+installed CLI. It does not look up profile names, project IDs, credentials, or
+other argument values, and it does not contact the API. Add the command for
+your shell to its startup file if you want completion in later sessions.
+
+## Inspect sessions
+
+Use an organization API key with `sessions:read` to inspect stored session
+metadata:
+
+```shell
+polymorfa session list
+polymorfa session list --project PROJECT_ID --json
+polymorfa session view SESSION_ID
+polymorfa session status SESSION_ID --json
+```
+
+`session list` reads every session in the team unless you pass a project UUID.
+Use a session ID from the list for `view` or `status`; these commands do not
+accept `--project`. `status` reads the stored status and optional reason from
+the session record. It does not probe the device or wait for a connection.
+Key metadata listing and revocation are available through `key list` and
+`key revoke`; the CLI does not mint or rotate organization keys.
 
 ## QuickLinks
 
@@ -389,7 +466,7 @@ beta feature.
 polymorfa cloud catalog list --waba WABA_ID --graph-version v26.0 --limit 25
 polymorfa cloud template list --session number_123
 polymorfa cloud template get order_update --session number_123 --language en_US
-polymorfa cloud template create --session number_123 --input template.json
+polymorfa cloud template create --session number_123 --input template.json --idempotency-key tpl-order-update
 polymorfa cloud template edit order_update --session number_123 --language en_US --input components.json
 polymorfa cloud template delete order_update --session number_123 --yes
 polymorfa cloud service-window +15551234567 --session number_123
@@ -403,8 +480,12 @@ catalog. They are separate from project template drafts. Creation reads a JSON
 object with `name`, `language`, `category`, and `components` from `--input`, or
 from stdin when it is `-`. Template names and provider IDs remain strings.
 Edits read `{ "components": [...] }` and return acceptance, not approval to send.
-Deletion requires `--yes`. The native catalog routes reject Numbers originally
-created as Linked Device, including their Hybrid mode.
+Deletion requires `--yes`. Create, edit and delete send one request and never
+retry. Create and delete accept `--idempotency-key`; reuse the same key after an
+unknown outcome and the API answers `idempotency_completed` instead of writing
+again. List the catalog before resubmitting. The template routes need an active
+Official API connection, including on a Hybrid Number; a Number with only a
+Linked Devices connection is rejected.
 
 Service-window reads use `chats:read`. They report observed `open`, `closed`, or
 `unknown` state; missing or interrupted notifications can prevent a reliable
@@ -822,6 +903,24 @@ polymorfa calls retention set --policy compliance --expected-revision 0
 polymorfa calls retention set --policy custom --days 14 --expected-revision 1 --yes
 ```
 
+This source revision also adds `calls place-group` and `calls ring`. They require
+the matching Calls API and a published SDK version that includes group controls;
+the release must update the pinned SDK dependency before these commands ship.
+
+```shell
+polymorfa calls place-group --session support --to +15550100 --to +15550101
+polymorfa calls place-group --session support --group-id 9007199254740996
+polymorfa calls ring call_123 +15550101
+```
+
+Group placement accepts 2 to 31 distinct recipients and checks every recipient's
+calling permissions. Use `--group-id` instead of `--to` to call every remote
+member of an existing group using its public ID. The Number must belong to the
+group, and it must have 2 to 31 remote members. Membership changes during
+placement refuse the call. Group calls require a Linked Device Number. `calls ring`
+only rings a non-connected participant already in the call roster; successful
+submission does not mean that the participant answered.
+
 Every inbound call rings until a participant answers or declines it. The CLI
 never answers or declines on its own.
 
@@ -920,7 +1019,9 @@ placed call that is still ringing. If the `--output` file cannot be written,
 or the `--input` file cannot be read, the command leaves the call and exits
 with code 2. It exits with code 2 before connecting when the `--input` file
 cannot be opened or when `--input` and `--output` name the same file. The
-command carries audio only.
+command carries audio only. `--muted` receives audio with this connection muted;
+it cannot be combined with `--input`. The command refuses `--muted` before
+connecting when its pinned Calls SDK lacks media-control support.
 
 Convert audio with any tool that writes raw PCM, for example:
 
@@ -1060,6 +1161,10 @@ Both commands filter with `--session`, `--direction` (`inbound` or
   number.
 
 ### SIP trunks
+
+`sip-trunk view` displays a null `outbound.fromUser` as automatic caller
+identity. Set `outbound.fromUser` in your trunk JSON when your PBX needs a fixed
+From user.
 
 SIP trunks connect a PBX to WhatsApp calls. They are part of Calls and need no
 enrollment. Commands require a server API key.
@@ -1645,6 +1750,13 @@ polymorfa webhook delivery attempt list delivery_123 \
   --project project_123
 ```
 
+`webhook test` requires `--event`. Team tests accept that event type only.
+Project tests can also read a JSON object with `body` and `sessionId` from
+`--input`; supply both fields together. The CLI rejects a team body or an
+incomplete project body before requesting a delivery. The `body` must be an
+exact base64-encoded native event for an HMS-enabled Number in the same
+project. See the [webhook guide](https://docs.polymorfa.com/api/webhooks#send-a-test-delivery).
+
 Webhook creation and secret rotation return a signing secret once. JSON and
 noninteractive runs require `--secret-out`; the CLI preflights a new path and
 writes it atomically with mode `0600`. Interactive runs can reveal the secret
@@ -1748,6 +1860,15 @@ checkpoints only after stdout and every forwarding destination have accepted an
 event. A cursor gap stops with a nonzero exit unless `--on-gap continue` was
 selected.
 
+Use `-H 'X-Local-Mode: test'` to add a custom header to forwarded requests.
+Repeat `-H` for multiple headers. Reserved authentication, framing, and
+Polymorfa signature headers cannot be overridden; custom headers cannot follow
+a cross-origin redirect. Avoid passing secrets in command arguments. For a
+self-signed loopback HTTPS handler, add `--skip-verify`. This option never
+changes verification for the Polymorfa API or a public forwarding destination.
+`--json` already provides JSONL output. Noninteractive and JSON forwarding
+require `--forward-secret-out`; the per-run secret is not printed to stdout.
+
 ## Trigger test events
 
 `polymorfa trigger` sends a signed test event for a Test number. The event
@@ -1794,7 +1915,7 @@ test the end of a restriction. `--from-session OTHER_TEST_NUMBER` sends a real s
 another Test number in the project instead, producing an ordinary
 `message.received` event you can reply to. Use `--json` for one JSON document.
 
-## MCP listener controls
+## Local MCP tools
 
 The package includes a standards-based stdio MCP server for Codex and Claude:
 
@@ -1811,6 +1932,13 @@ The MCP tools `polymorfa_listen_start`, `polymorfa_listen_status`, and
 They do not create detached daemons. MCP responses contain listener IDs,
 status, and safe counters, never primary credentials, listener credentials,
 forwarding secrets, or unrestricted payloads.
+
+`polymorfa_session_list` is a read-only discovery tool for one explicit project
+UUID. It uses the selected CLI organization API key with `sessions:read` and
+returns session ID, name, stored status, and test-mode flag. It omits phone
+numbers, credentials, and message data. The tool does not probe the live device.
+Project tokens and Messaging client tokens cannot use this tool. A failed read
+returns a generic error without exposing the credential or API response body.
 
 ## Agent skills
 
@@ -1913,15 +2041,20 @@ polymorfa api /platform/customers --surface platform \
   page bodies and whose `metadata.pages` is the page count.
 - `--slurp` requires `--paginate` and combines the page bodies into one array
   before `--jq` or `--template` runs. Without `--slurp`, filters run on each page.
+  In human output, `--slurp --include` prints an array with each page's body and
+  response metadata. `--json` prints one document with an array of page bodies
+  and the final response metadata plus the page count; `--include` only changes
+  human output.
 - `-q/--jq` runs a jq 1.8 program with an embedded WebAssembly jq, so no `jq`
-  binary is required. Strings print without quotes. The jq runtime has its own
+  binary is required. Strings print without quotes and keep leading and trailing
+  whitespace. The jq runtime has its own
   environment, so `$ENV` does not expose your shell variables or credentials.
 - `-t/--template` renders a Go-style template: `{{.path.to.value}}`,
   `{{range .list}}…{{else}}…{{end}}`, `{{if .value}}…{{else}}…{{end}}`,
   `{{$.root}}` inside a range, `{{json .x}}`, `{{len .x}}`, `{{upper .x}}`,
   `{{lower .x}}`, `{{join ", " .list}}`, string literals such as `{{"\n"}}`,
   comments, and `{{-`/`-}}` whitespace trimming. Missing values render as an
-  empty string.
+  empty string. Quoted strings can contain `}}`.
 - `--jq`, `--template`, and `--json` are mutually exclusive, as are `--include`
   and a filter.
 
@@ -2102,3 +2235,42 @@ Invocation input contains an optional `deploymentId`, `trigger` (`test` or `http
 Use `function invocation list FUNCTION_UUID` and `function invocation view FUNCTION_UUID INVOCATION_UUID` to reconcile a result. Invocation inputs, responses and customer log text are not retained. `--json` includes the transient result when the initial invocation returns it. The default display prints metadata and HTTP status without response content. An uncertain, failed, running or unavailable invocation, or an HTTP response of 400 or higher, exits with code 8 after printing its receipt. Check customer effects before using a new key unless `retryable` explicitly says execution did not start.
 
 Function, deployment, secret and invocation lists accept `--limit 1..100` and `--before UUID`. Deployment lists return metadata without source, including with `--json`. `function deployment view` exposes source with `--json`; secret reads always return metadata.
+
+### Call reaction and hand commands
+
+`calls react CALL --connection-id CONNECTION --emoji '👍'` sends a reaction;
+`--clear` clears it. `calls hand CALL --connection-id CONNECTION --raised`
+raises the Number's hand; omit `--raised` to lower it. A server credential may
+name `--participant`; a client token acts as its own participant. The named
+connection must still be attached to the call.
+
+These source commands require the SDK release containing `sendReaction` and
+`setHandRaised`, followed by an exact registry dependency update. Until that
+release is pinned, they return a specific SDK dependency error. Local package
+tests do not establish published availability. Reactions are transient and
+are never retried automatically. Hand state is shared by the Number's clients.
+
+The source group-placement and participant re-ring commands also require the
+matching SDK publication. Until its exact registry version is pinned, they
+refuse before sending a request. Testing a local package does not establish
+registry or deployed availability.
+
+### Stored call records
+
+```sh
+polymorfa calls list --outcome missed --limit 25 --json
+polymorfa calls list --outcome missed --limit 25 --cursor CURSOR --json
+polymorfa calls view CALL_ID --json
+```
+
+`calls list` reads one page through the existing Calls records API. Reuse the
+same filters when following a cursor. These reads need `sessions:read` and a
+server credential. Project tokens only read calls originally owned by their
+project. Human output labels unmeasured duration as `unknown`.
+
+The source `calls view` command requires the SDK publication containing
+`Client.calls.retrieve` and the matching API deployment. Until that exact
+registry release is pinned, it reports an SDK dependency error before transport.
+Its JSON output includes bounded event history, participant and connection
+lifetimes, and allowlisted diagnostics. It does not retrieve media or webhook
+deliveries. Local package tests do not establish published availability.
