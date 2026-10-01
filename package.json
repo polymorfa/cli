@@ -108,6 +108,9 @@
       "calls": {
         "description": "Place and manage calls, check consent, carry audio, and report on past calls."
       },
+      "calls:link": {
+        "description": "Create and preview WhatsApp call links."
+      },
       "calls:opt-outs": {
         "description": "Manage the team do-not-call list."
       },

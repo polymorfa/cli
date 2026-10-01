@@ -147,41 +147,6 @@ export interface PlaceCallInput {
   readonly video?: boolean | undefined
 }
 
-interface GroupCallsResource {
-  place(
-    input: (
-      | {participants: readonly string[]; groupId?: never}
-      | {groupId: string; participants?: never}
-    ) & {
-      session?: string
-      video?: boolean
-      exclusive?: boolean
-      participant?: string
-    },
-  ): ReturnType<MessagingClient['voip']['place']>
-  ringParticipant(
-    callId: string,
-    input: {to: string},
-  ): Promise<{data: SuccessResponse; metadata: ResponseMetadata}>
-}
-
-function groupResource(value: unknown): GroupCallsResource {
-  if (
-    value === null ||
-    typeof value !== 'object' ||
-    !('place' in value) ||
-    typeof value.place !== 'function' ||
-    !('ringParticipant' in value) ||
-    typeof value.ringParticipant !== 'function'
-  ) {
-    throw new PolymorfaConfigurationError(
-      'Group calls and participant re-ring require a published SDK version with these controls. This CLI build has not received that SDK release.',
-      'sdk',
-    )
-  }
-  return value as GroupCallsResource
-}
-
 export async function placeCall(
   client: MessagingClient,
   credential: CallsCredential,
@@ -225,10 +190,10 @@ export async function placeCall(
   }
   const response = await callRequest(() =>
     groupId
-      ? groupResource(client.voip).place({groupId, ...options})
+      ? client.voip.place({groupId, ...options})
       : typeof to === 'string'
         ? client.voip.place({to, ...options})
-        : groupResource(client.voip).place({participants: to!, ...options}),
+        : client.voip.place({participants: to!, ...options}),
   )
   return result(response.data.data, response.metadata)
 }
@@ -322,7 +287,7 @@ export async function ringCallParticipant(
   validateCallId(callId)
   const to = validateCallTarget(target, 'target')
   const response = await callRequest(() =>
-    groupResource(client.voip).ringParticipant(callId, {to}),
+    client.voip.ringParticipant(callId, {to}),
   )
   return result(response.data, response.metadata)
 }
@@ -395,7 +360,7 @@ export async function updateCallSettings(
   return result(response.data.data, response.metadata)
 }
 
-function validateSession(session: string): string {
+export function validateSession(session: string): string {
   const trimmed = session.trim()
   if (trimmed.length === 0 || trimmed.length > 128) {
     throw new PolymorfaConfigurationError(
@@ -665,11 +630,11 @@ export function renderCallRetention(retention: CallRetention): string {
   ].join('\n')
 }
 
-function yesNo(value: boolean): string {
+export function yesNo(value: boolean): string {
   return value ? 'yes' : 'no'
 }
 
-function result<T>(data: T, metadata: ResponseMetadata): CallsResult<T> {
+export function result<T>(data: T, metadata: ResponseMetadata): CallsResult<T> {
   return {
     data,
     metadata: {
@@ -1398,37 +1363,6 @@ interface SocialInput {
   readonly connectionId: string
   readonly participant?: string | undefined
 }
-type SocialReply = {data: SuccessResponse; metadata: ResponseMetadata}
-interface SocialCallsResource {
-  sendReaction(
-    callId: string,
-    input: {
-      connectionId: string
-      participant?: string
-      emoji: CallReactionEmoji
-    },
-  ): Promise<SocialReply>
-  setHandRaised(
-    callId: string,
-    input: {connectionId: string; participant?: string; raised: boolean},
-  ): Promise<SocialReply>
-}
-function socialResource(value: unknown): SocialCallsResource {
-  if (
-    value === null ||
-    typeof value !== 'object' ||
-    !('sendReaction' in value) ||
-    typeof value.sendReaction !== 'function' ||
-    !('setHandRaised' in value) ||
-    typeof value.setHandRaised !== 'function'
-  ) {
-    throw new PolymorfaConfigurationError(
-      'Call reactions and hands require a published SDK version with these controls. This CLI build has not received that SDK release.',
-      'sdk',
-    )
-  }
-  return value as SocialCallsResource
-}
 export async function reactToCall(
   client: MessagingClient,
   credential: CallsCredential,
@@ -1443,7 +1377,7 @@ export async function reactToCall(
       'Reaction must be 👍, ❤️, 😂, 😮, 😢, 🙏, or empty to clear.',
       'emoji',
     )
-  const resource = socialResource(client.voip)
+  const resource = client.voip
   const response = await callRequest(() =>
     resource.sendReaction(callId, {
       connectionId,
@@ -1463,7 +1397,7 @@ export async function setCallHand(
   const connectionId = validateConnectionId(input.connectionId)
   const participant = validateParticipant(credential, input.participant)
   const response = await callRequest(() =>
-    socialResource(client.voip).setHandRaised(callId, {
+    client.voip.setHandRaised(callId, {
       connectionId,
       raised: input.raised,
       ...(participant === undefined ? {} : {participant}),

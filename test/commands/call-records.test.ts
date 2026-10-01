@@ -1,5 +1,4 @@
 import {runCommand} from '@oclif/test'
-import {Client} from '@polymorfa/sdk'
 import {afterEach, describe, expect, test} from 'vitest'
 import {renderCallDetail} from '../../src/services/call-analytics.js'
 import {
@@ -11,9 +10,6 @@ import {
 const API_KEY =
   'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
 const PROJECT = '11111111-1111-4111-8111-111111111111'
-const hasDetail =
-  'retrieve' in
-  new Client({credential: {type: 'organizationApiKey', value: API_KEY}}).calls
 const record = {
   callId: 'call_1',
   projectId: PROJECT,
@@ -85,59 +81,44 @@ describe('stored call record commands', () => {
     }
     expect(server.requests).toHaveLength(1)
   })
-  test.skipIf(hasDetail)(
-    'refuses detail on an older registry SDK before transport',
-    async () => {
-      server = await startHttpServer({body: {data: {}}})
-      const result = await run('calls view call_1 --json')
-      expect(result.error).toBeDefined()
-      expect(result.stderr).toContain('published SDK version')
-      expect(server.requests).toHaveLength(0)
-    },
-  )
-  test.skipIf(!hasDetail)(
-    'reads detail through the SDK and rejects an invalid shape',
-    async () => {
-      const detail = {
-        call: {...record, live: false},
-        history: {
-          events: [
-            {
-              eventId: 'event_1',
-              type: 'call.ended',
-              occurredAt: record.endedAt,
-            },
-          ],
-          truncated: true,
-        },
-        telemetry: {status: 'unknown'},
-        participants: [],
-        connections: [],
-        appReports: {status: 'none'},
-      }
-      server = await startHttpServer({body: {data: detail}})
-      const result = await run(`calls view call_1 --project ${PROJECT} --json`)
-      expect(result.error).toBeUndefined()
-      expect(server.requests[0]?.url).toBe(
-        `/platform/calls/call_1?projectId=${PROJECT}`,
-      )
-      expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual(
-        detail,
-      )
-      await server.close()
-      server = await startHttpServer({body: {data: {call: {callId: 'call_1'}}}})
-      const invalid = await run('calls view call_1 --json')
-      expect(invalid.error).toBeDefined()
-      expect(invalid.stderr).toContain('invalid call detail')
-      await server.close()
-      server = await startHttpServer({
-        body: {data: {...detail, history: {events: [null], truncated: false}}},
-      })
-      const malformedHistory = await run('calls view call_1')
-      expect(malformedHistory.error).toBeDefined()
-      expect(malformedHistory.stderr).toContain('invalid call detail')
-    },
-  )
+  test('reads detail through the SDK and rejects an invalid shape', async () => {
+    const detail = {
+      call: {...record, live: false},
+      history: {
+        events: [
+          {
+            eventId: 'event_1',
+            type: 'call.ended',
+            occurredAt: record.endedAt,
+          },
+        ],
+        truncated: true,
+      },
+      telemetry: {status: 'unknown'},
+      participants: [],
+      connections: [],
+      appReports: {status: 'none'},
+    }
+    server = await startHttpServer({body: {data: detail}})
+    const result = await run(`calls view call_1 --project ${PROJECT} --json`)
+    expect(result.error).toBeUndefined()
+    expect(server.requests[0]?.url).toBe(
+      `/platform/calls/call_1?projectId=${PROJECT}`,
+    )
+    expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual(detail)
+    await server.close()
+    server = await startHttpServer({body: {data: {call: {callId: 'call_1'}}}})
+    const invalid = await run('calls view call_1 --json')
+    expect(invalid.error).toBeDefined()
+    expect(invalid.stderr).toContain('invalid call detail')
+    await server.close()
+    server = await startHttpServer({
+      body: {data: {...detail, history: {events: [null], truncated: false}}},
+    })
+    const malformedHistory = await run('calls view call_1')
+    expect(malformedHistory.error).toBeDefined()
+    expect(malformedHistory.stderr).toContain('invalid call detail')
+  })
   test('renders bounded history without terminal control characters', () => {
     expect(
       renderCallDetail({

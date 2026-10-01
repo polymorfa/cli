@@ -9,7 +9,7 @@ import {
 
 export default class CallsView extends BaseCommand {
   static override description =
-    'Read one stored call and its bounded metadata history. Requires sessions:read and a server credential. Use --json for participants, connections and reported diagnostics. No audio, video, event payload or webhook delivery data is returned. Requires the published SDK and API revision that includes call detail.'
+    'Read one stored call and its bounded metadata history. Requires sessions:read and a server credential. Use --json for participants, connections and reported diagnostics. No audio, video, event payload or webhook delivery data is returned.'
   static override args = {
     id: Args.string({required: true, description: 'Call ID from calls list.'}),
   }
