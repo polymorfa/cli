@@ -617,6 +617,9 @@ polymorfa message send order-status --session session_123 --to +5511987654321 \
   totals, the Pix key and the dynamic Pix code, and names the failing field.
 - `order-status` needs `--order-status`, `--payment-status`, or both. Send a
   payment status only after your payment provider confirms it.
+- Both commands send through the Official API connection and make one
+  attempt. After an uncertain failure, rerun with the same `--idempotency-key`
+  to read the recorded outcome instead of sending again.
 - WhatsApp refuses invalid status changes with `order_status_transition_invalid`
   and refused cancellations with `order_cancellation_failed`. Teams outside the
   beta receive `feature_unavailable`. Never resend an order after an uncertain

@@ -280,6 +280,7 @@ describe('typed message send commands', () => {
     expect(result.error).toBeUndefined()
     expect(sentBody()).toEqual({
       conversation: {phoneNumber: '+5511987654321'},
+      transport: 'official_api',
       content: {orderDetails: order},
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('order-1522')
@@ -334,6 +335,7 @@ describe('typed message send commands', () => {
     expect(result.error).toBeUndefined()
     expect(sentBody()).toEqual({
       conversation: {phoneNumber: '+5511987654321'},
+      transport: 'official_api',
       content: {
         orderStatus: {
           referenceId: 'order-1522',
@@ -343,6 +345,101 @@ describe('typed message send commands', () => {
         },
       },
     })
+  })
+
+  test('sends a payment-only status and refuses dependent flags without their status', async () => {
+    server = await messageServer()
+    const base = [
+      'message',
+      'send',
+      'order-status',
+      '--session',
+      'session_1',
+      '--to',
+      '+5511987654321',
+      '--reference-id',
+      'order-1522',
+      '--body',
+      'Paid',
+    ]
+
+    const paid = await send([...base, '--payment-status', 'captured', '--json'])
+    expect(paid.error).toBeUndefined()
+    expect(sentBody()).toMatchObject({
+      content: {orderStatus: {payment: {status: 'captured'}}},
+    })
+    expect(JSON.stringify(sentBody())).not.toContain('"order"')
+
+    for (const extra of [
+      ['--order-description', 'late', '--payment-status', 'captured'],
+      ['--payment-timestamp', '1790000000', '--order-status', 'processing'],
+      ['--order-status', 'processing', '--footer', ' '],
+    ]) {
+      const refused = await send([...base, ...extra, '--json'])
+      expect(exitCode(refused.error)).toBe(2)
+    }
+    expect(server.requests).toHaveLength(1)
+  })
+
+  test('refuses a wrapped order file and makes one attempt on an uncertain failure', async () => {
+    const wrapped = join(directory, 'wrapped.json')
+    await writeFile(wrapped, JSON.stringify({orderDetails: {referenceId: 'r'}}))
+    server = await startHttpServer({
+      status: 503,
+      body: {
+        success: false,
+        error: {
+          type: 'api_error',
+          code: 'service_unavailable',
+          message: 'down',
+          param: null,
+          request_id: 'r',
+        },
+        data: null,
+      },
+    })
+
+    const refused = await send([
+      'message',
+      'send',
+      'order',
+      '--session',
+      'session_1',
+      '--to',
+      '+5511987654321',
+      '--order',
+      wrapped,
+      '--json',
+    ])
+    expect(exitCode(refused.error)).toBe(2)
+    expect(server.requests).toHaveLength(0)
+
+    const order = join(directory, 'order.json')
+    await writeFile(
+      order,
+      JSON.stringify({
+        referenceId: 'r',
+        type: 'digital-goods',
+        body: 'b',
+        currency: 'BRL',
+        totalAmount: {value: 1, offset: 100},
+        paymentSettings: {boleto: {digitableLine: '1'}},
+      }),
+    )
+    const failed = await send([
+      'message',
+      'send',
+      'order',
+      '--session',
+      'session_1',
+      '--to',
+      '+5511987654321',
+      '--order',
+      order,
+      '--json',
+    ])
+    expect(failed.error).toBeDefined()
+    expect(server.requests).toHaveLength(1)
   })
 
   test('requires an order or payment status before sending', async () => {

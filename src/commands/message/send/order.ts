@@ -8,15 +8,24 @@ import {
 import {BaseCommand} from '../../../base-command.js'
 import {readJsonInput} from '../../../api/request.js'
 import {
-  sendIdempotencyOptions,
-  sendContext,
-  sendContextFlags,
-} from '../../../input/message-send.js'
+  paymentOrderContext,
+  paymentOrderFlags,
+  paymentOrderRequestOptions,
+} from '../../../input/payment-order.js'
 import {sendMessage} from '../../../services/messages.js'
+
+const REQUIRED_KEYS = [
+  'referenceId',
+  'type',
+  'body',
+  'currency',
+  'totalAmount',
+  'paymentSettings',
+] as const
 
 export default class MessageSendOrder extends BaseCommand {
   static override description =
-    'Send a Brazil order with Pix, payment link or boleto instructions (beta; Official API Numbers only). Polymorfa relays the order and does not process the payment.'
+    'Send a Brazil order with Pix, payment link or boleto instructions (beta; Official API Numbers only). Polymorfa relays the order and does not process the payment. Makes one attempt.'
 
   static override examples = [
     '<%= config.bin %> message send order --session session_123 --to +5511987654321 --order order.json',
@@ -24,7 +33,7 @@ export default class MessageSendOrder extends BaseCommand {
   ]
 
   static override flags = {
-    ...sendContextFlags,
+    ...paymentOrderFlags,
     order: Flags.string({
       description:
         'Read the orderDetails JSON object (referenceId, type, body, currency, totalAmount, paymentSettings, optional order) from a file or stdin (-).',
@@ -45,17 +54,24 @@ export default class MessageSendOrder extends BaseCommand {
         'order',
       )
     }
+    const missing = REQUIRED_KEYS.filter((key) => !(key in parsed))
+    if (missing.length > 0) {
+      throw new PolymorfaConfigurationError(
+        `Order --order must be the orderDetails object itself; missing ${missing.join(', ')}.`,
+        'order',
+      )
+    }
     // The API validates the full order (BRL, totals, Pix key and code) and
     // names the failing field; the CLI does not duplicate those rules.
     const request: SendOrderDetailsMessageRequest = {
-      ...sendContext(flags),
+      ...paymentOrderContext(flags),
       content: {orderDetails: parsed as OrderDetailsMessageContent},
     }
     const result = await sendMessage(
       await this.messagingClient(flags),
       flags.session,
       request,
-      sendIdempotencyOptions(flags['idempotency-key']),
+      paymentOrderRequestOptions(flags['idempotency-key']),
     )
     this.writeValue(
       result,

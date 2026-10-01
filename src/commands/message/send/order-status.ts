@@ -9,10 +9,10 @@ import {
 
 import {BaseCommand} from '../../../base-command.js'
 import {
-  sendIdempotencyOptions,
-  sendContext,
-  sendContextFlags,
-} from '../../../input/message-send.js'
+  paymentOrderContext,
+  paymentOrderFlags,
+  paymentOrderRequestOptions,
+} from '../../../input/payment-order.js'
 import {sendMessage} from '../../../services/messages.js'
 
 const ORDER_STATUSES = [
@@ -29,20 +29,28 @@ const PAYMENT_STATUSES = [
   'failed',
 ] as const satisfies readonly OrderPaymentStatus[]
 
+function nonBlank(value: string | undefined, flag: string): string | undefined {
+  if (value !== undefined && value.trim() === '') {
+    throw new PolymorfaConfigurationError(`--${flag} must not be empty.`, flag)
+  }
+  return value
+}
+
 export default class MessageSendOrderStatus extends BaseCommand {
   static override description =
-    'Update a Brazil order sent with "message send order" (beta). Send a payment status only after your payment provider confirms it; captured shows the order as paid.'
+    'Update a Brazil order sent with "message send order" (beta). Send a payment status only after your payment provider confirms it; captured shows the order as paid. Makes one attempt.'
 
   static override examples = [
     '<%= config.bin %> message send order-status --session session_123 --to +5511987654321 --reference-id order-1522 --body "Payment received" --order-status processing --payment-status captured',
   ]
 
   static override flags = {
-    ...sendContextFlags,
+    ...paymentOrderFlags,
     body: Flags.string({description: 'Message text.', required: true}),
     footer: Flags.string({description: 'Footer text.'}),
     'order-description': Flags.string({
       description: 'Order status detail, such as a cancellation reason.',
+      dependsOn: ['order-status'],
     }),
     'order-status': Flags.string({
       description: 'New order status.',
@@ -55,6 +63,7 @@ export default class MessageSendOrderStatus extends BaseCommand {
     'payment-timestamp': Flags.integer({
       description: 'Payment time in Unix seconds.',
       min: 1,
+      dependsOn: ['payment-status'],
     }),
     'reference-id': Flags.string({
       description: 'The referenceId of the order.',
@@ -64,64 +73,52 @@ export default class MessageSendOrderStatus extends BaseCommand {
 
   async run(): Promise<void> {
     const {flags} = await this.parse(MessageSendOrderStatus)
-    const orderStatus = flags['order-status'] as OrderStatus | undefined
-    const paymentStatus = flags['payment-status'] as
-      OrderPaymentStatus | undefined
-    if (orderStatus === undefined && paymentStatus === undefined) {
+    const base = {
+      referenceId: nonBlank(flags['reference-id'], 'reference-id')!,
+      body: nonBlank(flags.body, 'body')!,
+      ...(flags.footer === undefined
+        ? {}
+        : {footer: nonBlank(flags.footer, 'footer')!}),
+    }
+    const description = nonBlank(
+      flags['order-description'],
+      'order-description',
+    )
+    const order =
+      flags['order-status'] === undefined
+        ? undefined
+        : {
+            status: flags['order-status'] as OrderStatus,
+            ...(description === undefined ? {} : {description}),
+          }
+    const payment =
+      flags['payment-status'] === undefined
+        ? undefined
+        : {
+            status: flags['payment-status'] as OrderPaymentStatus,
+            ...(flags['payment-timestamp'] === undefined
+              ? {}
+              : {timestamp: flags['payment-timestamp']}),
+          }
+    let content: OrderStatusMessageContent
+    if (order !== undefined)
+      content = {...base, order, ...(payment === undefined ? {} : {payment})}
+    else if (payment !== undefined) content = {...base, payment}
+    else {
       throw new PolymorfaConfigurationError(
         'Provide --order-status, --payment-status, or both.',
         'order-status',
       )
     }
-    if (orderStatus === undefined && flags['order-description'] !== undefined) {
-      throw new PolymorfaConfigurationError(
-        '--order-description requires --order-status.',
-        'order-description',
-      )
-    }
-    if (
-      paymentStatus === undefined &&
-      flags['payment-timestamp'] !== undefined
-    ) {
-      throw new PolymorfaConfigurationError(
-        '--payment-timestamp requires --payment-status.',
-        'payment-timestamp',
-      )
-    }
-    const order =
-      orderStatus === undefined
-        ? undefined
-        : {
-            status: orderStatus,
-            ...(flags['order-description'] === undefined
-              ? {}
-              : {description: flags['order-description']}),
-          }
-    const payment =
-      paymentStatus === undefined
-        ? undefined
-        : {
-            status: paymentStatus,
-            ...(flags['payment-timestamp'] === undefined
-              ? {}
-              : {timestamp: flags['payment-timestamp']}),
-          }
-    const content = {
-      referenceId: flags['reference-id'],
-      body: flags.body,
-      ...(flags.footer === undefined ? {} : {footer: flags.footer}),
-      ...(order === undefined ? {} : {order}),
-      ...(payment === undefined ? {} : {payment}),
-    } as OrderStatusMessageContent
     const request: SendOrderStatusMessageRequest = {
-      ...sendContext(flags),
+      ...paymentOrderContext(flags),
       content: {orderStatus: content},
     }
     const result = await sendMessage(
       await this.messagingClient(flags),
       flags.session,
       request,
-      sendIdempotencyOptions(flags['idempotency-key']),
+      paymentOrderRequestOptions(flags['idempotency-key']),
     )
     this.writeValue(
       result,
