@@ -38,7 +38,7 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261001124422
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261001202146
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
@@ -1672,6 +1672,33 @@ List returns `{data, page}`. Pass `page.nextCursor` back as `--cursor` while
 `page.hasMore` is true; the CLI prints the next cursor in human output. Filter
 with `--status queued|sending|sent|delivered|read|failed|skipped`. A recipient
 suppressed by an opt-out appears as `skipped` with `lastError` `opted_out`.
+
+#### Campaign conversions (beta)
+
+Campaign conversion reporting is a beta. The team must be enrolled, otherwise
+both commands exit with the API's `403`. They use a team API key and the
+campaign's project ID:
+
+```shell
+polymorfa campaign conversions record campaign_123 \
+  --project-id project_123 \
+  --recipient recipient_123 \
+  --event-id order-1001 \
+  --event-type purchase \
+  --occurred-at 2026-10-01T10:00:00Z \
+  --amount-minor 1999 --currency USD
+
+polymorfa campaign conversions report campaign_123 --project-id project_123
+```
+
+Name the recipient by its ID from `campaign recipients list`. A conversion is
+attributed when `--occurred-at` is within 7 days after that recipient was sent.
+Otherwise the outcome is `outside_window` or `not_sent`. A recipient on the
+opt-out list is recorded as `opted_out`, with no link and no value. Running
+`record` again with the same `--event-id` and details prints `Already
+recorded`; changed details are refused. `--amount-minor` is in the currency's
+minor unit and needs `--currency`. Human output never prints the event ID.
+The report lists reported value per currency and never converts between them.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
 event, history, or replay route on the Messaging surface. The CLI does not
