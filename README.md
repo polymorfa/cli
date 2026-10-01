@@ -38,7 +38,7 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261001202146
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261001204803
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
@@ -475,6 +475,27 @@ polymorfa cloud service-window +15551234567 --session number_123
 polymorfa cloud pricing --session number_123 --since 2026-09-01T00:00:00Z --until 2026-09-26T00:00:00Z
 polymorfa cloud credentials get --session number_123
 polymorfa cloud credentials reauthorize --session number_123
+```
+
+`cloud group` commands (beta) manage WhatsApp groups on an Official API
+Number. They need team enrollment and a Number whose WhatsApp Business Account
+is an Official Business Account; otherwise the API returns
+`whatsapp_groups_ineligible`. People join with the invite link and cannot be
+added; a group holds at most 8 participants besides your business. `create`
+returns a `requestId`; the group's conversation ID and invite link arrive in a
+`group.update` event. Every change makes one network attempt; pass
+`--idempotency-key` so a manual retry after an unknown outcome is answered by
+the API instead of changing the group again.
+
+```bash
+polymorfa cloud group create --session number_123 --subject "Order 1042" --join-approval --idempotency-key grp-1042
+polymorfa cloud group list --session number_123
+polymorfa cloud group get GROUP_ID --session number_123
+polymorfa cloud group invite-link GROUP_ID --session number_123
+polymorfa cloud group join-requests list GROUP_ID --session number_123
+polymorfa cloud group join-requests approve GROUP_ID --session number_123 --request JOIN_REQUEST_ID
+polymorfa cloud group pin GROUP_ID --session number_123 --message MESSAGE_ID --days 7
+polymorfa cloud group delete GROUP_ID --session number_123 --yes
 ```
 
 Template commands use `messages:write` and the connected Meta business template
