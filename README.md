@@ -38,7 +38,7 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260926005918
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261001124422
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
@@ -395,6 +395,110 @@ does not resolve the uncertainty and can send a duplicate. See the
 `message mark-seen`, `message typing`, and `message star` accept an explicit
 `--idempotency-key`, but the API does not deduplicate those actions by that
 header.
+
+### Flow drafts and provider lifecycle
+
+Flow commands require a project scope and an organization API key or project
+token. Reads use `sessions:read`; mutations use `sessions:manage`.
+
+```shell
+polymorfa flow list --project PROJECT_UUID
+polymorfa flow create --project PROJECT_UUID --input draft.json
+polymorfa flow get FLOW_UUID --project PROJECT_UUID
+polymorfa flow update FLOW_UUID --project PROJECT_UUID --input update.json
+polymorfa flow upload FLOW_UUID --project PROJECT_UUID --session number_123 --category APPOINTMENT_BOOKING --request-id REQUEST_UUID
+polymorfa flow receipts FLOW_UUID --project PROJECT_UUID
+polymorfa flow sync FLOW_UUID --project PROJECT_UUID --session number_123
+polymorfa flow publish FLOW_UUID --project PROJECT_UUID --session number_123 --yes
+```
+
+Creation input contains `name` and `definition`, plus an optional `draftId`.
+Update input requires the draft's observed `expectedUpdatedAt` and optional
+`name`, `status`, or `definition`. JSON input accepts a file or `-` for stdin.
+Project and Flow identity come from command arguments and cannot be overridden
+inside the file.
+
+Provider actions are beta and require an eligible Number. `publish`, `deprecate`,
+`discard`, and local `delete` require `--yes`. Discard removes a provider draft;
+local deletion is separate. Writes make one attempt. A successful HTTP response
+can still carry an `uncertain` operation: read its receipt and use `sync` to
+reconcile. Preserve `--request-id` for the exact same operation; a new ID does
+not resolve an uncertain outcome.
+
+Customer-hosted dynamic Flow endpoints use a public key registered to the Meta
+phone number. Read that key with `polymorfa flow key get --phone-number-id
+PHONE_NUMBER_ID --graph-version v26.0`. Register or replace it with `polymorfa
+flow key register --phone-number-id PHONE_NUMBER_ID --graph-version v26.0
+--input public-key.json --yes`, where the JSON file contains only
+`business_public_key` as a 2048-bit RSA public key in PEM format. The matching
+private key stays on your endpoint. Registration affects every dynamic Flow on
+the phone number, so read the registered key after an uncertain outcome before
+submitting another replacement. Reading requires `sessions:read`; registration
+requires `sessions:manage`, an eligible Official API Number, and Graph access.
+These commands do not enable dynamic Flow publishing.
+
+### Official API observations and templates
+
+The `cloud` commands require an organization API key or a project token with the
+listed scope. Client tokens cannot use these commands. Server-side feature
+access still applies: an installed command does not enroll a Number or enable a
+beta feature.
+
+```shell
+polymorfa cloud catalog list --waba WABA_ID --graph-version v26.0 --limit 25
+polymorfa cloud template list --session number_123
+polymorfa cloud template get order_update --session number_123 --language en_US
+polymorfa cloud template create --session number_123 --input template.json --idempotency-key tpl-order-update
+polymorfa cloud template edit order_update --session number_123 --language en_US --input components.json
+polymorfa cloud template delete order_update --session number_123 --yes
+polymorfa cloud service-window +15551234567 --session number_123
+polymorfa cloud pricing --session number_123 --since 2026-09-01T00:00:00Z --until 2026-09-26T00:00:00Z
+polymorfa cloud credentials get --session number_123
+polymorfa cloud credentials reauthorize --session number_123
+```
+
+Template commands use `messages:write` and the connected Meta business template
+catalog. They are separate from project template drafts. Creation reads a JSON
+object with `name`, `language`, `category`, and `components` from `--input`, or
+from stdin when it is `-`. Template names and provider IDs remain strings.
+Edits read `{ "components": [...] }` and return acceptance, not approval to send.
+Deletion requires `--yes`. Create, edit and delete send one request and never
+retry. Create and delete accept `--idempotency-key`; reuse the same key after an
+unknown outcome and the API answers `idempotency_completed` instead of writing
+again. List the catalog before resubmitting. The template routes need an active
+Official API connection, including on a Hybrid Number; a Number with only a
+Linked Devices connection is rejected.
+
+Service-window reads use `chats:read`. They report observed `open`, `closed`, or
+`unknown` state; missing or interrupted notifications can prevent a reliable
+window observation. Pricing reads use `sessions:read` and report Meta's message
+classifications and counts, without calculating prices or invoice totals. The
+optional ISO time range defaults to 30 days and cannot exceed 93 days.
+
+Credential reads use `sessions:read`; reauthorization uses `quicklink:manage`.
+`cloud catalog list` reads linked product-catalog IDs and names with `sessions:read`
+and Graph access. Pass the returned opaque cursor using `--after` for another
+page. Catalog visibility does not grant merchant ownership or permission to sell.
+
+Reauthorization creates a QuickLink for a stopped or disconnected standalone
+Official Number. It never stops the Number or opens the link automatically.
+Running Numbers return a conflict; Hybrid reauthorization is unsupported.
+
+Template writes and credential reauthorization do not retry uncertain provider
+outcomes. Inspect the catalog or onboarding state before another write. API
+access, state, and server failures retain the CLI's exit codes: 3 for forbidden
+access, 4 for conflicts, and 5 for server failures. Use `--json` to retain the
+observation fields and structured errors.
+
+For Official Numbers, `message typing` requires `--id` for a message you received
+and `--state typing`. It marks that message read and shows typing until a reply
+is sent or 25 seconds pass. Linked Device Numbers also support `recording` and
+`paused` without an inbound ID.
+
+`quicklink view` shows contacts/history request receipts and history-delivery
+progress when present. An accepted request is distinct from delivered history;
+`unknown` does not establish that a request failed. The connection status alone
+does not establish that sync completed.
 
 ### Typed sends
 
