@@ -465,6 +465,7 @@ beta feature.
 ```shell
 polymorfa cloud catalog list --waba WABA_ID --graph-version v26.0 --limit 25
 polymorfa cloud catalog products --waba WABA_ID --catalog CATALOG_ID --graph-version v26.0 --limit 25
+polymorfa cloud marketing status --waba WABA_ID --graph-version v26.0
 polymorfa cloud template list --session number_123
 polymorfa cloud template get order_update --session number_123 --language en_US
 polymorfa cloud template create --session number_123 --input template.json --idempotency-key tpl-order-update
@@ -503,6 +504,13 @@ availability from one catalog linked to the authenticated WABA. Pass its
 `paging.cursors.after` value as `--after` to read the next page. The API rejects
 unlinked catalogs and simulated Numbers. This read does not send a product or
 establish that the merchant may sell it.
+
+`cloud marketing status` uses `sessions:read` to return Meta's raw WABA
+`marketing_messages_lite_api_status` and
+`marketing_messages_onboarding_status` strings when present. The values do not
+establish accepted terms, recipient permission, eligibility, or a right to
+send. Simulated Numbers and unsupported accounts return API errors; the CLI
+does not convert status strings into an eligibility decision.
 
 Reauthorization creates a QuickLink for a stopped or disconnected standalone
 Official Number. It never stops the Number or opens the link automatically.

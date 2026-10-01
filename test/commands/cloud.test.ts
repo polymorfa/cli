@@ -1,6 +1,6 @@
 import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
 import {AsyncEntry} from '@napi-rs/keyring'
-import {homedir} from 'node:os'
+import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {runCommand} from '@oclif/test'
 import {afterEach, describe, expect, test, vi} from 'vitest'
@@ -54,9 +54,7 @@ describe('Official API commands', () => {
   })
 
   test('submits bounded template JSON once', async () => {
-    directory = await mkdtemp(
-      join(homedir(), '.polymorfa-agent-work', 'cloud-cli-test-'),
-    )
+    directory = await mkdtemp(join(tmpdir(), 'cloud-cli-test-'))
     const path = join(directory, 'template.json')
     const body = {
       name: 'order_update',
@@ -86,9 +84,7 @@ describe('Official API commands', () => {
   })
 
   test('uses the explicit template project when a different directory is linked', async () => {
-    directory = await mkdtemp(
-      join(homedir(), '.polymorfa-agent-work', 'cloud-cli-test-'),
-    )
+    directory = await mkdtemp(join(tmpdir(), 'cloud-cli-test-'))
     await writeFile(
       join(directory, 'polymorfa.json'),
       JSON.stringify({
@@ -152,9 +148,7 @@ describe('Official API commands', () => {
   })
 
   test('edits a selected template language and reports acceptance', async () => {
-    directory = await mkdtemp(
-      join(homedir(), '.polymorfa-agent-work', 'cloud-cli-test-'),
-    )
+    directory = await mkdtemp(join(tmpdir(), 'cloud-cli-test-'))
     const path = join(directory, 'edit.json')
     const body = {components: [{type: 'BODY', text: 'Ready'}]}
     await writeFile(path, JSON.stringify(body))
@@ -183,9 +177,7 @@ describe('Official API commands', () => {
   })
 
   test('rejects an edit containing a renamed template before dispatch', async () => {
-    directory = await mkdtemp(
-      join(homedir(), '.polymorfa-agent-work', 'cloud-cli-test-'),
-    )
+    directory = await mkdtemp(join(tmpdir(), 'cloud-cli-test-'))
     const path = join(directory, 'invalid.json')
     await writeFile(path, JSON.stringify({name: 'renamed', components: [{}]}))
     server = await startHttpServer({body: {success: true}})
@@ -426,6 +418,41 @@ describe('Official API commands', () => {
       runCommand(
         'cloud catalog products --waba 1234 --catalog ../x --graph-version v26.0 --json',
       ),
+    )
+    expect(result.error).toBeDefined()
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('reads raw Marketing Messages status strings without interpretation', async () => {
+    const data = {
+      id: '1234',
+      marketing_messages_onboarding_status: 'ONBOARDED',
+    }
+    server = await startHttpServer({body: data})
+    const result = await credential(
+      () =>
+        runCommand(
+          'cloud marketing status --waba 1234 --graph-version v26.0 --json',
+        ),
+      'project',
+    )
+    expect(result.error).toBeUndefined()
+    expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual(data)
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/graph/whatsapp/v26.0/1234/marketing_messages/status',
+    })
+  })
+
+  test('refuses marketing status for a client token before any request', async () => {
+    server = await startHttpServer({body: {}})
+    const result = await credential(
+      () =>
+        runCommand(
+          'cloud marketing status --waba 1234 --graph-version v26.0 --json',
+        ),
+      'client',
     )
     expect(result.error).toBeDefined()
     expect(server.requests).toHaveLength(0)

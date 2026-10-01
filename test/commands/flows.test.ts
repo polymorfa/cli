@@ -1,5 +1,5 @@
 import {mkdtemp, rm, writeFile} from 'node:fs/promises'
-import {homedir} from 'node:os'
+import {tmpdir} from 'node:os'
 import {join} from 'node:path'
 import {runCommand} from '@oclif/test'
 import {afterEach, describe, expect, test} from 'vitest'
@@ -88,9 +88,7 @@ describe('project Flow commands', () => {
     })
   })
   test('rejects project override in a draft file before dispatch', async () => {
-    directory = await mkdtemp(
-      join(homedir(), '.polymorfa-agent-work', 'flows-cli-test-'),
-    )
+    directory = await mkdtemp(join(tmpdir(), 'flows-cli-test-'))
     const path = join(directory, 'draft.json')
     await writeFile(
       path,
