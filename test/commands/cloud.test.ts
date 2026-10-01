@@ -431,6 +431,41 @@ describe('Official API commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test('reads raw Marketing Messages status strings without interpretation', async () => {
+    const data = {
+      id: '1234',
+      marketing_messages_onboarding_status: 'ONBOARDED',
+    }
+    server = await startHttpServer({body: data})
+    const result = await credential(
+      () =>
+        runCommand(
+          'cloud marketing status --waba 1234 --graph-version v26.0 --json',
+        ),
+      'project',
+    )
+    expect(result.error).toBeUndefined()
+    expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual(data)
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/graph/whatsapp/v26.0/1234/marketing_messages/status',
+    })
+  })
+
+  test('refuses marketing status for a client token before any request', async () => {
+    server = await startHttpServer({body: {}})
+    const result = await credential(
+      () =>
+        runCommand(
+          'cloud marketing status --waba 1234 --graph-version v26.0 --json',
+        ),
+      'client',
+    )
+    expect(result.error).toBeDefined()
+    expect(server.requests).toHaveLength(0)
+  })
+
   async function credential<T>(
     run: () => Promise<T>,
     kind: 'api' | 'project' | 'client' = 'api',
