@@ -38,7 +38,7 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260926005918
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261001124422
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
@@ -448,7 +448,7 @@ beta feature.
 polymorfa cloud catalog list --waba WABA_ID --graph-version v26.0 --limit 25
 polymorfa cloud template list --session number_123
 polymorfa cloud template get order_update --session number_123 --language en_US
-polymorfa cloud template create --session number_123 --input template.json
+polymorfa cloud template create --session number_123 --input template.json --idempotency-key tpl-order-update
 polymorfa cloud template edit order_update --session number_123 --language en_US --input components.json
 polymorfa cloud template delete order_update --session number_123 --yes
 polymorfa cloud service-window +15551234567 --session number_123
@@ -462,8 +462,12 @@ catalog. They are separate from project template drafts. Creation reads a JSON
 object with `name`, `language`, `category`, and `components` from `--input`, or
 from stdin when it is `-`. Template names and provider IDs remain strings.
 Edits read `{ "components": [...] }` and return acceptance, not approval to send.
-Deletion requires `--yes`. The native catalog routes reject Numbers originally
-created as Linked Device, including their Hybrid mode.
+Deletion requires `--yes`. Create, edit and delete send one request and never
+retry. Create and delete accept `--idempotency-key`; reuse the same key after an
+unknown outcome and the API answers `idempotency_completed` instead of writing
+again. List the catalog before resubmitting. The template routes need an active
+Official API connection, including on a Hybrid Number; a Number with only a
+Linked Devices connection is rejected.
 
 Service-window reads use `chats:read`. They report observed `open`, `closed`, or
 `unknown` state; missing or interrupted notifications can prevent a reliable

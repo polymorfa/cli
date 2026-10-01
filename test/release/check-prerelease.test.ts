@@ -56,7 +56,7 @@ describe('npm prerelease guard', () => {
   test('accepts the reviewed manifest and lockfile', () => {
     const result = runWith()
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain('@polymorfa/sdk@0.1.0-dev.20260926005918')
+    expect(result.stdout).toContain('@polymorfa/sdk@0.1.0-dev.20261001124422')
   })
 
   test('rejects the default latest tag', () => {
