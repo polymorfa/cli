@@ -1,8 +1,6 @@
 import {
   Client,
   PolymorfaServerError,
-  PolymorfaConfigurationError,
-  type ApiResponse,
   type CallRecord,
   PolymorfaValidationError,
   type CallStats,
@@ -133,21 +131,7 @@ export class CallAnalyticsApi {
       throw invalid(
         'Call ID must contain 1 to 128 letters, digits, underscores or hyphens.',
       )
-    // Newer SDK builds declare `retrieve`; the published pin may not yet.
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-type-assertion
-    const calls = this.calls as typeof this.calls & {
-      retrieve?: (
-        id: string,
-        params: Query,
-      ) => Promise<ApiResponse<StoredCallDetail>>
-    }
-    if (typeof calls.retrieve !== 'function') {
-      throw new PolymorfaConfigurationError(
-        'Call detail requires a published SDK version that includes Client.calls.retrieve. This CLI has not activated a source-only SDK pin.',
-        'sdk',
-      )
-    }
-    const response = await calls.retrieve(callId, query)
+    const response = await this.calls.retrieve(callId, query)
     const data = response.data
     if (
       !data ||

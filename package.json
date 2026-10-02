@@ -33,7 +33,7 @@
     "@modelcontextprotocol/server": "2.0.0",
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "0.1.0-dev.20260926005918",
+    "@polymorfa/sdk": "0.1.0-dev.20261001215108",
     "jq-wasm": "3.0.0-jq-1.8.2",
     "zod": "4.2.0"
   },
@@ -107,6 +107,9 @@
       },
       "calls": {
         "description": "Place and manage calls, check consent, carry audio, and report on past calls."
+      },
+      "calls:link": {
+        "description": "Create and preview WhatsApp call links."
       },
       "calls:opt-outs": {
         "description": "Manage the team do-not-call list."
@@ -296,6 +299,33 @@
       },
       "function:invocation": {
         "description": "Invoke Functions once and inspect metadata receipts."
+      },
+      "cloud": {
+        "description": "Official API Number operations (beta). Team enrollment and scopes apply."
+      },
+      "cloud:template": {
+        "description": "Manage Meta templates, separate from Polymorfa project drafts."
+      },
+      "template": {
+        "description": "Submit saved project templates for approval."
+      },
+      "cloud:credentials": {
+        "description": "Read redacted credential health and create guided reauthorization links."
+      },
+      "flow": {
+        "description": "Manage project Flow drafts and their Official API lifecycle."
+      },
+      "flow:key": {
+        "description": "Read and register phone-scoped Flow encryption public keys."
+      },
+      "cloud:catalog": {
+        "description": "Read Meta product catalogs visible to a WhatsApp Business Account."
+      },
+      "cloud:group": {
+        "description": "Manage WhatsApp groups on an Official API Number (beta). Requires an Official Business Account."
+      },
+      "cloud:group:join-requests": {
+        "description": "Review join requests for Official groups that require approval."
       }
     }
   },

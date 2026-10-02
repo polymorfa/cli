@@ -1,3 +1,6 @@
+import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 import {runCommand} from '@oclif/test'
 import {afterEach, describe, expect, test} from 'vitest'
 
@@ -165,6 +168,40 @@ describe('stored chat history commands', () => {
       expect(result.stderr).toContain(code)
       await server.close()
       server = undefined
+    }
+  })
+
+  test('downloads stored message media to a new file only', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'history-media-test-'))
+    try {
+      server = await startHttpServer({
+        rawBody: Uint8Array.from([1, 2, 3]),
+        headers: {'content-type': 'image/jpeg', 'content-length': '3'},
+      })
+      const output = join(directory, 'photo.jpg')
+      const result = await apiKey(() =>
+        runCommand(
+          `chat message media +15550001111 739182640518204 --session number/one --output ${output} --json`,
+        ),
+      )
+      expect(result.error).toBeUndefined()
+      expect(server.requests[0]).toMatchObject({
+        method: 'GET',
+        url: '/messaging/number%2Fone/chats/%2B15550001111/messages/739182640518204/media',
+      })
+      expect([...(await readFile(output))]).toEqual([1, 2, 3])
+
+      await writeFile(output, 'keep')
+      const refused = await apiKey(() =>
+        runCommand(
+          `chat message media +15550001111 739182640518204 --session number/one --output ${output}`,
+        ),
+      )
+      expect(refused.error).toBeDefined()
+      expect(await readFile(output, 'utf8')).toBe('keep')
+      expect(server.requests).toHaveLength(1)
+    } finally {
+      await rm(directory, {recursive: true, force: true})
     }
   })
 

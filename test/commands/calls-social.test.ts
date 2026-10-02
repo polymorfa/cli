@@ -51,13 +51,7 @@ describe('call reaction and hand commands', () => {
     ).rejects.toThrow('Client tokens')
     expect(sendReaction).toHaveBeenCalledTimes(2)
   })
-  test('refuses an older published SDK explicitly and never retries uncertain sends', async () => {
-    await expect(
-      reactToCall({voip: {}} as MessagingClient, credential, 'call-1', {
-        connectionId: 'connection-1',
-        emoji: '👍',
-      }),
-    ).rejects.toThrow('published SDK version')
+  test('never retries uncertain sends', async () => {
     const sendReaction = vi.fn(() =>
       Promise.reject(new Error('lost after send')),
     )
