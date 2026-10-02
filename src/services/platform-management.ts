@@ -147,8 +147,32 @@ export function renderManagedSession(session: Session): string {
       : [`Status reason\t${session.statusReason}`]),
     `Connection\t${session.type}`,
     `Number\t${session.testMode ? 'test' : 'real'}`,
+    ...newChatCapLine(session),
     `Updated\t${session.updatedAt}`,
   ].join('\n')
+}
+
+/** WhatsApp's per-number new-chat cap, as Get session returns it. */
+interface NewChatCapView {
+  readonly enabled: boolean | null
+  readonly capped: boolean
+  readonly limit: number | null
+  readonly used: number | null
+  readonly resetsAt: string | null
+}
+
+function newChatCapLine(session: Session): string[] {
+  const cap = (session as Session & {newChatCapping?: NewChatCapView | null})
+    .newChatCapping
+  if (cap === undefined) return []
+  if (cap === null) return ['New-chat cap\tnot observed yet']
+  if (cap.enabled === null) return ['New-chat cap\tundetermined']
+  if (!cap.enabled) return ['New-chat cap\tnot enabled by WhatsApp']
+  const reset = cap.resetsAt === null ? '' : ` until ${cap.resetsAt}`
+  if (cap.capped) return [`New-chat cap\tcapped${reset}`]
+  if (cap.limit === null || cap.used === null)
+    return ['New-chat cap\tenabled by WhatsApp']
+  return [`New-chat cap\t${cap.used} of ${cap.limit} used${reset}`]
 }
 
 export async function stopSessions(
