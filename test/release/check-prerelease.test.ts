@@ -14,6 +14,11 @@ import {afterEach, describe, expect, test} from 'vitest'
 
 const root = fileURLToPath(new URL('../../', import.meta.url))
 const tempDirectories: string[] = []
+const pinnedSdk = (
+  JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as {
+    dependencies: Record<string, string>
+  }
+).dependencies['@polymorfa/sdk']
 type TestManifest = {
   version: string
   dependencies: Record<string, string>
@@ -56,7 +61,7 @@ describe('npm prerelease guard', () => {
   test('accepts the reviewed manifest and lockfile', () => {
     const result = runWith()
     expect(result.status).toBe(0)
-    expect(result.stdout).toContain('@polymorfa/sdk@0.1.0-dev.20261001215108')
+    expect(result.stdout).toContain(`@polymorfa/sdk@${pinnedSdk}`)
   })
 
   test('rejects the default latest tag', () => {

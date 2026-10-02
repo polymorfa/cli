@@ -2,10 +2,13 @@
 
 The official command-line interface for Polymorfa.
 
-The package is under active development. `@polymorfa/cli` is not published to
-npm yet. When a development prerelease is available, install it explicitly with
-`npm install --global @polymorfa/cli@dev`. Until then, install from the private
-source repository, which requires repository access.
+The package is under active development and is published to npm as
+development prereleases on the `dev` tag:
+
+```shell
+npm install --global @polymorfa/cli@dev
+polymorfa version
+```
 
 ## Requirements
 
@@ -15,7 +18,8 @@ source repository, which requires repository access.
 
 ## Development installation
 
-Install the current private development branch globally:
+With access to the private source repository, install the current development
+branch globally:
 
 ```shell
 npm install --global github:polymorfa/cli#dev
