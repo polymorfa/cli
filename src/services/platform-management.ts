@@ -12,9 +12,11 @@ import {
   type SecurityIncident,
   type SecurityIncidentAcknowledgement,
   type SessionBan,
+  type Session,
   type SessionBatchRemoveResult,
   type SessionBatchRequest,
   type SessionBatchStopResult,
+  type PlatformSession,
   type SessionCapabilities,
   type UpdateQuickLinkSettingsInput,
   type OrganizationQuickLinkSettings,
@@ -99,6 +101,55 @@ export async function listProjectTokens(
 ): Promise<PlatformResult<readonly ProjectToken[]>> {
   const response = await client.projectTokens.list(projectId)
   return result(response.data.data, response.metadata)
+}
+
+export async function listManagedSessions(
+  client: ClientInstance<'organization'>,
+  projectId?: string,
+): Promise<PlatformResult<readonly PlatformSession[]>> {
+  const response = await client.sessions.list(
+    projectId === undefined ? {} : {projectId},
+  )
+  return result(response.data.data, response.metadata)
+}
+
+export async function viewManagedSession(
+  client: ClientInstance<'organization'>,
+  sessionId: string,
+): Promise<PlatformResult<Session>> {
+  const response = await client.sessions.retrieve(sessionId)
+  return result(response.data.data, response.metadata)
+}
+
+export function renderManagedSessions(
+  sessions: readonly PlatformSession[],
+): string {
+  if (sessions.length === 0) return 'No sessions found.'
+  return sessions
+    .map((session) =>
+      [
+        session.sessionId,
+        session.name,
+        session.status,
+        session.testMode ? 'test' : 'real',
+        session.projectId,
+      ].join('\t'),
+    )
+    .join('\n')
+}
+
+export function renderManagedSession(session: Session): string {
+  return [
+    `ID\t${session.sessionId}`,
+    `Name\t${session.name}`,
+    `Status\t${session.status}`,
+    ...(session.statusReason === undefined
+      ? []
+      : [`Status reason\t${session.statusReason}`]),
+    `Connection\t${session.type}`,
+    `Number\t${session.testMode ? 'test' : 'real'}`,
+    `Updated\t${session.updatedAt}`,
+  ].join('\n')
 }
 
 export async function stopSessions(
