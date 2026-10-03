@@ -42,7 +42,7 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261001215108
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261003052138
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
@@ -1573,7 +1573,19 @@ polymorfa widget view --project project_123
 polymorfa widget update --project project_123 --input widget-patch.json
 polymorfa session stop session_1 session_2 --project project_123
 polymorfa session delete session_1 session_2 --project project_123 --yes
+polymorfa session capabilities support-line
 ```
+
+`session capabilities` shows the WhatsApp configuration gates and limits for
+one number, as of its last configuration sync. An enabled gate does not prove
+that the feature is usable in a particular client or environment, or that
+WhatsApp will accept an operation. Each line
+is the capability key, its value (`enabled`, `off`, a limit, or `unknown`), and
+its source: `server` (WhatsApp sent the setting), `client_default` (WhatsApp
+sent none, so its default applies) or `account_type` (the capability does not
+apply to this kind of account, for example a business-only feature on a
+personal number). Before the number's first sync every value is `unknown`.
+It is a beta: the team must be enrolled, and it needs `sessions:read`.
 
 Key and project-token lists contain metadata only; neither command returns raw
 bearer material. The API's reported API-key scope mask is retained in JSON but
@@ -2304,17 +2316,15 @@ Business Platform > Disconnect Account. An ineligible Number or pair fails with
 `hybrid_transition_ineligible` (exit code 4) and the API's reason in the message.
 Merging requires Hybrid Link access, which the API enforces.
 
-These commands are tested against the companion SDK source, which pins API
-contract `fcf7b21015dd185e987b5aa3580e8af5f4c7f1a4`. Update the registry SDK
-dependency after that SDK is published and before releasing this CLI.
+These commands use published SDK `0.1.0-dev.20261003052138`, which pins API
+contract `ee885ec4bf62af36b9b85df4310c505f38a224db`.
 
 ### Hybrid Link controls
 
-These additions are under development and are not available in the published
-CLI. They are tested against the companion Hybrid Link SDK source using API
-contract `d5245f76d5d6bc7b9af439571bd1f157185b1b87`. The registry SDK dependency
-must be updated after that SDK artifact is published before releasing this CLI.
-The companion SDK defaults native requests to API revision `2026-09-22`. An
+These additions require a CLI release containing the Hybrid Link commands.
+They use published SDK `0.1.0-dev.20261003052138`, which pins API contract
+`ee885ec4bf62af36b9b85df4310c505f38a224db`. The SDK defaults native requests
+to API revision `2026-09-22`. An
 explicit `--api-version` or saved-profile version remains explicit; retired
 versions fail without an automatic upgrade or resend.
 
