@@ -2453,3 +2453,29 @@ project. Human output labels unmeasured duration as `unknown`.
 `calls view` reads one stored call. Its JSON output includes bounded event
 history, participant and connection lifetimes, and allowlisted diagnostics. It
 does not retrieve media or webhook deliveries.
+
+### Spending limits and funding priority
+
+With an organization key carrying `billing:read`, inspect current controls:
+
+```bash
+polymorfa billing limits list --project <project-uuid> --json
+polymorfa billing priority list --json
+```
+
+Changes require `billing:manage` and Pay-As-You-Go. Supply the observed revision:
+
+```bash
+polymorfa billing limits set <number-uuid> --scope number --credits 1000 --expected-revision 0
+polymorfa billing limits set <project-uuid> --scope project --unlimited --expected-revision 1
+polymorfa billing priority set <number-uuid> --scope number --priority 10 --expected-revision 0
+polymorfa billing priority reorder --scope number --project <project-uuid> --ids <first-uuid>,<second-uuid> --expected-revision 1
+```
+
+A reorder includes every active project or every real number in the selected
+project, highest first. A stale or incomplete order fails without partial
+changes. Monthly limits reset at 00:00 UTC on the first day; zero blocks new
+charges and null removes the limit. Existing paid service keeps its window.
+Project and client credentials cannot use these financial controls. Commands
+use the pinned SDK's authenticated raw transport; no unpublished SDK method is
+required. CLI publication and API deployment remain separate release gates.
