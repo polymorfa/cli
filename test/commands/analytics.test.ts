@@ -10,6 +10,14 @@ afterEach(async () => {
   await Promise.all(servers.splice(0).map((s) => s.close()))
 })
 const PROJECT = '22222222-2222-4222-8222-222222222222'
+const intervals = {
+  completedPhoneActivityPeriods: 2,
+  phoneActivityMs: 600_000,
+  averagePhoneActivityMs: 300_000,
+  phoneQuietGaps: 1,
+  phoneQuietMs: 1_200_000,
+  averagePhoneQuietMs: 1_200_000,
+}
 const body = {
   enabled: false,
   period: {start: 0, end: 1},
@@ -100,7 +108,11 @@ test('shows call vitals when messaging measurements are unavailable', async () =
       data: {
         ...body,
         enabled: true,
-        summary: {measured: false, calls},
+        summary: {
+          accountActivity: intervals,
+          measured: false,
+          calls,
+        },
         callSeries: [{ts: 1, answered: 1}],
       },
     },
@@ -121,6 +133,21 @@ test('shows call vitals when messaging measurements are unavailable', async () =
   expect(result.stdout).toContain('Call answer rate: 50.0%')
   expect(result.stdout).toContain('Missed incoming calls: 1')
   expect(result.stdout).toContain('No message measurements')
+
+  const json = await withEnvironment(
+    {
+      POLYMORFA_API_KEY:
+        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      POLYMORFA_PROJECT_TOKEN: undefined,
+      POLYMORFA_CLIENT_TOKEN: undefined,
+      POLYMORFA_BASE_URL: server.baseUrl,
+    },
+    () => runCommand(['analytics', 'get', '--json']),
+  )
+  expect(json.error, json.stderr).toBeUndefined()
+  expect(JSON.parse(json.stdout) as unknown).toMatchObject({
+    data: {summary: {accountActivity: intervals}},
+  })
 })
 
 test('exports raw collector text through the project-confined SDK transport', async () => {

@@ -2474,3 +2474,9 @@ Use `--session-id` for a number record UUID, `--window-hours` for 1–168 comple
 hours (default 24), and `--segments` for metadata breakdowns. Requires `sessions:read`
 and the same Analytics opt-in. These are overlapping-window gauges, not counters.
 [Collector setup](https://docs.polymorfa.com/console/analytics-collectors).
+
+Analytics source builds also expose completed observed phone activity spans and
+quiet gaps, duration sums, sample counts and weighted averages. Ranges up to
+48 hours use hourly activity buckets; longer ranges and call series use daily
+UTC buckets. These signals do not establish phone online/offline or power state.
+See the [measurement definitions](https://docs.polymorfa.com/console/analytics#phone-polymorfa-and-customer-activity).
