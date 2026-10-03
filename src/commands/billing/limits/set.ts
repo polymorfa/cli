@@ -9,7 +9,10 @@ export default class LimitsSet extends BaseCommand {
     id: Args.string({required: true, description: 'Project or number UUID.'}),
   }
   static override flags = {
-    scope: Flags.string({options: ['project', 'number'], required: true}),
+    scope: Flags.string({
+      options: ['project', 'customer', 'number'],
+      required: true,
+    }),
     credits: Flags.string({
       description: 'Monthly Polymorfa credits, up to six decimal places.',
     }),
@@ -28,7 +31,7 @@ export default class LimitsSet extends BaseCommand {
     const value = limitValue(flags.credits, flags.unlimited)
     const result = await setLimit(
       await this.platformClient(flags),
-      flags.scope as 'project' | 'number',
+      flags.scope as 'project' | 'customer' | 'number',
       args.id,
       value,
       flags['expected-revision'],

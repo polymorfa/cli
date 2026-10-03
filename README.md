@@ -2472,10 +2472,25 @@ polymorfa billing priority set <number-uuid> --scope number --priority 10 --expe
 polymorfa billing priority reorder --scope number --project <project-uuid> --ids <first-uuid>,<second-uuid> --expected-revision 1
 ```
 
-A reorder includes every active project or every real number in the selected
+A reorder includes every active project, customer or real number in the selected
 project, highest first. A stale or incomplete order fails without partial
 changes. Monthly limits reset at 00:00 UTC on the first day; zero blocks new
 charges and null removes the limit. Existing paid service keeps its window.
 Project and client credentials cannot use these financial controls. Commands
 use the pinned SDK's authenticated raw transport; no unpublished SDK method is
 required. CLI publication and API deployment remain separate release gates.
+
+
+Read or update one resource without loading the team directory:
+
+```bash
+polymorfa billing controls get <customer-uuid> --scope customer --json
+polymorfa billing controls set <customer-uuid> --scope customer --credits 1500 --priority 25 --expected-budget-revision 0 --expected-priority-revision 0
+polymorfa quicklink create --project <project-uuid> --limit-credits 250 --priority 30 --json
+```
+
+The combined save is atomic and requires both observed revisions. Project
+priority wins first, then customer priority, then number priority. A customer's
+assigned numbers share its monthly cap. Creation controls apply to a real new
+number before pairing admission; testing and supplementary connections reject
+these fields. Omit them to keep the default unlimited cap and priority zero.

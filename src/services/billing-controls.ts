@@ -8,11 +8,12 @@ import {z} from 'zod'
 const uuid = z.uuid()
 const revision = z.number().int().min(0).max(2147483646)
 const priority = z.number().int().min(0).max(1000000)
-export const billingScope = z.enum(['project', 'number'])
+export const billingScope = z.enum(['project', 'customer', 'number'])
 const row = z.object({id: uuid, name: z.string(), priority})
 const priorities = z.object({
   revision,
   projects: z.array(row),
+  customers: z.array(row.extend({projectId: uuid})),
   numbers: z.array(row.extend({projectId: uuid})),
 })
 const credits = z.number().finite().nonnegative()
@@ -112,7 +113,7 @@ export function getLimits(
 }
 export function setLimit(
   client: ClientInstance<'organization'>,
-  scope: 'project' | 'number',
+  scope: 'project' | 'customer' | 'number',
   id: string,
   credits: number | null,
   expectedRevision: number,
@@ -133,7 +134,7 @@ export function getPriorities(client: ClientInstance<'organization'>) {
 }
 export function setPriority(
   client: ClientInstance<'organization'>,
-  scope: 'project' | 'number',
+  scope: 'project' | 'customer' | 'number',
   id: string,
   value: number,
   expectedRevision: number,
@@ -151,7 +152,7 @@ export function setPriority(
 }
 export function reorderPriorities(
   client: ClientInstance<'organization'>,
-  scope: 'project' | 'number',
+  scope: 'project' | 'customer' | 'number',
   ids: string[],
   expectedRevision: number,
   projectId?: string,
@@ -160,11 +161,11 @@ export function reorderPriorities(
   const resourceIds = ids.map(resourceId)
   if (
     new Set(resourceIds).size !== resourceIds.length ||
-    (scope === 'number' && !projectId) ||
+    (scope !== 'project' && !projectId) ||
     (scope === 'project' && projectId)
   )
     throw new PolymorfaValidationError(
-      'Use unique IDs; --project is required only for number order.',
+      'Use unique IDs; --project is required for customer or number order.',
       {code: 'invalid_billing_control'},
     )
   return request(client, 'PUT', '/platform/billing/priorities', priorities, {
@@ -191,4 +192,48 @@ export function renderPriorities(data: BillingPriorities): string {
         `number\t${n.id}\t${n.name}\t${n.priority}\tproject ${n.projectId}`,
     ),
   ].join('\n')
+}
+
+const resourceControls = z.object({
+  budget: limits.shape.budgets.element,
+  priority,
+  priorityRevision: revision,
+})
+export function getResourceControls(
+  client: ClientInstance<'organization'>,
+  scope: 'project' | 'customer' | 'number',
+  id: string,
+) {
+  return request(
+    client,
+    'GET',
+    `/platform/billing/controls/${validate(billingScope, scope)}/${resourceId(id)}`,
+    resourceControls,
+  )
+}
+export function setResourceControls(
+  client: ClientInstance<'organization'>,
+  scope: 'project' | 'customer' | 'number',
+  id: string,
+  input: {
+    limitCredits: number | null
+    priority: number
+    expectedBudgetRevision: number
+    expectedPriorityRevision: number
+  },
+) {
+  return request(
+    client,
+    'PUT',
+    `/platform/billing/controls/${validate(billingScope, scope)}/${resourceId(id)}`,
+    resourceControls,
+    {
+      limitCredits: input.limitCredits,
+      priority: priorityValue(input.priority),
+      expectedBudgetRevision: observedRevision(input.expectedBudgetRevision),
+      expectedPriorityRevision: observedRevision(
+        input.expectedPriorityRevision,
+      ),
+    },
+  )
 }

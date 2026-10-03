@@ -12,6 +12,7 @@ const project = '22222222-2222-4222-8222-222222222222',
 const priorities = {
   revision: 5,
   projects: [{id: project, name: 'Support', priority: 1}],
+  customers: [],
   numbers: [{id: number, projectId: project, name: 'Desk', priority: 2}],
 }
 let server: TestHttpServer
@@ -125,4 +126,69 @@ test('reports a revision conflict without retrying or claiming success', async (
   expect(result.error).toBeDefined()
   expect(result.stdout).not.toContain('Priority saved')
   expect(server.requests).toHaveLength(1)
+})
+
+test('reads one customer and saves both observed revisions', async () => {
+  const state = {
+    budget: {
+      scope: 'customer',
+      resourceId: number,
+      projectId: project,
+      name: 'Acme',
+      limitCredits: 100,
+      spentCredits: 0,
+      reservedCredits: 0,
+      revision: 4,
+    },
+    priority: 10,
+    priorityRevision: 5,
+  }
+  server = await startHttpSequenceServer([
+    {body: {data: state}},
+    {body: {data: state}},
+  ])
+  expect(
+    (
+      await run([
+        'billing',
+        'controls',
+        'get',
+        number,
+        '--scope',
+        'customer',
+        '--json',
+      ])
+    ).error,
+  ).toBeUndefined()
+  expect(
+    (
+      await run([
+        'billing',
+        'controls',
+        'set',
+        number,
+        '--scope',
+        'customer',
+        '--credits',
+        '200',
+        '--priority',
+        '40',
+        '--expected-budget-revision',
+        '4',
+        '--expected-priority-revision',
+        '5',
+        '--json',
+      ])
+    ).error,
+  ).toBeUndefined()
+  expect(server.requests.map((r) => [r.method, r.url])).toEqual([
+    ['GET', `/platform/billing/controls/customer/${number}`],
+    ['PUT', `/platform/billing/controls/customer/${number}`],
+  ])
+  expect(JSON.parse(server.requests[1]!.body)).toEqual({
+    limitCredits: 200,
+    priority: 40,
+    expectedBudgetRevision: 4,
+    expectedPriorityRevision: 5,
+  })
 })

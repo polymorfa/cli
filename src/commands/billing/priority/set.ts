@@ -9,7 +9,10 @@ export default class PrioritySet extends BaseCommand {
     id: Args.string({required: true, description: 'Project or number UUID.'}),
   }
   static override flags = {
-    scope: Flags.string({options: ['project', 'number'], required: true}),
+    scope: Flags.string({
+      options: ['project', 'customer', 'number'],
+      required: true,
+    }),
     priority: Flags.integer({required: true, min: 0, max: 1000000}),
     'expected-revision': Flags.integer({required: true, min: 0}),
   }
@@ -17,7 +20,7 @@ export default class PrioritySet extends BaseCommand {
     const {args, flags} = await this.parse(PrioritySet)
     const result = await setPriority(
       await this.platformClient(flags),
-      flags.scope as 'project' | 'number',
+      flags.scope as 'project' | 'customer' | 'number',
       args.id,
       flags.priority,
       flags['expected-revision'],
