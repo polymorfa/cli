@@ -2482,7 +2482,6 @@ required. CLI publication and API deployment remain separate release gates.
 This source follows the financial-control contract at API commit
 `ba09326dd3c6688f05320c1f7685aeb0290a0ed2`.
 
-
 Read or update one resource without loading the team directory:
 
 ```bash
