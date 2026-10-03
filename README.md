@@ -2443,3 +2443,13 @@ project. Human output labels unmeasured duration as `unknown`.
 `calls view` reads one stored call. Its JSON output includes bounded event
 history, participant and connection lifetimes, and allowlisted diagnostics. It
 does not retrieve media or webhook deliveries.
+
+### WhatsApp analytics
+
+`polymorfa analytics get --project PROJECT_ID --json` reads sent and received
+activity, completed 24-hour read and reply cohorts, response times and number
+connection vitals. Use `--since` and `--until` with RFC 3339 timestamps (up to
+366 days), and `--session-id` with a Number record UUID. Requires `sessions:read`;
+a project token stays inside its project. A team owner or admin enables
+Analytics in the Console. Disabled results contain no business data; missing
+coverage has null rates. Read receipts do not prove an app open.
