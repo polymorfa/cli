@@ -7,7 +7,7 @@ import {
 } from '../../services/analytics.js'
 export default class AnalyticsGet extends BaseCommand {
   static override description =
-    'Read WhatsApp number activity, completed 24-hour read and reply rates, response times and connection vitals. Requires sessions:read and Analytics enabled in the Console. Project credentials read only their project.'
+    'Read WhatsApp number activity, completed 24-hour read and reply rates, response times, call outcomes and connection vitals. Requires sessions:read and Analytics enabled in the Console. Project credentials read only their project.'
   static override summary = 'Read WhatsApp number analytics.'
   static override examples = [
     '<%= config.bin %> analytics get --project PROJECT_ID --json',

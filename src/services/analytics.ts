@@ -7,6 +7,53 @@ import {
   type QueryValue,
 } from '@polymorfa/sdk'
 import {optionalTimeRange} from '../input/time.js'
+export interface CallOutcomeMetrics {
+  total: number
+  answered: number
+  missed: number
+  declined: number
+  failed: number
+  ringing: number
+  answerRate: number | null
+  talkSeconds: number
+  timedAnswered: number
+  timedPickup: number
+  averageTalkSeconds: number | null
+  medianTalkSeconds: number | null
+  p95TalkSeconds: number | null
+  averagePickupMs: number | null
+  p95PickupMs: number | null
+  shortAnswered: number
+  video: number
+}
+export interface CallBusinessMetrics extends CallOutcomeMetrics {
+  directions: {inbound: CallOutcomeMetrics; outbound: CallOutcomeMetrics}
+  mediaQuality: {
+    measuredCalls: number
+    averageJitterMs: number | null
+    averageRttMs: number | null
+    packetsLost: number | null
+  }
+  appQuality: {
+    measuredCalls: number
+    averageJitterMs: number | null
+    averageRttMs: number | null
+    packetLossRate: number | null
+    reconnects: number | null
+  }
+  endReasons: {code: string; count: number}[]
+  appErrors: {code: string; count: number}[]
+  transports: {code: string; count: number}[]
+  multiParticipantCalls: number
+  followUp: {
+    eligibleMissed: number
+    returnedWithin24h: number
+    rate: number | null
+    averageDelayMs: number | null
+    pendingWindow: number
+    unknownContact: number
+  }
+}
 export interface WhatsAppBusinessSegment {
   dimension:
     | 'message_type'
@@ -50,6 +97,7 @@ export interface WhatsAppEngagement {
   droppedReceiptJoins: number
 }
 export interface WhatsAppMetrics {
+  calls: CallBusinessMetrics
   measured: boolean
   observedHours: number
   lastObservedAt: number | null
@@ -93,6 +141,7 @@ export interface WhatsAppMetrics {
   } | null
 }
 export interface WhatsAppAnalytics {
+  callSeries: (CallOutcomeMetrics & {sessionId: string; ts: number})[]
   enabled: boolean
   period: {start: number; end: number}
   requestVitals: {
@@ -184,8 +233,14 @@ export async function getAnalytics(
     !data.requestVitals ||
     !Array.isArray(data.numbers) ||
     !Array.isArray(data.series) ||
+    !Array.isArray(data.callSeries) ||
     (data.enabled &&
-      (!data.summary || typeof data.summary.measured !== 'boolean'))
+      (!data.summary ||
+        typeof data.summary.measured !== 'boolean' ||
+        !data.summary.calls ||
+        !Number.isSafeInteger(data.summary.calls.total) ||
+        !data.summary.calls.directions?.inbound ||
+        !data.summary.calls.directions?.outbound))
   )
     throw new PolymorfaServerError('The API returned invalid analytics.', {
       code: 'invalid_response',
@@ -208,15 +263,25 @@ export function renderAnalytics(data: WhatsAppAnalytics) {
   if (!data.enabled)
     return `Analytics is disabled. A team owner or admin can enable it in the Console.\n${requests}`
   const m = data.summary!
-  if (!m.measured) return `No number measurements in this period.\n${requests}`
   return [
-    `Sent: ${m.outgoingMessages}`,
-    `Received (direct): ${m.incomingMessages}`,
-    `Read rate (24h): ${rate(m.engagement.readRate)}`,
-    `Reply rate (24h): ${rate(m.engagement.replyRate)}`,
-    `Send failure rate: ${rate(m.sendFailureRate)}`,
-    `Disconnects: ${m.disconnects}`,
-    `Connection failures: ${m.connectFailures}`,
+    ...(m.measured
+      ? [
+          `Sent: ${m.outgoingMessages}`,
+          `Received (direct): ${m.incomingMessages}`,
+          `Read rate (24h): ${rate(m.engagement.readRate)}`,
+          `Reply rate (24h): ${rate(m.engagement.replyRate)}`,
+          `Send failure rate: ${rate(m.sendFailureRate)}`,
+          `Disconnects: ${m.disconnects}`,
+          `Connection failures: ${m.connectFailures}`,
+        ]
+      : ['No message measurements in this period.']),
+    `Calls: ${m.calls.total}`,
+    `Call answer rate: ${rate(m.calls.answerRate)}`,
+    `Missed incoming calls: ${m.calls.directions.inbound.missed}`,
+    `Failed calls: ${m.calls.failed}`,
+    `Median call length: ${m.calls.medianTalkSeconds === null ? 'Not measured' : `${m.calls.medianTalkSeconds} s`}`,
+    `Average pickup: ${m.calls.averagePickupMs === null ? 'Not measured' : `${(m.calls.averagePickupMs / 1000).toFixed(1)} s`}`,
+    `Missed-call follow-up (24h): ${rate(m.calls.followUp.rate)} (${m.calls.followUp.returnedWithin24h}/${m.calls.followUp.eligibleMissed}; ${m.calls.followUp.pendingWindow} pending)`,
     requests,
   ].join('\n')
 }

@@ -2448,7 +2448,9 @@ does not retrieve media or webhook deliveries.
 
 `polymorfa analytics get --project PROJECT_ID --json` reads sent and received
 activity, completed 24-hour read and reply cohorts, response times and number
-connection vitals. Use `--since` and `--until` with RFC 3339 timestamps (up to
+connection vitals, call outcomes, pickup times and missed-call follow-up.
+Call results remain available without messaging telemetry. `--json` includes
+per-number call series, quality coverage and error breakdowns. Use `--since` and `--until` with RFC 3339 timestamps (up to
 366 days), and `--session-id` with a Number record UUID. Requires `sessions:read`;
 a project token stays inside its project. A team owner or admin enables
 Analytics in the Console. Disabled results contain no business data; missing

@@ -17,6 +17,7 @@ const body = {
   summary: null,
   numbers: [],
   series: [],
+  callSeries: [],
 }
 test('runs the JSON analytics command against the project-confined public route', async () => {
   const server = await startHttpServer({body: {data: body}})
@@ -75,4 +76,47 @@ test('rejects an invalid range before making a request', async () => {
   )
   expect(result.error).toBeDefined()
   expect(server.requests).toHaveLength(0)
+})
+
+test('shows call vitals when messaging measurements are unavailable', async () => {
+  const calls = {
+    total: 3,
+    answerRate: 0.5,
+    directions: {inbound: {missed: 1}, outbound: {missed: 0}},
+    failed: 1,
+    medianTalkSeconds: 60,
+    averagePickupMs: 3000,
+    followUp: {
+      rate: 0.5,
+      returnedWithin24h: 1,
+      eligibleMissed: 2,
+      pendingWindow: 1,
+    },
+  }
+  const server = await startHttpServer({
+    body: {
+      data: {
+        ...body,
+        enabled: true,
+        summary: {measured: false, calls},
+        callSeries: [{ts: 1, answered: 1}],
+      },
+    },
+  })
+  servers.push(server)
+  const result = await withEnvironment(
+    {
+      POLYMORFA_API_KEY:
+        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      POLYMORFA_PROJECT_TOKEN: undefined,
+      POLYMORFA_CLIENT_TOKEN: undefined,
+      POLYMORFA_BASE_URL: server.baseUrl,
+    },
+    () => runCommand(['analytics', 'get']),
+  )
+  expect(result.error, result.stderr).toBeUndefined()
+  expect(result.stdout).toContain('Calls: 3')
+  expect(result.stdout).toContain('Call answer rate: 50.0%')
+  expect(result.stdout).toContain('Missed incoming calls: 1')
+  expect(result.stdout).toContain('No message measurements')
 })
