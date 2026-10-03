@@ -2465,3 +2465,12 @@ per-number call series, quality coverage and error breakdowns. Use `--since` and
 a project token stays inside its project. A team owner or admin enables
 Analytics in the Console. Disabled results contain no business data; missing
 coverage has null rates. Read receipts do not prove an app open.
+
+### Collector metrics
+
+Source builds include `polymorfa analytics metrics --project PROJECT_ID --format openmetrics`.
+It writes metrics text to stdout, or wraps the text and response metadata with `--json`.
+Use `--session-id` for a number record UUID, `--window-hours` for 1–168 completed UTC
+hours (default 24), and `--segments` for metadata breakdowns. Requires `sessions:read`
+and the same Analytics opt-in. These are overlapping-window gauges, not counters.
+[Collector setup](https://docs.polymorfa.com/console/analytics-collectors).

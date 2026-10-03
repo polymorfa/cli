@@ -120,3 +120,64 @@ test('shows call vitals when messaging measurements are unavailable', async () =
   expect(result.stdout).toContain('Missed incoming calls: 1')
   expect(result.stdout).toContain('No message measurements')
 })
+
+test('exports raw collector text through the project-confined SDK transport', async () => {
+  const rawBody =
+    '# TYPE polymorfa_analytics_enabled gauge\npolymorfa_analytics_enabled{scope="project"} 0\n# EOF\n'
+  const server = await startHttpServer({
+    rawBody,
+    headers: {
+      'content-type':
+        'application/openmetrics-text; version=1.0.0; charset=utf-8',
+    },
+  })
+  servers.push(server)
+  const result = await withEnvironment(
+    {
+      POLYMORFA_API_KEY: undefined,
+      POLYMORFA_CLIENT_TOKEN: undefined,
+      POLYMORFA_PROJECT_TOKEN:
+        'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      POLYMORFA_BASE_URL: server.baseUrl,
+    },
+    () =>
+      runCommand([
+        'analytics',
+        'metrics',
+        '--project',
+        PROJECT,
+        '--format',
+        'openmetrics',
+        '--segments',
+        '--window-hours',
+        '6',
+      ]),
+  )
+  expect(result.error, result.stderr).toBeUndefined()
+  expect(result.stdout).toBe(rawBody)
+  expect(server.requests[0]?.url).toContain(
+    `/platform/projects/${PROJECT}/analytics/metrics`,
+  )
+  expect(server.requests[0]?.url).toContain('windowHours=6')
+  expect(server.requests[0]?.url).toContain('segments=true')
+})
+
+test('rejects an HTML response instead of printing it as collector data', async () => {
+  const server = await startHttpServer({
+    rawBody: '<h1>Proxy failure</h1>',
+    headers: {'content-type': 'text/html'},
+  })
+  servers.push(server)
+  const result = await withEnvironment(
+    {
+      POLYMORFA_API_KEY:
+        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      POLYMORFA_PROJECT_TOKEN: undefined,
+      POLYMORFA_CLIENT_TOKEN: undefined,
+      POLYMORFA_BASE_URL: server.baseUrl,
+    },
+    () => runCommand(['analytics', 'metrics']),
+  )
+  expect(result.error).toBeDefined()
+  expect(result.stdout).not.toContain('Proxy failure')
+})

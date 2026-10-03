@@ -1,4 +1,4 @@
-// Platform analytics contract: polymorfa/polymorfa@d60780445908a09d02a1f80da9b85e685c58f438
+// Platform analytics contract: polymorfa/polymorfa@19cc9cd42f45e085b7757aebaf6a44e4f66115c7
 import {
   PolymorfaServerError,
   PolymorfaValidationError,
@@ -284,4 +284,67 @@ export function renderAnalytics(data: WhatsAppAnalytics) {
     `Missed-call follow-up (24h): ${rate(m.calls.followUp.rate)} (${m.calls.followUp.returnedWithin24h}/${m.calls.followUp.eligibleMissed}; ${m.calls.followUp.pendingWindow} pending)`,
     requests,
   ].join('\n')
+}
+
+export function analyticsMetricsQuery(input: {
+  sessionId?: string | undefined
+  windowHours?: number | undefined
+  segments?: boolean | undefined
+  format?: string | undefined
+}): Record<string, QueryValue> {
+  const query = analyticsQuery(
+    input.sessionId === undefined ? {} : {sessionId: input.sessionId},
+  )
+  if (
+    input.windowHours !== undefined &&
+    (!Number.isInteger(input.windowHours) ||
+      input.windowHours < 1 ||
+      input.windowHours > 168)
+  )
+    throw new PolymorfaValidationError(
+      'Choose a metrics window of 1 to 168 hours.',
+      {code: 'invalid_analytics_range'},
+    )
+  const format = input.format ?? 'prometheus'
+  if (format !== 'prometheus' && format !== 'openmetrics')
+    throw new PolymorfaValidationError('Choose prometheus or openmetrics.', {
+      code: 'invalid_analytics_filter',
+    })
+  return {
+    ...query,
+    windowHours: input.windowHours ?? 24,
+    segments: input.segments ?? false,
+    format,
+  }
+}
+export async function getAnalyticsMetrics(
+  client: ClientBase<ClientOwner>,
+  query: Record<string, QueryValue>,
+) {
+  const response = await client.raw.request<string>({
+    method: 'GET',
+    path:
+      client.projectId === null
+        ? '/platform/analytics/metrics'
+        : '/analytics/metrics',
+    query,
+  })
+  const expected =
+    query.format === 'openmetrics'
+      ? 'application/openmetrics-text'
+      : 'text/plain'
+  if (
+    typeof response.data !== 'string' ||
+    !/^# TYPE polymorfa_analytics_enabled gauge$/m.test(response.data) ||
+    response.metadata.headers['content-type']
+      ?.split(';', 1)[0]
+      ?.trim()
+      .toLowerCase() !== expected ||
+    (query.format === 'openmetrics' && !response.data.endsWith('# EOF\n'))
+  )
+    throw new PolymorfaServerError(
+      'The API returned invalid analytics metrics.',
+      {code: 'invalid_response'},
+    )
+  return response
 }
