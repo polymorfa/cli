@@ -17,6 +17,7 @@ import {
   type SessionBatchRequest,
   type SessionBatchStopResult,
   type PlatformSession,
+  type SessionCapabilities,
   type UpdateQuickLinkSettingsInput,
   type OrganizationQuickLinkSettings,
   type ProjectQuickLinkSettings,
@@ -186,6 +187,38 @@ export async function stopSessions(
     options,
   )
   return result(response.data.data, response.metadata)
+}
+
+/** WhatsApp features and limits WhatsApp enabled for a number (beta). */
+export async function getSessionCapabilities(
+  client: ClientInstance<'organization'>,
+  session: string,
+): Promise<PlatformResult<SessionCapabilities>> {
+  const response = await client.sessions.getCapabilities(session)
+  return result(response.data.data, response.metadata)
+}
+
+export function renderSessionCapabilities(
+  capabilities: SessionCapabilities,
+): string {
+  const header = [
+    `Session\t${capabilities.session}`,
+    `Status\t${capabilities.status}`,
+    `Synced\t${capabilities.syncedAt ?? 'never'}`,
+    `Account\t${capabilities.accountType ?? 'unknown'}`,
+  ]
+  const rows = capabilities.capabilities.map((capability) => {
+    const value =
+      capability.value === null
+        ? 'unknown'
+        : typeof capability.value === 'boolean'
+          ? capability.value
+            ? 'enabled'
+            : 'off'
+          : `${capability.value}${capability.unit === null ? '' : ` ${capability.unit}`}`
+    return `${capability.key}\t${value}\t${capability.source ?? '-'}`
+  })
+  return [...header, '', ...rows].join('\n')
 }
 
 export async function deleteSessions(
