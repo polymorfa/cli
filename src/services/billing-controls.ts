@@ -129,8 +129,18 @@ export function setLimit(
     },
   )
 }
-export function getPriorities(client: ClientInstance<'organization'>) {
-  return request(client, 'GET', '/platform/billing/priorities', priorities)
+export function getPriorities(
+  client: ClientInstance<'organization'>,
+  projectId?: string,
+) {
+  return request(
+    client,
+    'GET',
+    '/platform/billing/priorities',
+    priorities,
+    undefined,
+    projectId,
+  )
 }
 export function setPriority(
   client: ClientInstance<'organization'>,
@@ -152,14 +162,41 @@ export function setPriority(
 }
 export function reorderPriorities(
   client: ClientInstance<'organization'>,
-  scope: 'project' | 'customer' | 'number',
+  scope: 'project' | 'customer' | 'number' | 'resource',
   ids: string[],
   expectedRevision: number,
   projectId?: string,
 ) {
+  if (scope === 'resource') {
+    if (!projectId)
+      throw new PolymorfaValidationError(
+        '--project is required for customer and number funding controls.',
+      )
+    const resources = ids.map((value) => {
+      const [kind, id, ...extra] = value.split(':')
+      if ((kind !== 'customer' && kind !== 'number') || !id || extra.length)
+        throw new PolymorfaValidationError(
+          'Use customer:UUID or number:UUID, highest first.',
+        )
+      return {scope: kind, resourceId: resourceId(id)}
+    })
+    if (
+      resources.length > 1000000 ||
+      new Set(resources.map((r) => `${r.scope}:${r.resourceId}`)).size !==
+        resources.length
+    )
+      throw new PolymorfaValidationError('Use unique resources.')
+    return request(client, 'PUT', '/platform/billing/priorities', priorities, {
+      scope,
+      projectId: resourceId(projectId),
+      resources,
+      expectedRevision: observedRevision(expectedRevision),
+    })
+  }
   validate(billingScope, scope)
   const resourceIds = ids.map(resourceId)
   if (
+    resourceIds.length > 1000000 ||
     new Set(resourceIds).size !== resourceIds.length ||
     (scope !== 'project' && !projectId) ||
     (scope === 'project' && projectId)
@@ -187,6 +224,10 @@ export function renderPriorities(data: BillingPriorities): string {
   return [
     `Revision: ${data.revision}`,
     ...data.projects.map((p) => `project\t${p.id}\t${p.name}\t${p.priority}`),
+    ...data.customers.map(
+      (c) =>
+        `customer\t${c.id}\t${c.name}\t${c.priority}\tproject ${c.projectId}`,
+    ),
     ...data.numbers.map(
       (n) =>
         `number\t${n.id}\t${n.name}\t${n.priority}\tproject ${n.projectId}`,

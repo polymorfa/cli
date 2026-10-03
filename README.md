@@ -2479,6 +2479,8 @@ charges and null removes the limit. Existing paid service keeps its window.
 Project and client credentials cannot use these financial controls. Commands
 use the pinned SDK's authenticated raw transport; no unpublished SDK method is
 required. CLI publication and API deployment remain separate release gates.
+This source follows the financial-control contract at API commit
+`ba09326dd3c6688f05320c1f7685aeb0290a0ed2`.
 
 
 Read or update one resource without loading the team directory:
@@ -2490,7 +2492,29 @@ polymorfa quicklink create --project <project-uuid> --limit-credits 250 --priori
 ```
 
 The combined save is atomic and requires both observed revisions. Project
-priority wins first, then customer priority, then number priority. A customer's
-assigned numbers share its monthly cap. Creation controls apply to a real new
+priority wins first. Numbers inherit customer priority; a higher number
+priority overrides it within the project. A customer's assigned numbers share
+its monthly cap. Creation controls apply to a real new
 number before pairing admission; testing and supplementary connections reject
 these fields. Omit them to keep the default unlimited cap and priority zero.
+
+Read one project's funding controls and save its combined customer and number
+order:
+
+```bash
+polymorfa billing priority list --project <project-uuid>
+polymorfa billing priority reorder --scope resource --project <project-uuid> --ids number:<number-uuid>,customer:<customer-uuid> --expected-revision 5
+```
+
+Include every active customer and real number, highest priority first. For
+thousands of resources, put the complete order in a JSON file:
+
+```json
+["number:<number-uuid>", "customer:<customer-uuid>"]
+```
+
+```bash
+polymorfa billing priority reorder --scope resource --project <project-uuid> --ids-file order.json --expected-revision 5
+```
+
+Use either `--ids` or `--ids-file`. Funding order never bypasses a spending cap.
