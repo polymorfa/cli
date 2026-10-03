@@ -31,8 +31,8 @@ afterEach(async () => {
 })
 test('reads priorities and saves a complete number order with the observed revision', async () => {
   server = await startHttpSequenceServer([
-    {body: {success: true, data: priorities}},
-    {body: {success: true, data: priorities}},
+    {body: {data: priorities}},
+    {body: {data: priorities}},
   ])
   expect(
     (await run(['billing', 'priority', 'list', '--json'])).error,
@@ -64,9 +64,7 @@ test('reads priorities and saves a complete number order with the observed revis
   })
 })
 test('removes a cap explicitly and blocks malformed controls before sending a request', async () => {
-  server = await startHttpSequenceServer([
-    {body: {success: true, data: {saved: true}}},
-  ])
+  server = await startHttpSequenceServer([{body: {data: {saved: true}}}])
   expect(
     (
       await run([
