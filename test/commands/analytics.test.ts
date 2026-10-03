@@ -44,7 +44,9 @@ test('runs the JSON analytics command against the project-confined public route'
       ]),
   )
   expect(result.error, result.stderr).toBeUndefined()
-  expect(JSON.parse(result.stdout).data.enabled).toBe(false)
+  expect(JSON.parse(result.stdout) as unknown).toMatchObject({
+    data: {enabled: false},
+  })
   expect(server.requests).toHaveLength(1)
   expect(server.requests[0]?.url).toContain(
     `/platform/projects/${PROJECT}/analytics`,
