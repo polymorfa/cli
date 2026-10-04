@@ -439,7 +439,31 @@ private key stays on your endpoint. Registration affects every dynamic Flow on
 the phone number, so read the registered key after an uncertain outcome before
 submitting another replacement. Reading requires `sessions:read`; registration
 requires `sessions:manage`, an eligible Official API Number, and Graph access.
-These commands do not enable dynamic Flow publishing.
+These commands make Polymorfa release its managed key custody for that Number.
+
+Polymorfa can also host the data endpoint (beta). It can hold a managed key per
+Number, decrypt each WhatsApp request, and either forward it to your HTTPS URL
+or run a deployed Function:
+
+```shell
+polymorfa flow key rotate --project PROJECT_UUID --session number_123 --yes
+polymorfa flow key custody --project PROJECT_UUID --session number_123
+polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --session number_123 --mode forward --url https://example.com/flow
+polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --session number_123 --mode function --function FUNCTION_UUID
+polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --session number_123 --mode direct --url https://example.com/flow
+polymorfa flow endpoint get FLOW_UUID --project PROJECT_UUID --session number_123
+polymorfa flow endpoint receipts FLOW_UUID --project PROJECT_UUID --limit 20
+polymorfa flow endpoint delete FLOW_UUID --project PROJECT_UUID --session number_123 --yes
+```
+
+`forward` and `function` need a Polymorfa-managed key on the Number. `direct`
+needs your own key, registered with `flow key register`. A forward endpoint's
+signing secret is printed once, when it is created, switched to forward, or
+rotated with `--rotate-signing-secret`. Verify `X-Polymorfa-Flow-Signature`
+with the SDK's `verifyFlowForwardSignature`. Configure the endpoint before
+`flow upload`, which attaches its URI to the Flow. Key rotation affects every
+Flow on the Number; the previous managed key decrypts for 24 hours. Rotation
+and endpoint writes make one attempt. Receipts are metadata only.
 
 ### Submit a project template
 
