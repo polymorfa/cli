@@ -196,3 +196,46 @@ test('reports completed QuickLink cancellation after a synchronous response', as
 function exitCode(error: unknown): number | undefined {
   return (error as {oclif?: {exit?: number}} | undefined)?.oclif?.exit
 }
+
+test('includes initial number financial controls and rejects invalid precision before transport', async () => {
+  const server = await startHttpSequenceServer([
+    {
+      body: {
+        success: true,
+        data: {
+          id: 'ql_budget',
+          url: 'https://example.test/connect/budget',
+          session: 'reserved',
+          expiresAt: null,
+        },
+      },
+    },
+  ])
+  try {
+    await withEnvironment(
+      {
+        POLYMORFA_API_KEY: apiKey,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: undefined,
+      },
+      async () => {
+        const result = await runCommand(
+          `quicklink create --project ${projectId} --limit-credits 250 --priority 30 --json`,
+        )
+        expect(result.error, result.stderr).toBeUndefined()
+        expect(JSON.parse(server.requests[0]!.body)).toMatchObject({
+          projectId,
+          billingControls: {limitCredits: 250, priority: 30},
+        })
+        const invalid = await runCommand(
+          `quicklink create --project ${projectId} --limit-credits 0.0000001 --priority 30 --json`,
+        )
+        expect(invalid.error).toBeDefined()
+        expect(server.requests).toHaveLength(1)
+      },
+    )
+  } finally {
+    await server.close()
+  }
+})
