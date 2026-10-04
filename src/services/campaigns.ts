@@ -16,6 +16,7 @@ import {
   PolymorfaValidationError,
   type RequestOptions,
   type ResponseMetadata,
+  type UpdateCampaignRequest,
 } from '@polymorfa/sdk'
 
 export interface CampaignResult<T> {
@@ -56,6 +57,20 @@ export async function viewCampaign(
   campaignId: string,
 ): Promise<CampaignResult<Campaign>> {
   const response = await client.campaigns.retrieve(projectSlug, campaignId)
+  return result(response.data.data, response.metadata)
+}
+
+export async function updateCampaign(
+  client: MessagingClient,
+  projectSlug: string,
+  campaignId: string,
+  input: unknown,
+): Promise<CampaignResult<Campaign>> {
+  const response = await client.campaigns.update(
+    projectSlug,
+    campaignId,
+    campaignUpdateInput(input),
+  )
   return result(response.data.data, response.metadata)
 }
 
@@ -365,6 +380,31 @@ function campaignInput(input: unknown): CreateCampaignRequest {
     )
   }
   return input as unknown as CreateCampaignRequest
+}
+
+function campaignUpdateInput(input: unknown): UpdateCampaignRequest {
+  if (!isRecord(input)) {
+    throw new PolymorfaValidationError(
+      'Campaign update input must contain one JSON object.',
+      {code: 'invalid_campaign_update_input'},
+    )
+  }
+
+  const allowed = new Set([
+    'name',
+    'recipientListId',
+    'senderConfig',
+    'scheduledAt',
+  ])
+  const names = Object.keys(input)
+  if (names.length === 0 || names.some((name) => !allowed.has(name))) {
+    throw new PolymorfaValidationError(
+      'Campaign update input must contain only name, recipientListId, senderConfig, or scheduledAt.',
+      {code: 'invalid_campaign_update_fields'},
+    )
+  }
+
+  return input
 }
 
 function result<T>(data: T, metadata: ResponseMetadata): CampaignResult<T> {

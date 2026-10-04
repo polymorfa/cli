@@ -1669,6 +1669,8 @@ project slug because the source routes are slug-scoped:
 ```shell
 polymorfa campaign list --project-slug launch-project
 polymorfa campaign create --project-slug launch-project --input campaign.json
+polymorfa campaign update 0198a2cb-0000-7000-8000-0000000000e3 \
+  --project-slug launch-project --input campaign-patch.json
 polymorfa campaign view campaign_123 --project-slug launch-project
 polymorfa campaign analytics campaign_123 --project-slug launch-project
 
@@ -1702,6 +1704,15 @@ the CLI reports that outcome instead of printing an empty operation.
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
 is synchronous and reports only the number moved.
+
+Update reads one JSON object with at least one of `name`, `recipientListId`,
+`senderConfig`, or `scheduledAt`. Send only fields to change. Set
+`recipientListId` or `scheduledAt` to `null` to detach the audience or start at
+launch. A non-null `scheduledAt` must be integer Unix milliseconds within the
+JavaScript Date range. The API refuses audience and start-time changes after launch. A sender
+change after launch requires the sending numbers to pass live eligibility
+checks. If a PATCH result is lost, view the campaign before deciding whether
+to send another update.
 
 Create, launch, pause, resume and stop accept `--idempotency-key` to deduplicate
 the same request for 24 hours. A successful request repeated with the same key
@@ -1793,7 +1804,7 @@ recorded`; changed details are refused. `--amount-minor` is in the currency's
 minor unit and needs `--currency`. Human output never prints the event ID.
 The report lists reported value per currency and never converts between them.
 
-The source exposes no campaign update, delete, validate, archive, duplicate,
+The source exposes no campaign delete, validate, archive, duplicate,
 event, history, or replay route on the Messaging surface. The CLI does not
 substitute similarly named Platform campaign methods for these gaps. To follow
 or stop a campaign's operation, use the `operation` commands in
