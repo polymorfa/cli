@@ -1677,13 +1677,17 @@ polymorfa campaign launch campaign_123 \
   --scheduled-at 2026-09-01T12:00:00Z
 polymorfa campaign pause campaign_123 --project-slug launch-project
 polymorfa campaign resume campaign_123 --project-slug launch-project
+polymorfa campaign reschedule campaign_123 \
+  --project-slug launch-project \
+  --scheduled-at 2026-09-02T12:00:00Z
+polymorfa campaign reschedule campaign_123 --project-slug launch-project --now
 polymorfa campaign stop campaign_123 --project-slug launch-project --yes
 polymorfa campaign requeue campaign_123 \
   --project-slug launch-project \
   --include-skipped-error
 ```
 
-Launch, pause, and resume return accepted durable work; they do not wait for
+Launch, pause, resume, and reschedule return accepted durable work; they do not wait for
 the state transition. Stop returns accepted work for an active delivery run,
 or reports an immediate cancellation with no operation ID when none is active.
 Check the campaign with `polymorfa campaign view`. When an operation ID is

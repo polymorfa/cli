@@ -84,6 +84,22 @@ export async function launchCampaign(
   return result(response.data.data, response.metadata)
 }
 
+export async function rescheduleCampaign(
+  client: MessagingClient,
+  projectSlug: string,
+  campaignId: string,
+  scheduledAt: number | null,
+  options: RequestOptions = {},
+): Promise<CampaignResult<CampaignOperation>> {
+  const response = await client.campaigns.reschedule(
+    projectSlug,
+    campaignId,
+    {scheduledAt},
+    options,
+  )
+  return result(response.data.data, response.metadata)
+}
+
 export async function pauseCampaign(
   client: MessagingClient,
   projectSlug: string,
