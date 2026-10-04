@@ -2454,29 +2454,66 @@ project. Human output labels unmeasured duration as `unknown`.
 history, participant and connection lifetimes, and allowlisted diagnostics. It
 does not retrieve media or webhook deliveries.
 
-### WhatsApp analytics
+### Spending limits and funding priority
 
-`polymorfa analytics get --project PROJECT_ID --json` reads sent and received
-activity, completed 24-hour read and reply cohorts, response times and number
-connection vitals, call outcomes, pickup times and missed-call follow-up.
-Call results remain available without messaging telemetry. `--json` includes
-per-number call series, quality coverage and error breakdowns. Use `--since` and `--until` with RFC 3339 timestamps (up to
-366 days), and `--session-id` with a Number record UUID. Requires `sessions:read`;
-a project token stays inside its project. A team owner or admin enables
-Analytics in the Console. Disabled results contain no business data; missing
-coverage has null rates. Read receipts do not prove an app open.
+With an organization key carrying `billing:read`, inspect current controls:
 
-### Collector metrics
+```bash
+polymorfa billing limits list --project <project-uuid> --json
+polymorfa billing priority list --json
+```
 
-Source builds include `polymorfa analytics metrics --project PROJECT_ID --format openmetrics`.
-It writes metrics text to stdout, or wraps the text and response metadata with `--json`.
-Use `--session-id` for a number record UUID, `--window-hours` for 1–168 completed UTC
-hours (default 24), and `--segments` for metadata breakdowns. Requires `sessions:read`
-and the same Analytics opt-in. These are overlapping-window gauges, not counters.
-[Collector setup](https://docs.polymorfa.com/console/analytics-collectors).
+Changes require `billing:manage` and Pay-As-You-Go. Supply the observed revision:
 
-Analytics source builds also expose completed observed phone activity spans and
-quiet gaps, duration sums, sample counts and weighted averages. Ranges up to
-48 hours use hourly activity buckets; longer ranges and call series use daily
-UTC buckets. These signals do not establish phone online/offline or power state.
-See the [measurement definitions](https://docs.polymorfa.com/console/analytics#phone-polymorfa-and-customer-activity).
+```bash
+polymorfa billing limits set <number-uuid> --scope number --credits 1000 --expected-revision 0
+polymorfa billing limits set <project-uuid> --scope project --unlimited --expected-revision 1
+polymorfa billing priority set <number-uuid> --scope number --priority 10 --expected-revision 0
+polymorfa billing priority reorder --scope number --project <project-uuid> --ids <first-uuid>,<second-uuid> --expected-revision 1
+```
+
+A reorder includes every active project, customer or real number in the selected
+project, highest first. A stale or incomplete order fails without partial
+changes. Monthly limits reset at 00:00 UTC on the first day; zero blocks new
+charges and null removes the limit. Existing paid service keeps its window.
+Project and client credentials cannot use these financial controls. Commands
+use the pinned SDK's authenticated raw transport; no unpublished SDK method is
+required. CLI publication and API deployment remain separate release gates.
+This source follows the financial-control contract at API commit
+`ba09326dd3c6688f05320c1f7685aeb0290a0ed2`.
+
+Read or update one resource without loading the team directory:
+
+```bash
+polymorfa billing controls get <customer-uuid> --scope customer --json
+polymorfa billing controls set <customer-uuid> --scope customer --credits 1500 --priority 25 --expected-budget-revision 0 --expected-priority-revision 0
+polymorfa quicklink create --project <project-uuid> --limit-credits 250 --priority 30 --json
+```
+
+The combined save is atomic and requires both observed revisions. Project
+priority wins first. Numbers inherit customer priority; a higher number
+priority overrides it within the project. A customer's assigned numbers share
+its monthly cap. Creation controls apply to a real new
+number before pairing admission; testing and supplementary connections reject
+these fields. Omit them to keep the default unlimited cap and priority zero.
+
+Read one project's funding controls and save its combined customer and number
+order:
+
+```bash
+polymorfa billing priority list --project <project-uuid>
+polymorfa billing priority reorder --scope resource --project <project-uuid> --ids number:<number-uuid>,customer:<customer-uuid> --expected-revision 5
+```
+
+Include every active customer and real number, highest priority first. For
+thousands of resources, put the complete order in a JSON file:
+
+```json
+["number:<number-uuid>", "customer:<customer-uuid>"]
+```
+
+```bash
+polymorfa billing priority reorder --scope resource --project <project-uuid> --ids-file order.json --expected-revision 5
+```
+
+Use either `--ids` or `--ids-file`. Funding order never bypasses a spending cap.
