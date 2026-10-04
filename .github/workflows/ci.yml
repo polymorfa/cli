@@ -4,7 +4,6 @@ on:
   pull_request:
   push:
     branches:
-      - dev
       - main
 
 permissions:
@@ -29,3 +28,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run verify
+      - run: node --test scripts/release-evidence.test.mjs

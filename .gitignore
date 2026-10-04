@@ -4,3 +4,5 @@ coverage/
 *.tgz
 .sdk-source/
 .DS_Store
+
+.release/
