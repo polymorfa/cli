@@ -43,23 +43,46 @@ describe('dynamic Flow endpoint commands', () => {
   })
   test('sets each mode with exactly its fields and prints the secret once', async () => {
     server = await startHttpServer({
-      body: {data: {endpoint: {id: 'e'}, signingSecret: 'pfes_x', encryption: {}}},
+      body: {
+        data: {endpoint: {id: 'e'}, signingSecret: 'pfes_x', encryption: {}},
+      },
     })
     const forward = await run(
       `flow endpoint set ${flow} --project ${project} --session support --mode forward --url https://example.com/flow --rotate-signing-secret --expected-revision 2 --json`,
     )
     expect(forward.error).toBeUndefined()
-    expect(JSON.parse(forward.stdout).data.signingSecret).toBe('pfes_x')
+    expect(
+      (JSON.parse(forward.stdout) as {data: {signingSecret?: string}}).data
+        .signingSecret,
+    ).toBe('pfes_x')
     await run(
       `flow endpoint set ${flow} --project ${project} --session support --mode function --function ${fn} --json`,
     )
     await run(
       `flow endpoint set ${flow} --project ${project} --session support --mode direct --url https://example.com/direct --disabled --json`,
     )
-    expect(server.requests.map((r) => JSON.parse(r.body))).toEqual([
-      {sessionId: 'support', expectedRevision: 2, mode: 'forward', url: 'https://example.com/flow', rotateSigningSecret: true, projectId: project},
-      {sessionId: 'support', mode: 'function', functionId: fn, projectId: project},
-      {sessionId: 'support', enabled: false, mode: 'direct', url: 'https://example.com/direct', projectId: project},
+    expect(server.requests.map((r) => JSON.parse(r.body) as unknown)).toEqual([
+      {
+        sessionId: 'support',
+        expectedRevision: 2,
+        mode: 'forward',
+        url: 'https://example.com/flow',
+        rotateSigningSecret: true,
+        projectId: project,
+      },
+      {
+        sessionId: 'support',
+        mode: 'function',
+        functionId: fn,
+        projectId: project,
+      },
+      {
+        sessionId: 'support',
+        enabled: false,
+        mode: 'direct',
+        url: 'https://example.com/direct',
+        projectId: project,
+      },
     ])
     expect(server.requests.every((r) => r.method === 'PUT')).toBe(true)
   })

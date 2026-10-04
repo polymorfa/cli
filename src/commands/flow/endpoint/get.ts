@@ -15,7 +15,9 @@ export default class FlowEndpointGet extends FlowsCommand {
   async run(): Promise<void> {
     const {args, flags} = await this.parse(FlowEndpointGet)
     const resource = await this.flows(flags)
-    const result = await resource.endpoint(args.flow, {sessionId: flags.session})
+    const result = await resource.endpoint(args.flow, {
+      sessionId: flags.session,
+    })
     this.writeValue(result, JSON.stringify(result.data, null, 2), flags)
   }
 }

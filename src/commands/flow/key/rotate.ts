@@ -3,7 +3,7 @@ import {PolymorfaConfigurationError} from '@polymorfa/sdk'
 import {FlowsCommand} from '../../../flows/command.js'
 export default class FlowKeyRotate extends FlowsCommand {
   static override description =
-    "Generate and register a new Polymorfa-managed Flow encryption key for a Number (beta). Every dynamic Flow on the Number uses it; the previous managed key decrypts for 24 hours. Requires sessions:manage. Makes one attempt."
+    'Generate and register a new Polymorfa-managed Flow encryption key for a Number (beta). Every dynamic Flow on the Number uses it; the previous managed key decrypts for 24 hours. Requires sessions:manage. Makes one attempt.'
   static override flags = {
     session: Flags.string({
       description: 'Number name or ID in the project.',
@@ -21,7 +21,9 @@ export default class FlowKeyRotate extends FlowsCommand {
         'yes',
       )
     const resource = await this.flows(flags)
-    const result = await resource.rotateEncryptionKey({sessionId: flags.session})
+    const result = await resource.rotateEncryptionKey({
+      sessionId: flags.session,
+    })
     this.writeValue(result, JSON.stringify(result.data, null, 2), flags)
   }
 }
