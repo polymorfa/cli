@@ -42,7 +42,7 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261003052138
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261004011426
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
@@ -2316,14 +2316,14 @@ Business Platform > Disconnect Account. An ineligible Number or pair fails with
 `hybrid_transition_ineligible` (exit code 4) and the API's reason in the message.
 Merging requires Hybrid Link access, which the API enforces.
 
-These commands use published SDK `0.1.0-dev.20261003052138`, which pins API
-contract `ee885ec4bf62af36b9b85df4310c505f38a224db`.
+These commands use published SDK `0.1.0-dev.20261004011426`, which pins API
+contract `171a9683ff45d11a4b5d3917dc428ad2722b0d99`.
 
 ### Hybrid Link controls
 
 These additions require a CLI release containing the Hybrid Link commands.
-They use published SDK `0.1.0-dev.20261003052138`, which pins API contract
-`ee885ec4bf62af36b9b85df4310c505f38a224db`. The SDK defaults native requests
+They use published SDK `0.1.0-dev.20261004011426`, which pins API contract
+`171a9683ff45d11a4b5d3917dc428ad2722b0d99`. The SDK defaults native requests
 to API revision `2026-09-22`. An
 explicit `--api-version` or saved-profile version remains explicit; retired
 versions fail without an automatic upgrade or resend.
@@ -2480,7 +2480,7 @@ Project and client credentials cannot use these financial controls. Commands
 use the pinned SDK's authenticated raw transport; no unpublished SDK method is
 required. CLI publication and API deployment remain separate release gates.
 This source follows the financial-control contract at API commit
-`ba09326dd3c6688f05320c1f7685aeb0290a0ed2`.
+`171a9683ff45d11a4b5d3917dc428ad2722b0d99`.
 
 Read or update one resource without loading the team directory:
 
@@ -2517,3 +2517,27 @@ polymorfa billing priority reorder --scope resource --project <project-uuid> --i
 ```
 
 Use either `--ids` or `--ids-file`. Funding order never bypasses a spending cap.
+
+### WhatsApp Analytics
+
+Read message and call outcomes, response times, number activity and connection
+vitals with a credential carrying `sessions:read`. Enable Analytics in the
+Console to collect business data. Project credentials stay within their project.
+
+```bash
+polymorfa analytics get --project PROJECT_UUID --json
+polymorfa analytics get --project PROJECT_UUID --session-id NUMBER_UUID --since 2026-10-01T00:00:00Z --until 2026-10-03T00:00:00Z --json
+polymorfa analytics metrics --project PROJECT_UUID --window-hours 24 > analytics.prom
+polymorfa analytics metrics --project PROJECT_UUID --segments --format openmetrics
+```
+
+JSON reads default to the preceding 30 days. Metrics cover 1–168 completed UTC
+hours, defaulting to 24. They are overlapping-window gauges; do not apply
+`rate()` or `increase()`. Read and reply rates use completed 24-hour conversation
+windows. Null rates indicate no denominator or incomplete coverage. Phone
+activity spans and quiet gaps describe observed signals, not device power state.
+Disabled Analytics returns no business aggregates.
+
+These commands use the pinned SDK's `analytics.get` and `analytics.metrics`
+methods and shared response types. A CLI release containing these commands and
+an API deployment exposing Analytics are separate requirements.

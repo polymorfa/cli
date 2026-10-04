@@ -1,197 +1,14 @@
-// Platform analytics contract: polymorfa/polymorfa@e6006c2242ed8fe01abbe6b2d8db93c230508929
 import {
   PolymorfaServerError,
   PolymorfaValidationError,
   type ClientBase,
   type ClientOwner,
-  type QueryValue,
+  type AnalyticsParams,
+  type AnalyticsMetricsParams,
+  type WhatsAppAnalytics,
 } from '@polymorfa/sdk'
+export type {WhatsAppAnalytics} from '@polymorfa/sdk'
 import {optionalTimeRange} from '../input/time.js'
-export interface CallOutcomeMetrics {
-  total: number
-  answered: number
-  missed: number
-  declined: number
-  failed: number
-  ringing: number
-  answerRate: number | null
-  talkSeconds: number
-  timedAnswered: number
-  timedPickup: number
-  averageTalkSeconds: number | null
-  medianTalkSeconds: number | null
-  p95TalkSeconds: number | null
-  averagePickupMs: number | null
-  p95PickupMs: number | null
-  shortAnswered: number
-  video: number
-}
-export interface CallBusinessMetrics extends CallOutcomeMetrics {
-  directions: {inbound: CallOutcomeMetrics; outbound: CallOutcomeMetrics}
-  mediaQuality: {
-    measuredCalls: number
-    averageJitterMs: number | null
-    averageRttMs: number | null
-    packetsLost: number | null
-  }
-  appQuality: {
-    measuredCalls: number
-    averageJitterMs: number | null
-    averageRttMs: number | null
-    packetLossRate: number | null
-    reconnects: number | null
-  }
-  endReasons: {code: string; count: number}[]
-  appErrors: {code: string; count: number}[]
-  transports: {code: string; count: number}[]
-  multiParticipantCalls: number
-  followUp: {
-    eligibleMissed: number
-    returnedWithin24h: number
-    rate: number | null
-    averageDelayMs: number | null
-    pendingWindow: number
-    unknownContact: number
-  }
-}
-export interface WhatsAppBusinessSegment {
-  dimension:
-    | 'message_type'
-    | 'text_band'
-    | 'origin'
-    | 'calling_code'
-    | 'customer_devices'
-  key: string
-  sendAttempts: number
-  sent: number
-  sendFailures: number
-  sendFailureRate: number | null
-  completedConversations: number
-  deliveredConversations: number
-  readConversations: number
-  repliedConversations: number
-  deliveryRate: number | null
-  readRate: number | null
-  replyRate: number | null
-  averageCustomerReplyMs: number | null
-  readRateInterval95: [number, number] | null
-  replyRateInterval95: [number, number] | null
-  readRateDifference: number | null
-  replyRateDifference: number | null
-  shareOfConversations: number | null
-  shareOfSends: number | null
-}
-export interface WhatsAppEngagement {
-  windowHours: 24
-  completedConversations: number
-  deliveredConversations: number
-  readConversations: number
-  repliedConversations: number
-  deliveryRate: number | null
-  readRate: number | null
-  replyRate: number | null
-  averageCustomerReplyMs: number | null
-  complete: boolean
-  droppedConversations: number
-  droppedRecords: number
-  droppedReceiptJoins: number
-}
-export interface WhatsAppMetrics {
-  calls: CallBusinessMetrics
-  measured: boolean
-  observedHours: number
-  lastObservedAt: number | null
-  outgoingMessages: number
-  incomingMessages: number
-  sendAttempts: number
-  sendFailures: number
-  sendFailureRate: number | null
-  businessReplies: number
-  averageBusinessResponseMs: number | null
-  onlineMs: number
-  disconnects: number
-  connectFailures: number
-  streamErrors: number
-  keepaliveTimeouts: number
-  engagement: WhatsAppEngagement
-  messageAnalysis: {complete: boolean; segments: WhatsAppBusinessSegment[]}
-  customerActivity: {
-    observed: boolean
-    onlineSignals: number
-    offlineSignals: number
-    typingSignals: number
-  }
-  accountActivity: {
-    observed: boolean
-    primaryPhoneActivitySignals: number
-    primaryPhoneActivePeriods: number
-    completedPhoneActivityPeriods: number
-    phoneActivityMs: number
-    averagePhoneActivityMs: number | null
-    phoneQuietGaps: number
-    phoneQuietMs: number
-    averagePhoneQuietMs: number | null
-    primaryPhoneMessages: number
-    otherDeviceMessages: number
-    primaryPhoneReplies: number
-    otherDeviceReplies: number
-    averagePrimaryPhoneResponseMs: number | null
-    averageOtherDeviceResponseMs: number | null
-    lastPrimaryPhoneAt: number | null
-  }
-  responseQueue: {
-    awaitingReply: number
-    oldestWaitingMs: number
-    observedAt: number
-    complete: boolean
-  } | null
-}
-export interface WhatsAppAnalytics {
-  callSeries: (CallOutcomeMetrics & {sessionId: string; ts: number})[]
-  enabled: boolean
-  period: {start: number; end: number}
-  requestVitals: {
-    requests: number
-    failures: number
-    errorRate: number | null
-  }
-  summary:
-    | (WhatsAppMetrics & {
-        totalNumbers: number
-        measuredNumbers: number
-        connectedNumbers: number
-      })
-    | null
-  numbers: (WhatsAppMetrics & {
-    sessionId: string
-    projectId: string
-    projectName: string
-    name: string
-    backend: string
-    status: string
-  })[]
-  series: {
-    customerOnlineSignals: number
-    customerTypingSignals: number
-    primaryPhoneMessages: number
-    otherDeviceMessages: number
-    primaryPhoneReplies: number
-    phoneActivePeriods: number
-    completedPhoneActivityPeriods: number
-    phoneActivityMs: number
-    phoneQuietGaps: number
-    phoneQuietMs: number
-    sessionId: string
-    ts: number
-    outgoingMessages: number
-    incomingMessages: number
-    sendFailures: number
-    businessReplies: number
-    averageBusinessResponseMs: number | null
-    onlineMs: number
-    disconnects: number
-  }[]
-}
 export interface AnalyticsSettings {
   enabled: boolean
 }
@@ -200,9 +17,9 @@ export function analyticsQuery(input: {
   since?: string
   until?: string
   sessionId?: string
-}): Record<string, QueryValue> {
+}): AnalyticsParams {
   optionalTimeRange(input.since, input.until)
-  const query: Record<string, QueryValue> = {}
+  const query: {start?: number; end?: number; sessionId?: string} = {}
   if (input.since !== undefined) query.start = Date.parse(input.since)
   if (input.until !== undefined) query.end = Date.parse(input.until)
   if (
@@ -228,15 +45,10 @@ export function analyticsQuery(input: {
 }
 export async function getAnalytics(
   client: ClientBase<ClientOwner>,
-  query: Record<string, QueryValue>,
+  query: AnalyticsParams,
 ) {
-  // Project raw paths are confined by the SDK to /platform/projects/{id}.
-  const response = await client.raw.request<{data: WhatsAppAnalytics}>({
-    method: 'GET',
-    path: client.projectId === null ? '/platform/analytics' : '/analytics',
-    query,
-  })
-  const data = response.data?.data
+  const response = await client.analytics.get(query)
+  const data = response.data
   if (
     !data ||
     typeof data.enabled !== 'boolean' ||
@@ -301,7 +113,7 @@ export function analyticsMetricsQuery(input: {
   windowHours?: number | undefined
   segments?: boolean | undefined
   format?: string | undefined
-}): Record<string, QueryValue> {
+}): AnalyticsMetricsParams {
   const query = analyticsQuery(
     input.sessionId === undefined ? {} : {sessionId: input.sessionId},
   )
@@ -327,34 +139,9 @@ export function analyticsMetricsQuery(input: {
     format,
   }
 }
-export async function getAnalyticsMetrics(
+export function getAnalyticsMetrics(
   client: ClientBase<ClientOwner>,
-  query: Record<string, QueryValue>,
+  query: AnalyticsMetricsParams,
 ) {
-  const response = await client.raw.request<string>({
-    method: 'GET',
-    path:
-      client.projectId === null
-        ? '/platform/analytics/metrics'
-        : '/analytics/metrics',
-    query,
-  })
-  const expected =
-    query.format === 'openmetrics'
-      ? 'application/openmetrics-text'
-      : 'text/plain'
-  if (
-    typeof response.data !== 'string' ||
-    !/^# TYPE polymorfa_analytics_enabled gauge$/m.test(response.data) ||
-    response.metadata.headers['content-type']
-      ?.split(';', 1)[0]
-      ?.trim()
-      .toLowerCase() !== expected ||
-    (query.format === 'openmetrics' && !response.data.endsWith('# EOF\n'))
-  )
-    throw new PolymorfaServerError(
-      'The API returned invalid analytics metrics.',
-      {code: 'invalid_response'},
-    )
-  return response
+  return client.analytics.metrics(query)
 }
