@@ -1749,6 +1749,12 @@ polymorfa campaign recipients list campaign_123 \
   --project-slug launch-project \
   --status skipped \
   --limit 100
+
+polymorfa campaign recipients export campaign_123 \
+  --project-slug launch-project \
+  --status failed \
+  --reason send_failed \
+  --output recipient-outcomes.csv
 ```
 
 One append accepts at most 1,000 entries. `--csv` reads the file locally and
@@ -1774,8 +1780,15 @@ result arrives, list the recipients before appending again.
 
 List returns `{data, page}`. Pass `page.nextCursor` back as `--cursor` while
 `page.hasMore` is true; the CLI prints the next cursor in human output. Filter
-with `--status queued|sending|sent|delivered|read|failed|skipped`. A recipient
-suppressed by an opt-out appears as `skipped` with `lastError` `opted_out`.
+with `--status queued|sending|sent|delivered|read|failed|skipped` and `--reason`
+for a normalized failure reason. A recipient suppressed by an opt-out appears
+as `skipped` with `failureReason` and `lastError` `opted_out`.
+
+`recipients export` fetches up to 1,000 rows per API page and joins them into
+one CSV header. It writes to standard output unless `--output` names a file;
+an existing file requires `--force`. Use `--max-pages` to stop early, then pass
+the cursor printed on standard error back with `--cursor` and the same filters.
+Each page reflects recipient outcomes when that page was read.
 
 #### Campaign conversions (beta)
 

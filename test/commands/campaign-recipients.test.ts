@@ -7,6 +7,7 @@ import {afterEach, describe, expect, test} from 'vitest'
 
 import {
   startHttpServer,
+  startHttpSequenceServer,
   withEnvironment,
   type TestHttpServer,
 } from '../helpers/http-server.js'
@@ -50,6 +51,69 @@ describe('Campaign recipient commands', () => {
       },
       metadata: {requestId: 'req_recipients', status: 200},
     })
+  })
+
+  test('filters recipient pages by failure reason', async () => {
+    server = await startHttpServer({
+      body: {
+        data: [recipient()],
+        page: {hasMore: false, nextCursor: null},
+        success: true,
+      },
+    })
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'campaign recipients list campaign_1 --project-slug project_1 --reason opted_out',
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(server.requests[0]?.url).toContain('reason=opted_out')
+  })
+
+  test('exports paged CSV with one header and a stable filter', async () => {
+    server = await startHttpSequenceServer([
+      {
+        rawBody: 'recipientId,phone\r\nr1,+14155550100\r\n',
+        headers: {
+          'content-type': 'text/csv',
+          'Polymorfa-Next-Cursor': 'next_2',
+        },
+      },
+      {
+        rawBody: 'recipientId,phone\r\nr2,+14155550101\r\n',
+        headers: {'content-type': 'text/csv'},
+      },
+    ])
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'campaign recipients export campaign_1 --project-slug project_1 --reason send_failed --limit 1',
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toBe(
+      'recipientId,phone\r\nr1,+14155550100\r\nr2,+14155550101\r\n',
+    )
+    expect(server.requests.map((request) => request.url)).toEqual([
+      '/messaging/projects/project_1/campaigns/campaign_1/recipients/export?reason=send_failed&limit=1',
+      '/messaging/projects/project_1/campaigns/campaign_1/recipients/export?reason=send_failed&cursor=next_2&limit=1',
+    ])
+  })
+
+  test('refuses to replace an export file before making an API request', async () => {
+    directory = await mkdtemp(join(tmpdir(), 'polymorfa-export-'))
+    const output = join(directory, 'recipients.csv')
+    await writeFile(output, 'existing')
+    server = await startHttpServer({
+      rawBody: 'recipientId,phone\r\n',
+      headers: {'content-type': 'text/csv'},
+    })
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign recipients export campaign_1 --project-slug project_1 --output ${output}`,
+      ),
+    )
+    expect(result.error).toBeDefined()
+    expect(server.requests).toHaveLength(0)
   })
 
   test('offers the next cursor in human output when a page remains', async () => {

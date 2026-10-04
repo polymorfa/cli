@@ -4,9 +4,11 @@ import {
   type CampaignAnalytics,
   type CampaignOperation,
   type CampaignRecipient,
+  type CampaignRecipientFailureReason,
   type CampaignRecipientInput,
   type CampaignRecipientPage,
   type CampaignRecipientStatus,
+  type ExportCampaignRecipientsParams,
   type CampaignRequeueResult,
   type CampaignStopOperation,
   type CreateCampaignRequest,
@@ -173,6 +175,58 @@ export async function listCampaignRecipients(
     {data: response.data.data, page: response.data.page},
     response.metadata,
   )
+}
+
+export interface CampaignRecipientCsvResult {
+  readonly csv: string
+  readonly nextCursor: string | null
+  readonly pages: number
+}
+
+/** Download bounded CSV pages, keeping the header only once. */
+export async function exportCampaignRecipients(
+  client: MessagingClient,
+  projectSlug: string,
+  campaignId: string,
+  params: ExportCampaignRecipientsParams,
+  maxPages = 500,
+): Promise<CampaignRecipientCsvResult> {
+  const chunks: string[] = []
+  let header: string | null = null
+  let cursor = params.cursor
+  const seen = new Set<string>()
+  for (let page = 0; page < maxPages; page += 1) {
+    const response = await client.campaigns.exportRecipients(
+      projectSlug,
+      campaignId,
+      {
+        ...params,
+        ...(cursor === undefined ? {} : {cursor}),
+      },
+    )
+    const {csv, nextCursor} = response.data
+    const headerEnd = csv.indexOf('\r\n')
+    if (headerEnd < 0)
+      throw new PolymorfaValidationError(
+        'The recipient export did not return a CSV header.',
+      )
+    const pageHeader = csv.slice(0, headerEnd)
+    if (header === null) header = pageHeader
+    else if (pageHeader !== header)
+      throw new PolymorfaValidationError(
+        'The recipient export columns changed between pages.',
+      )
+    chunks.push(page === 0 ? csv : csv.slice(headerEnd + 2))
+    if (nextCursor === null)
+      return {csv: chunks.join(''), nextCursor: null, pages: page + 1}
+    if (seen.has(nextCursor) || nextCursor === cursor)
+      throw new PolymorfaValidationError(
+        'The recipient export returned a repeated cursor.',
+      )
+    seen.add(nextCursor)
+    cursor = nextCursor
+  }
+  return {csv: chunks.join(''), nextCursor: cursor ?? null, pages: maxPages}
 }
 
 export async function addCampaignRecipients(
@@ -355,6 +409,24 @@ export function recipientStatus(
   if (value === undefined) return undefined
   return value as CampaignRecipientStatus
 }
+
+export function recipientFailureReason(
+  value?: string,
+): CampaignRecipientFailureReason | undefined {
+  return value as CampaignRecipientFailureReason | undefined
+}
+
+export const RECIPIENT_FAILURE_REASONS = [
+  'opted_out',
+  'cold_held',
+  'campaign_cancelled',
+  'invalid_recipient',
+  'session_not_connected',
+  'ack_timeout',
+  'blocked_by_safety',
+  'send_failed',
+  'other',
+] as const
 
 export const RECIPIENT_STATUSES = [
   'queued',
