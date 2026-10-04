@@ -2565,3 +2565,7 @@ Disabled Analytics returns no business aggregates.
 These commands use the pinned SDK's `analytics.get` and `analytics.metrics`
 methods and shared response types. A CLI release containing these commands and
 an API deployment exposing Analytics are separate requirements.
+
+## Package release workflow
+
+CLI development and release PRs target `main`. Nightly packages use the `dev` npm tag after matching staging API acceptance; stable packages follow production acceptance. Each package pins an exact accepted SDK version. See [the release guide](RELEASING.md).
