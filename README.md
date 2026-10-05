@@ -2480,6 +2480,28 @@ Use `function invocation list FUNCTION_UUID` and `function invocation view FUNCT
 
 Function, deployment, secret and invocation lists accept `--limit 1..100` and `--before UUID`. Deployment lists return metadata without source, including with `--json`. `function deployment view` exposes source with `--json`; secret reads always return metadata.
 
+### Optional STOP confirmations
+
+STOP acknowledgements are disabled by default and require beta access to enable.
+Read the team UUID and revision before changing the preference:
+
+```bash
+polymorfa optout confirmations view
+polymorfa optout confirmations summary --json
+polymorfa optout confirmations update --team-id TEAM_UUID --revision 0 --no-enabled
+```
+
+To opt in, use the observed team/revision with `--enabled --locale en`,
+`--locale pt-BR`, or `--locale es`. No language is inferred. Reads require a
+team key with `campaigns:read`; saves require `campaigns:manage`. Disabling
+remains available after beta withdrawal.
+
+Preference saves never retry automatically. A stale revision returns an error;
+read settings again after a conflict or uncertain save. The outcome summary
+covers 30 days. Provider acceptance does not confirm delivery, and unknown
+acknowledgements are never resent. Suppression remains recorded after any
+acknowledgement failure.
+
 ### Call reaction and hand commands
 
 `calls react CALL --connection-id CONNECTION --emoji '👍'` sends a reaction;
