@@ -1,3 +1,7 @@
+import {
+  assertCallMediaMuteSupported,
+  muteCallMedia,
+} from './call-media-controls.js'
 import {randomBytes} from 'node:crypto'
 
 import {
@@ -138,7 +142,8 @@ export interface PlaceCallInput {
   readonly exclusive?: boolean | undefined
   readonly participant?: string | undefined
   readonly session?: string | undefined
-  readonly to: string
+  readonly to?: string | readonly string[] | undefined
+  readonly groupId?: string | undefined
   readonly video?: boolean | undefined
 }
 
@@ -147,21 +152,48 @@ export async function placeCall(
   credential: CallsCredential,
   input: PlaceCallInput,
 ): Promise<CallsResult<VoipPlaceCallResult>> {
-  const to = validateCallTarget(input.to)
+  const groupId = input.groupId
+  if (
+    groupId !== undefined &&
+    (input.to !== undefined || !/^[1-9][0-9]{0,18}$/.test(groupId))
+  ) {
+    throw new PolymorfaValidationError(
+      'Provide one public group ID without --to.',
+    )
+  }
+  if (groupId === undefined && input.to === undefined)
+    throw new PolymorfaValidationError('Provide --to or --group-id.')
+  const to =
+    typeof input.to === 'string'
+      ? validateCallTarget(input.to)
+      : input.to?.map((target) => validateCallTarget(target))
+  if (
+    to !== undefined &&
+    typeof to !== 'string' &&
+    (to.length < 2 || to.length > 31 || new Set(to).size !== to.length)
+  ) {
+    throw new PolymorfaValidationError(
+      'A group call needs 2 to 31 distinct participants.',
+    )
+  }
   const session = requireServerSession(
     credential,
     input.session,
     'Placing a call',
   )
   const participant = validateParticipant(credential, input.participant)
+  const options = {
+    ...(session === undefined ? {} : {session}),
+    ...(input.video === undefined ? {} : {video: input.video}),
+    ...(input.exclusive === undefined ? {} : {exclusive: input.exclusive}),
+    ...(participant === undefined ? {} : {participant}),
+  }
   const response = await callRequest(() =>
-    client.voip.place({
-      to,
-      ...(session === undefined ? {} : {session}),
-      ...(input.video === undefined ? {} : {video: input.video}),
-      ...(input.exclusive === undefined ? {} : {exclusive: input.exclusive}),
-      ...(participant === undefined ? {} : {participant}),
-    }),
+    groupId
+      ? client.voip.place({groupId, ...options})
+      : typeof to === 'string'
+        ? client.voip.place({to, ...options})
+        : client.voip.place({participants: to!, ...options}),
   )
   return result(response.data.data, response.metadata)
 }
@@ -247,6 +279,19 @@ export async function inviteToCall(
   return result(response.data.data, response.metadata)
 }
 
+export async function ringCallParticipant(
+  client: MessagingClient,
+  callId: string,
+  target: string,
+): Promise<CallsResult<SuccessResponse>> {
+  validateCallId(callId)
+  const to = validateCallTarget(target, 'target')
+  const response = await callRequest(() =>
+    client.voip.ringParticipant(callId, {to}),
+  )
+  return result(response.data, response.metadata)
+}
+
 export async function viewCallSettings(
   client: MessagingClient,
   session: string,
@@ -315,7 +360,7 @@ export async function updateCallSettings(
   return result(response.data.data, response.metadata)
 }
 
-function validateSession(session: string): string {
+export function validateSession(session: string): string {
   const trimmed = session.trim()
   if (trimmed.length === 0 || trimmed.length > 128) {
     throw new PolymorfaConfigurationError(
@@ -585,11 +630,11 @@ export function renderCallRetention(retention: CallRetention): string {
   ].join('\n')
 }
 
-function yesNo(value: boolean): string {
+export function yesNo(value: boolean): string {
   return value ? 'yes' : 'no'
 }
 
-function result<T>(data: T, metadata: ResponseMetadata): CallsResult<T> {
+export function result<T>(data: T, metadata: ResponseMetadata): CallsResult<T> {
   return {
     data,
     metadata: {
@@ -914,6 +959,7 @@ export async function watchCalls(
 }
 
 export interface CallMediaInput extends CallsClientInput {
+  readonly muted?: boolean | undefined
   /** Answer this inbound call; without it, the next inbound call. */
   readonly callId?: string | undefined
   readonly exclusive?: boolean | undefined
@@ -974,6 +1020,7 @@ export async function bridgeCallMedia(
   const target =
     input.place === undefined ? undefined : validateCallTarget(input.place)
   if (input.callId !== undefined) validateCallId(input.callId)
+  if (input.muted === true) assertCallMediaMuteSupported()
   const client = createCallsClient(input, 'Carrying call media')
 
   let bytesReceived = 0
@@ -1071,36 +1118,41 @@ export async function bridgeCallMedia(
       input.output(bytes)
     })
     call.once('connected', () => {
-      status({
-        type: 'connected',
-        callId: call.id,
-        connectionId: call.connectionId,
-        sampleRate: call.audio.sampleRate,
-      })
-      if (input.input === undefined) return
-      pacePcm({
-        input: input.input,
-        isClosed: () => finished || call.ended,
-        now: input.now ?? Date.now,
-        sampleRate: () => call.audio.sampleRate,
-        write: (pcm) => {
-          if (call.audio.write(pcm)) bytesSent += pcm.length * 2
-        },
-      }).then(
-        (bytes) => {
-          if (finished || call.ended) return
-          status({type: 'input_ended', bytes})
-          if (input.leaveOnEnd === true) hangUp(call)
-        },
-        (error: unknown) => {
-          status({
-            type: 'notice',
-            code: 'input_failed',
-            message: error instanceof Error ? error.message : String(error),
-          })
-          hangUp(call)
-        },
-      )
+      const start = async (): Promise<void> => {
+        if (input.muted === true) await muteCallMedia(call)
+        if (finished || call.ended) return
+        status({
+          type: 'connected',
+          callId: call.id,
+          connectionId: call.connectionId,
+          sampleRate: call.audio.sampleRate,
+        })
+        if (input.input === undefined) return
+        pacePcm({
+          input: input.input,
+          isClosed: () => finished || call.ended,
+          now: input.now ?? Date.now,
+          sampleRate: () => call.audio.sampleRate,
+          write: (pcm) => {
+            if (call.audio.write(pcm)) bytesSent += pcm.length * 2
+          },
+        }).then(
+          (bytes) => {
+            if (finished || call.ended) return
+            status({type: 'input_ended', bytes})
+            if (input.leaveOnEnd === true) hangUp(call)
+          },
+          (error: unknown) => {
+            status({
+              type: 'notice',
+              code: 'input_failed',
+              message: error instanceof Error ? error.message : String(error),
+            })
+            hangUp(call)
+          },
+        )
+      }
+      void start().catch((error: unknown) => finish(callsClientError(error)))
     })
   }
 
@@ -1304,4 +1356,52 @@ function samplesFor(sampleRate: number, milliseconds: number): number {
 
 function bytesFor(sampleRate: number, milliseconds: number): number {
   return samplesFor(sampleRate, milliseconds) * 2
+}
+
+export type CallReactionEmoji = '' | '👍' | '❤️' | '😂' | '😮' | '😢' | '🙏'
+interface SocialInput {
+  readonly connectionId: string
+  readonly participant?: string | undefined
+}
+export async function reactToCall(
+  client: MessagingClient,
+  credential: CallsCredential,
+  callId: string,
+  input: SocialInput & {readonly emoji: string},
+): Promise<CallsResult<SuccessResponse>> {
+  validateCallId(callId)
+  const connectionId = validateConnectionId(input.connectionId)
+  const participant = validateParticipant(credential, input.participant)
+  if (!['', '👍', '❤️', '😂', '😮', '😢', '🙏'].includes(input.emoji))
+    throw new PolymorfaConfigurationError(
+      'Reaction must be 👍, ❤️, 😂, 😮, 😢, 🙏, or empty to clear.',
+      'emoji',
+    )
+  const resource = client.voip
+  const response = await callRequest(() =>
+    resource.sendReaction(callId, {
+      connectionId,
+      emoji: input.emoji as CallReactionEmoji,
+      ...(participant === undefined ? {} : {participant}),
+    }),
+  )
+  return result(response.data, response.metadata)
+}
+export async function setCallHand(
+  client: MessagingClient,
+  credential: CallsCredential,
+  callId: string,
+  input: SocialInput & {readonly raised: boolean},
+): Promise<CallsResult<SuccessResponse>> {
+  validateCallId(callId)
+  const connectionId = validateConnectionId(input.connectionId)
+  const participant = validateParticipant(credential, input.participant)
+  const response = await callRequest(() =>
+    client.voip.setHandRaised(callId, {
+      connectionId,
+      raised: input.raised,
+      ...(participant === undefined ? {} : {participant}),
+    }),
+  )
+  return result(response.data, response.metadata)
 }
