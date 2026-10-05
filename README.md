@@ -1789,6 +1789,28 @@ recorded`; changed details are refused. `--amount-minor` is in the currency's
 minor unit and needs `--currency`. Human output never prints the event ID.
 The report lists reported value per currency and never converts between them.
 
+#### Campaign reply flows (beta)
+
+A reply flow is the set of steps a campaign runs after a recipient replies. The
+team must be enrolled in the beta, otherwise these commands exit with the API's
+`403`. They use a team API key and the project ID:
+
+```shell
+polymorfa campaign reply-flows create --project-id project_123 \
+  --name "Follow-up" --input flow.json
+polymorfa campaign reply-flows view reply_flow_123 --project-id project_123 --json
+polymorfa campaign reply-flows attach campaign_123 --project-id project_123 \
+  --reply-flow reply_flow_123
+polymorfa campaign reply-flows attach campaign_123 --project-id project_123 --detach
+```
+
+`--input` is the definition JSON (`entryNodeId` and `nodes`) from a file or
+stdin (`-`). A revision is immutable; add a new one with `--flow-key` and
+`--revision`. Each key and revision can be created once, so `create` is sent
+once and never retried; after a lost response, run `view` before creating
+again. Attach works only before a campaign launches. Flow form steps work on
+Official numbers only.
+
 The source exposes no campaign update, delete, validate, archive, duplicate,
 event, history, or replay route on the Messaging surface. The CLI does not
 substitute similarly named Platform campaign methods for these gaps. To follow
