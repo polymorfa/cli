@@ -48,6 +48,20 @@ const Summary = z
   .strict()
 
 type Client = ClientInstance<'organization'>
+function parseResponse<T>(
+  schema: z.ZodType<T>,
+  value: unknown,
+  message: string,
+): T {
+  const parsed = schema.safeParse(value)
+  if (!parsed.success)
+    throw new PolymorfaValidationError(message, {
+      code: 'invalid_confirmation_response',
+    })
+  return parsed.data
+}
+const UNEXPECTED_READ =
+  'The STOP confirmation response did not match the expected shape. Update the CLI.'
 function result<T>(data: T, metadata: ResponseMetadata) {
   return {
     data,
@@ -65,11 +79,17 @@ function result<T>(data: T, metadata: ResponseMetadata) {
 }
 export async function readConfirmationSettings(client: Client) {
   const response = await client.optOuts.getConfirmationSettings()
-  return result(Settings.parse(response.data.data), response.metadata)
+  return result(
+    parseResponse(Settings, response.data.data, UNEXPECTED_READ),
+    response.metadata,
+  )
 }
 export async function readConfirmationSummary(client: Client) {
   const response = await client.optOuts.getConfirmationSummary()
-  return result(Summary.parse(response.data.data), response.metadata)
+  return result(
+    parseResponse(Summary, response.data.data, UNEXPECTED_READ),
+    response.metadata,
+  )
 }
 export function confirmationPreference(flags: {
   enabled: boolean
@@ -97,7 +117,15 @@ export async function updateConfirmationSettings(
   const response = await client.optOuts.updateConfirmationSettings(body, {
     maxNetworkRetries: 0,
   })
-  return result(Settings.parse(response.data.data), response.metadata)
+  // The save already ran; an unexpected body does not prove it failed.
+  return result(
+    parseResponse(
+      Settings,
+      response.data.data,
+      'The STOP confirmation response did not match the expected shape. Run `polymorfa optout confirmations view` to check whether the preference was saved.',
+    ),
+    response.metadata,
+  )
 }
 export function renderConfirmationSettings(
   settings: StopConfirmationSettings,

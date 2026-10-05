@@ -116,6 +116,19 @@ describe('STOP confirmation commands', () => {
       expect(server.requests).toHaveLength(0)
     },
   )
+  test('reports an unexpected save response as validation and points to view', async () => {
+    server = await startHttpServer({body: {data: {teamId, enabled: 'yes'}}})
+    const result = await run(
+      `optout confirmations update --team-id ${teamId} --revision 2 --no-enabled --json`,
+    )
+    expect((result.error as {oclif?: {exit?: number}}).oclif?.exit).toBe(2)
+    const body = JSON.parse(result.stderr) as {
+      error: {category: string; message: string}
+    }
+    expect(body.error.category).toBe('validation')
+    expect(body.error.message).toContain('optout confirmations view')
+    expect(server.requests).toHaveLength(1)
+  })
   test.each([403, 409, 503])(
     'reports %i without retrying or claiming success',
     async (status) => {
