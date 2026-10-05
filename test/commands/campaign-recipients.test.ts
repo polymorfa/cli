@@ -99,6 +99,54 @@ describe('Campaign recipient commands', () => {
     ])
   })
 
+  test.each([
+    ['--json', 'json'],
+    ['--quiet', 'quiet'],
+  ])(
+    'refuses %s without an output file before reading recipients',
+    async (flag) => {
+      server = await startHttpServer({
+        rawBody: 'recipientId,phone\r\n',
+        headers: {'content-type': 'text/csv'},
+      })
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `campaign recipients export campaign_1 --project-slug project_1 ${flag}`,
+        ),
+      )
+      expect(result.error).toBeDefined()
+      expect(result.stdout).toBe('')
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
+  test('keeps written pages and prints the resume cursor when a later page fails', async () => {
+    server = await startHttpSequenceServer([
+      {
+        rawBody: 'recipientId,phone\r\nr1,+14155550100\r\n',
+        headers: {
+          'content-type': 'text/csv',
+          'Polymorfa-Next-Cursor': 'next_2',
+        },
+      },
+      {
+        status: 400,
+        body: {
+          success: false,
+          error: {code: 'invalid_parameter', message: 'bad cursor'},
+        },
+      },
+    ])
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'campaign recipients export campaign_1 --project-slug project_1 --limit 1',
+      ),
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stdout).toBe('recipientId,phone\r\nr1,+14155550100\r\n')
+    expect(result.stderr).toContain('--cursor next_2')
+  })
+
   test('refuses to replace an export file before making an API request', async () => {
     directory = await mkdtemp(join(tmpdir(), 'polymorfa-export-'))
     const output = join(directory, 'recipients.csv')

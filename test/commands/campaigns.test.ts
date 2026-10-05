@@ -115,7 +115,17 @@ describe('Messaging campaign commands', () => {
     })
   })
 
-  test.each([{}, {status: 'sent'}, []])(
+  test.each([
+    {},
+    {status: 'sent'},
+    [],
+    {name: null},
+    {name: '  '},
+    {scheduledAt: 8_640_000_000_000_001},
+    {scheduledAt: 1.5},
+    {templateId: 'not-a-uuid'},
+    {variableMapping: {first_name: {fallback: ''}}},
+  ])(
     'rejects unsupported or empty campaign patches before transport',
     async (value) => {
       const input = await jsonInput('campaign-update-invalid.json', value)
@@ -129,6 +139,24 @@ describe('Messaging campaign commands', () => {
       expect(server.requests).toHaveLength(0)
     },
   )
+
+  test('sends template and mapping changes the API accepts', async () => {
+    const input = await jsonInput('campaign-update-content.json', {
+      templateId: null,
+      variableMapping: {first_name: {source: 'FirstName', fallback: 'there'}},
+    })
+    server = await startHttpServer({body: {data: campaign(), success: true}})
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign update 0198a2cb-0000-7000-8000-0000000000e3 --project-slug project_1 --input ${input}`,
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({
+      templateId: null,
+      variableMapping: {first_name: {source: 'FirstName', fallback: 'there'}},
+    })
+  })
 
   test('reports a launched-audience conflict without replaying the PATCH', async () => {
     const input = await jsonInput('campaign-update-conflict.json', {

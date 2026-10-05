@@ -1784,11 +1784,14 @@ with `--status queued|sending|sent|delivered|read|failed|skipped` and `--reason`
 for a normalized failure reason. A recipient suppressed by an opt-out appears
 as `skipped` with `failureReason` and `lastError` `opted_out`.
 
-`recipients export` fetches up to 1,000 rows per API page and joins them into
-one CSV header. It writes to standard output unless `--output` names a file;
-an existing file requires `--force`. Use `--max-pages` to stop early, then pass
-the cursor printed on standard error back with `--cursor` and the same filters.
-Each page reflects recipient outcomes when that page was read.
+`recipients export` fetches up to 1,000 rows per API page and writes each page
+as it arrives, under one CSV header. It writes to standard output unless
+`--output` names a file; an existing file requires `--force`. Use `--max-pages`
+to stop early, then pass the cursor printed on standard error back with
+`--cursor` and the same filters. If a later page fails, the pages already
+written stay and the cursor to resume from is printed. The export is CSV only:
+`--json` is refused, and `--quiet` needs `--output`. Each page reflects
+recipient outcomes when that page was read.
 
 #### Campaign conversions (beta)
 

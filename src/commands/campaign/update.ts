@@ -10,7 +10,7 @@ export default class CampaignUpdate extends BaseCommand {
   }
 
   static override description =
-    'Update campaign fields. A launched campaign cannot change its audience or start time.'
+    'Update campaign fields: name, recipientListId, senderConfig, scheduledAt, sendWindow, templateId, variableMapping or trackedLinks. A launched campaign cannot change its audience, start time, template, variable mapping or tracked links.'
 
   static override flags = {
     input: Flags.string({
