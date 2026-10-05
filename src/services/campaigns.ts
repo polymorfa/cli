@@ -1,12 +1,15 @@
+import {z} from 'zod'
 import {
   type AddCampaignRecipientsResult,
   type Campaign,
   type CampaignAnalytics,
   type CampaignOperation,
   type CampaignRecipient,
+  type CampaignRecipientFailureReason,
   type CampaignRecipientInput,
   type CampaignRecipientPage,
   type CampaignRecipientStatus,
+  type ExportCampaignRecipientsParams,
   type CampaignRequeueResult,
   type CampaignStopOperation,
   type CreateCampaignRequest,
@@ -16,6 +19,7 @@ import {
   PolymorfaValidationError,
   type RequestOptions,
   type ResponseMetadata,
+  type UpdateCampaignRequest,
 } from '@polymorfa/sdk'
 
 export interface CampaignResult<T> {
@@ -59,6 +63,20 @@ export async function viewCampaign(
   return result(response.data.data, response.metadata)
 }
 
+export async function updateCampaign(
+  client: MessagingClient,
+  projectSlug: string,
+  campaignId: string,
+  input: unknown,
+): Promise<CampaignResult<Campaign>> {
+  const response = await client.campaigns.update(
+    projectSlug,
+    campaignId,
+    campaignUpdateInput(input),
+  )
+  return result(response.data.data, response.metadata)
+}
+
 export async function viewCampaignAnalytics(
   client: MessagingClient,
   projectSlug: string,
@@ -79,6 +97,22 @@ export async function launchCampaign(
     projectSlug,
     campaignId,
     scheduledAt === undefined ? {} : {scheduledAt},
+    options,
+  )
+  return result(response.data.data, response.metadata)
+}
+
+export async function rescheduleCampaign(
+  client: MessagingClient,
+  projectSlug: string,
+  campaignId: string,
+  scheduledAt: number | null,
+  options: RequestOptions = {},
+): Promise<CampaignResult<CampaignOperation>> {
+  const response = await client.campaigns.reschedule(
+    projectSlug,
+    campaignId,
+    {scheduledAt},
     options,
   )
   return result(response.data.data, response.metadata)
@@ -142,6 +176,83 @@ export async function listCampaignRecipients(
     {data: response.data.data, page: response.data.page},
     response.metadata,
   )
+}
+
+export interface CampaignRecipientCsvResult {
+  /** Cursor after the last written page, or null when the export finished. */
+  readonly nextCursor: string | null
+  readonly pages: number
+}
+
+/** Raised after at least one page was written; `nextCursor` resumes after it. */
+export class CampaignRecipientExportInterrupted extends Error {
+  constructor(
+    override readonly cause: unknown,
+    readonly nextCursor: string,
+    readonly pages: number,
+  ) {
+    super('The recipient export stopped before the last page.')
+  }
+}
+
+/**
+ * Download bounded CSV pages, keeping the header only once. Each page is
+ * handed to `write` as it arrives, so memory stays at one page and a later
+ * failure leaves the earlier pages written with a cursor to resume from.
+ */
+export async function exportCampaignRecipients(
+  client: MessagingClient,
+  projectSlug: string,
+  campaignId: string,
+  params: ExportCampaignRecipientsParams,
+  write: (chunk: string) => Promise<void>,
+  maxPages = 500,
+): Promise<CampaignRecipientCsvResult> {
+  let header: string | null = null
+  let cursor = params.cursor
+  const seen = new Set<string>()
+  for (let page = 0; page < maxPages; page += 1) {
+    let csv: string
+    let nextCursor: string | null
+    try {
+      const response = await client.campaigns.exportRecipients(
+        projectSlug,
+        campaignId,
+        {
+          ...params,
+          ...(cursor === undefined ? {} : {cursor}),
+        },
+      )
+      ;({csv, nextCursor} = response.data)
+      const headerEnd = csv.indexOf('\r\n')
+      if (headerEnd < 0)
+        throw new PolymorfaValidationError(
+          'The recipient export did not return a CSV header.',
+        )
+      const pageHeader = csv.slice(0, headerEnd)
+      if (header === null) header = pageHeader
+      else if (pageHeader !== header)
+        throw new PolymorfaValidationError(
+          'The recipient export columns changed between pages.',
+        )
+      if (
+        nextCursor !== null &&
+        (seen.has(nextCursor) || nextCursor === cursor)
+      )
+        throw new PolymorfaValidationError(
+          'The recipient export returned a repeated cursor.',
+        )
+      await write(page === 0 ? csv : csv.slice(headerEnd + 2))
+    } catch (error) {
+      if (page > 0 && cursor !== undefined)
+        throw new CampaignRecipientExportInterrupted(error, cursor, page)
+      throw error
+    }
+    if (nextCursor === null) return {nextCursor: null, pages: page + 1}
+    seen.add(nextCursor)
+    cursor = nextCursor
+  }
+  return {nextCursor: cursor ?? null, pages: maxPages}
 }
 
 export async function addCampaignRecipients(
@@ -325,6 +436,24 @@ export function recipientStatus(
   return value as CampaignRecipientStatus
 }
 
+export function recipientFailureReason(
+  value?: string,
+): CampaignRecipientFailureReason | undefined {
+  return value as CampaignRecipientFailureReason | undefined
+}
+
+export const RECIPIENT_FAILURE_REASONS = [
+  'opted_out',
+  'cold_held',
+  'campaign_cancelled',
+  'invalid_recipient',
+  'session_not_connected',
+  'ack_timeout',
+  'blocked_by_safety',
+  'send_failed',
+  'other',
+] as const
+
 export const RECIPIENT_STATUSES = [
   'queued',
   'sending',
@@ -349,6 +478,61 @@ function campaignInput(input: unknown): CreateCampaignRequest {
     )
   }
   return input as unknown as CreateCampaignRequest
+}
+
+const MAX_DATE_MS = 8_640_000_000_000_000
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const CampaignUpdate = z
+  .object({
+    name: z
+      .string()
+      .min(1)
+      .max(200)
+      .refine((value) => value.trim().length > 0),
+    recipientListId: z.string().min(1).nullable(),
+    senderConfig: z.record(z.string(), z.unknown()),
+    scheduledAt: z.number().int().min(0).max(MAX_DATE_MS).nullable(),
+    sendWindow: z.record(z.string(), z.unknown()).nullable(),
+    templateId: z.string().regex(UUID_PATTERN).nullable(),
+    variableMapping: z
+      .record(
+        z.string(),
+        z
+          .object({
+            source: z.string().min(1).optional(),
+            fallback: z.string().min(1).max(1024).optional(),
+          })
+          .strict(),
+      )
+      .nullable(),
+    trackedLinks: z
+      .array(z.object({key: z.string(), url: z.string()}).strict())
+      .max(5)
+      .nullable(),
+  })
+  .partial()
+  .strict()
+
+function campaignUpdateInput(input: unknown): UpdateCampaignRequest {
+  if (!isRecord(input)) {
+    throw new PolymorfaValidationError(
+      'Campaign update input must contain one JSON object.',
+      {code: 'invalid_campaign_update_input'},
+    )
+  }
+  const parsed = CampaignUpdate.safeParse(input)
+  if (!parsed.success || Object.keys(parsed.data).length === 0) {
+    throw new PolymorfaValidationError(
+      'Campaign update input must contain name, recipientListId, senderConfig, scheduledAt, sendWindow, templateId, variableMapping, or trackedLinks, with valid values. scheduledAt is integer Unix milliseconds or null.',
+      {code: 'invalid_campaign_update_fields'},
+    )
+  }
+  // Only the checked, present fields reach the SDK request.
+  const request: Record<string, unknown> = {}
+  for (const [key, value] of Object.entries(parsed.data))
+    if (value !== undefined) request[key] = value
+  return request
 }
 
 function result<T>(data: T, metadata: ResponseMetadata): CampaignResult<T> {

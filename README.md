@@ -1669,6 +1669,8 @@ project slug because the source routes are slug-scoped:
 ```shell
 polymorfa campaign list --project-slug launch-project
 polymorfa campaign create --project-slug launch-project --input campaign.json
+polymorfa campaign update 0198a2cb-0000-7000-8000-0000000000e3 \
+  --project-slug launch-project --input campaign-patch.json
 polymorfa campaign view campaign_123 --project-slug launch-project
 polymorfa campaign analytics campaign_123 --project-slug launch-project
 
@@ -1677,13 +1679,17 @@ polymorfa campaign launch campaign_123 \
   --scheduled-at 2026-09-01T12:00:00Z
 polymorfa campaign pause campaign_123 --project-slug launch-project
 polymorfa campaign resume campaign_123 --project-slug launch-project
+polymorfa campaign reschedule campaign_123 \
+  --project-slug launch-project \
+  --scheduled-at 2026-09-02T12:00:00Z
+polymorfa campaign reschedule campaign_123 --project-slug launch-project --now
 polymorfa campaign stop campaign_123 --project-slug launch-project --yes
 polymorfa campaign requeue campaign_123 \
   --project-slug launch-project \
   --include-skipped-error
 ```
 
-Launch, pause, and resume return accepted durable work; they do not wait for
+Launch, pause, resume, and reschedule return accepted durable work; they do not wait for
 the state transition. Stop returns accepted work for an active delivery run,
 or reports an immediate cancellation with no operation ID when none is active.
 Check the campaign with `polymorfa campaign view`. When an operation ID is
@@ -1698,6 +1704,15 @@ the CLI reports that outcome instead of printing an empty operation.
 Launch times accept epoch milliseconds or timezone-qualified ISO 8601
 instants. List returns one complete newest-first array with no cursor. Requeue
 is synchronous and reports only the number moved.
+
+Update reads one JSON object with at least one of `name`, `recipientListId`,
+`senderConfig`, or `scheduledAt`. Send only fields to change. Set
+`recipientListId` or `scheduledAt` to `null` to detach the audience or start at
+launch. A non-null `scheduledAt` must be integer Unix milliseconds within the
+JavaScript Date range. The API refuses audience and start-time changes after launch. A sender
+change after launch requires the sending numbers to pass live eligibility
+checks. If a PATCH result is lost, view the campaign before deciding whether
+to send another update.
 
 Create, launch, pause, resume and stop accept `--idempotency-key` to deduplicate
 the same request for 24 hours. A successful request repeated with the same key
@@ -1734,6 +1749,12 @@ polymorfa campaign recipients list campaign_123 \
   --project-slug launch-project \
   --status skipped \
   --limit 100
+
+polymorfa campaign recipients export campaign_123 \
+  --project-slug launch-project \
+  --status failed \
+  --reason send_failed \
+  --output recipient-outcomes.csv
 ```
 
 One append accepts at most 1,000 entries. `--csv` reads the file locally and
@@ -1759,8 +1780,18 @@ result arrives, list the recipients before appending again.
 
 List returns `{data, page}`. Pass `page.nextCursor` back as `--cursor` while
 `page.hasMore` is true; the CLI prints the next cursor in human output. Filter
-with `--status queued|sending|sent|delivered|read|failed|skipped`. A recipient
-suppressed by an opt-out appears as `skipped` with `lastError` `opted_out`.
+with `--status queued|sending|sent|delivered|read|failed|skipped` and `--reason`
+for a normalized failure reason. A recipient suppressed by an opt-out appears
+as `skipped` with `failureReason` and `lastError` `opted_out`.
+
+`recipients export` fetches up to 1,000 rows per API page and writes each page
+as it arrives, under one CSV header. It writes to standard output unless
+`--output` names a file; an existing file requires `--force`. Use `--max-pages`
+to stop early, then pass the cursor printed on standard error back with
+`--cursor` and the same filters. If a later page fails, the pages already
+written stay and the cursor to resume from is printed. The export is CSV only:
+`--json` is refused, and `--quiet` needs `--output`. Each page reflects
+recipient outcomes when that page was read.
 
 #### Campaign conversions (beta)
 
@@ -1811,7 +1842,7 @@ once and never retried; after a lost response, run `view` before creating
 again. Attach works only before a campaign launches. Flow form steps work on
 Official numbers only.
 
-The source exposes no campaign update, delete, validate, archive, duplicate,
+The source exposes no campaign delete, validate, archive, duplicate,
 event, history, or replay route on the Messaging surface. The CLI does not
 substitute similarly named Platform campaign methods for these gaps. To follow
 or stop a campaign's operation, use the `operation` commands in
