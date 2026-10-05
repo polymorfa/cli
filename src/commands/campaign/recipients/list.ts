@@ -3,7 +3,9 @@ import {Args, Flags} from '@oclif/core'
 import {BaseCommand} from '../../../base-command.js'
 import {
   listCampaignRecipients,
+  recipientFailureReason,
   recipientStatus,
+  RECIPIENT_FAILURE_REASONS,
   renderCampaignRecipients,
   RECIPIENT_STATUSES,
 } from '../../../services/campaigns.js'
@@ -31,6 +33,10 @@ export default class CampaignRecipientsList extends BaseCommand {
       description: 'Project slug in the Messaging API path.',
       required: true,
     }),
+    reason: Flags.string({
+      description: 'Filter by the normalized failure reason.',
+      options: [...RECIPIENT_FAILURE_REASONS],
+    }),
     status: Flags.string({
       description:
         'Filter by delivery status. Use skipped to find recipients suppressed by an opt-out.',
@@ -50,6 +56,9 @@ export default class CampaignRecipientsList extends BaseCommand {
         ...(flags.status === undefined
           ? {}
           : {status: recipientStatus(flags.status)!}),
+        ...(flags.reason === undefined
+          ? {}
+          : {reason: recipientFailureReason(flags.reason)!}),
       },
     )
     this.writeValue(result, renderCampaignRecipients(result.data), flags)

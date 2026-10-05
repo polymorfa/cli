@@ -82,6 +82,110 @@ describe('Messaging campaign commands', () => {
     },
   )
 
+  test('updates a campaign with a partial JSON body through Messaging PATCH', async () => {
+    const input = await jsonInput('campaign-update.json', {
+      name: 'Autumn launch',
+      recipientListId: null,
+      scheduledAt: null,
+    })
+    server = await startHttpServer({
+      body: {data: {...campaign(), name: 'Autumn launch'}, success: true},
+      headers: {'request-id': 'req_campaign_update'},
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign update 0198a2cb-0000-7000-8000-0000000000e3 --project-slug project/main --input ${input} --json`,
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      data: {name: 'Autumn launch'},
+      metadata: {attempts: 1, requestId: 'req_campaign_update', status: 200},
+    })
+    expect(server.requests[0]).toMatchObject({
+      method: 'PATCH',
+      url: '/messaging/projects/project%2Fmain/campaigns/0198a2cb-0000-7000-8000-0000000000e3',
+      body: JSON.stringify({
+        name: 'Autumn launch',
+        recipientListId: null,
+        scheduledAt: null,
+      }),
+    })
+  })
+
+  test.each([
+    {},
+    {status: 'sent'},
+    [],
+    {name: null},
+    {name: '  '},
+    {scheduledAt: 8_640_000_000_000_001},
+    {scheduledAt: 1.5},
+    {templateId: 'not-a-uuid'},
+    {variableMapping: {first_name: {fallback: ''}}},
+  ])(
+    'rejects unsupported or empty campaign patches before transport',
+    async (value) => {
+      const input = await jsonInput('campaign-update-invalid.json', value)
+      server = await startHttpServer({body: {data: campaign(), success: true}})
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `campaign update 0198a2cb-0000-7000-8000-0000000000e3 --project-slug project_1 --input ${input}`,
+        ),
+      )
+      expect(exitCode(result.error)).toBe(2)
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
+  test('sends template and mapping changes the API accepts', async () => {
+    const input = await jsonInput('campaign-update-content.json', {
+      templateId: null,
+      variableMapping: {first_name: {source: 'FirstName', fallback: 'there'}},
+    })
+    server = await startHttpServer({body: {data: campaign(), success: true}})
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign update 0198a2cb-0000-7000-8000-0000000000e3 --project-slug project_1 --input ${input}`,
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({
+      templateId: null,
+      variableMapping: {first_name: {source: 'FirstName', fallback: 'there'}},
+    })
+  })
+
+  test('reports a launched-audience conflict without replaying the PATCH', async () => {
+    const input = await jsonInput('campaign-update-conflict.json', {
+      recipientListId: null,
+    })
+    server = await startHttpServer({
+      body: {
+        error: {
+          code: 'state_conflict',
+          message: 'The audience is fixed after launch.',
+        },
+        success: false,
+      },
+      status: 409,
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign update 0198a2cb-0000-7000-8000-0000000000e3 --project-slug project_1 --input ${input} --json`,
+      ),
+    )
+
+    expect(exitCode(result.error)).toBe(4)
+    expect(JSON.parse(result.stderr)).toMatchObject({
+      error: {category: 'conflict', code: 'state_conflict'},
+    })
+    expect(server.requests).toHaveLength(1)
+  })
+
   test('views one campaign and its exact live analytics counters', async () => {
     server = await startHttpSequenceServer([
       {body: {data: campaign(), success: true}},
@@ -173,6 +277,125 @@ describe('Messaging campaign commands', () => {
       'Scheduled time must be epoch milliseconds or an ISO 8601 instant',
     )
     expect(server.requests).toHaveLength(0)
+  })
+
+  test.each([
+    ['2026-09-02T12:00:00Z', 1_788_350_400_000],
+    ['1788350400000', 1_788_350_400_000],
+  ])('reschedules with a precise instant (%s)', async (at, milliseconds) => {
+    server = await startHttpServer({
+      body: {
+        data: {
+          ...campaign(),
+          operationId: 'op_reschedule',
+          status: 'scheduled',
+        },
+        success: true,
+      },
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign reschedule campaign/1 --project-slug project/main --scheduled-at ${at} --idempotency-key move_1 --json`,
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toMatchObject({
+      data: {operationId: 'op_reschedule', status: 'scheduled'},
+      metadata: {status: 200},
+    })
+    expect(server.requests[0]).toMatchObject({
+      body: JSON.stringify({scheduledAt: milliseconds}),
+      method: 'POST',
+      url: '/messaging/projects/project%2Fmain/campaigns/campaign%2F1/reschedule',
+    })
+    expect(server.requests[0]?.headers['idempotency-key']).toBe('move_1')
+  })
+
+  test('starts a scheduled campaign now and generates an idempotency key', async () => {
+    server = await startHttpServer({
+      body: {data: {...campaign(), operationId: 'op_now'}, success: true},
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'campaign reschedule campaign_1 --project-slug project_1 --now',
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toContain(
+      'Accepted campaign reschedule as operation op_now.',
+    )
+    expect(server.requests[0]).toMatchObject({
+      body: JSON.stringify({scheduledAt: null}),
+      method: 'POST',
+      url: '/messaging/projects/project_1/campaigns/campaign_1/reschedule',
+    })
+    expect(server.requests[0]?.headers['idempotency-key']).toMatch(
+      /^pmfa_cli_[0-9a-f-]{36}$/,
+    )
+  })
+
+  test.each([
+    '',
+    '--now --scheduled-at 2026-09-02T12:00:00Z',
+    '--scheduled-at someday',
+    '--scheduled-at 0',
+    '--scheduled-at 8640000000000001',
+    '--scheduled-at 2026-09-02T12:00:00',
+  ])(
+    'rejects invalid reschedule flags before transport (%s)',
+    async (flags) => {
+      server = await startHttpServer({body: {data: campaign(), success: true}})
+
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `campaign reschedule campaign_1 --project-slug project_1 ${flags} --json`,
+        ),
+      )
+
+      expect(exitCode(result.error)).toBe(2)
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
+  test('rejects a browser client token before reschedule transport', async () => {
+    server = await startHttpServer({body: {data: campaign(), success: true}})
+
+    const result = await clientTokenEnvironment(() =>
+      runCommand(
+        'campaign reschedule campaign_1 --project-slug project_1 --now',
+      ),
+    )
+
+    expect(exitCode(result.error)).toBe(2)
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('reports a changed campaign state as a failed reschedule', async () => {
+    server = await startHttpServer({
+      status: 409,
+      body: {
+        success: false,
+        error: {
+          code: 'campaign_state_conflict',
+          message:
+            'This campaign has already started, so its start time can no longer be changed.',
+        },
+      },
+    })
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        'campaign reschedule campaign_1 --project-slug project_1 --now --json',
+      ),
+    )
+
+    expect(result.error).toBeDefined()
+    expect(result.stderr).toContain('already started')
+    expect(server.requests).toHaveLength(1)
   })
 
   test('pauses, resumes, and explicitly stops through distinct lifecycle routes', async () => {
