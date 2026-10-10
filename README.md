@@ -2612,5 +2612,5 @@ WhatsApp configuration. They do not grant poll-editing permissions. The API
 must include the group-capabilities contract.
 
 The capability extension is pinned in `contracts/abprops-capabilities.json` to
-API source `7aafb98390d163b5319eed163a5186df9f38e19e`. This is the same scoped revision consumed by the SDK;
+API source `205369ff8f5ecb71dd085a190d8ec80aa2b9e483`. This is the same scoped revision consumed by the SDK;
 other command contracts and the published SDK dependency keep their recorded revisions.
