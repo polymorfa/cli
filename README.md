@@ -1978,6 +1978,35 @@ blocked, stopping discards queued output instead of waiting for the reader.
 Use `event stream` to consume events in a script. Use `listen` to forward exact
 bodies to a local webhook handler.
 
+### Request logs
+
+`polymorfa logs tail` prints a project's API requests as they happen, like
+`stripe logs tail`. It needs a team key or project token with `logs:read`.
+
+```shell
+polymorfa logs tail \
+  --project project_123 \
+  --status 4xx,5xx \
+  --method POST
+```
+
+Each line shows the time, method, route pattern, status, duration, error code,
+source, request ID and W3C trace ID. The command prints the 10 most recent
+matching requests (`--backfill 0` to 100), then polls for new ones every
+`--poll-interval` seconds (default 2, 1 to 60). It reads again at once while
+more requests are waiting, and waits for `Retry-After` when the read limit of
+120 a minute is reached. `--json` writes one JSON line per request.
+`--max-events` stops after a fixed number. Ctrl-C stops with exit code 0.
+
+Filters: `--status` (codes or classes), `--method`, `--route` (exact pattern
+such as `/messaging/:session/messages`), `--source api|mcp`, `--credential`
+(key or token ID), `--request-id` and `--trace-id`. Send a `traceparent` header
+with your API requests to find them by your own trace ID.
+
+`polymorfa logs list` prints one page, newest first, with the same filters plus
+`--since`, `--until` and `--limit`. Pass the printed `--cursor` for older
+requests. Requests older than 30 days are not listed.
+
 ## Local event listening and forwarding
 
 `polymorfa listen` opens the project listener stream and can forward the exact
