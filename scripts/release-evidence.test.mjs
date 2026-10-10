@@ -1,6 +1,6 @@
 import {test} from 'node:test'
 import assert from 'node:assert/strict'
-import {validateSdk} from './release-evidence.mjs'
+import {validateSdk, validateFeatureContractPins} from './release-evidence.mjs'
 const sdk = {
   schemaVersion: 1,
   repository: 'polymorfa/sdks',
@@ -60,4 +60,25 @@ test('an installed SDK or healthy API without native route acceptance is insuffi
         'nightly',
       ),
     )
+})
+
+test('capability commands cannot publish against unrelated SDK acceptance', () => {
+  const pin = {
+    repository: sdk.acceptance.repository,
+    family: 'messaging',
+    published: true,
+    sourceCommit: sdk.acceptance.sourceSha,
+    sourcePath: sdk.acceptance.contracts.messaging.sourcePath,
+    sourceSha256: sdk.acceptance.contracts.messaging.sha256,
+  }
+  validateFeatureContractPins(sdk, [pin])
+  for (const delta of [
+    {family: 'platform'},
+    {family: undefined},
+    {published: false},
+    {sourceCommit: 'f'.repeat(40)},
+    {sourceSha256: sdk.acceptance.contracts.platform.sha256},
+    {sourcePath: sdk.acceptance.contracts.platform.sourcePath},
+  ])
+    assert.throws(() => validateFeatureContractPins(sdk, [{...pin, ...delta}]))
 })

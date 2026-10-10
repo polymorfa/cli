@@ -5,7 +5,11 @@ import {createHash} from 'node:crypto'
 import {execFileSync} from 'node:child_process'
 import {mkdirSync, readFileSync, writeFileSync} from 'node:fs'
 import {join, resolve} from 'node:path'
-import {registryEvidence, validateSdk} from './release-evidence.mjs'
+import {
+  registryEvidence,
+  validateSdk,
+  validateFeatureContractPins,
+} from './release-evidence.mjs'
 
 try {
   assert.equal(
@@ -24,12 +28,16 @@ try {
     'SDK publication with matching API acceptance must finish first',
   )
   validateSdk(sdk.provenance, sdk.version, channel)
+  validateFeatureContractPins(sdk.provenance, [
+    JSON.parse(readFileSync('contracts/abprops-capabilities.json')),
+  ])
   const files = execFileSync('git', [
     'ls-files',
     '-z',
     'src',
     'bin',
     'scripts',
+    'contracts',
     'skills',
     'package.json',
     'package-lock.json',
