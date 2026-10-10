@@ -2569,3 +2569,19 @@ an API deployment exposing Analytics are separate requirements.
 ## Package release workflow
 
 CLI development and release PRs target `main`. Nightly packages use the `dev` npm tag after matching staging API acceptance; stable packages follow production acceptance. Each package pins an exact accepted SDK version. See [the release guide](RELEASING.md).
+
+### Stored group capabilities
+
+Use `polymorfa group capabilities GROUP_ID --session SESSION` to read the
+linked number's stored group configuration. Add `--json` for the complete
+response. This read requires `groups:read`, current group membership, and
+number-capabilities beta enrollment. Unknown configuration stays `unknown`;
+the command does not open the group chat or fetch its configuration.
+
+The keys `polls.endTime`, `polls.hideVoters`, and `polls.creatorEdit` describe
+WhatsApp configuration. They do not grant poll-editing permissions. The API
+must include the group-capabilities contract.
+
+The capability extension is pinned in `contracts/abprops-capabilities.json` to
+API source `f4947a5bb`. This is the same scoped revision consumed by the SDK;
+other command contracts and the published SDK dependency keep their recorded revisions.

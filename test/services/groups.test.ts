@@ -3,6 +3,8 @@ import {afterEach, describe, expect, test} from 'vitest'
 import {createMessagingClient} from '../../src/sdk/client.js'
 import {
   getGroupInviteLink,
+  getGroupCapabilities,
+  renderGroupCapabilities,
   listGroupParticipants,
   listGroups,
   viewGroup,
@@ -51,6 +53,36 @@ describe('group read services', () => {
     await expect(
       listGroupParticipants(client(server.baseUrl), 'session/main', '123@g.us'),
     ).resolves.toMatchObject({data: group.participants})
+  })
+
+  test('reads group capabilities without replacing unknown values', async () => {
+    const data = {
+      status: 'unknown' as const,
+      syncedAt: null,
+      checkedAt: null,
+      capabilities: [
+        {
+          key: 'polls.endTime',
+          kind: 'feature' as const,
+          unit: null,
+          value: null,
+          source: null,
+        },
+      ],
+    }
+    server = await startHttpServer({body: {success: true, data}})
+    const response = await getGroupCapabilities(
+      client(server.baseUrl),
+      'session/main',
+      '9007199254740993',
+    )
+    expect(response.data).toEqual(data)
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/session%2Fmain/groups/9007199254740993/capabilities',
+    )
+    expect(renderGroupCapabilities(data)).toContain(
+      'polls.endTime\tunknown\tunknown',
+    )
   })
 
   test('derives the canonical invite URL while retaining its source code', async () => {
