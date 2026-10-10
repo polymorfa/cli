@@ -24,9 +24,9 @@ const entry = z.object({
   mcpTool: z.string().nullable(),
   credential: z
     .object({
-      type: z.enum(['team_key', 'project_token']),
-      id: z.string(),
-      last4: z.string(),
+      type: z.enum(['team_key', 'project_token', 'client_token']),
+      id: z.string().nullable(),
+      last4: z.string().nullable(),
     })
     .nullable(),
 })
