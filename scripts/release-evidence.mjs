@@ -57,6 +57,41 @@ export function validateSdk(provenance, version, channel) {
   }
   return provenance
 }
+export function validateFeatureContractPins(provenance, pins) {
+  const receipt = provenance.acceptance
+  for (const pin of pins) {
+    assert.equal(
+      pin.repository,
+      receipt.repository,
+      'Feature contract repository mismatch',
+    )
+    assert.ok(
+      ['messaging', 'platform'].includes(pin.family),
+      'Feature contract family is required',
+    )
+    assert.notEqual(
+      pin.published,
+      false,
+      'Feature contract is held from publication',
+    )
+    assert.equal(
+      pin.sourceCommit,
+      receipt.sourceSha,
+      'Feature contract source is not accepted',
+    )
+    assert.equal(
+      pin.sourcePath,
+      receipt.contracts[pin.family]?.sourcePath,
+      'Feature contract source path mismatch',
+    )
+    assert.equal(
+      pin.sourceSha256,
+      receipt.contracts[pin.family]?.sha256,
+      'Feature contract hash mismatch',
+    )
+  }
+}
+
 export async function registryEvidence(name, tag, output) {
   assert.ok(['@polymorfa/sdk', '@polymorfa/cli'].includes(name))
   const response = await fetch(
