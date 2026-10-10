@@ -1,6 +1,8 @@
 import {Flags} from '@oclif/core'
 import type {SendButtonsMessageRequest} from '@polymorfa/sdk'
 
+import {PolymorfaConfigurationError} from '@polymorfa/sdk'
+
 import {BaseCommand} from '../../../base-command.js'
 import {
   sendIdempotencyOptions,
@@ -12,7 +14,7 @@ import {sendMessage} from '../../../services/messages.js'
 
 export default class MessageSendButtons extends BaseCommand {
   static override description =
-    'Send an interactive message with reply, URL, call, or copy-code buttons.'
+    'Send an interactive message with reply, URL, call, copy-code, or catalog buttons.'
 
   static override examples = [
     '<%= config.bin %> message send buttons --session session_123 --to +15551234567 --body "Confirm your order?" --button reply:yes=Yes --button reply:no=No',
@@ -24,7 +26,7 @@ export default class MessageSendButtons extends BaseCommand {
     body: Flags.string({description: 'Message body.', required: true}),
     button: Flags.string({
       description:
-        'Button as reply:<id>=<text>, url:<text>=<url>, call:<text>=<+E.164>, or copy:<text>=<code>. Repeat for several buttons.',
+        'Button as reply:<id>=<text>, url:<text>=<url>, call:<text>=<+E.164>, copy:<text>=<code>, or catalog:<text>=<+E.164>[|<product-id>]. Use up to ten replies or three CTAs; do not mix them.',
       multiple: true,
       required: true,
     }),
@@ -34,12 +36,24 @@ export default class MessageSendButtons extends BaseCommand {
 
   async run(): Promise<void> {
     const {flags} = await this.parse(MessageSendButtons)
+    const buttons = flags.button.map(parseButton)
+    const replies = buttons.filter((button) => button.type === 'reply').length
+    if (
+      buttons.length > 10 ||
+      (replies > 0 && replies !== buttons.length) ||
+      (replies === 0 && buttons.length > 3)
+    ) {
+      throw new PolymorfaConfigurationError(
+        'Use up to ten reply buttons or three CTA buttons, without mixing them.',
+        'button',
+      )
+    }
     const request: SendButtonsMessageRequest = {
       ...sendContext(flags),
       content: {
         buttons: {
           body: flags.body,
-          buttons: flags.button.map(parseButton),
+          buttons,
           ...(flags.footer === undefined ? {} : {footer: flags.footer}),
           ...(flags.title === undefined ? {} : {title: flags.title}),
         },

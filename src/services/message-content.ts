@@ -144,7 +144,7 @@ export async function mediaSource(
 
 /**
  * Parse `--button` values:
- *   reply:<id>=<text>, url:<text>=<url>, call:<text>=<phone>, copy:<text>=<code>
+ *   reply:<id>=<text>, url:<text>=<url>, call:<text>=<phone>, copy:<text>=<code>, catalog:<text>=<+E.164>[|<product-id>]
  */
 export function parseButton(value: string): MessageButton {
   const colon = value.indexOf(':')
@@ -164,6 +164,22 @@ export function parseButton(value: string): MessageButton {
     case 'call':
       if (!/^\+[1-9]\d{1,14}$/.test(right)) throw invalidButton(value)
       return {type: 'call', text: left, phoneNumber: right}
+    case 'catalog': {
+      const [businessPhoneNumber, catalogProductId, extra] = right.split('|')
+      if (
+        businessPhoneNumber === undefined ||
+        !/^\+[1-9]\d{1,14}$/.test(businessPhoneNumber) ||
+        extra !== undefined ||
+        (catalogProductId !== undefined && !/^[1-9]\d*$/.test(catalogProductId))
+      )
+        throw invalidButton(value)
+      return {
+        type: 'catalog',
+        text: left,
+        businessPhoneNumber,
+        ...(catalogProductId === undefined ? {} : {catalogProductId}),
+      }
+    }
     case 'copy':
       return {type: 'copy', text: left, copyCode: right}
     default:
@@ -173,7 +189,7 @@ export function parseButton(value: string): MessageButton {
 
 function invalidButton(value: string): PolymorfaConfigurationError {
   return new PolymorfaConfigurationError(
-    `Invalid --button "${value}". Use reply:<id>=<text>, url:<text>=<url>, call:<text>=<+E.164>, or copy:<text>=<code>.`,
+    `Invalid --button "${value}". Use reply:<id>=<text>, url:<text>=<url>, call:<text>=<+E.164>, copy:<text>=<code>, or catalog:<text>=<+E.164>[|<product-id>].`,
     'button',
   )
 }
