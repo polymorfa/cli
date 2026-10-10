@@ -637,7 +637,7 @@ describe('typed message send commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
-  test('sends buttons of every supported type', async () => {
+  test('sends three CTA buttons', async () => {
     server = await messageServer()
 
     const result = await send([
@@ -653,8 +653,6 @@ describe('typed message send commands', () => {
       '--footer',
       'Thanks',
       '--button',
-      'reply:yes=Yes',
-      '--button',
       'url:Open=https://example.com/a?b=c',
       '--button',
       '"call:Call us=+15550001111"',
@@ -669,7 +667,6 @@ describe('typed message send commands', () => {
         buttons: {
           body: 'Pick',
           buttons: [
-            {id: 'yes', text: 'Yes', type: 'reply'},
             {text: 'Open', type: 'url', url: 'https://example.com/a?b=c'},
             {phoneNumber: '+15550001111', text: 'Call us', type: 'call'},
             {copyCode: 'SAVE10', text: 'Code', type: 'copy'},
@@ -678,6 +675,83 @@ describe('typed message send commands', () => {
         },
       },
     })
+  })
+
+  test('preserves ten replies and a catalog product button', async () => {
+    server = await messageServer()
+    const common = [
+      'message',
+      'send',
+      'buttons',
+      '--session',
+      'session_1',
+      '--to',
+      '730000000001',
+      '--body',
+      'Pick',
+      '--json',
+    ]
+    const result = await send([
+      ...common,
+      ...Array.from({length: 10}, (_, i) => [
+        '--button',
+        `reply:choice-${i}=Choice-${i}`,
+      ]).flat(),
+    ])
+    expect(result.error).toBeUndefined()
+    expect(sentBody()).toMatchObject({
+      content: {
+        buttons: {
+          buttons: Array.from({length: 10}, (_, i) => ({
+            type: 'reply',
+            id: `choice-${i}`,
+            text: `Choice-${i}`,
+          })),
+        },
+      },
+    })
+    const catalog = await send([
+      ...common,
+      '--button',
+      'catalog:Browse=+15550001111|123',
+    ])
+    expect(catalog.error).toBeUndefined()
+    expect(JSON.parse(server.requests.at(-1)!.body)).toMatchObject({
+      content: {
+        buttons: {
+          buttons: [
+            {
+              type: 'catalog',
+              text: 'Browse',
+              businessPhoneNumber: '+15550001111',
+              catalogProductId: '123',
+            },
+          ],
+        },
+      },
+    })
+  })
+
+  test('rejects reply and CTA mixtures before transport', async () => {
+    server = await messageServer()
+    const result = await send([
+      'message',
+      'send',
+      'buttons',
+      '--session',
+      'session_1',
+      '--to',
+      '730000000001',
+      '--body',
+      'Pick',
+      '--button',
+      'reply:yes=Yes',
+      '--button',
+      'copy:Copy=CODE',
+      '--json',
+    ])
+    expect(exitCode(result.error)).toBe(2)
+    expect(server.requests).toHaveLength(0)
   })
 
   test('rejects malformed buttons before transport', async () => {
