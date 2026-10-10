@@ -1,6 +1,7 @@
 import {Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
+import {developerRead} from '../../developer/output.js'
 import {CliConditionError} from '../../errors/conditions.js'
 import {listRequestLogs, requestLogLine} from '../../services/request-logs.js'
 import {
@@ -68,15 +69,14 @@ export default class LogsList extends BaseCommand {
         ? []
         : [`Older requests: --cursor ${page.nextCursor}`]),
     ].join('\n')
+    const outputPage = {
+      nextCursor: page.nextCursor,
+      hasMore: page.hasMore,
+      // Pass as --after to the API, or let `logs tail` follow for you.
+      followCursor: page.followCursor,
+    }
     this.writeValue(
-      {
-        data: page.items,
-        page: {
-          nextCursor: page.nextCursor,
-          hasMore: page.hasMore,
-          followCursor: page.followCursor,
-        },
-      },
+      developerRead(page.items, page.metadata, session.context, outputPage),
       page.items.length === 0 ? 'No requests.\n' : `${human}\n`,
       flags,
     )

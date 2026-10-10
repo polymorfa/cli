@@ -194,3 +194,63 @@ test('rejects a poll interval outside 1 to 60 seconds', async () => {
   }
   expect(server.requests).toHaveLength(0)
 })
+
+test('prints list JSON in the standard read envelope with the follow cursor', async () => {
+  server = await startHttpSequenceServer([
+    {
+      ...page([log('b', '2026-10-10T12:00:02.000Z')], 'follow-1'),
+      headers: {'content-type': 'application/json', 'x-request-id': 'req_list'},
+    },
+  ])
+  const result = await run(['logs', 'list', '--project', project, '--json'])
+  expect(result.error).toBeUndefined()
+  const output = JSON.parse(result.stdout) as {
+    schemaVersion: number
+    data: {id: string}[]
+    request: {id: string; status: number}
+    context: {owner: string; projectId: string}
+    page: {nextCursor: null; hasMore: boolean; followCursor: string}
+  }
+  expect(output.schemaVersion).toBe(1)
+  expect(output.data.map((item) => item.id)).toEqual(['b'])
+  expect(output.request).toMatchObject({id: 'req_list', status: 200})
+  expect(output.context).toMatchObject({owner: 'project', projectId: project})
+  expect(output.page).toEqual({
+    nextCursor: null,
+    hasMore: false,
+    followCursor: 'follow-1',
+  })
+})
+
+test('retries at once on Retry-After: 0', async () => {
+  server = await startHttpSequenceServer([
+    page([], 'follow-1'),
+    {
+      status: 429,
+      headers: {'content-type': 'application/json', 'retry-after': '0'},
+      body: {
+        error: {
+          type: 'rate_limit_error',
+          code: 'rate_limit_exceeded',
+          message: 'slow down',
+        },
+      },
+    },
+    page([log('c', '2026-10-10T12:00:03.000Z')], 'follow-2'),
+  ])
+  const started = Date.now()
+  const result = await run([
+    'logs',
+    'tail',
+    '--project',
+    project,
+    '--backfill',
+    '0',
+    '--max-events',
+    '1',
+    '--json',
+  ])
+  expect(result.error).toBeUndefined()
+  expect(Date.now() - started).toBeLessThan(5_000)
+  expect(result.stdout).toContain('"id":"c"')
+})

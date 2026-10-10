@@ -3,10 +3,12 @@ import {
   type ClientOwner,
   PolymorfaRateLimitError,
   PolymorfaServerError,
+  type ResponseMetadata,
 } from '@polymorfa/sdk'
 import {z} from 'zod'
 
 import {terminalText} from '../developer/render.js'
+import {retryAfter} from '../errors/present.js'
 
 const entry = z.object({
   id: z.string(),
@@ -42,6 +44,7 @@ const page = z.object({
 export type RequestLog = z.infer<typeof entry>
 export interface RequestLogPage {
   readonly items: readonly RequestLog[]
+  readonly metadata: ResponseMetadata
   readonly hasMore: boolean
   readonly nextCursor: string | null
   readonly followCursor: string
@@ -99,6 +102,7 @@ export async function listRequestLogs(
   }
   return {
     items: parsed.data.data,
+    metadata: response.metadata,
     hasMore: parsed.data.page.hasMore,
     nextCursor: parsed.data.page.nextCursor,
     followCursor: parsed.data.page.followCursor,
@@ -160,9 +164,10 @@ async function retrying<T>(
     } catch (error) {
       if (signal.aborted) return undefined
       if (!(error instanceof PolymorfaRateLimitError)) throw error
-      const seconds = Number(error.metadata?.headers['retry-after'])
+      // Delta-seconds (including 0) or an HTTP-date; 60 s when absent or invalid.
+      const seconds = retryAfter(error)
       const waitMs = Math.min(
-        Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : 60_000,
+        seconds === undefined ? 60_000 : seconds * 1000,
         300_000,
       )
       onRateLimit?.(waitMs)
