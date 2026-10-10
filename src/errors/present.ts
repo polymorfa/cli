@@ -122,7 +122,10 @@ export function presentError(
 }
 
 /** `Retry-After` as whole seconds from now, from delta-seconds or an HTTP-date. */
-function retryAfter(error: unknown, now = Date.now()): number | undefined {
+export function retryAfter(
+  error: unknown,
+  now = Date.now(),
+): number | undefined {
   if (!(error instanceof PolymorfaError)) return undefined
   const header = error.metadata?.headers['retry-after']?.trim()
   if (header === undefined || header.length === 0) return undefined

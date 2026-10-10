@@ -183,6 +183,9 @@
       "label:chat": {
         "description": "Manage the complete label set assigned to a chat."
       },
+      "logs": {
+        "description": "Read and follow a project's API request log."
+      },
       "media": {
         "description": "Inspect, download, and persist Messaging media."
       },
