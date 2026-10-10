@@ -2054,6 +2054,25 @@ test the end of a restriction. `--from-session OTHER_TEST_NUMBER` sends a real s
 another Test number in the project instead, producing an ordinary
 `message.received` event you can reply to. Use `--json` for one JSON document.
 
+## Test number phone
+
+Each Test number has a simulated phone that acts as its main device. These
+commands read it, send a text as the phone to another running Test number in
+the project, and unlink a device as a person would from Linked devices. Device
+0 is the phone itself and cannot be unlinked. They require a server API key
+with `sandbox:read` for `get` and `sandbox:write` for `send` and `unlink`, and
+Test numbers access. Phone sends share the 30-per-minute project limit with
+test events.
+
+```shell
+polymorfa testing phone get --project PROJECT_ID --session my-test-number
+polymorfa testing phone send --project PROJECT_ID --session my-test-number \
+  --to +15550100002 --text "hello from the phone"
+polymorfa testing phone unlink --project PROJECT_ID --session my-test-number --device 74
+```
+
+Use `--json` for one JSON document.
+
 ## Local MCP tools
 
 The package includes a standards-based stdio MCP server for Codex and Claude:
