@@ -60,13 +60,28 @@ function field(value: object, key: string): unknown {
 const isCount = (value: unknown): value is number =>
   typeof value === 'number' && Number.isSafeInteger(value) && value >= 0
 
-function duration(seconds: number): string {
-  const unit = (value: number, name: string) =>
-    `${value} ${name}${value === 1 ? '' : 's'}`
-  if (seconds % 86_400 === 0) return unit(seconds / 86_400, 'day')
-  if (seconds % 3600 === 0) return unit(seconds / 3600, 'hour')
-  return unit(Math.round(seconds / 60), 'minute')
+/** Exact duration in the largest whole units, for example `1 day 2 hours` or `1 minute 30 seconds`. */
+export function duration(seconds: number): string {
+  const parts: string[] = []
+  let rest = seconds
+  for (const [size, name] of [
+    [86_400, 'day'],
+    [3600, 'hour'],
+    [60, 'minute'],
+    [1, 'second'],
+  ] as const) {
+    const value = Math.floor(rest / size)
+    rest -= value * size
+    if (value > 0) parts.push(`${value} ${name}${value === 1 ? '' : 's'}`)
+  }
+  return parts.length > 0 ? parts.join(' ') : '0 seconds'
 }
+
+// Dates the JavaScript Date range can represent.
+const isTimestamp = (value: unknown): value is number =>
+  typeof value === 'number' &&
+  Number.isSafeInteger(value) &&
+  Math.abs(value) <= 8.64e15
 
 /** Human lines for `campaign view` and `campaign create`; empty without a follow-up. */
 export function renderFollowUpConfiguration(campaign: object): string[] {
@@ -100,12 +115,14 @@ export function renderFollowUpAnalytics(analytics: object): string[] {
   if (!counts.every(isCount)) return ['', `Follow-ups\t${UNREADABLE}`]
   if (counts[0] === 0) return []
   const nextDueAt = field(value, 'nextDueAt')
+  if (nextDueAt !== null && !isTimestamp(nextDueAt))
+    return ['', `Follow-ups\t${UNREADABLE}`]
   return [
     '',
     ...REPORT_KEYS.map(
       (key, index) => `${REPORT_LABELS[key]}\t${counts[index]}`,
     ),
-    `Next follow-up due\t${typeof nextDueAt === 'number' ? new Date(nextDueAt).toISOString() : 'none'}`,
+    `Next follow-up due\t${nextDueAt === null ? 'none' : new Date(nextDueAt).toISOString()}`,
   ]
 }
 
@@ -115,9 +132,12 @@ export function followUpCell(recipient: object): string {
   if (value === undefined || value === null) return ''
   if (typeof value !== 'object') return 'unreadable'
   const status = field(value, 'status')
-  if (typeof status !== 'string') return 'unreadable'
+  if (typeof status !== 'string' || !Object.hasOwn(STATUS_LABELS, status))
+    return 'unreadable'
   const reason = field(value, 'reason')
-  const label = STATUS_LABELS[status] ?? terminalText(status)
+  if (reason !== null && reason !== undefined && typeof reason !== 'string')
+    return 'unreadable'
+  const label = STATUS_LABELS[status] ?? 'unreadable'
   return typeof reason === 'string' && reason
     ? `${label} (${terminalText(reason)})`
     : label

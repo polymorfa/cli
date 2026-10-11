@@ -1,4 +1,10 @@
 import {runCommand} from '@oclif/test'
+
+import {
+  duration,
+  followUpCell,
+  renderFollowUpAnalytics,
+} from '../../src/services/campaign-follow-ups.js'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {
@@ -216,3 +222,45 @@ function analytics() {
     skippedCount: 0,
   }
 }
+
+describe('follow-up narrowing', () => {
+  test('renders exact durations without rounding', () => {
+    expect(duration(90)).toBe('1 minute 30 seconds')
+    expect(duration(86_400)).toBe('1 day')
+    expect(duration(93_600)).toBe('1 day 2 hours')
+  })
+
+  test('reports invalid next-due times and unknown statuses as unreadable', () => {
+    const counts = {
+      cancelled: 0,
+      delivered: 0,
+      expired: 0,
+      failed: 0,
+      read: 0,
+      replied: 0,
+      scheduled: 1,
+      sending: 0,
+      sent: 0,
+      total: 1,
+      unknown: 0,
+      waiting: 0,
+    }
+    for (const nextDueAt of [1e20, 'tomorrow', 1.5])
+      expect(
+        renderFollowUpAnalytics({followUps: {...counts, nextDueAt}}),
+      ).toEqual([
+        '',
+        'Follow-ups\tUnreadable in this CLI version; use --json for the full response.',
+      ])
+    expect(followUpCell({followUp: {status: 'constructor'}})).toBe('unreadable')
+    expect(followUpCell({followUp: {status: 'future_state'}})).toBe(
+      'unreadable',
+    )
+    expect(followUpCell({followUp: {reason: 42, status: 'sent'}})).toBe(
+      'unreadable',
+    )
+    expect(followUpCell({followUp: {reason: null, status: 'sent'}})).toBe(
+      'sent',
+    )
+  })
+})
