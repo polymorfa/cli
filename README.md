@@ -1730,6 +1730,34 @@ Requeue also accepts the header, but the API does not deduplicate it. Each
 invocation moves recipients eligible at that time, so a retry can move newly
 failed recipients rather than returning the first result.
 
+#### Receipt-timed follow-ups (beta)
+
+Add `followUp` to the `campaign create` input to send each recipient one more
+message from the number that sent the first one:
+
+```json
+{
+  "name": "Spring offer",
+  "followUp": {
+    "delaySeconds": 86400,
+    "expirySeconds": 604800,
+    "message": { "type": "text", "text": "Still interested?" }
+  }
+}
+```
+
+The wait starts at the first delivery, and the first read restarts it until
+sending starts. A follow-up not sent before `expirySeconds` (counted from the
+first send) never sends; replies and opt-outs cancel it. The campaign must send
+a single first message, and follow-up text cannot contain tracked links. A team
+that is not enrolled receives `403 feature_unavailable`. There is no campaign
+update command; change or remove a draft's follow-up with `polymorfa api`.
+
+`campaign view` shows the follow-up's message type, wait and expiry, never its
+text. `campaign analytics` adds follow-up outcomes after the first-message
+counts, and `campaign recipients list` adds a follow-up status column when a
+recipient has one. `--json` returns the API response unchanged.
+
 ### Campaign recipients
 
 Recipients are appended to a campaign that has not started sending, and read
