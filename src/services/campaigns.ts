@@ -18,6 +18,11 @@ import {
   type ResponseMetadata,
 } from '@polymorfa/sdk'
 
+import {
+  renderCampaignBetas,
+  renderExperimentAnalytics,
+} from './campaign-experiments.js'
+
 export interface CampaignResult<T> {
   readonly data: T
   readonly metadata: {
@@ -219,6 +224,7 @@ export function renderCampaign(campaign: Campaign): string {
     `Failed\t${campaign.failedCount}`,
     `Skipped\t${campaign.skippedCount}`,
     `Scheduled\t${formatCampaignTime(campaign.scheduledAt)}`,
+    ...renderCampaignBetas(campaign),
   ].join('\n')
 }
 
@@ -233,6 +239,7 @@ export function renderCampaignAnalytics(analytics: CampaignAnalytics): string {
     `Skipped\t${analytics.skippedCount}`,
     `Responded\t${analytics.respondedCount}`,
     `Response rate\t${analytics.responseRate}`,
+    ...renderExperimentAnalytics(analytics),
   ].join('\n')
 }
 
