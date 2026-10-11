@@ -1,4 +1,9 @@
 import {
+  followUpCell,
+  renderFollowUpAnalytics,
+  renderFollowUpConfiguration,
+} from './campaign-follow-ups.js'
+import {
   type AddCampaignRecipientsResult,
   type Campaign,
   type CampaignAnalytics,
@@ -219,6 +224,7 @@ export function renderCampaign(campaign: Campaign): string {
     `Failed\t${campaign.failedCount}`,
     `Skipped\t${campaign.skippedCount}`,
     `Scheduled\t${formatCampaignTime(campaign.scheduledAt)}`,
+    ...renderFollowUpConfiguration(campaign),
   ].join('\n')
 }
 
@@ -233,6 +239,7 @@ export function renderCampaignAnalytics(analytics: CampaignAnalytics): string {
     `Skipped\t${analytics.skippedCount}`,
     `Responded\t${analytics.respondedCount}`,
     `Response rate\t${analytics.responseRate}`,
+    ...renderFollowUpAnalytics(analytics),
   ].join('\n')
 }
 
@@ -281,6 +288,11 @@ export function renderCampaignRecipients(
   result: CampaignRecipientPageResult,
 ): string {
   if (result.data.length === 0) return 'No recipients found.'
+  // The follow-up column appears only when a recipient has a follow-up, so
+  // campaigns without the beta keep their existing columns.
+  const followUps = result.data.some(
+    (recipient) => followUpCell(recipient) !== '',
+  )
   const rows = result.data.map((recipient) =>
     [
       recipient.id,
@@ -289,6 +301,7 @@ export function renderCampaignRecipients(
       String(recipient.attempts),
       recipient.lastError ?? '',
       formatCampaignTime(recipient.sentAt),
+      ...(followUps ? [followUpCell(recipient)] : []),
     ].join('\t'),
   )
   if (result.page.hasMore && result.page.nextCursor !== null) {
