@@ -1714,6 +1714,69 @@ Requeue also accepts the header, but the API does not deduplicate it. Each
 invocation moves recipients eligible at that time, so a retry can move newly
 failed recipients rather than returning the first result.
 
+### A/B tests and weighted message variation (beta)
+
+Both are betas. `campaign create` sends the `--input` object as the request
+body, so you set them with these fields. A team that is not enrolled gets
+`403 feature_unavailable`. There is no campaign update command; create the
+campaign with the fields you need.
+
+- **A/B test:** `variants` holds two to four messages, each with a `key`, a
+  `label`, an integer `weight` (the weights add up to 100) and a `blueprint`.
+  `variantStrategy` sets `winnerCriterion` (`delivery`, `read` or `reply`),
+  `holdoutPercent` (0 to 30), an optional `testSlicePercent` (5 to 50,
+  default 20), `autoPromote: true` and `testWindowMinutes` (15 to 1,440). An
+  A/B test cannot use `templateId`.
+- **Weighted message variation:** `messageVariations` holds two to five
+  alternatives, each with a `key`, an integer `weight` from 1 to 99 (the
+  weights add up to 100) and a `blueprint`. Each recipient receives one
+  alternative and keeps it across retries. Every alternative must use the same
+  `{{variable}}` placeholders. Alternatives send only from linked-device
+  numbers and cannot be combined with `templateId`, composed messages or an
+  A/B test.
+
+```json
+{
+  "name": "October offer",
+  "variants": [
+    {
+      "key": "a",
+      "label": "Short",
+      "weight": 50,
+      "blueprint": {"version": 2, "source": "Hi {{first_name | there}}!"}
+    },
+    {
+      "key": "b",
+      "label": "Long",
+      "weight": 50,
+      "blueprint": {
+        "version": 2,
+        "source": "Hello {{first_name | there}}, your offer is ready."
+      }
+    }
+  ],
+  "variantStrategy": {
+    "winnerCriterion": "read",
+    "holdoutPercent": 5,
+    "autoPromote": true,
+    "testWindowMinutes": 120
+  }
+}
+```
+
+At launch, recipients are split into an optional holdout, a test group that
+receives the variants and a reserve that waits for the winner. When the test
+window ends, the winner is sent to the reserve. If no variant is clearly ahead,
+the outcome is inconclusive and the campaign pauses with the reserve unsent.
+
+`campaign view` shows the variant count and outcome of an A/B test, and the
+number of weighted alternatives. `campaign analytics` adds the criterion, the
+outcome (the winner, inconclusive with its reason, or no winner yet), the
+holdout and reserve counts, and a row per variant with the criterion rate,
+sent, assigned, delivered, read and replied counts. The winner row is marked
+`(winner)`. `--json` returns the API's `variants`, `variantStrategy`,
+`experimentOutcome`, `messageVariations` and `experiment` fields unchanged.
+
 ### Campaign recipients
 
 Recipients are appended to a campaign that has not started sending, and read
