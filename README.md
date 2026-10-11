@@ -1741,7 +1741,7 @@ message from the number that sent the first one:
   "followUp": {
     "delaySeconds": 86400,
     "expirySeconds": 604800,
-    "message": { "type": "text", "text": "Still interested?" }
+    "message": {"type": "text", "text": "Still interested?"}
   }
 }
 ```

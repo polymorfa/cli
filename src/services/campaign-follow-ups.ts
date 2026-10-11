@@ -13,8 +13,18 @@ const UNREADABLE =
   'Unreadable in this CLI version; use --json for the full response.'
 
 const REPORT_KEYS = [
-  'total', 'waiting', 'scheduled', 'sending', 'sent', 'delivered', 'read',
-  'replied', 'cancelled', 'expired', 'failed', 'unknown',
+  'total',
+  'waiting',
+  'scheduled',
+  'sending',
+  'sent',
+  'delivered',
+  'read',
+  'replied',
+  'cancelled',
+  'expired',
+  'failed',
+  'unknown',
 ] as const
 
 const REPORT_LABELS: Readonly<Record<(typeof REPORT_KEYS)[number], string>> = {
@@ -68,7 +78,11 @@ export function renderFollowUpConfiguration(campaign: object): string[] {
   const message = field(value, 'message')
   const type =
     message && typeof message === 'object' ? field(message, 'type') : undefined
-  if (!isCount(delay) || !isCount(expiry) || (type !== 'text' && type !== 'template'))
+  if (
+    !isCount(delay) ||
+    !isCount(expiry) ||
+    (type !== 'text' && type !== 'template')
+  )
     return [`Follow-up\t${UNREADABLE}`]
   return [
     `Follow-up\t${type === 'template' ? 'template' : 'text'} message`,
@@ -88,7 +102,9 @@ export function renderFollowUpAnalytics(analytics: object): string[] {
   const nextDueAt = field(value, 'nextDueAt')
   return [
     '',
-    ...REPORT_KEYS.map((key, index) => `${REPORT_LABELS[key]}\t${counts[index]}`),
+    ...REPORT_KEYS.map(
+      (key, index) => `${REPORT_LABELS[key]}\t${counts[index]}`,
+    ),
     `Next follow-up due\t${typeof nextDueAt === 'number' ? new Date(nextDueAt).toISOString() : 'none'}`,
   ]
 }

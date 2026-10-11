@@ -290,7 +290,9 @@ export function renderCampaignRecipients(
   if (result.data.length === 0) return 'No recipients found.'
   // The follow-up column appears only when a recipient has a follow-up, so
   // campaigns without the beta keep their existing columns.
-  const followUps = result.data.some((recipient) => followUpCell(recipient) !== '')
+  const followUps = result.data.some(
+    (recipient) => followUpCell(recipient) !== '',
+  )
   const rows = result.data.map((recipient) =>
     [
       recipient.id,
