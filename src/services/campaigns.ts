@@ -1,4 +1,8 @@
 import {
+  renderCampaignBetas,
+  renderExperimentAnalytics,
+} from './campaign-experiments.js'
+import {
   renderDripConfiguration,
   renderDripStats,
 } from './campaign-segments-drip.js'
@@ -242,6 +246,7 @@ export function renderCampaign(campaign: Campaign): string {
     `Scheduled\t${formatCampaignTime(campaign.scheduledAt)}`,
     ...renderFollowUpConfiguration(campaign),
     ...renderDripConfiguration(campaign),
+    ...renderCampaignBetas(campaign),
   ].join('\n')
 }
 
@@ -259,6 +264,7 @@ export function renderCampaignAnalytics(analytics: CampaignAnalytics): string {
     ...renderFollowUpAnalytics(analytics),
     ...renderDripStats(analytics),
     ...renderFrequencyCapAnalytics(analytics),
+    ...renderExperimentAnalytics(analytics),
   ].join('\n')
 }
 
