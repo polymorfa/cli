@@ -488,7 +488,7 @@ describe('unified calls commands', () => {
 
     expect(viewed.error).toBeUndefined()
     expect(viewed.stdout).toBe(
-      'Session\tsupport/main\nCalls\ton\nConference mode\toff\nIncoming calls\tclients\nCloud API calls answered by\tyour Graph API integration\nRevision\t0\nUpdated\t2026-09-16T10:00:00.000Z\n',
+      'Session\tsupport/main\nCalls\ton\nConference mode\toff\nIncoming calls\tclients\nCloud API calls answered by\tyour Graph API integration\nSimultaneous calls\toff\nRevision\t0\nUpdated\t2026-09-16T10:00:00.000Z\n',
     )
     expect(updated.error).toBeUndefined()
     expect(jsonData(updated.stdout)).toEqual({
@@ -575,6 +575,92 @@ describe('unified calls commands', () => {
     ])
     expect(exitCode(conflicting.error)).toBe(2)
     expect(exitCode(empty.error)).toBe(2)
+  })
+
+  test('turns simultaneous calls on only with --acknowledge-risk', async () => {
+    const on = {
+      callsEnabled: true,
+      conferenceMode: true,
+      hostCloudApiCalls: false,
+      inboundRoute: 'clients',
+      revision: 2,
+      simultaneousCalls: true,
+      sipClaim: true,
+      sipTrunkId: null,
+      updatedAt: '2026-10-11T10:00:00.000Z',
+    }
+    server = await startHttpSequenceServer([
+      {body: {data: on, success: true}},
+      {body: {data: on, success: true}},
+      {
+        body: {
+          data: {...on, revision: 3, simultaneousCalls: false},
+          success: true,
+        },
+      },
+    ])
+
+    const unacknowledged = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --simultaneous-calls=true --json',
+      ),
+    )
+    const stray = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --conference-mode --acknowledge-risk',
+      ),
+    )
+    const offWithAck = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --simultaneous-calls=false --acknowledge-risk',
+      ),
+    )
+    const acknowledged = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --conference-mode --simultaneous-calls=true --acknowledge-risk',
+      ),
+    )
+    const json = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --conference-mode --simultaneous-calls=true --acknowledge-risk --expected-revision 1 --json',
+      ),
+    )
+    const off = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support --conference-mode --simultaneous-calls=false',
+      ),
+    )
+
+    expect(exitCode(unacknowledged.error)).toBe(2)
+    expect(JSON.parse(unacknowledged.stderr.trim())).toMatchObject({
+      error: {category: 'configuration'},
+    })
+    expect(unacknowledged.stderr).toContain(
+      'Ban Insurance does not cover a ban of this number',
+    )
+    expect(unacknowledged.stderr).toContain('--acknowledge-risk')
+    expect(exitCode(stray.error)).toBe(2)
+    expect(exitCode(offWithAck.error)).toBe(2)
+    expect(acknowledged.error).toBeUndefined()
+    expect(acknowledged.stdout).toContain(
+      'Simultaneous calls\ton (Ban Insurance does not cover this number)',
+    )
+    expect(json.error).toBeUndefined()
+    expect(jsonData(json.stdout)).toMatchObject({simultaneousCalls: true})
+    expect(off.error).toBeUndefined()
+    expect(off.stdout).toContain('Simultaneous calls\toff')
+    expect(
+      server.requests.map(({body}) => JSON.parse(body) as unknown),
+    ).toEqual([
+      {acknowledgeRisk: true, conferenceMode: true, simultaneousCalls: true},
+      {
+        acknowledgeRisk: true,
+        conferenceMode: true,
+        expectedRevision: 1,
+        simultaneousCalls: true,
+      },
+      {conferenceMode: true, simultaneousCalls: false},
+    ])
   })
 
   test('guards a change with the expected revision and exits 4 when stale', async () => {

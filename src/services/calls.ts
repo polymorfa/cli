@@ -32,6 +32,7 @@ import {
   type ResponseMetadata,
   type SessionCallSettings,
   type SuccessResponse,
+  type UpdateSessionCallSettingsRequest,
   type VoipAcceptCallResult,
   type VoipParticipant,
   type VoipPlaceCallResult,
@@ -292,10 +293,28 @@ export async function ringCallParticipant(
   return result(response.data, response.metadata)
 }
 
+/**
+ * Simultaneous-calls fields from the Platform call settings contract
+ * (polymorfa/polymorfa#559). The pinned SDK predates them; delete these
+ * extensions and use the SDK types directly once the pin includes them.
+ */
+export type CallSettings = SessionCallSettings & {
+  readonly simultaneousCalls?: boolean
+}
+
+type CallSettingsUpdateBody = UpdateSessionCallSettingsRequest & {
+  readonly acknowledgeRisk?: boolean
+  readonly simultaneousCalls?: boolean
+}
+
+/** Shown before simultaneous calls turn on, and when the risk is unconfirmed. */
+export const SIMULTANEOUS_CALLS_RISK =
+  'Simultaneous calls let this number hold any number of calls at once. WhatsApp’s own apps never hold two calls at once, so this is unusual for a WhatsApp account. While it is on, and for 30 days after you turn it off, Ban Insurance does not cover a ban of this number.'
+
 export async function viewCallSettings(
   client: MessagingClient,
   session: string,
-): Promise<CallsResult<SessionCallSettings>> {
+): Promise<CallsResult<CallSettings>> {
   const response = await client.voip.retrieveCallSettings(
     validateSession(session),
   )
@@ -311,6 +330,10 @@ export interface CallSettingsChanges {
   readonly inboundRoute?: CallInboundRoute
   readonly sipClaim?: boolean
   readonly sipTrunkId?: string
+  /** `true` also requires `acknowledgeRisk`; see SIMULTANEOUS_CALLS_RISK. */
+  readonly simultaneousCalls?: boolean
+  /** Confirms the Ban Insurance risk of turning simultaneous calls on. */
+  readonly acknowledgeRisk?: boolean
 }
 
 /**
@@ -321,13 +344,25 @@ export async function updateCallSettings(
   client: MessagingClient,
   session: string,
   changes: CallSettingsChanges,
-): Promise<CallsResult<SessionCallSettings>> {
+): Promise<CallsResult<CallSettings>> {
   const name = validateSession(session)
-  const {expectedRevision, ...settings} = changes
+  const {expectedRevision, acknowledgeRisk, ...settings} = changes
+  if (acknowledgeRisk === true && changes.simultaneousCalls !== true) {
+    throw new PolymorfaConfigurationError(
+      '--acknowledge-risk applies only with --simultaneous-calls=true.',
+      'acknowledge-risk',
+    )
+  }
   if (Object.values(settings).every((value) => value === undefined)) {
     throw new PolymorfaConfigurationError(
       'Provide at least one setting to change.',
       'calls-enabled',
+    )
+  }
+  if (changes.simultaneousCalls === true && acknowledgeRisk !== true) {
+    throw new PolymorfaConfigurationError(
+      `${SIMULTANEOUS_CALLS_RISK} Re-run with --acknowledge-risk to turn simultaneous calls on.`,
+      'acknowledge-risk',
     )
   }
   if (changes.inboundRoute === 'clients' && changes.sipTrunkId !== undefined) {
@@ -340,7 +375,7 @@ export async function updateCallSettings(
   const inboundRoute =
     changes.inboundRoute ??
     (changes.sipTrunkId === undefined ? undefined : 'sip_trunk')
-  const response = await client.voip.updateCallSettings(name, {
+  const body: CallSettingsUpdateBody = {
     ...(changes.callsEnabled === undefined
       ? {}
       : {callsEnabled: changes.callsEnabled}),
@@ -355,8 +390,13 @@ export async function updateCallSettings(
     ...(changes.hostCloudApiCalls === undefined
       ? {}
       : {hostCloudApiCalls: changes.hostCloudApiCalls}),
+    ...(changes.simultaneousCalls === undefined
+      ? {}
+      : {simultaneousCalls: changes.simultaneousCalls}),
+    ...(changes.simultaneousCalls === true ? {acknowledgeRisk: true} : {}),
     ...(expectedRevision === undefined ? {} : {expectedRevision}),
-  })
+  }
+  const response = await client.voip.updateCallSettings(name, body)
   return result(response.data.data, response.metadata)
 }
 
@@ -601,7 +641,7 @@ export function renderCallParticipant(participant: VoipParticipant): string {
 
 export function renderCallSettings(
   session: string,
-  settings: SessionCallSettings,
+  settings: CallSettings,
 ): string {
   return [
     `Session\t${session}`,
@@ -615,6 +655,7 @@ export function renderCallSettings(
         ]
       : []),
     `Cloud API calls answered by\t${settings.hostCloudApiCalls === true ? 'Polymorfa Calls' : 'your Graph API integration'}`,
+    `Simultaneous calls\t${settings.simultaneousCalls === true ? 'on (Ban Insurance does not cover this number)' : 'off'}`,
     `Revision\t${settings.revision ?? 0}`,
     `Updated\t${settings.updatedAt ?? 'never (defaults)'}`,
   ].join('\n')

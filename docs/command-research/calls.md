@@ -53,7 +53,8 @@ calls
          [--cursor <cursor>] [--max-pages <n>]
   settings
     get --session <id>
-    set --session <id> [--[no-]conference-mode] [--calls-enabled=<true|false>] ...
+    set --session <id> [--[no-]conference-mode] [--calls-enabled=<true|false>]
+        [--simultaneous-calls=<true|false> [--acknowledge-risk]] ...
 ```
 
 ## Operation mapping
@@ -111,6 +112,12 @@ internal SDK module.
   Messaging client; the CLI builds that client from the Platform environment.
   `calls settings set --expected-revision` sends `expectedRevision`; a stale
   revision returns 409 `state_conflict`, which exits with code 4.
+  `--simultaneous-calls=true` sends `simultaneousCalls: true` with
+  `acknowledgeRisk: true` only when `--acknowledge-risk` is present; without
+  it the CLI exits with code 2 before any request. `--acknowledge-risk`
+  without `--simultaneous-calls=true` is also refused locally, because the
+  API rejects `acknowledgeRisk` on its own. The API refuses project tokens
+  turning it on with 403 `permission_denied` (exit code 3).
 - `calls stats` and `calls export` accept an organization API key or an
   exact-project token (`sessions:read`), resolved like the developer
   commands. `--project` (or a project token, which requires it) reads one
