@@ -625,6 +625,30 @@ polymorfa message send list --session session_123 --to +15551234567 \
   --row 'Morning/am9=9:00' --row 'Afternoon/pm2=14:00|Near the office'
 ```
 
+The interactive-message candidate requires API PR #562 and the matching SDK
+revision. Linked Devices supports ten total controls, at most three CTAs, and
+mixed replies with URL/call controls. Copy/catalog controls cannot mix with
+replies. Reply IDs are preserved. Official API restrictions remain separate.
+
+Attach an image, video or document header with `--media-type` and exactly one
+`--url` or `--file`; `--title` is exclusive with a media header. For example:
+
+```sh
+polymorfa message send buttons --session session_123 --to +15551234567 \
+  --body 'Choose an option' --button 'reply:offer-interested=Interested' \
+  --button 'url:Details=https://example.com/offer' \
+  --media-type image --url https://example.com/header.jpg
+polymorfa message send carousel --session session_123 --to +15551234567 \
+  --body 'Offers' --cards cards.json
+```
+
+`cards.json` is a JSON array of 2–10 cards, each with `body`, `buttons`, optional
+`footer`, and exactly one `image` or `video` object containing `url` or `base64`.
+Card controls share a category; reply IDs are unique across all cards. Use media
+URLs for payloads larger than the CLI's 10 MiB JSON-input cap. Each carousel
+uses one send and the existing idempotency key. Publication remains gated on
+an accepted API revision, matching staging and a published matching SDK.
+
 - Media commands take exactly one of `--file` or `--url`. Local files are
   limited by `--max-bytes` (100 MiB by default) and the MIME type is inferred
   from the extension unless `--mime-type` is set. `document` sends the local
