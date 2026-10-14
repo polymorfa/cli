@@ -6,7 +6,8 @@ import {idempotencyKey} from '../../input/idempotency.js'
 import {createCampaign, renderCampaign} from '../../services/campaigns.js'
 
 export default class CampaignCreate extends BaseCommand {
-  static override description = 'Create a campaign from one JSON object.'
+  static override description =
+    'Create a campaign from one JSON object. Optional beta fields include followUp: one receipt-timed follow-up ({delaySeconds, expirySeconds, message: {type: "text", text} or {type: "template", templateId}}); teams that are not enrolled receive 403 feature_unavailable.'
 
   static override flags = {
     'idempotency-key': Flags.string({
