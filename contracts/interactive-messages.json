@@ -1,0 +1,13 @@
+{
+  "repository": "polymorfa/polymorfa",
+  "family": "messaging",
+  "sourceCommit": "ae30811ef6675a38a507482676b7213141ebebb6",
+  "sourcePath": "apps/api/docs/openapi.json",
+  "sourceSha256": "4375210d40d5bd21cf0605bd89d73eabc41a32f67613cd6a56027e8704005f1f",
+  "published": false,
+  "sdkRepository": "polymorfa/sdks",
+  "sdkSourceCommit": "e64e528df2e2fe249f5422e2e88044bd19321940",
+  "sdkPullRequest": "https://github.com/polymorfa/sdks/pull/345",
+  "releaseRequirement": "Publish an SDK carrying this accepted contract after matching staging or production acceptance, then pin its exact registry version. Current clean CI fails because the installed registry SDK lacks the candidate types.",
+  "scope": "Mixed reply/URL/call controls, image/video/document button headers and bounded 2-10 image/video-card carousels."
+}
