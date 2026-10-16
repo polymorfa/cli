@@ -94,7 +94,9 @@ describe('campaign profiles commands', () => {
     server = await startHttpServer({body: envelope})
     const result = await run('campaign profiles list --json')
     expect(result.error).toBeUndefined()
-    expect(JSON.parse(result.stdout).data).toEqual(envelope)
+    expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual(
+      envelope,
+    )
   })
   test('retrieves an encoded phone', async () => {
     server = await startHttpServer({body: {data: profile}})
@@ -201,7 +203,7 @@ describe('campaign profiles commands', () => {
     [409, 'conflict'],
   ])('preserves %s API failures', async (status, code) => {
     server = await startHttpServer({
-      status: status as number,
+      status,
       body: {error: {code, message: 'Denied'}},
     })
     expect((await run(`campaign profiles get ${phone}`)).error).toBeDefined()

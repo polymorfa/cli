@@ -3,7 +3,6 @@ import {BaseCommand} from '../../../../base-command.js'
 import {AudienceProfilesResource} from '../../../../sdk/audience-profiles.js'
 import {
   profileResult,
-  renderProfile,
   renderImport,
 } from '../../../../services/audience-profiles.js'
 export default class ProfileImportsGet extends BaseCommand {

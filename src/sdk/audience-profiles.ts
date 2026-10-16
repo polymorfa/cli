@@ -296,8 +296,7 @@ export class AudienceProfilesResource {
     request: CreateAudienceProfileImportRequest,
     options: RequestOptions = {},
   ): Promise<ApiResponse<DataEnvelope<AudienceProfileImport>>> {
-    const csvBase64 =
-      request.csvBase64 ?? encodeBase64(request.csv as string | Uint8Array)
+    const csvBase64 = request.csvBase64 ?? encodeBase64(request.csv)
     return this.transport.request({
       method: 'POST',
       path: IMPORTS,
