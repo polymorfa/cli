@@ -332,6 +332,12 @@
       },
       "analytics": {
         "description": "Read WhatsApp number activity and operational vitals."
+      },
+      "campaign:profiles": {
+        "description": "Manage customer-supplied team audience profiles (beta)."
+      },
+      "campaign:profiles:imports": {
+        "description": "Read and cancel audience profile CSV imports."
       }
     }
   },
