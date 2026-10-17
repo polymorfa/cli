@@ -23,6 +23,18 @@ describe('Platform management commands', () => {
     directory = undefined
   })
 
+  test.each(['key list', 'key revoke key_1 --yes', 'project-token list'])(
+    'removes machine credential management command %s',
+    async (command) => {
+      server = await startHttpServer({body: {data: []}})
+      const result = await platformEnvironment(() =>
+        runCommand(`${command} --json`),
+      )
+      expect(result.error).toBeDefined()
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
   test('lists team sessions and filters by exact project ID', async () => {
     server = await startHttpServer({
       body: {
@@ -266,72 +278,6 @@ describe('Platform management commands', () => {
     expect(JSON.parse(server.requests[0]!.body)).toEqual(payload)
   })
 
-  test('lists API-key metadata without implying that the scope mask is authoritative', async () => {
-    server = await startHttpServer({
-      body: {
-        data: [
-          {
-            _creationTime: 1_723_000_000_000,
-            _id: 'row_1',
-            expiresAt: 0,
-            id: 'key_1',
-            isActive: true,
-            keyId: 'key_1',
-            label: 'Production',
-            last4: '1234',
-            orgId: 'org_1',
-            scopes: 65_535,
-            source: 'dashboard',
-            start: 'pmfa_',
-          },
-        ],
-      },
-      headers: {'request-id': 'req_keys'},
-    })
-
-    const result = await platformEnvironment(() =>
-      runCommand('key list --json'),
-    )
-
-    expect(result.error).toBeUndefined()
-    expect(JSON.parse(result.stdout)).toMatchObject({
-      data: [{keyId: 'key_1', label: 'Production', last4: '1234'}],
-      metadata: {attempts: 1, requestId: 'req_keys', status: 200},
-    })
-    expect(server.requests[0]).toMatchObject({
-      method: 'GET',
-      url: '/platform/keys',
-    })
-  })
-
-  test('revokes one key only with confirmation and preserves an idempotency key', async () => {
-    server = await startHttpServer({body: {data: {keyId: 'key/1', ok: true}}})
-
-    const result = await platformEnvironment(() =>
-      runCommand('key revoke key/1 --yes --idempotency-key revoke_1 --json'),
-    )
-
-    expect(result.error).toBeUndefined()
-    expect(server.requests[0]).toMatchObject({
-      body: '',
-      method: 'DELETE',
-      url: '/platform/keys/key%2F1',
-    })
-    expect(server.requests[0]?.headers['idempotency-key']).toBe('revoke_1')
-  })
-
-  test('refuses key revocation without explicit confirmation before transport', async () => {
-    server = await startHttpServer({body: {data: {keyId: 'key_1', ok: true}}})
-
-    const result = await platformEnvironment(() =>
-      runCommand('key revoke key_1 --json'),
-    )
-
-    expect(exitCode(result.error)).toBe(2)
-    expect(result.stderr).toContain('Missing required flag yes')
-    expect(server.requests).toHaveLength(0)
-  })
-
   test('lists organization members through the organization-key resource', async () => {
     server = await startHttpServer({
       body: {
@@ -460,31 +406,6 @@ describe('Platform management commands', () => {
 
     expect(result.error).toBeDefined()
     expect(server.requests).toEqual([])
-  })
-
-  test('lists project-token metadata for one explicit project', async () => {
-    server = await startHttpServer({body: {data: []}})
-
-    const result = await platformEnvironment(() =>
-      runCommand('project-token list --project project/1 --json'),
-    )
-
-    expect(result.error).toBeUndefined()
-    expect(server.requests[0]?.url).toBe(
-      '/platform/tokens?projectId=project%2F1',
-    )
-  })
-
-  test('requires a project for project-token metadata before transport', async () => {
-    server = await startHttpServer({body: {data: []}})
-
-    const result = await platformEnvironment(() =>
-      runCommand('project-token list --json'),
-    )
-
-    expect(exitCode(result.error)).toBe(2)
-    expect(result.stderr).toContain('Provide --project')
-    expect(server.requests).toHaveLength(0)
   })
 
   test("reads a number's WhatsApp capabilities", async () => {

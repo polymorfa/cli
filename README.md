@@ -196,8 +196,8 @@ polymorfa session status SESSION_ID --json
 Use a session ID from the list for `view` or `status`; these commands do not
 accept `--project`. `status` reads the stored status and optional reason from
 the session record. It does not probe the device or wait for a connection.
-Key metadata listing and revocation are available through `key list` and
-`key revoke`; the CLI does not mint or rotate organization keys.
+Create, list and revoke organization keys and project tokens as a signed-in
+person in the Console. These operations are not available through the CLI.
 
 ## QuickLinks
 
@@ -1580,19 +1580,16 @@ request metadata.
 
 ## Platform access and security
 
-Organization server API keys can inspect the credential, membership, audit,
-ban, incident, saved QuickLink settings, and project-token metadata made
+Organization server API keys can inspect the membership, audit,
+ban, incident and saved QuickLink settings made
 available by the Platform API:
 
 ```shell
-polymorfa key list
-polymorfa key revoke key_123 --yes --idempotency-key revoke_key_123
 polymorfa member list
 polymorfa audit-log list --action key.revoked --resource api-key --limit 100
 polymorfa session-ban list --active
 polymorfa security-incident list
 polymorfa security-incident acknowledge incident_123
-polymorfa project-token list --project project_123
 polymorfa widget view --project project_123
 polymorfa widget update --project project_123 --input widget-patch.json
 polymorfa session stop session_1 session_2 --project project_123
@@ -1611,16 +1608,11 @@ apply to this kind of account, for example a business-only feature on a
 personal number). Before the number's first sync every value is `unknown`.
 It is a beta: the team must be enrolled, and it needs `sessions:read`.
 
-Key and project-token lists contain metadata only; neither command returns raw
-bearer material. The API's reported API-key scope mask is retained in JSON but
-must not be treated as proof of live authorization. `key revoke` requires
-`--yes` because revocation is immediate. If a successful response is lost, a
-retry can return not found because the API does not persist idempotency keys for
-this route. Security-incident acknowledgement is repeatable and sends no body.
+Security-incident acknowledgement is repeatable and sends no body.
 
 Audit filters are exact matches, and `--limit` is bounded to 1 through 500.
-These list operations return complete arrays and expose no cursor. Project-token
-listing requires one explicit project ID. Follow asynchronous work with the
+These list operations return complete arrays and expose no cursor.
+Follow asynchronous work with the
 `operation` commands described in [Operations](#operations).
 
 Member invite, role update, and removal remain dashboard-session routes and are
