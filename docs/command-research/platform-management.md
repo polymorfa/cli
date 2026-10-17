@@ -1,8 +1,7 @@
 # Platform management command research
 
-- **Status:** Organization-key management commands reconciled with the unified
-  client; operation inspection is console-only
-- **Reviewed:** 2026-09-16
+- **Status:** Public organization management commands; credential management is Console-only; operation inspection is console-only
+- **Reviewed:** 2026-10-17
 - **SDK baseline:** `08452992a32a392de5fc3d0fa3954ba6addd7f32`
 
 ## Sources reviewed
@@ -28,10 +27,6 @@
 ## Shipped command tree
 
 ```text
-key
-  list
-  revoke <key> --yes
-
 member
   list
 
@@ -48,9 +43,6 @@ security-incident
 operation
   list|view|wait|watch|cancel --owner <project|organization>
 
-project-token
-  list --project <project>
-
 session
   stop <session...> [--project <project>]
   delete <session...> [--project <project>] --yes
@@ -58,7 +50,7 @@ session
 
 The management commands use the public typed organization resources on the
 unified SDK `Client`. They require an organization server API key. Reads require
-`sessions:read`; key revocation and incident acknowledgement require
+`sessions:read`; incident acknowledgement requires
 `sessions:manage`; batch session stop/delete also require `sessions:manage`.
 Project tokens and Messaging browser client tokens are rejected before
 transport. Developer operations separately accept the principal allowed by
@@ -66,20 +58,15 @@ their explicit owner and context.
 
 ## Command decisions
 
-The API method is named `deactivate`; the CLI uses `key revoke` because it
-describes the security outcome and matches established credential-management
-language. It requires `--yes` and names the key ID. An optional idempotency key
-is passed through, but the API does not persist it: retrying after an unseen
-success can return not found. JSON preserves `scopes` as reported metadata but
-neither human output nor documentation presents that mask as proof of current
-authorization.
+Organization keys and project tokens can only be created, listed and revoked by
+a signed-in person in the Console. No machine credential command manages them.
 
 Member access is deliberately list-only. Invite, role update, and removal use
 dashboard sessions and are not crossed through `raw.request`.
 
 Audit action and resource filters are exact matches. The CLI validates the
 live handler's 1..500 limit even though the pinned OpenAPI omits those query
-fields. Audit, member, ban, incident, key, and token results are complete arrays
+fields. Audit, member, ban and incident results are complete arrays
 without cursor semantics.
 
 `session-ban list --active` keeps one discovery command while selecting the
@@ -91,10 +78,6 @@ The original singular Platform operation view was removed. Operation
 inspection is console-only at API contract 1600403, and the pinned SDK has no
 operations resource, so the CLI ships no operation commands. The unpublished
 `--surface` selector was removed.
-Project-token listing requires an explicit project because the live
-organization-key handler rejects an absent project even though its OpenAPI
-query field is optional. Only metadata is returned.
-
 Batch session commands use positional IDs because they are the primary action
 targets. The CLI trims and validates 1..100 unique IDs before transport instead
 of relying on the handler's silent deduplication. `session stop` reports the

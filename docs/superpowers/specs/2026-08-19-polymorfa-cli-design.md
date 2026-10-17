@@ -1,3 +1,8 @@
+> Amendment (2026-10-17): organization-key listing/revocation and project-token
+> listing are removed. Only signed-in Console people manage those credentials.
+> Client-token routes remain available. This supersedes credential-management
+> entries in the historical design and implementation record below.
+
 # Polymorfa CLI design
 
 - **Status:** Living design; the accepted 2026-08-20 developer API RFC supersedes

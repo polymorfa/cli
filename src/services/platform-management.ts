@@ -1,12 +1,9 @@
 import {
-  type ApiKey,
-  type ApiKeyDeactivation,
   type AuditLog,
   type ClientInstance,
   type ListAuditLogsParams,
   type OrganizationMember,
   PolymorfaValidationError,
-  type ProjectToken,
   type RequestOptions,
   type ResponseMetadata,
   type SecurityIncident,
@@ -33,22 +30,6 @@ export interface PlatformResult<T> {
     readonly requestId?: string
     readonly status: number
   }
-}
-
-export async function listApiKeys(
-  client: ClientInstance<'organization'>,
-): Promise<PlatformResult<readonly ApiKey[]>> {
-  const response = await client.apiKeys.list()
-  return result(response.data.data, response.metadata)
-}
-
-export async function revokeApiKey(
-  client: ClientInstance<'organization'>,
-  keyId: string,
-  options: RequestOptions = {},
-): Promise<PlatformResult<ApiKeyDeactivation>> {
-  const response = await client.apiKeys.deactivate(keyId, options)
-  return result(response.data.data, response.metadata)
 }
 
 export async function listMembers(
@@ -92,14 +73,6 @@ export async function acknowledgeSecurityIncident(
     incidentId,
     options,
   )
-  return result(response.data.data, response.metadata)
-}
-
-export async function listProjectTokens(
-  client: ClientInstance<'organization'>,
-  projectId: string,
-): Promise<PlatformResult<readonly ProjectToken[]>> {
-  const response = await client.projectTokens.list(projectId)
   return result(response.data.data, response.metadata)
 }
 
@@ -234,20 +207,6 @@ export async function deleteSessions(
   return result(response.data.data, response.metadata)
 }
 
-export function renderApiKeys(keys: readonly ApiKey[]): string {
-  if (keys.length === 0) return 'No API keys found.'
-  return keys
-    .map((key) =>
-      [
-        key.keyId,
-        key.label,
-        `••••${key.last4}`,
-        key.isActive ? 'active' : 'inactive',
-      ].join('\t'),
-    )
-    .join('\n')
-}
-
 export function renderMembers(members: readonly OrganizationMember[]): string {
   if (members.length === 0) return 'No organization members found.'
   return members
@@ -298,20 +257,6 @@ export function renderSecurityIncidents(
         incident.source,
         timestamp(incident.detectedAt),
         incident.acknowledgedAt === null ? 'unacknowledged' : 'acknowledged',
-      ].join('\t'),
-    )
-    .join('\n')
-}
-
-export function renderProjectTokens(tokens: readonly ProjectToken[]): string {
-  if (tokens.length === 0) return 'No project tokens found.'
-  return tokens
-    .map((token) =>
-      [
-        token.id,
-        token.label ?? '',
-        `${token.start}••••${token.last4}`,
-        token.revokedAt === null ? 'active' : 'revoked',
       ].join('\t'),
     )
     .join('\n')

@@ -174,9 +174,6 @@
       "identity": {
         "description": "Resolve phone numbers and usernames to Polymorfa user IDs."
       },
-      "key": {
-        "description": "Inspect and revoke organization API keys."
-      },
       "label": {
         "description": "Manage Messaging labels and chat assignments."
       },
@@ -227,9 +224,6 @@
       },
       "project": {
         "description": "Select, list, and inspect the project context."
-      },
-      "project-token": {
-        "description": "Inspect project-token metadata."
       },
       "quick-reply": {
         "description": "Manage observed business quick replies."

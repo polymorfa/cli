@@ -104,7 +104,7 @@ describe('link and project commands', () => {
           POLYMORFA_CONFIG_DIR: join(directory, 'config'),
           POLYMORFA_PROJECT_TOKEN: undefined,
         },
-        () => runCommand('key list --json --verbose'),
+        () => runCommand('member list --json --verbose'),
       )
 
       expect(result.error, result.stderr).toBeUndefined()
@@ -112,7 +112,7 @@ describe('link and project commands', () => {
       expect(result.stderr).not.toContain('Using project')
       expect(
         server.requests.map(({method, url}) => `${method} ${url}`),
-      ).toEqual(['GET /platform/keys'])
+      ).toEqual(['GET /platform/members'])
     },
   )
 
