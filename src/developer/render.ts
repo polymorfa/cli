@@ -35,6 +35,17 @@ export function renderEventDetail(
   return table(rows)
 }
 
+/** Off when the explicit event list leaves the warning out. */
+function phoneOfflineWarning(webhook: {
+  readonly eventTypes: readonly string[]
+  readonly phoneOfflineStartDay?: number
+}): string {
+  if (!webhook.eventTypes.includes('session.phone_offline')) return 'off'
+  return webhook.phoneOfflineStartDay === undefined
+    ? 'not reported'
+    : `from day ${webhook.phoneOfflineStartDay}`
+}
+
 export function renderWebhookDetail(webhook: {
   readonly id: string
   readonly owner: string
@@ -44,6 +55,7 @@ export function renderWebhookDetail(webhook: {
   readonly format: string
   readonly eventTypes: readonly string[]
   readonly headers: readonly {readonly name: string}[]
+  readonly phoneOfflineStartDay?: number
   readonly createdAt: string
   readonly updatedAt: string
 }): string {
@@ -55,6 +67,7 @@ export function renderWebhookDetail(webhook: {
     ['Enabled', webhook.enabled],
     ['Format', webhook.format],
     ['Event types', webhook.eventTypes.join(', ')],
+    ['Phone offline warning', phoneOfflineWarning(webhook)],
     ['Header names', webhook.headers.map(({name}) => name).join(', ')],
     ['Created', webhook.createdAt],
     ['Updated', webhook.updatedAt],
