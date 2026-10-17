@@ -1,3 +1,7 @@
+import {
+  frequencyCapFlags,
+  frequencyCapInput,
+} from '../../services/campaign-frequency-cap.js'
 import {Flags} from '@oclif/core'
 
 import {readJsonInput} from '../../api/request.js'
@@ -10,6 +14,7 @@ export default class CampaignCreate extends BaseCommand {
     'Create a campaign from one JSON object. Optional beta fields include followUp: one receipt-timed follow-up ({delaySeconds, expirySeconds, message: {type: "text", text} or {type: "template", templateId}}); teams that are not enrolled receive 403 feature_unavailable.'
 
   static override flags = {
+    ...frequencyCapFlags,
     'idempotency-key': Flags.string({
       description:
         'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).',
@@ -29,7 +34,7 @@ export default class CampaignCreate extends BaseCommand {
     const result = await createCampaign(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Campaign'}),
       flags['project-slug'],
-      await readJsonInput(flags.input),
+      frequencyCapInput(await readJsonInput(flags.input), flags),
       {idempotencyKey: idempotencyKey(flags['idempotency-key'])},
     )
     this.writeValue(result, renderCampaign(result.data), flags)

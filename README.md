@@ -2642,3 +2642,28 @@ an API deployment exposing Analytics are separate requirements.
 ## Package release workflow
 
 CLI development and release PRs target `main`. Nightly packages use the `dev` npm tag after matching staging API acceptance; stable packages follow production acceptance. Each package pins an exact accepted SDK version. See [the release guide](RELEASING.md).
+
+### Campaign contact frequency caps (beta)
+
+```sh
+polymorfa campaign settings frequency-cap get
+polymorfa campaign settings frequency-cap set --max-per-24-hours 2 --max-per-7-days 5 --revision 0
+polymorfa campaign settings frequency-cap remove --revision 1
+polymorfa campaign create --project-slug launch --input campaign.json --frequency-cap-24-hours 1
+polymorfa campaign update CAMPAIGN_ID --project-slug launch --frequency-cap-24-hours 1
+polymorfa campaign update CAMPAIGN_ID --project-slug launch --remove-frequency-cap
+polymorfa campaign recipients list CAMPAIGN_ID --project-slug launch --status skipped --reason frequency_cap
+```
+
+Read the revision before setting or removing team limits. A stale write returns
+409; read again and reconcile before retrying. Set replaces both windows; an
+omitted window means no limit. Team settings require a team API key with
+`campaigns:read` or `campaigns:manage`. New limits require beta access and can
+return `403 feature_unavailable`; removal does not require beta access.
+Campaign flags replace the campaign cap and keep the team cap in force.
+Campaign analytics shows `Skipped by frequency cap`; recipient output includes
+`frequency_cap`. Changing limits never retries settled skips.
+
+This implementation keeps the published SDK pin unchanged. Release waits for a
+matching SDK prerelease and accepted API contract; source support does not imply
+package publication or beta availability.
