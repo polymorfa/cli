@@ -23,6 +23,7 @@ const state = vi.hoisted(() => ({
   createSecretAvailable: true,
   listPages: [] as Array<Record<string, unknown>>,
   rotationSecretAvailable: true,
+  savedEventTypes: ['message.received'] as string[],
 }))
 
 vi.mock('@polymorfa/sdk', async (importOriginal) => {
@@ -51,6 +52,7 @@ describe('developer webhook commands', () => {
     state.createSecretAvailable = true
     state.listPages.splice(0)
     state.rotationSecretAvailable = true
+    state.savedEventTypes = ['message.received']
   })
 
   afterEach(async () => {
@@ -177,6 +179,7 @@ describe('developer webhook commands', () => {
     const text = output.mock.calls.map(([chunk]) => String(chunk)).join('')
     expect(text).toContain('URL\thttps://hooks.example.test/polymorfa')
     expect(text).toContain('Event types\tmessage.received')
+    expect(text).toContain('Phone offline warning\toff')
     expect(text).toContain('Status\tsucceeded')
     expect(text).toContain('Last status code\t204')
   })
@@ -364,6 +367,146 @@ describe('developer webhook commands', () => {
       resource: {id: 'wh_1', type: 'webhook'},
       result: {webhook: {id: 'wh_1'}},
     })
+  })
+
+  test('sets the phone offline start day on create', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'polymorfa-command-'))
+    directories.push(directory)
+    const input = join(directory, 'webhook.json')
+    await writeFile(
+      input,
+      JSON.stringify({
+        eventTypes: ['session.phone_offline'],
+        url: 'https://example.test/hook',
+      }),
+    )
+    stdout()
+    await developerEnvironment(() =>
+      WebhookCreate.run([
+        '--owner',
+        'project',
+        '--project',
+        '11111111-1111-4111-8111-111111111111',
+        '--input',
+        input,
+        '--phone-offline-start-day',
+        '8',
+        '--secret-out',
+        join(directory, 'webhook.secret'),
+        '--idempotency-key',
+        'create_1',
+        '--json',
+      ]),
+    )
+    expect(findCall('webhooks.create').args[0]).toEqual({
+      eventTypes: ['session.phone_offline'],
+      phoneOfflineStartDay: 8,
+      url: 'https://example.test/hook',
+    })
+  })
+
+  test('updates only the start day without an input file', async () => {
+    stdout()
+    await developerEnvironment(() =>
+      WebhookUpdate.run([
+        'wh_1',
+        '--owner',
+        'organization',
+        '--phone-offline-start-day',
+        '13',
+        '--idempotency-key',
+        'update_1',
+        '--json',
+      ]),
+    )
+    expect(findCall('webhooks.update').args.slice(0, 2)).toEqual([
+      'wh_1',
+      {phoneOfflineStartDay: 13},
+    ])
+  })
+
+  test('turns warnings off by removing the event from the saved event types', async () => {
+    state.savedEventTypes = ['message.received', 'session.phone_offline']
+    stdout()
+    await developerEnvironment(() =>
+      WebhookUpdate.run([
+        'wh_1',
+        '--owner',
+        'organization',
+        '--phone-offline-start-day',
+        'off',
+        '--idempotency-key',
+        'update_1',
+        '--json',
+      ]),
+    )
+    expect(findCall('webhooks.retrieve').args[0]).toBe('wh_1')
+    expect(findCall('webhooks.update').args.slice(0, 2)).toEqual([
+      'wh_1',
+      {eventTypes: ['message.received']},
+    ])
+  })
+
+  test('refuses off when it would leave no events', async () => {
+    state.savedEventTypes = ['session.phone_offline']
+    const stderr = vi
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true)
+    const error = await developerEnvironment(() =>
+      WebhookUpdate.run([
+        'wh_1',
+        '--owner',
+        'organization',
+        '--phone-offline-start-day',
+        'off',
+      ]),
+    ).catch((caught: unknown) => caught)
+    expect(exitCode(error)).toBe(2)
+    expect(String(stderr.mock.calls.flat().join(''))).toContain(
+      'at least one event',
+    )
+    expect(state.calls.some(({method}) => method === 'webhooks.update')).toBe(
+      false,
+    )
+  })
+
+  test.each(['6', '14', '9.5', 'never'])(
+    'rejects --phone-offline-start-day %s before calling the SDK',
+    async (value) => {
+      const stderr = vi
+        .spyOn(process.stderr, 'write')
+        .mockImplementation(() => true)
+      const error = await developerEnvironment(() =>
+        WebhookUpdate.run([
+          'wh_1',
+          '--owner',
+          'organization',
+          '--phone-offline-start-day',
+          value,
+        ]),
+      ).catch((caught: unknown) => caught)
+      expect(exitCode(error)).not.toBe(0)
+      expect(String(stderr.mock.calls.flat().join(''))).toContain(
+        'Expected a day from 7 to 13, or off.',
+      )
+      expect(
+        state.calls.some(({method}) => method.startsWith('webhooks.')),
+      ).toBe(false)
+    },
+  )
+
+  test('requires an input or a start day for updates', async () => {
+    const stderr = vi
+      .spyOn(process.stderr, 'write')
+      .mockImplementation(() => true)
+    const error = await developerEnvironment(() =>
+      WebhookUpdate.run(['wh_1', '--owner', 'organization']),
+    ).catch((caught: unknown) => caught)
+    expect(exitCode(error)).toBe(2)
+    expect(String(stderr.mock.calls.flat().join(''))).toContain(
+      'Provide --input or --phone-offline-start-day.',
+    )
+    expect(state.calls).toHaveLength(0)
   })
 
   test('creates a test event and delivery without an extra confirmation', async () => {
@@ -660,7 +803,7 @@ function resource(
               response({
                 createdAt: '2026-09-08T00:00:00Z',
                 enabled: true,
-                eventTypes: ['message.received'],
+                eventTypes: state.savedEventTypes,
                 format: 'native',
                 headers: [],
                 id: String(args[0]),
