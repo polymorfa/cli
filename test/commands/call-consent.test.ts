@@ -11,8 +11,7 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 
-const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const CLIENT_TOKEN = 'pmfa_ct_browser_token'
 const OPT_OUT_ID = '0b9f6a52-8f0e-4a44-9d51-3c1f9d6f2a10'
 const NEXT_CURSOR = '1c9f6a52-8f0e-4a44-9d51-3c1f9d6f2a11'

@@ -20,8 +20,7 @@ describe('createRawClient', () => {
       surface: 'platform',
       credential: {
         type: 'apiKey',
-        value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
     })
 
@@ -53,8 +52,7 @@ describe('createRawClient', () => {
       surface: 'messaging',
       credential: {
         type: 'apiKey',
-        value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       timeoutMs: 1234,
     })
@@ -72,8 +70,7 @@ describe('createRawClient', () => {
     const client = createMessagingClient({
       credential: {
         type: 'projectToken',
-        value:
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       surface: 'messaging',
     })
@@ -87,8 +84,7 @@ describe('createRawClient', () => {
       surface: 'platform',
       credential: {
         type: 'apiKey',
-        value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
     })
 
@@ -110,8 +106,7 @@ describe('createRawClient', () => {
         surface: 'messaging',
         credential: {
           type: 'apiKey',
-          value:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         },
       }),
     ).toThrow('requires the Platform API surface')
@@ -127,8 +122,7 @@ describe('createRawClient', () => {
         baseUrl: server.baseUrl,
         credential: {
           type: 'apiKey',
-          value:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         },
         surface: 'platform',
       }).project('11111111-1111-4111-8111-111111111111')
@@ -143,7 +137,7 @@ describe('createRawClient', () => {
         url: '/platform/projects/11111111-1111-4111-8111-111111111111/events?limit=25',
       })
       expect(server.requests[0]?.headers.authorization).toBe(
-        'Bearer pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'Bearer pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       )
     } finally {
       await server.close()

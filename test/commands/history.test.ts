@@ -86,7 +86,7 @@ describe('stored chat history commands', () => {
     const result = await withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,
-        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_${'A'.repeat(94)}`,
+        POLYMORFA_PROJECT_TOKEN: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
       },
@@ -209,8 +209,7 @@ describe('stored chat history commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
       },

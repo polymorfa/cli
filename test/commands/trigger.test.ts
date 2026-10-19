@@ -7,7 +7,7 @@ import {
 } from '../helpers/http-server.js'
 
 const projectId = '11111111-1111-4111-8111-111111111111'
-const apiKey = `pmfa_${'A'.repeat(72)}`
+const apiKey = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const eventId = '0199f1c2-7a4e-7c55-9d1e-3f0b8a2c6d10'
 
 async function run(

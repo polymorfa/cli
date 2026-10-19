@@ -85,6 +85,12 @@ Secret Service. A keyring failure stops the command; the CLI never silently
 falls back to plaintext. `auth status` reports local secure-store availability
 in this development slice and does not yet claim remote identity validation.
 
+Treat all Polymorfa credentials as opaque strings. Pass them unchanged; never
+parse them or assume a fixed length. Credential columns must store at least 512
+characters, preferably unrestricted text. Client-token length varies with its
+bindings, Customer block and signing key ID. Local prefix, encoding and checksum
+checks do not authenticate a credential; the service checks live authority.
+
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
 

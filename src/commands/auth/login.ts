@@ -7,7 +7,7 @@ import {readSecretFromStdin} from '../../input/stdin.js'
 
 export default class AuthLogin extends BaseCommand {
   static override description =
-    'Store an organization key or project token in the operating-system keyring.'
+    'Store an opaque organization key or project token in the operating-system keyring. Never parse credentials or assume a fixed length.'
 
   static override flags = {
     'with-api-key': Flags.boolean({

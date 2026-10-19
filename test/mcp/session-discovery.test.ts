@@ -8,7 +8,7 @@ import {
 } from '../helpers/http-server.js'
 
 const PROJECT_ID = '11111111-1111-4111-8111-111111111111'
-const API_KEY = `pmfa_${'A'.repeat(72)}`
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 
 describe('MCP session discovery', () => {
   let server: TestHttpServer | undefined

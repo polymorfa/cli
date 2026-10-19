@@ -10,8 +10,8 @@ import {
 } from '../helpers/http-server.js'
 
 const project = '11111111-1111-4111-8111-111111111111'
-const apiKey = `pmfa_${'A'.repeat(72)}`
-const projectToken = `pmfa_pt_${'A'.repeat(94)}`
+const apiKey = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+const projectToken = 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const cases = [
   {
     command: 'hybrid-link state --session existing',
@@ -362,7 +362,7 @@ test('invalid project-token format is rejected before transport', async () => {
           'hybrid-link state --session existing --json',
         )
         expect(result.error).toBeDefined()
-        expect(result.stderr).toContain('canonical pmfa_pt_ v1 format')
+        expect(result.stderr).toContain('canonical pmfa_pt_ opaque format')
         expect(result.stderr).not.toContain('pmfa_pt_invalid')
       },
     )

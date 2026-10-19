@@ -881,8 +881,7 @@ function findCall(method: string) {
 function developerEnvironment<T>(run: () => Promise<T>): Promise<T> {
   return withEnvironment(
     {
-      POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       POLYMORFA_BASE_URL: 'https://api.example.test',
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_PROJECT_TOKEN: undefined,
