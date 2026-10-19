@@ -27,7 +27,7 @@ describe('createDeveloperSession', () => {
     expect(loadLinkedProject).not.toHaveBeenCalled()
   })
 
-  test('creates an immutable project view from an organization key', async () => {
+  test('creates an immutable project view from an team key', async () => {
     const session = await withEnvironment(
       {
         POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',

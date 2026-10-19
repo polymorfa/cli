@@ -50,7 +50,7 @@ describe('AuthService', () => {
         }),
       ).resolves.toMatchObject({credentialKind: 'projectToken'})
     }
-    fixture.credentials.set.mockClear()
+    vi.mocked(fixture.credentials.set).mockClear()
     await expect(
       fixture.service.loginProjectToken({
         profile: 'growth',

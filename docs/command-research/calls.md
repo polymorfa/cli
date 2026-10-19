@@ -111,10 +111,10 @@ internal SDK module.
   Messaging client; the CLI builds that client from the Platform environment.
   `calls settings set --expected-revision` sends `expectedRevision`; a stale
   revision returns 409 `state_conflict`, which exits with code 4.
-- `calls stats` and `calls export` accept an organization API key or an
+- `calls stats` and `calls export` accept an team key or an
   exact-project token (`sessions:read`), resolved like the developer
   commands. `--project` (or a project token, which requires it) reads one
-  project; an organization key without `--project` reads the whole
+  project; an team key without `--project` reads the whole
   organization. `--owner` still overrides the inferred owner.
 - `calls retention` resolves a team API key or a project token
   (`resolveTeamSettingEnvironment`), from the environment or a profile, with

@@ -175,7 +175,7 @@
         "description": "Resolve phone numbers and usernames to Polymorfa user IDs."
       },
       "key": {
-        "description": "Inspect and revoke organization API keys."
+        "description": "Inspect and revoke team keys."
       },
       "label": {
         "description": "Manage Messaging labels and chat assignments."

@@ -4,7 +4,7 @@ import {setLimit, limitValue} from '../../../services/billing-controls.js'
 export default class LimitsSet extends BaseCommand {
   static override summary = 'Set or remove a monthly spending limit.'
   static override description =
-    'Requires Pay-As-You-Go and an organization key with billing:manage. Zero blocks new charges; already-paid service continues. A stale observed revision fails without overwriting newer settings.'
+    'Requires Pay-As-You-Go and an team key with billing:manage. Zero blocks new charges; already-paid service continues. A stale observed revision fails without overwriting newer settings.'
   static override args = {
     id: Args.string({required: true, description: 'Project or number UUID.'}),
   }

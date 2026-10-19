@@ -280,7 +280,7 @@ export class ProjectContextService {
       if (projectToken !== undefined) {
         // The token does not name its project, so an explicit UUID is the
         // only way to identify it locally. A slug cannot be resolved without
-        // an organization credential.
+        // an team key.
         const declared = nonEmpty(options.project)?.trim()
         if (declared !== undefined && PROJECT_UUID.test(declared)) {
           return {

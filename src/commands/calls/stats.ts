@@ -17,7 +17,7 @@ export default class CallsStats extends BaseCommand {
 
 The range defaults to the last 7 days. --group-by day covers at most 366 days and --group-by hour at most 31. Day and hour buckets, and the heatmap, use --timezone (UTC by default).
 
-Pass --project to read one project. Without it, an organization API key reads every project in the organization. A project token reads only its own project and requires --project. Credentials need the sessions:read scope.`
+Pass --project to read one project. Without it, an team key reads every project in the organization. A project token reads only its own project and requires --project. Credentials need the sessions:read scope.`
 
   static override examples = [
     '<%= config.bin %> calls stats',

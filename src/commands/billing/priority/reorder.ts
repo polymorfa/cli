@@ -6,7 +6,7 @@ import {reorderPriorities} from '../../../services/billing-controls.js'
 export default class PriorityReorder extends BaseCommand {
   static override summary = 'Save a complete funding order atomically.'
   static override description =
-    'Requires Pay-As-You-Go and an organization key with billing:manage. Pass every active project, customer or real number for its scope. Resource scope mixes all customers and numbers in --project, highest first. Incomplete or stale orders fail without partial changes.'
+    'Requires Pay-As-You-Go and an team key with billing:manage. Pass every active project, customer or real number for its scope. Resource scope mixes all customers and numbers in --project, highest first. Incomplete or stale orders fail without partial changes.'
   static override flags = {
     scope: Flags.string({
       options: ['project', 'customer', 'number', 'resource'],

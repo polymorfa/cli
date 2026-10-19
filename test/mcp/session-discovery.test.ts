@@ -79,7 +79,7 @@ describe('MCP session discovery', () => {
         },
         () => listMcpSessions(PROJECT_ID),
       ),
-    ).rejects.toThrow('Select only one organization API key')
+    ).rejects.toThrow('Select only one team key')
     expect(server.requests).toHaveLength(0)
   })
 })

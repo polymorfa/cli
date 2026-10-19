@@ -301,7 +301,7 @@ test.each(cases)(
           POLYMORFA_BASE_URL: server.baseUrl,
           POLYMORFA_API_KEY: undefined,
           POLYMORFA_PROJECT_TOKEN: undefined,
-          POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser',
+          POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
         },
         async () => {
           const result = await runCommand(`${command} --json`)
@@ -309,7 +309,7 @@ test.each(cases)(
           expect(JSON.parse(result.stderr)).toMatchObject({
             error: {category: 'configuration'},
           })
-          expect(result.stderr).not.toContain('pmfa_ct_browser')
+          expect(result.stderr).not.toContain('pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO')
         },
       )
       expect(server.requests).toEqual([])

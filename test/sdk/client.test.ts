@@ -30,7 +30,7 @@ describe('createRawClient', () => {
   test('returns the public Messaging raw client', () => {
     const client = createRawClient({
       surface: 'messaging',
-      credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
+      credential: {type: 'clientToken', value: 'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO'},
     })
 
     expect(client).toBeInstanceOf(RawClient)
@@ -40,10 +40,10 @@ describe('createRawClient', () => {
     expect(() =>
       createRawClient({
         surface: 'platform',
-        credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
+        credential: {type: 'clientToken', value: 'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO'},
       }),
     ).toThrow(
-      'Client and project tokens cannot be used as organization server API keys.',
+      'Client and project tokens cannot be used as team keys.',
     )
   })
 

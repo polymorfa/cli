@@ -8,7 +8,7 @@ export default class KeyRevoke extends BaseCommand {
     key: Args.string({description: 'API key ID.', required: true}),
   }
 
-  static override description = 'Revoke an organization API key.'
+  static override description = 'Revoke an team key.'
 
   static override flags = {
     'idempotency-key': Flags.string({

@@ -64,7 +64,7 @@ dependency.
 The CLI mapping covers all 25 Platform BanSafe operations in the SDK coverage
 ledger. The SDK also covers the 10 equivalent Messaging settings routes through
 `MessagingClient.banSafe`; the CLI uses the Platform routes for those settings
-because BanSafe commands authenticate with an organization server API key.
+because BanSafe commands authenticate with an team key.
 
 | SDK operations                                               | CLI commands                                               |
 | ------------------------------------------------------------ | ---------------------------------------------------------- |
