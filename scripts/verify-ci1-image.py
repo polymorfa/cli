@@ -9,7 +9,7 @@ import platform
 BASE = "2139edd9da4026da8a66c0557af7eee4789101104eb27860bacd57086219cebb"
 INPUTS = {
     "infra/ci1/machine.json": "0900619bac06c6a81f5d7535107985bf8d9cf11c6dd2079273d8ab81d9ebac3a",
-    "infra/ci1/tools.lock.json": "4c2a7cac77ebd8221054b2e78dfdd81e15327fb92d3e80d8986a73fb5e326d15",
+    "infra/ci1/tools.lock.json": "88d3c9a0e804935c1c7b60ac60d249512309405e150d654de8d896ce68f74f47",
 }
 
 

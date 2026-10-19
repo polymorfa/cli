@@ -1,37 +1,50 @@
 {
   "schema": 1,
-  "observed_at": "2026-10-19T19:00:23.666736+00:00",
+  "observed_at": "2026-10-19T20:26:49.954247+00:00",
   "controller": "ci-1",
   "scalesets": [
     {
       "id": 1,
       "name": "ci1-general",
-      "image": "505d3336ea46318175907ac2192df5002406731bd2990a344ba2ee98c1c89ab0",
-      "enabled": true
+      "image": "4c554d1f7cead7449c80848fd1f2405c996143b888a2a337e4ad42727de04e0d",
+      "enabled": false,
+      "max_runners": 1,
+      "min_idle_runners": null
     },
     {
       "id": 2,
       "name": "ci1-integration",
-      "image": "505d3336ea46318175907ac2192df5002406731bd2990a344ba2ee98c1c89ab0",
-      "enabled": true
+      "image": "4c554d1f7cead7449c80848fd1f2405c996143b888a2a337e4ad42727de04e0d",
+      "enabled": false,
+      "max_runners": 1,
+      "min_idle_runners": null
     }
   ],
   "incus_project": "ci1",
   "alias": {
-    "name": "505d3336ea46318175907ac2192df5002406731bd2990a344ba2ee98c1c89ab0",
-    "target": "505d3336ea46318175907ac2192df5002406731bd2990a344ba2ee98c1c89ab0"
+    "name": "4c554d1f7cead7449c80848fd1f2405c996143b888a2a337e4ad42727de04e0d",
+    "target": "4c554d1f7cead7449c80848fd1f2405c996143b888a2a337e4ad42727de04e0d"
   },
   "authority": "GARM controller scale-set image pin and provider fingerprint-alias enforcement; guest manifest is a separate content and age check",
-  "mutation": "none; read-only verification",
+  "mutation": "Explicit coordinated pin after fresh-clone/network qualification; pools disabled at readback",
   "requalification": "Any new fingerprint needs explicit pool changes and the coordinated image/lifecycle qualification",
   "provider_wrapper": {
     "path": "/opt/garm/providers.d/ci1-incus",
     "sha256": "a091d8c0f8a08be521d754d046622b6fcc66f127c9bea52d60082f2a3d424813",
-    "matches_source": "https://github.com/polymorfa/polymorfa/blob/d35de858d73fe9c6d9e6110637a18a3dfe57fb56/infra/ci1/provider-admission.sh",
+    "matches_source": "https://github.com/polymorfa/polymorfa/blob/30d4c516b827098614cb64469f66028e7727f6b7/infra/ci1/provider-admission.sh",
     "checks": [
       "local immutable fingerprint required",
       "fingerprint-named alias must target that exact fingerprint",
       "remote names rejected"
     ]
+  },
+  "image_qualification": {
+    "source": "30d4c516b827098614cb64469f66028e7727f6b7",
+    "parent": "505d3336ea46318175907ac2192df5002406731bd2990a344ba2ee98c1c89ab0",
+    "built_at_preserved": "2026-10-19T14:37:51.169664+00:00",
+    "tools_lock_sha256": "88d3c9a0e804935c1c7b60ac60d249512309405e150d654de8d896ce68f74f47",
+    "cli_old_pin": "rejected",
+    "cli_new_pin": "accepted",
+    "github": "pending on this PR"
   }
 }

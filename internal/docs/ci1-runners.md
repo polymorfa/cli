@@ -18,7 +18,7 @@ always uses ci-1. No source-test fallback exists.
 
 The new file identity lets this PR qualify while old paid workflow 338004193
 stays disabled. Do not enable the old identity before inspecting its source;
-the default branch still selects Blacksmith until the cutover merges.
+the old source was deleted by PR 84 and was never re-enabled.
 
 Before installation, the job validates the shared image's base fingerprint,
 machine/tool input hashes, age of at most seven days, architecture and CPU shape.
@@ -28,7 +28,7 @@ The image's pnpm cache belongs to the monorepo; no CLI npm-cache hit is inferred
 A changed image definition requires new qualification and explicit pin updates.
 
 The qualified image fingerprint is
-`505d3336ea46318175907ac2192df5002406731bd2990a344ba2ee98c1c89ab0`.
+`4c554d1f7cead7449c80848fd1f2405c996143b888a2a337e4ad42727de04e0d`.
 The controller's scale set 2 (`ci1-integration`) pins this exact final fingerprint;
 scale set 1 does too. A live readback on 2026-10-19 confirmed both pins and the
 fingerprint-named local Incus alias targeting that same fingerprint. The installed
@@ -39,7 +39,15 @@ aliases. Image identity is bound by this controller configuration; the guest
 manifest checks content and age. A new image needs explicit operator pool
 changes and full qualification under the coordinated plan.
 
-Its definition source is `6481b9e199d96fb3488f34d6335ac41169f4fb5d` in the monorepo.
+The metadata derivation source is `30d4c516b827098614cb64469f66028e7727f6b7` in
+the monorepo. Its parent is `505d3336ea46318175907ac2192df5002406731bd2990a344ba2ee98c1c89ab0`, originally built from `6481b9e`.
+Only rustup download metadata changed. The versioned 1.29.1 archive and installed
+initializer have identical SHA-256; no tool upgrade occurred. The derivative
+retains the original `built_at` of 2026-10-19T14:37:51.169664+00:00. Fresh-clone
+browser/tool and network probes passed, input-refusal tests restored their
+changes, and the old CLI gate refused the candidate while this pin accepted it.
+Both pools were disabled at the controller readback; actual GitHub qualification
+is still required.
 The underlying Ubuntu base is
 `2139edd9da4026da8a66c0557af7eee4789101104eb27860bacd57086219cebb`.
 Public source dependencies only are installed; no customer credential, release
@@ -56,8 +64,9 @@ remain unchanged.
 The unchanged local `npm run verify` passed all 110 test files and 1,051 tests,
 types, lint, formatting, build, package dry-run and production audit (zero
 production vulnerabilities). Three release-evidence tests also passed.
-Local workflow lint and diff checks pass. GitHub source qualification and the
-first main-branch run remain required. Host lifecycle proof is separate from CLI
+Local workflow lint and diff checks pass. PR 84 and its first main push passed
+on the parent image. This candidate needs its own GitHub source qualification
+and first main-branch run. Host lifecycle proof is separate from CLI
 source acceptance.
 
 The publication workflow is unchanged. It runs on its schedule or manual
