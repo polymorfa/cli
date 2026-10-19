@@ -2112,12 +2112,12 @@ polymorfa listen --project PROJECT_ID --forward-to http://127.0.0.1:3000/webhook
 Trigger events in another:
 
 ```shell
-polymorfa trigger --list --project PROJECT_ID
-polymorfa trigger message.received --project PROJECT_ID --session my-test-number --text "hi"
-polymorfa trigger message.received --project PROJECT_ID --session my-test-number \
+polymorfa trigger --list
+polymorfa trigger message.received --session my-test-number --text "hi"
+polymorfa trigger message.received --session my-test-number \
   --override mediaType=image --override caption=look
-polymorfa trigger message.ack --project PROJECT_ID --session my-test-number --override ackStatus=read
-polymorfa trigger message.failed --project PROJECT_ID --session my-test-number
+polymorfa trigger message.ack --session my-test-number --override ackStatus=read
+polymorfa trigger message.failed --session my-test-number
 polymorfa trigger call.received --project PROJECT_ID --session my-test-number --override video=true
 polymorfa trigger session.restriction_updated --project PROJECT_ID --session my-test-number \
   --override restrictionActive=false
@@ -2136,7 +2136,7 @@ and `template.status`. `--override key=value`
 sets one payload field and can be repeated; `--text` and `--from` are
 shortcuts. `video` and `restrictionActive` accept only `true` or `false`;
 `durationSeconds` accepts a whole number. Set `restrictionActive=false` to
-test the end of a restriction. `--from-session OTHER_TEST_NUMBER` sends a real simulated text from
+test the end of a restriction. `--from-number OTHER_TEST_NUMBER` sends a real simulated text from
 another Test number in the project instead, producing an ordinary
 `message.received` event you can reply to. Use `--json` for one JSON document.
 
