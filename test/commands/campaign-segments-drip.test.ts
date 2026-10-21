@@ -269,3 +269,83 @@ test('creates and updates composed drips through Platform without a segment', as
   expect(wrong.error).toBeDefined()
   expect(server.requests).toHaveLength(2)
 })
+
+test('creates a segment drip with frequency caps in one Platform request', async () => {
+  server = await startHttpServer({body: {data: campaign}})
+  const messagesArray = [{source: 'Hello'}]
+  const result = await run(
+    `campaign create --project-id p --segment s --drip --drip-enrollment continuous --frequency-cap-24-hours 2 --frequency-cap-7-days 5 --input ${await input({name: 'Combined', messagesArray})} --json`,
+  )
+  expect(result.error).toBeUndefined()
+  expect(server.requests).toHaveLength(1)
+  expect(server.requests[0]).toMatchObject({
+    method: 'POST',
+    url: '/platform/campaigns',
+  })
+  expect(JSON.parse(server.requests[0]!.body)).toEqual({
+    projectId: 'p',
+    name: 'Combined',
+    messagesArray,
+    segmentId: 's',
+    drip: {enrollment: 'continuous'},
+    frequencyCap: {maxPer24Hours: 2, maxPer7Days: 5},
+  })
+})
+
+test.each(['--project-id p', '--project-slug p'])(
+  'updates cap and drip together through %s without supplying omitted exit flags',
+  async (selector) => {
+    server = await startHttpServer({body: {data: campaign}})
+    const result = await run(
+      `campaign update c ${selector} --drip-enrollment audience --frequency-cap-24-hours 2 --json`,
+    )
+    expect(result.error).toBeUndefined()
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]).toMatchObject({
+      method: 'PATCH',
+      url: selector.includes('project-id')
+        ? '/platform/campaigns/c?projectId=p'
+        : '/messaging/projects/p/campaigns/c',
+    })
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({
+      drip: {enrollment: 'audience'},
+      frequencyCap: {maxPer24Hours: 2, maxPer7Days: null},
+    })
+  },
+)
+
+test.each(['--project-id p', '--project-slug p'])(
+  'does not retry a transient combined settings write through %s',
+  async (selector) => {
+    server = await startHttpServer({
+      status: 503,
+      body: {error: {code: 'unavailable', message: 'Try later'}},
+    })
+    const result = await run(
+      `campaign update c ${selector} --drip-enrollment audience --remove-frequency-cap --json`,
+    )
+    expect(result.error).toBeDefined()
+    expect(server.requests).toHaveLength(1)
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({
+      drip: {enrollment: 'audience'},
+      frequencyCap: null,
+    })
+  },
+)
+
+test('renders cap skips and drip step analytics together', async () => {
+  server = await startHttpServer({
+    body: {
+      data: {
+        campaignId: 'c',
+        drip: stats,
+        frequencyCap: {skippedRecipientCount: 4},
+      },
+    },
+  })
+  const result = await run('campaign analytics c --project-slug p')
+  expect(result.error).toBeUndefined()
+  expect(result.stdout).toContain('Skipped by frequency cap\t4')
+  expect(result.stdout).toContain('Drip enrolled\t3')
+  expect(result.stdout).toContain('Step\tEntered\tWaiting')
+})
