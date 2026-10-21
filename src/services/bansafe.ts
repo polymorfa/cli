@@ -476,9 +476,22 @@ export function renderClaim(claim: BanSafeClaim): string {
     `Measured credits\t${claim.measuredCents}`,
     `Cap credits\t${claim.capCents}`,
     `Window\t${claim.windowStart} to ${claim.windowEnd}`,
+    ...simultaneousCallsEvidence(claim),
     `Summary\t${claim.summary}`,
     `Reason\t${claim.reason}`,
   ].join('\n')
+}
+
+/**
+ * `evidence.simultaneousCalls` comes from the Ban Insurance claim contract
+ * (polymorfa/polymorfa#559) and is newer than the pinned SDK; delete this
+ * widening once the pin includes it.
+ */
+function simultaneousCallsEvidence(claim: BanSafeClaim): string[] {
+  const value: unknown = Reflect.get(claim.evidence, 'simultaneousCalls')
+  return typeof value === 'boolean'
+    ? [`Simultaneous calls on in window\t${value ? 'yes' : 'no'}`]
+    : []
 }
 
 export function renderSafeMode(
