@@ -62,6 +62,81 @@ paths, and links. `--json` prints a result array. Open launches the exact page
 in a browser; `--print` emits its URL instead. These commands use network
 access but do not use your Polymorfa credentials.
 
+## Set up coding agents
+
+Install the [Polymorfa agent kit](https://github.com/polymorfa/agent-kit) in
+coding agents detected on your machine:
+
+```shell
+polymorfa agent setup --dry-run
+polymorfa agent setup
+polymorfa agent setup --client claude --client codex --yes
+```
+
+Setup detects `claude`, `codex`, `gemini`, and `cursor` on PATH. A `~/.cursor`
+directory also detects Cursor. Repeat `--client` to select clients explicitly;
+an unavailable requested client fails. Without `--yes`, setup asks for confirmation
+immediately before the first installation. Instructions and already-installed
+clients need no confirmation. Non-interactive installation requires `--yes`.
+
+| Client      | Installation behavior                                                                                                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code | Adds `polymorfa/agent-kit` as the `polymorfa` marketplace, then installs `polymorfa@polymorfa`. The repository must contain its marketplace manifest.                                          |
+| Codex       | Checks local help for Git marketplace and plugin installation support, then adds the same marketplace and plugin through the native installer. Older versions receive repository instructions. |
+| Gemini CLI  | Installs the repository through `gemini extensions install`, passing `--consent` after setup confirmation.                                                                                     |
+| Cursor      | Prints instructions to install from the Cursor marketplace or repository.                                                                                                                      |
+
+`--dry-run` prints exact installation commands. It may run Codex help probes,
+but never runs installers or reads installation listings. Setup does not load
+Polymorfa profiles, read credentials, or edit client settings directly. Client
+installers manage their own configuration. Their output is withheld because it
+may contain private local data. Each client command has a 120-second deadline and a
+1 MiB UTF-8 output limit. Windows tree cleanup is attempted for up to five more
+seconds. Timeout, overflow and cleanup failure report failed. Each client gets a
+separate result; any failure
+makes the command exit with code 1. Manual instructions are reported separately
+and do not claim installation succeeded.
+
+Repeat runs use native plugin or extension listings to report `already installed`
+when the client can identify the kit. Existing marketplaces are retained only
+when their source matches agent-kit; a name conflict fails without replacing it.
+Installation adds skills, plugin manifests, and the public documentation MCP.
+It does not configure authenticated API access. Marketplace publication, native
+client acceptance, and CLI package publication remain separate steps.
+
+## Generate the CLI reference
+
+```shell
+npm run docs:reference
+npm run docs:reference:check
+```
+
+The generator builds the CLI, creates an oclif manifest from compiled commands,
+and writes `contracts/cli-reference.json`. Schema version 1 includes `cliVersion`
+and sorted public commands with space-separated IDs, summaries, descriptions,
+usage arrays, aliases, positional arguments, flags, examples, and command state.
+It excludes hidden commands, aliases, arguments, and flags. Arguments retain
+positional order; commands and flags are sorted by name. Missing optional scalar
+metadata is `null`, missing text is an empty string, and missing lists are empty.
+Examples contain `command` and `description`; plain oclif examples have an empty
+description. Fallback usage includes positional arguments and `[flags]`; flag
+details live in the separate `flags` array.
+
+The docs site can consume this file to build one `/cli` page per command. This
+repository exports the reference; it does not publish those pages. `npm run
+verify` rebuilds the CLI and fails when the committed reference is stale. Regenerate
+it whenever public command metadata or the package version changes. No timestamp
+or local path is included.
+
+## Browser build
+
+Build the CLI module for a browser, then check the emitted artifact:
+
+    npm run build:browser
+    npm run verify:browser
+
+The registry comes from the real command files. Commands needing the installed CLI remain in that inventory with an unsupported reason. Agent setup is refused before loading its implementation or reading local client configuration; the installer is excluded from the bundle. Verification checks the emitted dependency graph and runs a synthetic text send with no network access. Package and Docs publication remain separate steps.
+
 ## Authentication profiles
 
 Until the backend exposes a revocable CLI device-authorization flow, login
@@ -2661,3 +2736,88 @@ an API deployment exposing Analytics are separate requirements.
 ## Package release workflow
 
 CLI development and release PRs target `main`. Nightly packages use the `dev` npm tag after matching staging API acceptance; stable packages follow production acceptance. Each package pins an exact accepted SDK version. See [the release guide](RELEASING.md).
+
+### Audience segments and drip sequences (publication pending)
+
+These commands are prepared in source and await the matching SDK prerelease.
+The existing SDK dependency is unchanged. Server beta access and scopes still
+apply; source CI does not establish package or hosted availability.
+
+```sh
+polymorfa campaign segments list --limit 25
+polymorfa campaign segments get <segmentId>
+polymorfa campaign segments create --input segment.json
+polymorfa campaign segments update <segmentId> --input segment-update.json
+polymorfa campaign segments delete <segmentId> --revision <observedRevision>
+polymorfa campaign segments count <segmentId>
+polymorfa campaign segments count --input rules.json
+polymorfa campaign create --segment <segmentId> --project-id <projectId> --input campaign.json --drip --drip-enrollment continuous
+polymorfa campaign update <campaignId> --project-slug <slug> --drip-enrollment audience
+polymorfa campaign enroll <campaignId> --project-slug <slug> --phone +5511999990000
+polymorfa campaign analytics <campaignId> --project-slug <slug>
+polymorfa campaign view <campaignId> --project-slug <slug>
+```
+
+Segment creation input is `{ "name": "VIP", "rules": { "match": "all",
+"groups": [{ "match": "all", "conditions": [{ "field": "tag",
+"operator": "contains", "value": "vip" }] }] } }`. Update includes the observed
+`expectedRevision` and the name, rules or both. Count accepts a saved segment ID
+or a file containing only the rules object. Saved count reports the evaluated
+revision; launch evaluates again and freezes the snapshot. Counts distinguish
+matched, opted out, withheld consent and eligible profiles.
+
+Segments require a team API key. Reads and saved count require `campaigns:read`;
+mutations and unsaved count require `campaigns:manage`. Both audience betas are
+required for create/update/count. Read/delete remain available after withdrawal.
+A stale revision, a segment in use by a draft, a deleted-segment relaunch or a
+bounded evaluation timeout returns 409. Re-read and reconcile stale revisions;
+simplify rules before retrying a timeout. Permission/beta errors stay 403.
+
+Use `--drip-exit-on-reply` / `--no-drip-exit-on-reply` and
+`--drip-exit-on-link-click` / `--no-drip-exit-on-link-click` to set explicit
+flags. Omitted PATCH fields preserve stored settings. Close enrollment with
+only `--drip-enrollment audience`; use `--remove-drip` only on an unlaunched
+draft. Steps belong in the JSON input's `messagesArray`: delays up to 30 days,
+whole multiples of `delayUnit`, and later-step `sendWindow` with one to seven
+weekdays and one to four hour ranges. Link GETs from scanners/previews also
+trigger enabled exits; HEAD does not. Beta, linked-device/test sender, consent,
+opt-out and funding checks remain authoritative.
+
+Enrollment is idempotent per phone, including completed/exited contacts. An
+existing contact displays "Already enrolled"; an opted-out contact stays
+skipped. Add `--variables variables.json` for per-contact variables. View shows
+configured enrollment open/closed, current pause reason when present and live
+per-step stats. Analytics shows entered/waiting/sent/delivered/read/replied/
+exited/failed per step. `--json` retains the response data and metadata.
+
+Composed drips use `campaign create --project-id <projectId> --drip --input
+campaign.json` even without a segment. Platform accepts `messagesArray`; the
+Messaging create contract does not. Use `campaign update <campaignId>
+--project-id <projectId> --input changes.json` to replace composed steps. Use
+exactly one project selector. Platform create has no idempotency-key contract;
+`--idempotency-key` is supported only with Messaging create (`--project-slug`).
+
+### Campaign contact frequency caps (beta)
+
+```sh
+polymorfa campaign settings frequency-cap get
+polymorfa campaign settings frequency-cap set --max-per-24-hours 2 --max-per-7-days 5 --revision 0
+polymorfa campaign settings frequency-cap remove --revision 1
+polymorfa campaign create --project-slug launch --input campaign.json --frequency-cap-24-hours 1
+polymorfa campaign update CAMPAIGN_ID --project-slug launch --frequency-cap-24-hours 1
+polymorfa campaign update CAMPAIGN_ID --project-slug launch --remove-frequency-cap
+polymorfa campaign recipients list CAMPAIGN_ID --project-slug launch --status skipped --reason frequency_cap
+```
+
+Read the revision before setting or removing team limits. A stale write returns
+409; read again and reconcile before retrying. Set replaces both windows; an
+omitted window means no limit. Team settings require a team API key with
+`campaigns:read` or `campaigns:manage`. New limits require beta access and can
+return `403 feature_unavailable`; removal does not require beta access.
+Campaign flags replace the campaign cap and keep the team cap in force.
+Campaign analytics shows `Skipped by frequency cap`; recipient output includes
+`frequency_cap`. Changing limits never retries settled skips.
+
+This implementation keeps the published SDK pin unchanged. Release waits for a
+matching SDK prerelease and accepted API contract; source support does not imply
+package publication or beta availability.

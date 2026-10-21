@@ -1,14 +1,30 @@
 {
-  "name": "@polymorfa/cli",
-  "version": "0.1.0-dev.0",
-  "description": "The official command-line interface for Polymorfa",
-  "type": "module",
-  "license": "MIT",
-  "engines": {
-    "node": ">=22"
-  },
   "bin": {
     "polymorfa": "./bin/run.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/server": "2.3.1",
+    "@napi-rs/keyring": "1.3.0",
+    "@oclif/core": "^4.13.5",
+    "@polymorfa/sdk": "0.1.0-dev.20261004024706",
+    "jq-wasm": "3.0.0-jq-1.8.2",
+    "zod": "4.6.7"
+  },
+  "description": "The official command-line interface for Polymorfa",
+  "devDependencies": {
+    "@eslint/js": "^9.39.5",
+    "@oclif/test": "^4.1.22",
+    "@types/node": "^24.0.0",
+    "esbuild": "^0.28.2",
+    "eslint": "^9.39.5",
+    "prettier": "^3.9.6",
+    "tsx": "^4.20.6",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.67.0",
+    "vitest": "3.2.7"
+  },
+  "engines": {
+    "node": ">=22"
   },
   "files": [
     "bin/run.js",
@@ -17,37 +33,8 @@
     "README.md",
     "LICENSE"
   ],
-  "scripts": {
-    "audit:prod": "npm audit --omit=dev",
-    "build": "npm run clean && tsc -p tsconfig.build.json",
-    "clean": "node scripts/clean-dist.js",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "lint": "eslint .",
-    "prepare": "npm run build",
-    "test": "vitest run",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm pack --dry-run --ignore-scripts && npm run audit:prod"
-  },
-  "dependencies": {
-    "@modelcontextprotocol/server": "2.0.0",
-    "@napi-rs/keyring": "1.3.0",
-    "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "0.1.0-dev.20261004024706",
-    "jq-wasm": "3.0.0-jq-1.8.2",
-    "zod": "4.2.0"
-  },
-  "devDependencies": {
-    "@eslint/js": "^9.39.5",
-    "@oclif/test": "^4.1.22",
-    "@types/node": "^24.0.0",
-    "eslint": "^9.39.5",
-    "prettier": "^3.9.6",
-    "tsx": "^4.20.6",
-    "typescript": "^6.0.3",
-    "typescript-eslint": "^8.67.0",
-    "vitest": "3.2.7"
-  },
+  "license": "MIT",
+  "name": "@polymorfa/cli",
   "oclif": {
     "bin": "polymorfa",
     "dirname": "polymorfa",
@@ -332,6 +319,9 @@
       },
       "analytics": {
         "description": "Read WhatsApp number activity and operational vitals."
+      },
+      "agent": {
+        "description": "Set up coding agents with the Polymorfa agent kit."
       }
     }
   },
@@ -344,5 +334,23 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/polymorfa/cli.git"
-  }
+  },
+  "scripts": {
+    "audit:prod": "npm audit --omit=dev",
+    "build": "npm run clean && tsc -p tsconfig.build.json",
+    "build:browser": "node scripts/gen-browser-registry.mjs && node scripts/build-browser.mjs",
+    "clean": "node scripts/clean-dist.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "lint": "eslint .",
+    "prepare": "npm run build",
+    "test": "vitest run",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node --test scripts/cli-reference.test.mjs && node scripts/cli-reference.mjs --check && npm run verify:browser && npm pack --dry-run --ignore-scripts && npm run audit:prod",
+    "docs:reference": "npm run build && node scripts/cli-reference.mjs",
+    "docs:reference:check": "npm run build && node scripts/cli-reference.mjs --check",
+    "verify:browser": "node scripts/verify-browser.mjs"
+  },
+  "type": "module",
+  "version": "0.1.0-dev.0"
 }
