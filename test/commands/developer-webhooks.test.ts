@@ -495,6 +495,41 @@ describe('developer webhook commands', () => {
     },
   )
 
+  test('updates native batching settings without input and can disable after withdrawal', async () => {
+    stdout()
+    await developerEnvironment(() =>
+      WebhookUpdate.run([
+        'wh_1',
+        '--owner',
+        'organization',
+        '--batching',
+        'on',
+        '--batch-max-events',
+        '2',
+        '--batch-window-ms',
+        '100',
+        '--json',
+      ]),
+    )
+    expect(findCall('webhooks.update').args[1]).toEqual({
+      batching: {enabled: true, maxEvents: 2, windowMs: 100},
+    })
+    state.calls.splice(0)
+    await developerEnvironment(() =>
+      WebhookUpdate.run([
+        'wh_1',
+        '--owner',
+        'organization',
+        '--batching',
+        'off',
+        '--json',
+      ]),
+    )
+    expect(findCall('webhooks.update').args[1]).toEqual({
+      batching: {enabled: false},
+    })
+  })
+
   test('requires an input or a start day for updates', async () => {
     const stderr = vi
       .spyOn(process.stderr, 'write')
@@ -504,7 +539,7 @@ describe('developer webhook commands', () => {
     ).catch((caught: unknown) => caught)
     expect(exitCode(error)).toBe(2)
     expect(String(stderr.mock.calls.flat().join(''))).toContain(
-      'Provide --input or --phone-offline-start-day.',
+      'Provide --input, --phone-offline-start-day or --batching.',
     )
     expect(state.calls).toHaveLength(0)
   })
