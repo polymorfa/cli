@@ -1,4 +1,8 @@
 import {
+  frequencyCapFlags,
+  frequencyCapInput,
+} from '../../services/campaign-frequency-cap.js'
+import {
   campaignRequest,
   dripFlags,
   dripInput,
@@ -17,6 +21,7 @@ export default class CampaignCreate extends BaseCommand {
 
   static override flags = {
     ...dripFlags,
+    ...frequencyCapFlags,
     segment: Flags.string({
       description:
         'Saved audience segment ID (team key; requires --project-id).',
@@ -40,7 +45,10 @@ export default class CampaignCreate extends BaseCommand {
 
   async run(): Promise<void> {
     const {flags} = await this.parse(CampaignCreate)
-    const body = dripInput(await readJsonInput(flags.input), flags)
+    const body = frequencyCapInput(
+      dripInput(await readJsonInput(flags.input), flags),
+      flags,
+    )
     if (
       (flags.segment !== undefined ||
         body.segmentId != null ||

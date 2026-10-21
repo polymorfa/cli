@@ -1,3 +1,7 @@
+import {
+  frequencyCapFlags,
+  frequencyCapInput,
+} from '../../services/campaign-frequency-cap.js'
 import {Args, Flags} from '@oclif/core'
 import type {Campaign} from '@polymorfa/sdk'
 import {BaseCommand} from '../../base-command.js'
@@ -10,12 +14,13 @@ import {
 import {renderCampaign} from '../../services/campaigns.js'
 export default class CampaignUpdate extends BaseCommand {
   static override description =
-    'Update a campaign. Omitted drip fields preserve stored values; enrollment-only audience closes enrollment.'
+    'Update a campaign. Omitted drip fields preserve stored values; enrollment-only audience closes enrollment. Cap flags replace the campaign cap; omitted cap windows have no campaign limit.'
   static override args = {
     campaign: Args.string({required: true, description: 'Campaign ID.'}),
   }
   static override flags = {
     ...dripFlags,
+    ...frequencyCapFlags,
     'project-id': Flags.string({
       description: 'Owning project ID (Platform content and settings).',
     }),
@@ -26,12 +31,15 @@ export default class CampaignUpdate extends BaseCommand {
   }
   async run(): Promise<void> {
     const {args, flags} = await this.parse(CampaignUpdate)
-    const body = dripInput(
-      flags.input === undefined ? {} : await readJsonInput(flags.input),
+    const body = frequencyCapInput(
+      dripInput(
+        flags.input === undefined ? {} : await readJsonInput(flags.input),
+        flags,
+      ),
       flags,
     )
     if (Object.keys(body).length === 0)
-      this.error('Pass --input or drip flags.')
+      this.error('Pass --input, drip flags or frequency cap flags.')
     if (
       (flags['project-id'] === undefined) ===
       (flags['project-slug'] === undefined)

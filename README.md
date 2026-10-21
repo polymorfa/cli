@@ -1918,6 +1918,11 @@ polymorfa webhook create \
   --input webhook.json \
   --secret-out ./webhook.secret
 
+polymorfa webhook update webhook_123 \
+  --owner project \
+  --project project_123 \
+  --phone-offline-start-day 8
+
 polymorfa webhook test webhook_123 \
   --owner project \
   --project project_123 \
@@ -1932,6 +1937,14 @@ polymorfa webhook delivery attempt list delivery_123 \
   --owner project \
   --project project_123
 ```
+
+`--phone-offline-start-day` on `webhook create` and `webhook update` sets the
+first day without the phone, from `7` to `13`, on which the webhook receives
+`session.phone_offline`. The API default is `10`. `off` removes that event from
+the webhook's event types; `webhook update` reads the saved event types when
+`--input` has none, and refuses `off` when it would leave no event. `webhook
+update` accepts the flag without `--input`. See
+[Phone offline warnings](https://docs.polymorfa.com/api/webhooks#phone-offline-warnings).
 
 `webhook test` requires `--event`. Team tests accept that event type only.
 Project tests can also read a JSON object with `body` and `sessionId` from
@@ -2702,3 +2715,28 @@ Messaging create contract does not. Use `campaign update <campaignId>
 --project-id <projectId> --input changes.json` to replace composed steps. Use
 exactly one project selector. Platform create has no idempotency-key contract;
 `--idempotency-key` is supported only with Messaging create (`--project-slug`).
+
+### Campaign contact frequency caps (beta)
+
+```sh
+polymorfa campaign settings frequency-cap get
+polymorfa campaign settings frequency-cap set --max-per-24-hours 2 --max-per-7-days 5 --revision 0
+polymorfa campaign settings frequency-cap remove --revision 1
+polymorfa campaign create --project-slug launch --input campaign.json --frequency-cap-24-hours 1
+polymorfa campaign update CAMPAIGN_ID --project-slug launch --frequency-cap-24-hours 1
+polymorfa campaign update CAMPAIGN_ID --project-slug launch --remove-frequency-cap
+polymorfa campaign recipients list CAMPAIGN_ID --project-slug launch --status skipped --reason frequency_cap
+```
+
+Read the revision before setting or removing team limits. A stale write returns
+409; read again and reconcile before retrying. Set replaces both windows; an
+omitted window means no limit. Team settings require a team API key with
+`campaigns:read` or `campaigns:manage`. New limits require beta access and can
+return `403 feature_unavailable`; removal does not require beta access.
+Campaign flags replace the campaign cap and keep the team cap in force.
+Campaign analytics shows `Skipped by frequency cap`; recipient output includes
+`frequency_cap`. Changing limits never retries settled skips.
+
+This implementation keeps the published SDK pin unchanged. Release waits for a
+matching SDK prerelease and accepted API contract; source support does not imply
+package publication or beta availability.
