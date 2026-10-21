@@ -45,6 +45,10 @@ export default class CampaignCreate extends BaseCommand {
 
   async run(): Promise<void> {
     const {flags} = await this.parse(CampaignCreate)
+    if (flags['remove-drip'])
+      this.error(
+        '--remove-drip only applies to an existing unlaunched draft. Use campaign update.',
+      )
     const body = frequencyCapInput(
       dripInput(await readJsonInput(flags.input), flags),
       flags,

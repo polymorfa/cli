@@ -349,3 +349,54 @@ test('renders cap skips and drip step analytics together', async () => {
   expect(result.stdout).toContain('Drip enrolled\t3')
   expect(result.stdout).toContain('Step\tEntered\tWaiting')
 })
+
+test.each(['--project-id p', '--project-slug p'])(
+  'rejects drip removal on create through %s before HTTP',
+  async (selector) => {
+    server = await startHttpServer({body: {data: campaign}})
+    const result = await run(
+      `campaign create ${selector} --remove-drip --input ${await input({name: 'Ordinary'})} --json`,
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stdout + result.stderr).toContain(
+      '--remove-drip only applies to an existing unlaunched draft. Use campaign update.',
+    )
+    expect(server.requests).toHaveLength(0)
+  },
+)
+
+test.each(['--project-id p', '--project-slug p'])(
+  'retains drip removal on update through %s',
+  async (selector) => {
+    server = await startHttpServer({body: {data: campaign}})
+    const result = await run(
+      `campaign update c ${selector} --remove-drip --json`,
+    )
+    expect(result.error).toBeUndefined()
+    expect(server.requests).toHaveLength(1)
+    expect(server.requests[0]).toMatchObject({
+      method: 'PATCH',
+      url: selector.includes('project-id')
+        ? '/platform/campaigns/c?projectId=p'
+        : '/messaging/projects/p/campaigns/c',
+    })
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({drip: null})
+  },
+)
+
+test.each(['--project-id p', '--project-slug p'])(
+  'preserves valid team-only cap selection on create through %s',
+  async (selector) => {
+    server = await startHttpServer({body: {data: campaign}})
+    const result = await run(
+      `campaign create ${selector} --remove-frequency-cap --input ${await input({name: 'Ordinary'})} --json`,
+    )
+    expect(result.error).toBeUndefined()
+    expect(server.requests).toHaveLength(1)
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({
+      name: 'Ordinary',
+      frequencyCap: null,
+      ...(selector.includes('project-id') ? {projectId: 'p'} : {}),
+    })
+  },
+)
