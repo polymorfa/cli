@@ -21,6 +21,10 @@ export default class CampaignRecipientsList extends BaseCommand {
   ]
 
   static override flags = {
+    reason: Flags.string({
+      description:
+        'Filter by recipient failure reason, including frequency_cap.',
+    }),
     cursor: Flags.string({description: 'Continue from this opaque cursor.'}),
     limit: Flags.integer({
       description: 'Request this many recipients. The API defaults to 25.',
@@ -45,6 +49,7 @@ export default class CampaignRecipientsList extends BaseCommand {
       flags['project-slug'],
       args.campaign,
       {
+        ...(flags.reason === undefined ? {} : {reason: flags.reason}),
         ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),
         ...(flags.limit === undefined ? {} : {limit: flags.limit}),
         ...(flags.status === undefined
