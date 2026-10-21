@@ -4,7 +4,7 @@ import {setPriority} from '../../../services/billing-controls.js'
 export default class PrioritySet extends BaseCommand {
   static override summary = 'Set a project or number funding priority.'
   static override description =
-    'Requires Pay-As-You-Go and an organization key with billing:manage. Changes future renewal protection and recovery; paid windows keep their expiry.'
+    'Requires Pay-As-You-Go and an team key with billing:manage. Changes future renewal protection and recovery; paid windows keep their expiry.'
   static override args = {
     id: Args.string({required: true, description: 'Project or number UUID.'}),
   }

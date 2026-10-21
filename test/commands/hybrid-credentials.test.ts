@@ -10,8 +10,8 @@ import {
 } from '../helpers/http-server.js'
 
 const project = '11111111-1111-4111-8111-111111111111'
-const apiKey = `pmfa_${'A'.repeat(72)}`
-const projectToken = `pmfa_pt_${'A'.repeat(94)}`
+const apiKey = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+const projectToken = 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const cases = [
   {
     command: 'hybrid-link state --session existing',
@@ -301,7 +301,8 @@ test.each(cases)(
           POLYMORFA_BASE_URL: server.baseUrl,
           POLYMORFA_API_KEY: undefined,
           POLYMORFA_PROJECT_TOKEN: undefined,
-          POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser',
+          POLYMORFA_CLIENT_TOKEN:
+            'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
         },
         async () => {
           const result = await runCommand(`${command} --json`)
@@ -309,7 +310,9 @@ test.each(cases)(
           expect(JSON.parse(result.stderr)).toMatchObject({
             error: {category: 'configuration'},
           })
-          expect(result.stderr).not.toContain('pmfa_ct_browser')
+          expect(result.stderr).not.toContain(
+            'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+          )
         },
       )
       expect(server.requests).toEqual([])
@@ -362,7 +365,7 @@ test('invalid project-token format is rejected before transport', async () => {
           'hybrid-link state --session existing --json',
         )
         expect(result.error).toBeDefined()
-        expect(result.stderr).toContain('canonical pmfa_pt_ v1 format')
+        expect(result.stderr).toContain('canonical pmfa_pt_ opaque format')
         expect(result.stderr).not.toContain('pmfa_pt_invalid')
       },
     )

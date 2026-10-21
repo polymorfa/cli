@@ -18,7 +18,7 @@ describe('dynamic Flow endpoint commands', () => {
     return withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,
-        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_${'A'.repeat(94)}`,
+        POLYMORFA_PROJECT_TOKEN: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_BASE_URL: server!.baseUrl,
       },

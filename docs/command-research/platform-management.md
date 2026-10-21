@@ -57,7 +57,7 @@ session
 ```
 
 The management commands use the public typed organization resources on the
-unified SDK `Client`. They require an organization server API key. Reads require
+unified SDK `Client`. They require an team key. Reads require
 `sessions:read`; key revocation and incident acknowledgement require
 `sessions:manage`; batch session stop/delete also require `sessions:manage`.
 Project tokens and Messaging browser client tokens are rejected before
@@ -85,7 +85,7 @@ without cursor semantics.
 `session-ban list --active` keeps one discovery command while selecting the
 SDK's distinct active-only operation. Incident acknowledgement is repeatable,
 has no confirmation gate, and sends no body. `acknowledgedBy` may be empty when
-an organization key performed the acknowledgement.
+an team key performed the acknowledgement.
 
 The original singular Platform operation view was removed. Operation
 inspection is console-only at API contract 1600403, and the pinned SDK has no

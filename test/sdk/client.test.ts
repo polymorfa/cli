@@ -20,8 +20,7 @@ describe('createRawClient', () => {
       surface: 'platform',
       credential: {
         type: 'apiKey',
-        value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
     })
 
@@ -31,7 +30,11 @@ describe('createRawClient', () => {
   test('returns the public Messaging raw client', () => {
     const client = createRawClient({
       surface: 'messaging',
-      credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
+      credential: {
+        type: 'clientToken',
+        value:
+          'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+      },
     })
 
     expect(client).toBeInstanceOf(RawClient)
@@ -41,11 +44,13 @@ describe('createRawClient', () => {
     expect(() =>
       createRawClient({
         surface: 'platform',
-        credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
+        credential: {
+          type: 'clientToken',
+          value:
+            'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+        },
       }),
-    ).toThrow(
-      'Client and project tokens cannot be used as organization server API keys.',
-    )
+    ).toThrow('Client and project tokens cannot be used as team keys.')
   })
 
   test('creates a typed Messaging client with session and operation resources', () => {
@@ -53,8 +58,7 @@ describe('createRawClient', () => {
       surface: 'messaging',
       credential: {
         type: 'apiKey',
-        value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       timeoutMs: 1234,
     })
@@ -72,8 +76,7 @@ describe('createRawClient', () => {
     const client = createMessagingClient({
       credential: {
         type: 'projectToken',
-        value:
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       surface: 'messaging',
     })
@@ -87,8 +90,7 @@ describe('createRawClient', () => {
       surface: 'platform',
       credential: {
         type: 'apiKey',
-        value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
     })
 
@@ -110,8 +112,7 @@ describe('createRawClient', () => {
         surface: 'messaging',
         credential: {
           type: 'apiKey',
-          value:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         },
       }),
     ).toThrow('requires the Platform API surface')
@@ -127,8 +128,7 @@ describe('createRawClient', () => {
         baseUrl: server.baseUrl,
         credential: {
           type: 'apiKey',
-          value:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         },
         surface: 'platform',
       }).project('11111111-1111-4111-8111-111111111111')
@@ -143,7 +143,7 @@ describe('createRawClient', () => {
         url: '/platform/projects/11111111-1111-4111-8111-111111111111/events?limit=25',
       })
       expect(server.requests[0]?.headers.authorization).toBe(
-        'Bearer pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'Bearer pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       )
     } finally {
       await server.close()

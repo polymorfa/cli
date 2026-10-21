@@ -6,7 +6,7 @@ import {
 
 export default class SessionList extends BaseCommand {
   static override description =
-    'List session metadata for the team or one project. Requires an organization API key with sessions:read.'
+    'List session metadata for the team or one project. Requires an team key with sessions:read.'
   static override examples = [
     '<%= config.bin %> session list',
     '<%= config.bin %> session list --project PROJECT_ID --json',
