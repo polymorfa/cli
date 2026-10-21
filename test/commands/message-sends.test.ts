@@ -637,7 +637,7 @@ describe('typed message send commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
-  test('sends buttons of every supported type', async () => {
+  test('sends three CTA buttons', async () => {
     server = await messageServer()
 
     const result = await send([
@@ -653,8 +653,6 @@ describe('typed message send commands', () => {
       '--footer',
       'Thanks',
       '--button',
-      'reply:yes=Yes',
-      '--button',
       'url:Open=https://example.com/a?b=c',
       '--button',
       '"call:Call us=+15550001111"',
@@ -669,7 +667,6 @@ describe('typed message send commands', () => {
         buttons: {
           body: 'Pick',
           buttons: [
-            {id: 'yes', text: 'Yes', type: 'reply'},
             {text: 'Open', type: 'url', url: 'https://example.com/a?b=c'},
             {phoneNumber: '+15550001111', text: 'Call us', type: 'call'},
             {copyCode: 'SAVE10', text: 'Code', type: 'copy'},
@@ -678,6 +675,83 @@ describe('typed message send commands', () => {
         },
       },
     })
+  })
+
+  test('preserves ten replies and a catalog product button', async () => {
+    server = await messageServer()
+    const common = [
+      'message',
+      'send',
+      'buttons',
+      '--session',
+      'session_1',
+      '--to',
+      '730000000001',
+      '--body',
+      'Pick',
+      '--json',
+    ]
+    const result = await send([
+      ...common,
+      ...Array.from({length: 10}, (_, i) => [
+        '--button',
+        `reply:choice-${i}=Choice-${i}`,
+      ]).flat(),
+    ])
+    expect(result.error).toBeUndefined()
+    expect(sentBody()).toMatchObject({
+      content: {
+        buttons: {
+          buttons: Array.from({length: 10}, (_, i) => ({
+            type: 'reply',
+            id: `choice-${i}`,
+            text: `Choice-${i}`,
+          })),
+        },
+      },
+    })
+    const catalog = await send([
+      ...common,
+      '--button',
+      'catalog:Browse=+15550001111|123',
+    ])
+    expect(catalog.error).toBeUndefined()
+    expect(JSON.parse(server.requests.at(-1)!.body)).toMatchObject({
+      content: {
+        buttons: {
+          buttons: [
+            {
+              type: 'catalog',
+              text: 'Browse',
+              businessPhoneNumber: '+15550001111',
+              catalogProductId: '123',
+            },
+          ],
+        },
+      },
+    })
+  })
+
+  test('rejects replies mixed with copy buttons before transport', async () => {
+    server = await messageServer()
+    const result = await send([
+      'message',
+      'send',
+      'buttons',
+      '--session',
+      'session_1',
+      '--to',
+      '730000000001',
+      '--body',
+      'Pick',
+      '--button',
+      'reply:yes=Yes',
+      '--button',
+      'copy:Copy=CODE',
+      '--json',
+    ])
+    expect(exitCode(result.error)).toBe(2)
+    expect(server.requests).toHaveLength(0)
   })
 
   test('rejects malformed buttons before transport', async () => {
@@ -700,6 +774,112 @@ describe('typed message send commands', () => {
 
     expect(exitCode(result.error)).toBe(2)
     expect(result.stderr).toContain('Invalid --button')
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('sends mixed reply, URL and call buttons with a media header once', async () => {
+    server = await messageServer()
+    const result = await send([
+      'message',
+      'send',
+      'buttons',
+      '--session',
+      'session_1',
+      '--to',
+      '730000000001',
+      '--body',
+      'Offer',
+      '--button',
+      'reply:stable=Choose',
+      '--button',
+      'url:Open=https://example.com',
+      '--button',
+      'call:Call=+12025550123',
+      '--media-type',
+      'image',
+      '--url',
+      'https://example.com/image.png',
+      '--idempotency-key',
+      'mixed-once',
+      '--json',
+    ])
+    expect(result.error).toBeUndefined()
+    expect(server.requests).toHaveLength(1)
+    expect(sentBody()).toMatchObject({
+      content: {
+        buttons: {
+          media: {type: 'image', url: 'https://example.com/image.png'},
+          buttons: [
+            {type: 'reply', id: 'stable'},
+            {type: 'url'},
+            {type: 'call'},
+          ],
+        },
+      },
+    })
+    expect(server.requests[0]!.headers['idempotency-key']).toBe('mixed-once')
+  })
+
+  test.each([2, 10])('sends all %i cards as one request', async (count) => {
+    const cards = Array.from({length: count}, (_, index) => ({
+      body: `Card ${index}`,
+      image: {url: 'https://example.com/image.png'},
+      buttons: [{type: 'reply', text: 'Choose', id: `card-${index}`}],
+    }))
+    const file = join(directory, 'cards.json')
+    await writeFile(file, JSON.stringify(cards))
+    server = await messageServer()
+    const result = await send([
+      'message',
+      'send',
+      'carousel',
+      '--session',
+      'session_1',
+      '--to',
+      '730000000001',
+      '--body',
+      'Offers',
+      '--cards',
+      file,
+      '--json',
+    ])
+    expect(result.error).toBeUndefined()
+    expect(server.requests).toHaveLength(1)
+    expect(sentBody()).toMatchObject({
+      content: {carousel: {body: 'Offers', cards}},
+    })
+  })
+
+  test('rejects malformed and duplicate carousel cards before HTTP', async () => {
+    const card = {
+      body: 'Offer',
+      image: {url: 'https://example.com/image.png'},
+      buttons: [{type: 'reply', text: 'Choose', id: 'same'}],
+    }
+    const file = join(directory, 'cards.json')
+    server = await messageServer()
+    for (const cards of [
+      [card],
+      [card, card],
+      [{...card, video: {base64: 'c3ludGhldGlj'}}, card],
+    ]) {
+      await writeFile(file, JSON.stringify(cards))
+      const result = await send([
+        'message',
+        'send',
+        'carousel',
+        '--session',
+        'session_1',
+        '--to',
+        '730000000001',
+        '--body',
+        'Offers',
+        '--cards',
+        file,
+        '--json',
+      ])
+      expect(exitCode(result.error)).toBe(2)
+    }
     expect(server.requests).toHaveLength(0)
   })
 

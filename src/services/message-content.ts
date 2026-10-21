@@ -1,5 +1,7 @@
 import {readFile, stat} from 'node:fs/promises'
 import {basename, extname} from 'node:path'
+import {z} from 'zod'
+import type {InteractiveMediaSource, CarouselCard} from '@polymorfa/sdk'
 
 import {
   PolymorfaConfigurationError,
@@ -144,7 +146,7 @@ export async function mediaSource(
 
 /**
  * Parse `--button` values:
- *   reply:<id>=<text>, url:<text>=<url>, call:<text>=<phone>, copy:<text>=<code>
+ *   reply:<id>=<text>, url:<text>=<url>, call:<text>=<phone>, copy:<text>=<code>, catalog:<text>=<+E.164>[|<product-id>]
  */
 export function parseButton(value: string): MessageButton {
   const colon = value.indexOf(':')
@@ -164,6 +166,22 @@ export function parseButton(value: string): MessageButton {
     case 'call':
       if (!/^\+[1-9]\d{1,14}$/.test(right)) throw invalidButton(value)
       return {type: 'call', text: left, phoneNumber: right}
+    case 'catalog': {
+      const [businessPhoneNumber, catalogProductId, extra] = right.split('|')
+      if (
+        businessPhoneNumber === undefined ||
+        !/^\+[1-9]\d{1,14}$/.test(businessPhoneNumber) ||
+        extra !== undefined ||
+        (catalogProductId !== undefined && !/^[1-9]\d*$/.test(catalogProductId))
+      )
+        throw invalidButton(value)
+      return {
+        type: 'catalog',
+        text: left,
+        businessPhoneNumber,
+        ...(catalogProductId === undefined ? {} : {catalogProductId}),
+      }
+    }
     case 'copy':
       return {type: 'copy', text: left, copyCode: right}
     default:
@@ -173,7 +191,7 @@ export function parseButton(value: string): MessageButton {
 
 function invalidButton(value: string): PolymorfaConfigurationError {
   return new PolymorfaConfigurationError(
-    `Invalid --button "${value}". Use reply:<id>=<text>, url:<text>=<url>, call:<text>=<+E.164>, or copy:<text>=<code>.`,
+    `Invalid --button "${value}". Use reply:<id>=<text>, url:<text>=<url>, call:<text>=<+E.164>, copy:<text>=<code>, or catalog:<text>=<+E.164>[|<product-id>].`,
     'button',
   )
 }
@@ -279,4 +297,187 @@ function escapeVcard(value: string): string {
     .replace(/\n/g, '\\n')
     .replace(/,/g, '\\,')
     .replace(/;/g, '\\;')
+}
+
+/** Linked format limits, checked before credential resolution or HTTP work. */
+export function validateLinkedButtons(
+  buttons: readonly MessageButton[],
+  allowMixed: boolean,
+): void {
+  const replies = buttons.filter((button) => button.type === 'reply')
+  const ctas = buttons.length - replies.length
+  if (
+    buttons.length < 1 ||
+    buttons.length > 10 ||
+    ctas > 3 ||
+    (replies.length > 0 &&
+      ctas > 0 &&
+      (!allowMixed ||
+        buttons.some(
+          (button) => button.type === 'copy' || button.type === 'catalog',
+        )))
+  )
+    throw new PolymorfaConfigurationError(
+      'Use up to ten total buttons and three CTAs. Replies can mix with URL/call; carousel cards use replies or CTAs.',
+      'button',
+    )
+  const ids = new Set<string>()
+  for (const button of buttons) {
+    if (!button.text.trim() || Buffer.byteLength(button.text, 'utf8') > 256)
+      throw new PolymorfaConfigurationError(
+        'Button labels must contain 1–256 UTF-8 bytes.',
+        'button',
+      )
+    if (button.type === 'reply') {
+      if (
+        !button.id.trim() ||
+        Buffer.byteLength(button.id, 'utf8') > 256 ||
+        /\p{Cc}/u.test(button.id) ||
+        ids.has(button.id)
+      )
+        throw new PolymorfaConfigurationError(
+          'Reply IDs must be unique nonempty strings of at most 256 UTF-8 bytes.',
+          'button',
+        )
+      ids.add(button.id)
+    }
+  }
+}
+
+const jsonButton = z.discriminatedUnion('type', [
+  z
+    .object({type: z.literal('reply'), text: z.string(), id: z.string()})
+    .strict(),
+  z
+    .object({
+      type: z.literal('url'),
+      text: z.string(),
+      url: z.string().url().max(2048).startsWith('https://'),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('call'),
+      text: z.string(),
+      phoneNumber: z.string().regex(/^\+?\d{6,20}$/),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('copy'),
+      text: z.string(),
+      copyCode: z.string().min(1).max(256),
+    })
+    .strict(),
+  z
+    .object({
+      type: z.literal('catalog'),
+      text: z.string(),
+      businessPhoneNumber: z.string().regex(/^\+?\d{6,20}$/),
+      catalogProductId: z.string().max(256).optional(),
+    })
+    .strict(),
+])
+const mediaJson = z.object({
+  url: z.string().url().optional(),
+  base64: z
+    .string()
+    .min(1)
+    .regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)
+    .optional(),
+  mimeType: z.string().max(256).optional(),
+})
+const oneSource = (value: {
+  url?: string | undefined
+  base64?: string | undefined
+}) => (value.url === undefined) !== (value.base64 === undefined)
+const cardJson = z.object({
+  body: z
+    .string()
+    .min(1)
+    .refine((s) => Buffer.byteLength(s, 'utf8') <= 4096),
+  footer: z
+    .string()
+    .refine((s) => Buffer.byteLength(s, 'utf8') <= 256)
+    .optional(),
+  buttons: z.array(jsonButton).min(1).max(10),
+})
+const carouselCardsJson = z
+  .array(
+    z.union([
+      cardJson.extend({image: mediaJson.strict().refine(oneSource)}).strict(),
+      cardJson
+        .extend({
+          video: mediaJson
+            .extend({thumbnail: z.string().max(21848).optional()})
+            .strict()
+            .refine(oneSource),
+        })
+        .strict(),
+    ]),
+  )
+  .min(2)
+  .max(10)
+
+export function parseCarouselCards(value: unknown): readonly CarouselCard[] {
+  const parsed = carouselCardsJson.safeParse(value)
+  if (!parsed.success)
+    throw new PolymorfaConfigurationError(
+      'Carousel --cards must contain 2–10 complete image/video cards with one media source per card.',
+      'cards',
+    )
+  const source = (media: {
+    url?: string | undefined
+    base64?: string | undefined
+    mimeType?: string | undefined
+  }): InteractiveMediaSource => {
+    const mime = media.mimeType === undefined ? {} : {mimeType: media.mimeType}
+    return media.url === undefined
+      ? {base64: media.base64!, ...mime}
+      : {url: media.url, ...mime}
+  }
+  const cards: CarouselCard[] = parsed.data.map((card) => {
+    const buttons: MessageButton[] = card.buttons.map((button) =>
+      button.type === 'catalog'
+        ? {
+            type: button.type,
+            text: button.text,
+            businessPhoneNumber: button.businessPhoneNumber,
+            ...(button.catalogProductId === undefined
+              ? {}
+              : {catalogProductId: button.catalogProductId}),
+          }
+        : button,
+    )
+    const common = {
+      body: card.body,
+      buttons,
+      ...(card.footer === undefined ? {} : {footer: card.footer}),
+    }
+    return 'image' in card
+      ? {...common, image: source(card.image)}
+      : {
+          ...common,
+          video: {
+            ...source(card.video),
+            ...(card.video.thumbnail === undefined
+              ? {}
+              : {thumbnail: card.video.thumbnail}),
+          },
+        }
+  })
+  const ids = new Set<string>()
+  for (const card of cards) {
+    validateLinkedButtons(card.buttons, false)
+    for (const button of card.buttons)
+      if (button.type === 'reply') {
+        if (ids.has(button.id))
+          throw new PolymorfaConfigurationError(
+            'Carousel reply IDs must be unique across all cards.',
+            'cards',
+          )
+        ids.add(button.id)
+      }
+  }
+  return cards
 }
