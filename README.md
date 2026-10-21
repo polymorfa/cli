@@ -76,7 +76,8 @@ polymorfa agent setup --client claude --client codex --yes
 Setup detects `claude`, `codex`, `gemini`, and `cursor` on PATH. A `~/.cursor`
 directory also detects Cursor. Repeat `--client` to select clients explicitly;
 an unavailable requested client fails. Without `--yes`, setup asks for confirmation
-before installation. Non-interactive installation requires `--yes`.
+immediately before the first installation. Instructions and already-installed
+clients need no confirmation. Non-interactive installation requires `--yes`.
 
 | Client      | Installation behavior                                                                                                                                                                          |
 | ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

@@ -25,7 +25,8 @@ export type ProcessRunner = (
 export const runProcess: ProcessRunner = (binary, args) =>
   new Promise((resolve) => {
     const child = spawn(binary, [...args], {
-      shell: false,
+      // npm-installed clients use .cmd shims on Windows.
+      shell: process.platform === 'win32',
       stdio: ['ignore', 'pipe', 'ignore'],
       timeout: 120_000,
     })
@@ -144,9 +145,13 @@ function marketplaceExists(stdout: string): boolean {
   if (existing === undefined) return false
   const entry = existing as Record<string, unknown>
   const source = entry.source ?? entry.marketplaceSource
-  if (typeof source !== 'object' || source === null)
-    throw new Error('Unknown marketplace source')
-  const metadata = source as Record<string, unknown>
+  const metadata =
+    typeof source === 'object' && source !== null
+      ? (source as Record<string, unknown>)
+      : typeof source === 'string'
+        ? entry
+        : undefined
+  if (metadata === undefined) throw new Error('Unknown marketplace source')
   const repository = metadata.repo ?? metadata.url ?? metadata.source
   if (
     ![
@@ -165,16 +170,7 @@ export async function setupAgents(
   const runner = options.runner ?? runProcess
   const exists = options.exists ?? binaryExists
   const results: SetupResult[] = []
-  // Obtain consent once, before any client mutation. Dry-run needs no consent.
-  if (!options.dryRun && !options.yes && !(await options.confirm())) {
-    for (const client of options.clients) {
-      options.log(
-        `${client}: failed (installation was not confirmed; use --yes in automation).`,
-      )
-      results.push({client, status: 'failed'})
-    }
-    return results
-  }
+  let consent: boolean | undefined = options.yes ? true : undefined
   for (const client of [...new Set(options.clients)]) {
     try {
       if (client === 'cursor') {
@@ -261,6 +257,15 @@ export async function setupAgents(
           results.push({client, status: 'already installed'})
           continue
         }
+      }
+      // Ask once, only when a client is ready to mutate state.
+      consent ??= await options.confirm()
+      if (!consent) {
+        options.log(
+          `${client}: failed (installation was not confirmed; use --yes in automation).`,
+        )
+        results.push({client, status: 'failed'})
+        continue
       }
       for (const args of commands) {
         if ((await runner(client, args)).code !== 0)

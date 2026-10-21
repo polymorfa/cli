@@ -77,7 +77,7 @@ describe('agent setup', () => {
       true,
     )
   })
-  test('confirms before mutation and declines without calling any client', async () => {
+  test('confirms before mutation and declines after read-only checks', async () => {
     const {runner, confirm, options} = harness({
       clients: ['claude'],
       yes: false,
@@ -86,7 +86,9 @@ describe('agent setup', () => {
     expect(await setupAgents(options)).toEqual([
       {client: 'claude', status: 'failed'},
     ])
-    expect(runner).not.toHaveBeenCalled()
+    expect(runner.mock.calls.every(([, args]) => args.includes('list'))).toBe(
+      true,
+    )
     confirm.mockResolvedValue(true)
     expect(await setupAgents(options)).toEqual([
       {client: 'claude', status: 'installed'},
@@ -97,6 +99,118 @@ describe('agent setup', () => {
       'polymorfa@polymorfa',
     ])
   })
+  test.each(['cursor', 'codex'] as const)(
+    '%s instructions need no consent',
+    async (client) => {
+      const {runner, confirm, options} = harness({
+        clients: [client],
+        yes: false,
+      })
+      confirm.mockResolvedValue(false)
+      runner.mockResolvedValue({code: 1, stdout: ''})
+      expect(await setupAgents(options)).toEqual([
+        {client, status: 'instructions'},
+      ])
+      expect(confirm).not.toHaveBeenCalled()
+    },
+  )
+  test('asks once immediately before mutation and preserves instruction-only results on decline', async () => {
+    const {runner, confirm, options} = harness({
+      clients: ['cursor', 'claude', 'gemini'],
+      yes: false,
+    })
+    confirm.mockImplementation(() => {
+      expect(runner.mock.calls.every(([, args]) => args.includes('list'))).toBe(
+        true,
+      )
+      return Promise.resolve(false)
+    })
+    expect((await setupAgents(options)).map(({status}) => status)).toEqual([
+      'instructions',
+      'failed',
+      'failed',
+    ])
+    expect(confirm).toHaveBeenCalledTimes(1)
+    expect(runner.mock.calls.every(([, args]) => args.includes('list'))).toBe(
+      true,
+    )
+  })
+  test('one confirmation authorizes multiple installer clients', async () => {
+    const {confirm, options} = harness({
+      clients: ['claude', 'gemini'],
+      yes: false,
+    })
+    expect((await setupAgents(options)).map(({status}) => status)).toEqual([
+      'installed',
+      'installed',
+    ])
+    expect(confirm).toHaveBeenCalledTimes(1)
+  })
+  test('already installed clients need no consent', async () => {
+    const {runner, confirm, options} = harness({
+      clients: ['claude'],
+      yes: false,
+    })
+    runner.mockResolvedValue({
+      code: 0,
+      stdout: '[{"id":"polymorfa@polymorfa"}]',
+    })
+    expect(await setupAgents(options)).toEqual([
+      {client: 'claude', status: 'already installed'},
+    ])
+    expect(confirm).not.toHaveBeenCalled()
+  })
+  test.each([
+    {source: 'github', repo: 'polymorfa/agent-kit'},
+    {source: 'git', url: 'https://github.com/polymorfa/agent-kit.git'},
+    {source: {repo: 'polymorfa/agent-kit'}},
+  ])('preserves matching Claude marketplace %j', async (source) => {
+    const {runner, options} = harness({clients: ['claude']})
+    runner.mockImplementation((_binary, args) =>
+      Promise.resolve({
+        code: 0,
+        stdout: args.includes('marketplace')
+          ? JSON.stringify([{name: 'polymorfa', ...source}])
+          : '[]',
+      }),
+    )
+    expect(await setupAgents(options)).toEqual([
+      {client: 'claude', status: 'installed'},
+    ])
+    expect(
+      runner.mock.calls
+        .filter(([, args]) => !args.includes('list'))
+        .map(([, args]) => args),
+    ).toEqual([['plugin', 'install', 'polymorfa@polymorfa']])
+  })
+  test.each([
+    {source: 'github', repo: 'someone/else'},
+    {source: 'git', url: 'https://github.com/someone/else'},
+    {source: 'github'},
+  ])(
+    'refuses conflicting or unknown flat Claude marketplace %j',
+    async (source) => {
+      const {runner, confirm, options} = harness({
+        clients: ['claude'],
+        yes: false,
+      })
+      runner.mockImplementation((_binary, args) =>
+        Promise.resolve({
+          code: 0,
+          stdout: args.includes('marketplace')
+            ? JSON.stringify([{name: 'polymorfa', ...source}])
+            : '[]',
+        }),
+      )
+      expect(await setupAgents(options)).toEqual([
+        {client: 'claude', status: 'failed'},
+      ])
+      expect(confirm).not.toHaveBeenCalled()
+      expect(runner.mock.calls.every(([, args]) => args.includes('list'))).toBe(
+        true,
+      )
+    },
+  )
   test('reports partial failure and continues without exposing child output or exceptions', async () => {
     const {runner, log, options} = harness({clients: ['claude', 'gemini']})
     runner.mockImplementation((binary) =>

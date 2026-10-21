@@ -906,11 +906,11 @@
       ],
       "examples": [
         {
-          "command": "polymorfa  --name \"August launch\" --csv contacts.csv --variable firstName=\"First name\"",
+          "command": "polymorfa audience create --name \"August launch\" --csv contacts.csv --variable firstName=\"First name\"",
           "description": ""
         },
         {
-          "command": "polymorfa  --name \"August launch\" --file-id upload_1 --mapping mapping.json",
+          "command": "polymorfa audience create --name \"August launch\" --file-id upload_1 --mapping mapping.json",
           "description": ""
         }
       ],
@@ -1103,7 +1103,7 @@
       ],
       "examples": [
         {
-          "command": "polymorfa  018f0000-0000-7000-8000-000000000001 --csv contacts.csv",
+          "command": "polymorfa audience members add 018f0000-0000-7000-8000-000000000001 --csv contacts.csv",
           "description": ""
         }
       ],
@@ -16547,7 +16547,7 @@
       ],
       "examples": [
         {
-          "command": "polymorfa  <campaignId> --project-id <projectId> --recipient <recipientId> --event-id order-1001 --event-type purchase --occurred-at 2026-10-01T10:00:00Z --amount-minor 1999 --currency USD",
+          "command": "polymorfa campaign conversions record <campaignId> --project-id <projectId> --recipient <recipientId> --event-id order-1001 --event-type purchase --occurred-at 2026-10-01T10:00:00Z --amount-minor 1999 --currency USD",
           "description": ""
         }
       ],
@@ -16692,7 +16692,7 @@
       ],
       "examples": [
         {
-          "command": "polymorfa  <campaignId> --project-id <projectId>",
+          "command": "polymorfa campaign conversions report <campaignId> --project-id <projectId>",
           "description": ""
         }
       ],
@@ -16718,6 +16718,78 @@
           "description": "Override the API version for this request.",
           "env": null,
           "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "drip",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Enable drip sequences (beta).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "drip-enrollment",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["audience", "continuous"],
+          "description": "Drip enrollment mode. Audience closes continuous enrollment.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "drip-exit-on-link-click",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Stop remaining steps on tracked-link GET, including preview/scanner GETs.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "drip-exit-on-reply",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Stop remaining steps after a reply.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "frequency-cap-24-hours",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Per-contact rolling 24-hour limit (beta).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "frequency-cap-7-days",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Per-contact rolling 7-day limit (beta).",
+          "env": null,
+          "helpGroup": null
         },
         {
           "name": "idempotency-key",
@@ -16804,6 +16876,206 @@
           "helpGroup": "GLOBAL"
         },
         {
+          "name": "project-id",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Owning project ID for Platform campaign content, segments and drip steps.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "project-slug",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Project slug in the Messaging API path.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "remove-drip",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Remove drip settings from an unlaunched draft.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "remove-frequency-cap",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Remove the campaign cap; the team cap still applies.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "segment",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Saved audience segment ID (team key; requires --project-id).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign enroll",
+      "summary": "Enroll one phone in a running or paused continuous drip (beta). Existing enrollments never restart.",
+      "description": "Enroll one phone in a running or paused continuous drip (beta). Existing enrollments never restart.",
+      "usage": ["polymorfa campaign enroll CAMPAIGN [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "campaign",
+          "description": "Campaign ID.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "phone",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "International phone number.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
           "name": "project-slug",
           "char": null,
           "type": "option",
@@ -16811,7 +17083,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Project slug in the Messaging API path.",
+          "description": "Owning project slug.",
           "env": null,
           "helpGroup": null
         },
@@ -16838,6 +17110,18 @@
           "description": "Fail the request after this many milliseconds.",
           "env": null,
           "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "variables",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Variables JSON file or stdin (-).",
+          "env": null,
+          "helpGroup": null
         },
         {
           "name": "verbose",
@@ -17503,11 +17787,11 @@
       ],
       "examples": [
         {
-          "command": "polymorfa  018f0000-0000-7000-8000-000000000001 --project-slug launch --csv contacts.csv --variable firstName=\"First name\"",
+          "command": "polymorfa campaign recipients add 018f0000-0000-7000-8000-000000000001 --project-slug launch --csv contacts.csv --variable firstName=\"First name\"",
           "description": ""
         },
         {
-          "command": "polymorfa  018f0000-0000-7000-8000-000000000001 --project-slug launch --input recipients.json",
+          "command": "polymorfa campaign recipients add 018f0000-0000-7000-8000-000000000001 --project-slug launch --input recipients.json",
           "description": ""
         }
       ],
@@ -17650,6 +17934,18 @@
           "helpGroup": "GLOBAL"
         },
         {
+          "name": "reason",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Filter by recipient failure reason, including frequency_cap.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
           "name": "status",
           "char": null,
           "type": "option",
@@ -17696,7 +17992,7 @@
       ],
       "examples": [
         {
-          "command": "polymorfa  018f0000-0000-7000-8000-000000000001 --project-slug launch --status skipped",
+          "command": "polymorfa campaign recipients list 018f0000-0000-7000-8000-000000000001 --project-slug launch --status skipped",
           "description": ""
         }
       ],
@@ -18019,6 +18315,1243 @@
       "state": null
     },
     {
+      "id": "campaign segments count",
+      "summary": "Count audience segments (team key; beta gates and observed revisions apply).",
+      "description": "Count audience segments (team key; beta gates and observed revisions apply).",
+      "usage": ["polymorfa campaign segments count [SEGMENT] [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "segment",
+          "description": "Saved segment ID.",
+          "required": false,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "input",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Unsaved rules object from JSON file or stdin (-). Use instead of a segment ID.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign segments create",
+      "summary": "Create audience segments (team key; beta gates and observed revisions apply).",
+      "description": "Create audience segments (team key; beta gates and observed revisions apply).",
+      "usage": ["polymorfa campaign segments create [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "input",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "JSON object from file or stdin (-). Update includes expectedRevision.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign segments delete",
+      "summary": "Delete audience segments (team key; beta gates and observed revisions apply).",
+      "description": "Delete audience segments (team key; beta gates and observed revisions apply).",
+      "usage": ["polymorfa campaign segments delete SEGMENT [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "segment",
+          "description": "Saved segment ID.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "revision",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Observed segment revision.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign segments get",
+      "summary": "Get audience segments (team key; beta gates and observed revisions apply).",
+      "description": "Get audience segments (team key; beta gates and observed revisions apply).",
+      "usage": ["polymorfa campaign segments get SEGMENT [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "segment",
+          "description": "Saved segment ID.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign segments list",
+      "summary": "List audience segments (team key; beta gates and observed revisions apply).",
+      "description": "List audience segments (team key; beta gates and observed revisions apply).",
+      "usage": ["polymorfa campaign segments list [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "cursor",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Next page cursor.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "limit",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Page size (1-100).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign segments update",
+      "summary": "Update audience segments (team key; beta gates and observed revisions apply).",
+      "description": "Update audience segments (team key; beta gates and observed revisions apply).",
+      "usage": ["polymorfa campaign segments update SEGMENT [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "segment",
+          "description": "Saved segment ID.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "input",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "JSON object from file or stdin (-). Update includes expectedRevision.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign settings frequency-cap get",
+      "summary": "Read team contact frequency caps and their revision.",
+      "description": "Read team contact frequency caps and their revision.",
+      "usage": ["polymorfa campaign settings frequency-cap get [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign settings frequency-cap remove",
+      "summary": "Remove both team limits, including without beta access. Requires the last read revision.",
+      "description": "Remove both team limits, including without beta access. Requires the last read revision.",
+      "usage": ["polymorfa campaign settings frequency-cap remove [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "revision",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Revision from get. On 409, read again and reconcile before retrying.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign settings frequency-cap set",
+      "summary": "Replace team limits (beta). Omitted windows become unlimited. Stale revisions return 409; no automatic retry.",
+      "description": "Replace team limits (beta). Omitted windows become unlimited. Stale revisions return 409; no automatic retry.",
+      "usage": ["polymorfa campaign settings frequency-cap set [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "max-per-24-hours",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Rolling 24-hour limit; omitted means no limit.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "max-per-7-days",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Rolling 7-day limit; omitted means no limit.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "revision",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Revision from get. On 409, read again and reconcile before retrying.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
       "id": "campaign stop",
       "summary": "Permanently stop a campaign. A campaign with no active delivery run is cancelled immediately and returns no operation ID.",
       "description": "Permanently stop a campaign. A campaign with no active delivery run is cancelled immediately and returns no operation ID.",
@@ -18177,6 +19710,266 @@
           "description": "Confirm this terminal campaign transition.",
           "env": null,
           "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign update",
+      "summary": "Update a campaign. Omitted drip fields preserve stored values; enrollment-only audience closes enrollment. Cap flags replace the campaign cap; omitted cap windows have no campaign limit.",
+      "description": "Update a campaign. Omitted drip fields preserve stored values; enrollment-only audience closes enrollment. Cap flags replace the campaign cap; omitted cap windows have no campaign limit.",
+      "usage": ["polymorfa campaign update CAMPAIGN [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "campaign",
+          "description": "Campaign ID.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "drip",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Enable drip sequences (beta).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "drip-enrollment",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["audience", "continuous"],
+          "description": "Drip enrollment mode. Audience closes continuous enrollment.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "drip-exit-on-link-click",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Stop remaining steps on tracked-link GET, including preview/scanner GETs.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "drip-exit-on-reply",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Stop remaining steps after a reply.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "frequency-cap-24-hours",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Per-contact rolling 24-hour limit (beta).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "frequency-cap-7-days",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Per-contact rolling 7-day limit (beta).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "input",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Changes from JSON file or stdin (-).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project-id",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Owning project ID (Platform content and settings).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "project-slug",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Owning project slug (Messaging settings).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "remove-drip",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Remove drip settings from an unlaunched draft.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "remove-frequency-cap",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Remove the campaign cap; the team cap still applies.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
         }
       ],
       "examples": [],
@@ -46061,11 +47854,11 @@
       ],
       "examples": [
         {
-          "command": "polymorfa  --enabled --opt-out-keyword STOP --opt-out-keyword BAJA --opt-in-keyword START",
+          "command": "polymorfa optout settings update --enabled --opt-out-keyword STOP --opt-out-keyword BAJA --opt-in-keyword START",
           "description": ""
         },
         {
-          "command": "polymorfa  --no-enabled --opt-out-keyword STOP",
+          "command": "polymorfa optout settings update --no-enabled --opt-out-keyword STOP",
           "description": ""
         }
       ],

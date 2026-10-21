@@ -9,10 +9,10 @@ import {resolve} from 'node:path'
 const root = fileURLToPath(new URL('..', import.meta.url))
 const target = new URL('../contracts/cli-reference.json', import.meta.url)
 const words = (id) => id.replaceAll(':', ' ')
-const render = (value) =>
+const render = (value, id) =>
   String(value ?? '')
     .replaceAll('<%= config.bin %>', 'polymorfa')
-    .replaceAll('<%= command.id %>', '')
+    .replaceAll('<%= command.id %>', words(id))
 const byName = ([a], [b]) => (a < b ? -1 : a > b ? 1 : 0)
 
 export function referenceFromManifest(manifest) {
@@ -23,6 +23,7 @@ export function referenceFromManifest(manifest) {
       .sort(byName)
       .filter(([, command]) => !command.hidden)
       .map(([id, command]) => {
+        const renderCommand = (value) => render(value, id)
         const args = Object.entries(command.args ?? {}).filter(
           ([, arg]) => !arg.hidden,
         )
@@ -40,11 +41,11 @@ export function referenceFromManifest(manifest) {
           ].join(' ')
         return {
           id: words(id),
-          summary: render(
+          summary: renderCommand(
             command.summary ?? command.description?.split('\n')[0],
           ),
-          description: render(command.description),
-          usage: (Array.isArray(usage) ? usage : [usage]).map(render),
+          description: renderCommand(command.description),
+          usage: (Array.isArray(usage) ? usage : [usage]).map(renderCommand),
           aliases: [...(command.aliases ?? [])]
             .filter((alias) => !(command.hiddenAliases ?? []).includes(alias))
             .map(words)
@@ -52,7 +53,7 @@ export function referenceFromManifest(manifest) {
           hidden: false,
           args: args.map(([name, arg]) => ({
             name,
-            description: render(arg.description),
+            description: renderCommand(arg.description),
             required: arg.required ?? false,
             options: arg.options ?? [],
           })),
@@ -64,16 +65,16 @@ export function referenceFromManifest(manifest) {
             multiple: flag.multiple ?? false,
             default: flag.default ?? null,
             options: flag.options ?? [],
-            description: render(flag.description),
+            description: renderCommand(flag.description),
             env: flag.env ?? null,
             helpGroup: flag.helpGroup ?? null,
           })),
           examples: (command.examples ?? []).map((example) =>
             typeof example === 'string'
-              ? {command: render(example), description: ''}
+              ? {command: renderCommand(example), description: ''}
               : {
-                  command: render(example.command),
-                  description: render(example.description),
+                  command: renderCommand(example.command),
+                  description: renderCommand(example.description),
                 },
           ),
           state: command.state ?? null,

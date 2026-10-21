@@ -35,8 +35,11 @@ test('exports visible sorted commands and complete public metadata', () => {
           },
         },
         examples: [
-          '<%= config.bin %> z send a',
-          {command: 'polymorfa z send b', description: 'Send to b.'},
+          '<%= config.bin %> <%= command.id %> a',
+          {
+            command: '<%= config.bin %> <%= command.id %> b',
+            description: 'Send to b.',
+          },
         ],
       },
       a: {summary: 'First.', usage: ['polymorfa a']},
