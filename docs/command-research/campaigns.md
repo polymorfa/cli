@@ -99,8 +99,8 @@ server deduplication window. The middleware is mounted after authentication,
 rate limits and client rules, before the campaign routes under `/messaging`.
 Its identity includes the credential, project, method, route, API version and
 key; the fingerprint includes path parameters and the canonical request body.
-A repeated successful request returns `409 idempotency_completed`, not the
-original response body. Changed input returns `409 idempotency_conflict`;
+A repeated request returns the original response, success or error. Changed
+input returns `422 idempotency_conflict`;
 in-flight requests return `idempotency_in_progress`, and uncertain outcomes
 remain fenced as `idempotency_outcome_unknown`. Do not switch keys merely to
 bypass an uncertain result; inspect the campaign or operation first. The SDK

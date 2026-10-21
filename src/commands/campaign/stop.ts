@@ -14,7 +14,7 @@ export default class CampaignStop extends BaseCommand {
   static override flags = {
     'idempotency-key': Flags.string({
       description:
-        'Deduplicate this request for 24 hours. A completed key returns 409 idempotency_completed.',
+        'Deduplicate this request for 1 hour. A repeat with the same key returns the original response.',
     }),
     'project-slug': Flags.string({
       description: 'Project slug in the Messaging API path.',

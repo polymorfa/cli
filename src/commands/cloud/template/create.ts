@@ -20,7 +20,7 @@ export default class CloudTemplateCreate extends BaseCommand {
     }),
     'idempotency-key': Flags.string({
       description:
-        'Key that fences a manual retry: reuse it after an unknown outcome and the API returns idempotency_completed instead of writing again.',
+        'Key that fences a manual retry: reuse it after a lost response and the API returns the original response instead of writing again.',
     }),
   }
   async run(): Promise<void> {
