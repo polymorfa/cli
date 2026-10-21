@@ -1,3 +1,4 @@
+import {batchingFlags, withBatching} from '../../developer/batching.js'
 import {Args, Flags} from '@oclif/core'
 
 import {readJsonInput} from '../../api/request.js'
@@ -16,9 +17,11 @@ export default class WebhookUpdate extends BaseCommand {
     webhook: Args.string({description: 'Webhook ID.', required: true}),
   }
 
-  static override description = 'Update a webhook without rotating its secret.'
+  static override description =
+    'Update a webhook without rotating its secret. Batching is an enrolled native-format beta; off remains available after withdrawal.'
 
   static override flags = {
+    ...batchingFlags,
     'idempotency-key': idempotencyFlag,
     input: Flags.string({
       description:
@@ -30,8 +33,16 @@ export default class WebhookUpdate extends BaseCommand {
   async run(): Promise<void> {
     const {args, flags} = await this.parse(WebhookUpdate)
     const startDay = flags['phone-offline-start-day']
-    if (flags.input === undefined && startDay === undefined) {
-      this.error('Provide --input or --phone-offline-start-day.', {exit: 2})
+    if (
+      flags.input === undefined &&
+      startDay === undefined &&
+      flags.batching === undefined &&
+      flags['batch-max-events'] === undefined &&
+      flags['batch-window-ms'] === undefined
+    ) {
+      this.error('Provide --input, --phone-offline-start-day or --batching.', {
+        exit: 2,
+      })
     }
     let body: Readonly<Record<string, unknown>> =
       flags.input === undefined
@@ -55,6 +66,7 @@ export default class WebhookUpdate extends BaseCommand {
         this.error((error as Error).message, {exit: 2})
       }
     }
+    body = withBatching(body, flags)
     const response = await session.client.webhooks.update(args.webhook, body, {
       ...session.requestOptions,
       idempotencyKey: idempotencyKey(flags['idempotency-key']),
