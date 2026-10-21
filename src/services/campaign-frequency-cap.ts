@@ -49,13 +49,18 @@ export function frequencyCapInput(
     })
   const daily = flags['frequency-cap-24-hours']
   const weekly = flags['frequency-cap-7-days']
-  if (flags['remove-frequency-cap']) return {...input, frequencyCap: null}
-  if (daily === undefined && weekly === undefined) return {...input}
+  if (
+    !flags['remove-frequency-cap'] &&
+    daily === undefined &&
+    weekly === undefined
+  )
+    return {...input}
   if (Object.hasOwn(input, 'frequencyCap'))
     throw new PolymorfaValidationError(
       'Use cap flags or the input frequencyCap field, not both.',
       {code: 'invalid_frequency_cap'},
     )
+  if (flags['remove-frequency-cap']) return {...input, frequencyCap: null}
   if (daily !== undefined && weekly !== undefined && daily > weekly)
     throw new PolymorfaValidationError(
       'The 24-hour limit cannot exceed the 7-day limit.',
