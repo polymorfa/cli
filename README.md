@@ -2656,6 +2656,66 @@ an API deployment exposing Analytics are separate requirements.
 
 CLI development and release PRs target `main`. Nightly packages use the `dev` npm tag after matching staging API acceptance; stable packages follow production acceptance. Each package pins an exact accepted SDK version. See [the release guide](RELEASING.md).
 
+### Audience segments and drip sequences (publication pending)
+
+These commands are prepared in source and await the matching SDK prerelease.
+The existing SDK dependency is unchanged. Server beta access and scopes still
+apply; source CI does not establish package or hosted availability.
+
+```sh
+polymorfa campaign segments list --limit 25
+polymorfa campaign segments get <segmentId>
+polymorfa campaign segments create --input segment.json
+polymorfa campaign segments update <segmentId> --input segment-update.json
+polymorfa campaign segments delete <segmentId> --revision <observedRevision>
+polymorfa campaign segments count <segmentId>
+polymorfa campaign segments count --input rules.json
+polymorfa campaign create --segment <segmentId> --project-id <projectId> --input campaign.json --drip --drip-enrollment continuous
+polymorfa campaign update <campaignId> --project-slug <slug> --drip-enrollment audience
+polymorfa campaign enroll <campaignId> --project-slug <slug> --phone +5511999990000
+polymorfa campaign analytics <campaignId> --project-slug <slug>
+polymorfa campaign view <campaignId> --project-slug <slug>
+```
+
+Segment creation input is `{ "name": "VIP", "rules": { "match": "all",
+"groups": [{ "match": "all", "conditions": [{ "field": "tag",
+"operator": "contains", "value": "vip" }] }] } }`. Update includes the observed
+`expectedRevision` and the name, rules or both. Count accepts a saved segment ID
+or a file containing only the rules object. Saved count reports the evaluated
+revision; launch evaluates again and freezes the snapshot. Counts distinguish
+matched, opted out, withheld consent and eligible profiles.
+
+Segments require a team API key. Reads and saved count require `campaigns:read`;
+mutations and unsaved count require `campaigns:manage`. Both audience betas are
+required for create/update/count. Read/delete remain available after withdrawal.
+A stale revision, a segment in use by a draft, a deleted-segment relaunch or a
+bounded evaluation timeout returns 409. Re-read and reconcile stale revisions;
+simplify rules before retrying a timeout. Permission/beta errors stay 403.
+
+Use `--drip-exit-on-reply` / `--no-drip-exit-on-reply` and
+`--drip-exit-on-link-click` / `--no-drip-exit-on-link-click` to set explicit
+flags. Omitted PATCH fields preserve stored settings. Close enrollment with
+only `--drip-enrollment audience`; use `--remove-drip` only on an unlaunched
+draft. Steps belong in the JSON input's `messagesArray`: delays up to 30 days,
+whole multiples of `delayUnit`, and later-step `sendWindow` with one to seven
+weekdays and one to four hour ranges. Link GETs from scanners/previews also
+trigger enabled exits; HEAD does not. Beta, linked-device/test sender, consent,
+opt-out and funding checks remain authoritative.
+
+Enrollment is idempotent per phone, including completed/exited contacts. An
+existing contact displays "Already enrolled"; an opted-out contact stays
+skipped. Add `--variables variables.json` for per-contact variables. View shows
+configured enrollment open/closed, current pause reason when present and live
+per-step stats. Analytics shows entered/waiting/sent/delivered/read/replied/
+exited/failed per step. `--json` retains the response data and metadata.
+
+Composed drips use `campaign create --project-id <projectId> --drip --input
+campaign.json` even without a segment. Platform accepts `messagesArray`; the
+Messaging create contract does not. Use `campaign update <campaignId>
+--project-id <projectId> --input changes.json` to replace composed steps. Use
+exactly one project selector. Platform create has no idempotency-key contract;
+`--idempotency-key` is supported only with Messaging create (`--project-slug`).
+
 ### Campaign contact frequency caps (beta)
 
 ```sh

@@ -1,4 +1,8 @@
 import {
+  renderDripConfiguration,
+  renderDripStats,
+} from './campaign-segments-drip.js'
+import {
   renderFrequencyCapAnalytics,
   frequencyCapRecipientCell,
 } from './campaign-frequency-cap.js'
@@ -237,6 +241,7 @@ export function renderCampaign(campaign: Campaign): string {
     `Skipped\t${campaign.skippedCount}`,
     `Scheduled\t${formatCampaignTime(campaign.scheduledAt)}`,
     ...renderFollowUpConfiguration(campaign),
+    ...renderDripConfiguration(campaign),
   ].join('\n')
 }
 
@@ -252,6 +257,7 @@ export function renderCampaignAnalytics(analytics: CampaignAnalytics): string {
     `Responded\t${analytics.respondedCount}`,
     `Response rate\t${analytics.responseRate}`,
     ...renderFollowUpAnalytics(analytics),
+    ...renderDripStats(analytics),
     ...renderFrequencyCapAnalytics(analytics),
   ].join('\n')
 }
