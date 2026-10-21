@@ -107,7 +107,7 @@
   "checkedDev": "dafb7cb4e4efbcdcbd04af206f1ef6d47c209379",
   "sdk": {
     "pullRequest": "https://github.com/polymorfa/sdks/pull/360",
-    "sourceCommit": "7eaf8796257a3cc908ea4648de125e689f66fd62",
+    "sourceCommit": "f9937116b17f9962de8a3eb632c44d0399b05002",
     "registryVersion": null,
     "published": false,
     "note": "Wait for an accepted containing SDK prerelease. No Git or file dependency is committed. Candidate local verification only."
