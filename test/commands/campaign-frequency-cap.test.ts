@@ -1,3 +1,6 @@
+import {mkdir, mkdtemp, rm, writeFile} from 'node:fs/promises'
+import {homedir} from 'node:os'
+import {join} from 'node:path'
 import {runCommand} from '@oclif/test'
 import {afterEach, expect, test} from 'vitest'
 import {
@@ -10,10 +13,13 @@ import {
   frequencyCapInput,
 } from '../../src/services/campaign-frequency-cap.js'
 import {renderCampaignRecipients} from '../../src/services/campaigns.js'
+let directory: string | undefined
 let server: TestHttpServer | undefined
 afterEach(async () => {
   await server?.close()
   server = undefined
+  if (directory) await rm(directory, {recursive: true, force: true})
+  directory = undefined
 })
 const settings = {
   teamId: 'team',
@@ -153,3 +159,50 @@ test('recipient reason filter reaches the API and human output shows cap skips',
   ).toEqual(['Skipped by frequency cap\t4'])
   expect(renderFrequencyCapAnalytics({})).toEqual([])
 })
+
+test.each([null, {maxPer24Hours: 2, maxPer7Days: 5}])(
+  'removal rejects an inline cap (%j) with the existing conflict error',
+  (frequencyCap) => {
+    expect(() =>
+      frequencyCapInput({frequencyCap}, {'remove-frequency-cap': true}),
+    ).toThrow('Use cap flags or the input frequencyCap field, not both.')
+    try {
+      frequencyCapInput({frequencyCap}, {'remove-frequency-cap': true})
+    } catch (error) {
+      expect(error).toMatchObject({code: 'invalid_frequency_cap'})
+    }
+    expect(
+      frequencyCapInput({name: 'Launch'}, {'remove-frequency-cap': true}),
+    ).toEqual({name: 'Launch', frequencyCap: null})
+  },
+)
+
+test.each(['create', 'update c'])(
+  '%s rejects inline cap plus removal before HTTP',
+  async (command) => {
+    const base = join(
+      homedir(),
+      '.polymorfa-agent-work/campaigns-overnight-20261021/cli-test-inputs',
+    )
+    await mkdir(base, {recursive: true})
+    directory = await mkdtemp(join(base, 'cap-conflict-'))
+    const file = join(directory, 'campaign.json')
+    await writeFile(
+      file,
+      JSON.stringify({
+        name: 'Launch',
+        frequencyCap: {maxPer24Hours: 2, maxPer7Days: null},
+      }),
+    )
+    server = await startHttpServer({body: {data: settings}})
+    const result = await run(
+      `campaign ${command} --project-slug p --input ${file} --remove-frequency-cap --json`,
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stdout + result.stderr).toContain('invalid_frequency_cap')
+    expect(result.stdout + result.stderr).toContain(
+      'Use cap flags or the input frequencyCap field, not both.',
+    )
+    expect(server.requests).toHaveLength(0)
+  },
+)
