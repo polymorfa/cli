@@ -97,10 +97,6 @@ export interface DeleteAudienceProfileResult {
 export interface ListAudienceProfilesParams {
   /** `page.nextCursor` from the previous page. */
   readonly cursor?: string
-  /** Exact, case-sensitive tag. 1-48 UTF-8 bytes without control characters. */
-  readonly tag?: string
-  /** `+` followed by 1-15 digits. Combined with tag before pagination. */
-  readonly phonePrefix?: string
   /** Profiles per page, 1 to 100. Defaults to 25. */
   readonly limit?: number
 }
@@ -215,10 +211,6 @@ export class AudienceProfilesResource {
       query: {
         ...(params.cursor === undefined ? {} : {cursor: params.cursor}),
         ...(params.limit === undefined ? {} : {limit: params.limit}),
-        ...(params.tag === undefined ? {} : {tag: params.tag}),
-        ...(params.phonePrefix === undefined
-          ? {}
-          : {phonePrefix: params.phonePrefix}),
       },
       ...options,
     })
@@ -249,6 +241,7 @@ export class AudienceProfilesResource {
       path: profilePath(phone),
       body,
       ...options,
+      maxNetworkRetries: 0,
     })
   }
 
@@ -268,6 +261,7 @@ export class AudienceProfilesResource {
       path: profilePath(phone),
       query: {expectedRevision},
       ...options,
+      maxNetworkRetries: 0,
     })
   }
 
@@ -306,6 +300,7 @@ export class AudienceProfilesResource {
         ...(request.mapping === undefined ? {} : {mapping: request.mapping}),
       },
       ...options,
+      maxNetworkRetries: 0,
     })
   }
 
@@ -329,6 +324,7 @@ export class AudienceProfilesResource {
       method: 'DELETE',
       path: importPath(jobId),
       ...options,
+      maxNetworkRetries: 0,
     })
   }
 }

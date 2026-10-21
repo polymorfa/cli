@@ -1,3 +1,4 @@
+import {PolymorfaValidationError} from '@polymorfa/sdk'
 import {Flags} from '@oclif/core'
 import {BaseCommand} from '../../../base-command.js'
 import {AudienceProfilesResource} from '../../../sdk/audience-profiles.js'
@@ -7,7 +8,7 @@ import {
 } from '../../../services/audience-profiles.js'
 export default class ProfilesList extends BaseCommand {
   static override description =
-    'List one page of team audience profiles. Combine exact tag and phone prefix filters; keep them on subsequent pages. Requires a team key with campaigns:read.'
+    'List one page of team audience profiles. Requires a team key with campaigns:read. Tag and phone prefix filters are unavailable.'
   static override flags = {
     cursor: Flags.string({description: 'Continue from this cursor.'}),
     limit: Flags.integer({
@@ -16,14 +17,21 @@ export default class ProfilesList extends BaseCommand {
       description: 'Profiles per page (default 25).',
     }),
     tag: Flags.string({
-      description: 'Exact tag, 1-48 UTF-8 bytes without control characters.',
+      description:
+        'Unavailable: requires API support not yet available (API #567).',
     }),
     'phone-prefix': Flags.string({
-      description: 'International prefix: + and 1-15 digits.',
+      description:
+        'Unavailable: requires API support not yet available (API #567).',
     }),
   }
   async run(): Promise<void> {
     const {flags} = await this.parse(ProfilesList)
+    if (flags.tag !== undefined || flags['phone-prefix'] !== undefined)
+      throw new PolymorfaValidationError(
+        '--tag and --phone-prefix require API support not yet available (API #567).',
+        {code: 'audience_profile_filters_unavailable'},
+      )
     const resource = new AudienceProfilesResource(
       (await this.platformClient(flags)).raw,
     )
@@ -31,10 +39,6 @@ export default class ProfilesList extends BaseCommand {
     const response = await resource.list({
       ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),
       ...(flags.limit === undefined ? {} : {limit: flags.limit}),
-      ...(flags.tag === undefined ? {} : {tag: flags.tag}),
-      ...(flags['phone-prefix'] === undefined
-        ? {}
-        : {phonePrefix: flags['phone-prefix']}),
     })
     this.writeValue(
       profileResult(response),

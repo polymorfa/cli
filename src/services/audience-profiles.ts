@@ -40,9 +40,7 @@ export function renderProfilePage(page: AudienceProfilesEnvelope): string {
   )
   if (rows.length === 0) rows.push('No profiles found.')
   if (page.page.hasMore && page.page.nextCursor !== null)
-    rows.push(
-      `Continue with --cursor ${terminalText(page.page.nextCursor)} and the same filters.`,
-    )
+    rows.push(`Continue with --cursor ${terminalText(page.page.nextCursor)}.`)
   return rows.join('\n')
 }
 export function renderImport(job: AudienceProfileImport): string {

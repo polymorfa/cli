@@ -2652,10 +2652,6 @@ These commands use the pinned SDK's `analytics.get` and `analytics.metrics`
 methods and shared response types. A CLI release containing these commands and
 an API deployment exposing Analytics are separate requirements.
 
-## Package release workflow
-
-CLI development and release PRs target `main`. Nightly packages use the `dev` npm tag after matching staging API acceptance; stable packages follow production acceptance. Each package pins an exact accepted SDK version. See [the release guide](RELEASING.md).
-
 ### Audience profiles (beta)
 
 Use a team API key with `campaigns:read` for reads or `campaigns:manage` for
@@ -2665,8 +2661,8 @@ remain available after withdrawal. These commands are source additions pending
 the matching SDK prerelease and API acceptance.
 
 ```sh
-polymorfa campaign profiles list --tag vip --phone-prefix +44 --limit 50
-polymorfa campaign profiles list --tag vip --phone-prefix +44 --cursor CURSOR
+polymorfa campaign profiles list --limit 50
+polymorfa campaign profiles list --cursor CURSOR
 polymorfa campaign profiles get +14155550123
 polymorfa campaign profiles upsert +14155550123 --input profile.json
 polymorfa campaign profiles consent +14155550123 --limit 25
@@ -2688,8 +2684,12 @@ uses the API's standard column names. Poll the job until `completed` or
 `cancelled`. Cancellation leaves committed edits intact. Replay keys must be
 reused only with the same CSV, mapping and credential.
 
-List filters apply together before paging. Tags match exactly (1-48 UTF-8
-bytes, without ASCII control characters); phone prefixes contain `+` followed
-by 1-15 digits. Keep the same filters when using `--cursor`. `--json` preserves
+`--tag` and `--phone-prefix` require API support not yet available (API #567).
+They fail locally without sending a request; this CLI does not offer profile
+filtering. Listing supports `--cursor` and `--limit`. `--json` preserves
 API envelopes and pagination. The CLI keeps its existing SDK pin and uses a
 local typed adapter until a matching SDK prerelease is published.
+
+## Package release workflow
+
+CLI development and release PRs target `main`. Nightly packages use the `dev` npm tag after matching staging API acceptance; stable packages follow production acceptance. Each package pins an exact accepted SDK version. See [the release guide](RELEASING.md).

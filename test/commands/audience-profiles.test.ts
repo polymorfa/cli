@@ -66,29 +66,65 @@ describe('campaign profiles commands', () => {
       () => runCommand(command),
     )
   }
-  test('combines list filters and cursor, escaping terminal control characters', async () => {
+  test('lists with pagination, escaping terminal control characters', async () => {
     server = await startHttpServer({
       body: {
         data: [{...profile, tags: ['vip\u001b[2J']}],
         page: {nextCursor: 'next', hasMore: true},
       },
     })
-    const result = await run(
-      'campaign profiles list --tag vip --phone-prefix +44 --limit 2 --cursor prev',
-    )
+    const result = await run('campaign profiles list --limit 2 --cursor prev')
     expect(result.error).toBeUndefined()
     const url = new URL(server.requests[0]!.url, 'https://example.com')
     expect(url.pathname).toBe('/platform/audience-profiles')
     expect(Object.fromEntries(url.searchParams)).toEqual({
-      tag: 'vip',
-      phonePrefix: '+44',
       limit: '2',
       cursor: 'prev',
     })
-    expect(server.requests[0]!.url).toContain('%2B44')
     expect(result.stdout).toContain('\\u001b[2J')
     expect(result.stdout).toContain('--cursor next')
   })
+  test.each([
+    '--tag vip',
+    '--phone-prefix +44',
+    '--tag vip --phone-prefix +44',
+  ])('refuses unavailable filters before HTTP: %s', async (flags) => {
+    server = await startHttpServer({
+      body: {data: [profile], page: {hasMore: false, nextCursor: null}},
+    })
+    const result = await run(`campaign profiles list ${flags} --json`)
+    expect(result.error).toBeDefined()
+    expect(result.stdout + result.stderr).toContain(
+      'API support not yet available',
+    )
+    expect(server.requests).toHaveLength(0)
+  })
+  test.each(['upsert', 'delete', 'import', 'cancel'])(
+    'does not retry transient %s failures',
+    async (operation) => {
+      directory = await testDirectory('cli-profile-no-retry-')
+      const bodyFile = join(directory, 'profile.json')
+      const csv = join(directory, 'contacts.csv')
+      await writeFile(
+        bodyFile,
+        JSON.stringify({expectedRevision: 2, tags: [], attributes: {}}),
+      )
+      await writeFile(csv, 'phone,tags,attributes\n')
+      const commands = {
+        upsert: `campaign profiles upsert ${phone} --input ${bodyFile}`,
+        delete: `campaign profiles delete ${phone} --expected-revision 2`,
+        import: `campaign profiles import --csv ${csv} --replay-key no-retry`,
+        cancel: 'campaign profiles imports cancel job-1',
+      }
+      server = await startHttpServer({
+        status: 503,
+        body: {error: {code: 'unavailable', message: 'Try later'}},
+      })
+      const result = await run(commands[operation as keyof typeof commands])
+      expect(result.error).toBeDefined()
+      expect(server.requests).toHaveLength(1)
+    },
+  )
   test('preserves list envelope and pagination in JSON output', async () => {
     const envelope = {data: [profile], page: {nextCursor: null, hasMore: false}}
     server = await startHttpServer({body: envelope})
