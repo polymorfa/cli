@@ -1091,7 +1091,12 @@ never answers or declines on its own.
   does not cover a ban of the number: a claim opens as `denied` with verdict
   `simultaneous_calls`. Turning it on requires `--acknowledge-risk`; without
   it the command exits with code 2 and sends nothing. Only a team API key can
-  turn it on. `--simultaneous-calls=false` needs no acknowledgment.
+  turn it on. `--simultaneous-calls=false` needs no acknowledgment. After it
+  is off, `calls settings get` and `set` print `Ban Insurance exclusion ends`
+  with the server's time (`simultaneousCallsCoverageExcludedUntil` in
+  `--json`), until that time passes. A ban that starts before it is not
+  refunded. Nothing is printed while the setting is on, and a missing or null
+  end does not mean the number is covered.
   `calls settings set` sends only the flags you pass; the other
   settings keep their values. `calls settings get` and `set` print the
   settings `revision`, which increases on every change and is `0` while the

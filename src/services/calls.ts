@@ -300,6 +300,14 @@ export async function ringCallParticipant(
  */
 export type CallSettings = SessionCallSettings & {
   readonly simultaneousCalls?: boolean
+  /**
+   * Preparatory, response-only: while simultaneous calls are off, the server's
+   * time before which Ban Insurance still excludes a new ban (polymorfa/polymorfa#798).
+   * Null while on or with no recent period, and absent from older servers. Null
+   * never means the number is covered. Delete with the extensions above once
+   * an accepted, published SDK supplies it; it is never sent in an update.
+   */
+  readonly simultaneousCallsCoverageExcludedUntil?: string | null
 }
 
 type CallSettingsUpdateBody = UpdateSessionCallSettingsRequest & {
@@ -639,10 +647,28 @@ export function renderCallParticipant(participant: VoipParticipant): string {
     .join('\n')
 }
 
+/**
+ * The exclusion end exactly as the server sent it, while simultaneous calls
+ * are off and that time is still ahead. Anything else prints nothing: an end
+ * that is missing, null or past never becomes a claim of cover.
+ */
+function coverageExclusionEnd(
+  settings: CallSettings,
+  now: number,
+): string | null {
+  const until = settings.simultaneousCallsCoverageExcludedUntil
+  if (settings.simultaneousCalls === true || typeof until !== 'string')
+    return null
+  const at = Date.parse(until)
+  return Number.isNaN(at) || at <= now ? null : until
+}
+
 export function renderCallSettings(
   session: string,
   settings: CallSettings,
+  now: number = Date.now(),
 ): string {
+  const exclusionEnd = coverageExclusionEnd(settings, now)
   return [
     `Session\t${session}`,
     `Calls\t${settings.callsEnabled === false ? 'off' : 'on'}`,
@@ -656,6 +682,9 @@ export function renderCallSettings(
       : []),
     `Cloud API calls answered by\t${settings.hostCloudApiCalls === true ? 'Polymorfa Calls' : 'your Graph API integration'}`,
     `Simultaneous calls\t${settings.simultaneousCalls === true ? 'on (Ban Insurance does not cover this number)' : 'off'}`,
+    ...(exclusionEnd === null
+      ? []
+      : [`Ban Insurance exclusion ends\t${exclusionEnd}`]),
     `Revision\t${settings.revision ?? 0}`,
     `Updated\t${settings.updatedAt ?? 'never (defaults)'}`,
   ].join('\n')

@@ -6,7 +6,7 @@ import {renderCallSettings, viewCallSettings} from '../../../services/calls.js'
 
 export default class CallsSettingsGet extends BaseCommand {
   static override description =
-    'Read a session’s call settings from the Platform API. Sessions without saved settings return the defaults at revision 0. Pass the revision to `calls settings set --expected-revision` so a change cannot overwrite another one. Requires a server API key.'
+    'Read a session’s call settings from the Platform API. Sessions without saved settings return the defaults at revision 0. Pass the revision to `calls settings set --expected-revision` so a change cannot overwrite another one. After simultaneous calls are turned off, it also prints when the Ban Insurance exclusion ends (simultaneousCallsCoverageExcludedUntil), until that time passes; a ban that starts before it is not refunded. No end is printed while simultaneous calls are on, and a missing end does not mean the number is covered. Requires a server API key.'
 
   static override examples = [
     '<%= config.bin %> calls settings get --session support',

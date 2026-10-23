@@ -8,6 +8,10 @@ import {
   type ResponseFixture,
   type TestHttpServer,
 } from '../helpers/http-server.js'
+import {
+  renderCallSettings,
+  type CallSettings,
+} from '../../src/services/calls.js'
 
 const API_KEY =
   'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
@@ -661,6 +665,168 @@ describe('unified calls commands', () => {
       },
       {conferenceMode: true, simultaneousCalls: false},
     ])
+  })
+
+  test('shows the Ban Insurance exclusion end only while off and before it passes', async () => {
+    const until = '2999-11-20T08:00:00.000Z'
+    const off = {
+      callsEnabled: true,
+      conferenceMode: false,
+      hostCloudApiCalls: false,
+      inboundRoute: 'clients',
+      revision: 3,
+      simultaneousCalls: false,
+      sipClaim: true,
+      sipTrunkId: null,
+      updatedAt: '2026-10-21T08:00:00.000Z',
+    }
+    server = await startHttpSequenceServer([
+      {
+        body: {
+          data: {...off, simultaneousCallsCoverageExcludedUntil: until},
+          success: true,
+        },
+      },
+      {
+        body: {
+          data: {...off, simultaneousCallsCoverageExcludedUntil: null},
+          success: true,
+        },
+      },
+      {
+        body: {
+          data: {
+            ...off,
+            simultaneousCalls: true,
+            simultaneousCallsCoverageExcludedUntil: null,
+          },
+          success: true,
+        },
+      },
+      {
+        body: {
+          data: {...off, simultaneousCallsCoverageExcludedUntil: until},
+          success: true,
+        },
+      },
+      {
+        body: {
+          data: {...off, simultaneousCallsCoverageExcludedUntil: null},
+          success: true,
+        },
+      },
+      {body: {data: off, success: true}},
+      {
+        body: {
+          data: {
+            ...off,
+            simultaneousCallsCoverageExcludedUntil: '2020-01-01T00:00:00.000Z',
+          },
+          success: true,
+        },
+      },
+      {
+        body: {
+          data: {
+            ...off,
+            revision: 4,
+            simultaneousCallsCoverageExcludedUntil: until,
+          },
+          success: true,
+        },
+      },
+    ])
+
+    const get = 'calls settings get --session support/main'
+    const dated = await apiKey(() => runCommand(get))
+    const noEnd = await apiKey(() => runCommand(get))
+    const on = await apiKey(() => runCommand(get))
+    const jsonDated = await apiKey(() => runCommand(`${get} --json`))
+    const jsonNull = await apiKey(() => runCommand(`${get} --json`))
+    const legacy = await apiKey(() => runCommand(get))
+    const expired = await apiKey(() => runCommand(get))
+    const turnedOff = await apiKey(() =>
+      runCommand(
+        // The published SDK pin counts only its older settings as a change,
+        // so --simultaneous-calls=false alone fails before any request.
+        'calls settings set --session support/main --conference-mode --simultaneous-calls=false',
+      ),
+    )
+
+    for (const run of [
+      dated,
+      noEnd,
+      on,
+      jsonDated,
+      jsonNull,
+      legacy,
+      expired,
+      turnedOff,
+    ]) {
+      expect(run.error, run.stderr).toBeUndefined()
+    }
+    expect(dated.stdout).toBe(
+      `Session\tsupport/main\nCalls\ton\nConference mode\toff\nIncoming calls\tclients\nCloud API calls answered by\tyour Graph API integration\nSimultaneous calls\toff\nBan Insurance exclusion ends\t${until}\nRevision\t3\nUpdated\t2026-10-21T08:00:00.000Z\n`,
+    )
+    for (const run of [noEnd, legacy, expired]) {
+      expect(run.stdout).toContain('Simultaneous calls\toff\nRevision\t3\n')
+      expect(run.stdout).not.toMatch(/exclusion|cover/i)
+    }
+    expect(on.stdout).toContain(
+      'Simultaneous calls\ton (Ban Insurance does not cover this number)\nRevision\t3\n',
+    )
+    expect(on.stdout).not.toContain('exclusion ends')
+    expect(jsonData(jsonDated.stdout)).toMatchObject({
+      simultaneousCallsCoverageExcludedUntil: until,
+    })
+    expect(jsonData(jsonNull.stdout)).toMatchObject({
+      simultaneousCallsCoverageExcludedUntil: null,
+    })
+    expect(turnedOff.stdout).toContain(
+      `Simultaneous calls\toff\nBan Insurance exclusion ends\t${until}\nRevision\t4\n`,
+    )
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      ...Array.from(
+        {length: 7},
+        () => 'GET /platform/sessions/support%2Fmain/call-settings',
+      ),
+      'PUT /platform/sessions/support%2Fmain/call-settings',
+    ])
+    expect(JSON.parse(server.requests[7]?.body ?? '')).toEqual({
+      conferenceMode: true,
+      simultaneousCalls: false,
+    })
+  })
+
+  test('drops the exclusion end at the exact moment it passes', () => {
+    const until = '2026-11-20T08:00:00.000Z'
+    const settings: CallSettings = {
+      callsEnabled: true,
+      conferenceMode: true,
+      hostCloudApiCalls: false,
+      inboundRoute: 'clients',
+      revision: 3,
+      simultaneousCalls: false,
+      simultaneousCallsCoverageExcludedUntil: until,
+      sipClaim: true,
+      sipTrunkId: null,
+      updatedAt: '2026-10-21T08:00:00.000Z',
+    }
+    const at = Date.parse(until)
+
+    expect(renderCallSettings('support', settings, at - 1)).toContain(
+      `Ban Insurance exclusion ends\t${until}\n`,
+    )
+    expect(renderCallSettings('support', settings, at)).not.toContain(
+      'exclusion ends',
+    )
+    expect(
+      renderCallSettings(
+        'support',
+        {...settings, simultaneousCallsCoverageExcludedUntil: 'not a date'},
+        0,
+      ),
+    ).not.toContain('exclusion ends')
   })
 
   test('guards a change with the expected revision and exits 4 when stale', async () => {
