@@ -1094,8 +1094,9 @@ never answers or declines on its own.
   turn it on. `--simultaneous-calls=false` needs no acknowledgment. After it
   is off, `calls settings get` and `set` print `Ban Insurance exclusion ends`
   with the server's time (`simultaneousCallsCoverageExcludedUntil` in
-  `--json`), until that time passes. A ban that starts before it is not
-  refunded. Nothing is printed while the setting is on, and a missing or null
+  `--json`), until that time passes. Ban Insurance excludes a ban when
+  simultaneous calls were on during the 30 days before it; this timestamp is the
+  cutoff for a new ban from that period. Nothing is printed while the setting is on, and a missing or null
   end does not mean the number is covered.
   `calls settings set` sends only the flags you pass; the other
   settings keep their values. `calls settings get` and `set` print the
