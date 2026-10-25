@@ -10,13 +10,7 @@ import {
   splitWords,
 } from '../../src/browser/index.js'
 import {Buffer as BrowserBuffer} from '../../src/browser/stubs/buffer.js'
-import {
-  join,
-  dirname,
-  basename,
-  extname,
-  resolve,
-} from '../../src/browser/stubs/path.js'
+import * as browserPath from '../../src/browser/stubs/path.js'
 
 // A client token fixture: the SDK checks only the prefix of client tokens.
 const CLIENT_TOKEN = `pmfa_ct_${'fixture'.repeat(6)}`
@@ -131,6 +125,31 @@ describe('browser command runner', () => {
     expect(unknown.stderr).toBe('Unknown command: polymorfa nope nope\n')
   })
 
+  it('runs commands started together one after another', async () => {
+    const order: string[] = []
+    const respond = (url: URL) => {
+      order.push(url.pathname)
+      return json({success: true, data: {id: '3EB0FIXTURE', status: 'sent'}})
+    }
+    const [first, second] = await Promise.all([
+      run(
+        'message send text --session 739182640518203 --to +15550002222 --body one',
+        respond,
+      ),
+      run(
+        'message send text --session 739182640518204 --to +15550002222 --body two',
+        respond,
+      ),
+    ])
+    expect([first.exitCode, second.exitCode]).toEqual([0, 0])
+    expect(first.stdout).toBe('Sent message 3EB0FIXTURE to +15550002222.\n')
+    expect(second.stdout).toBe('Sent message 3EB0FIXTURE to +15550002222.\n')
+    expect(order).toEqual([
+      '/messaging/739182640518203/messages/send',
+      '/messaging/739182640518204/messages/send',
+    ])
+  })
+
   it('restores the process and fetch after each command', async () => {
     const before = {
       fetch: globalThis.fetch,
@@ -186,12 +205,12 @@ describe('browser stand-ins', () => {
   })
 
   it('joins and names POSIX paths', () => {
-    expect(join('/a', 'b', '../c', 'd.txt')).toBe('/a/c/d.txt')
+    expect(browserPath.join('/a', 'b', '../c', 'd.txt')).toBe('/a/c/d.txt')
     expect([
-      dirname('/a/b/c.json'),
-      basename('/a/b/c.json'),
-      extname('/a/b/c.json'),
+      browserPath.dirname('/a/b/c.json'),
+      browserPath.basename('/a/b/c.json'),
+      browserPath.extname('/a/b/c.json'),
     ]).toEqual(['/a/b', 'c.json', '.json'])
-    expect(resolve('/a', 'b')).toBe('/a/b')
+    expect(browserPath.resolve('/a', 'b')).toBe('/a/b')
   })
 })

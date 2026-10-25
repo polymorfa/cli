@@ -20,7 +20,11 @@ export const COMMAND_IDS: readonly string[] =
 export interface BrowserIo {
   /** Environment for the command: `POLYMORFA_PROJECT_TOKEN` or `POLYMORFA_API_KEY`, and optionally `POLYMORFA_BASE_URL`. */
   readonly env: Readonly<Record<string, string>>
-  /** The fetch the SDK uses for this command. */
+  /**
+   * The fetch the SDK uses for this command. While the command runs,
+   * `globalThis.fetch` is this function, so it must call a fetch bound before
+   * the command started, never `globalThis.fetch`.
+   */
   readonly fetch: typeof fetch
   readonly write: (stream: 'stdout' | 'stderr', text: string) => void
 }
@@ -115,15 +119,25 @@ interface ProcessLike {
   stderr: {write: (chunk: unknown) => boolean}
 }
 
-let running = false
+let queue: Promise<unknown> = Promise.resolve()
 
-/** Run one command. Only one runs at a time; the caller waits for the result before the next. */
-export async function runCommand(
+/**
+ * Run one command. Commands share the page's `process` and `fetch`, so only
+ * one runs at a time: a command started while another runs waits for it.
+ */
+export function runCommand(
   words: readonly string[],
   io: BrowserIo,
 ): Promise<RunResult> {
-  if (running) throw new Error('A command is already running.')
-  running = true
+  const result = queue.then(() => runNow(words, io))
+  queue = result.catch(() => undefined)
+  return result
+}
+
+async function runNow(
+  words: readonly string[],
+  io: BrowserIo,
+): Promise<RunResult> {
   // The bare `process`: in the browser build it is the injected stand-in, under Node the real one.
   const proc = process as unknown as ProcessLike
   const saved = {
@@ -180,6 +194,5 @@ export async function runCommand(
     proc.stdout.write = saved.out
     proc.stderr.write = saved.err
     globalThis.fetch = saved.fetch
-    running = false
   }
 }

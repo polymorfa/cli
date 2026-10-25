@@ -4,6 +4,7 @@ import console from 'node:console'
 import {URL} from 'node:url'
 import {readdirSync, statSync, writeFileSync} from 'node:fs'
 import {join, relative} from 'node:path'
+import {format, resolveConfig} from 'prettier'
 
 const root = new URL('../src/commands/', import.meta.url).pathname
 const files = []
@@ -30,5 +31,11 @@ export const COMMAND_LOADERS: Readonly<Record<string, () => Promise<{default: un
 ${entries.join('\n')}
 }
 `
-writeFileSync(new URL('../src/browser/registry.gen.ts', import.meta.url), out)
+const target = new URL('../src/browser/registry.gen.ts', import.meta.url)
+// Formatted like the rest of the source, so the format check passes.
+const options = (await resolveConfig(target.pathname)) ?? {}
+writeFileSync(
+  target,
+  await format(out, {...options, filepath: target.pathname}),
+)
 console.log(`registry: ${files.length} commands`)
