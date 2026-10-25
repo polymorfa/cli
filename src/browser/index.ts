@@ -140,6 +140,7 @@ type WriteCallback = (error?: Error | null) => void
 
 interface EmitterLike {
   listeners: (event: string) => Listener[]
+  on: (event: string, listener: Listener) => unknown
   removeListener: (event: string, listener: Listener) => unknown
 }
 
@@ -244,8 +245,16 @@ async function runNow(
       .listeners(event)
       .filter((listener) => !before[index]!.includes(listener))
   }
+  // An abort before the command registers its SIGINT listener still reaches
+  // it: the listener is called as soon as the command adds it.
+  let interrupted = false
   const interrupt = () => {
+    interrupted = true
     for (const listener of added(0)) listener('SIGINT')
+  }
+  const lateListener = (event: unknown, listener: unknown) => {
+    if (interrupted && event === 'SIGINT' && typeof listener === 'function')
+      queueMicrotask(() => (listener as Listener)('SIGINT'))
   }
   proc.env = {...io.env}
   proc.exitCode = undefined
@@ -253,8 +262,12 @@ async function runNow(
   proc.stderr.write = writer(io, 'stderr')
   globalThis.fetch = io.fetch
   io.signal?.addEventListener('abort', interrupt)
+  proc.on('newListener', lateListener)
   try {
     const module = await COMMAND_LOADERS[resolved.id]!()
+    // Interrupted while its code loaded: it never starts.
+    if (interrupted || io.signal?.aborted)
+      return {exitCode: 130, command: resolved.id}
     // Each module's default export is a concrete oclif command class.
     const CommandClass = module.default as {
       id?: string
@@ -281,6 +294,7 @@ async function runNow(
     return {exitCode: 1, command: resolved.id}
   } finally {
     io.signal?.removeEventListener('abort', interrupt)
+    proc.removeListener('newListener', lateListener)
     tracked.forEach(([emitter, event], index) => {
       for (const listener of added(index))
         emitter.removeListener(event, listener)

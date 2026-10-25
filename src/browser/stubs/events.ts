@@ -4,6 +4,9 @@ type Wrapped = Listener & {listener?: Listener}
 export class EventEmitter {
   #listeners = new Map<string | symbol, Listener[]>()
   on(name: string | symbol, listener: Listener): this {
+    // Like Node: announced before it is added, with a `once` listener unwrapped.
+    if (this.listenerCount('newListener') > 0)
+      this.emit('newListener', name, (listener as Wrapped).listener ?? listener)
     this.#listeners.set(name, [...(this.#listeners.get(name) ?? []), listener])
     return this
   }
@@ -18,13 +21,16 @@ export class EventEmitter {
     wrapped.listener = listener
     return this.on(name, wrapped)
   }
+  /** Removes the most recently added registration of `listener` only, like Node. */
   off(name: string | symbol, listener: Listener): this {
-    this.#listeners.set(
-      name,
-      (this.#listeners.get(name) ?? []).filter(
-        (entry: Wrapped) => entry !== listener && entry.listener !== listener,
-      ),
-    )
+    const list: Wrapped[] = [...(this.#listeners.get(name) ?? [])]
+    for (let index = list.length - 1; index >= 0; index--) {
+      if (list[index] === listener || list[index]!.listener === listener) {
+        list.splice(index, 1)
+        break
+      }
+    }
+    this.#listeners.set(name, list)
     return this
   }
   removeListener(name: string | symbol, listener: Listener): this {
@@ -37,6 +43,12 @@ export class EventEmitter {
   }
   emit(name: string | symbol, ...args: unknown[]): boolean {
     const list = [...(this.#listeners.get(name) ?? [])]
+    // An `error` nobody handles is thrown, as Node does, never dropped.
+    if (name === 'error' && list.length === 0) {
+      throw args[0] instanceof Error
+        ? args[0]
+        : new Error(`Unhandled error. (${String(args[0])})`)
+    }
     for (const listener of list) listener(...args)
     return list.length > 0
   }
