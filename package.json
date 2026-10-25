@@ -20,6 +20,7 @@
   "scripts": {
     "audit:prod": "npm audit --omit=dev",
     "build": "npm run clean && tsc -p tsconfig.build.json",
+    "build:browser": "node scripts/gen-browser-registry.mjs && node scripts/build-browser.mjs",
     "clean": "node scripts/clean-dist.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
