@@ -10,12 +10,20 @@ import {
   splitWords,
 } from '../../src/browser/index.js'
 import {Buffer as BrowserBuffer} from '../../src/browser/stubs/buffer.js'
+import {process as browserProcess} from '../../src/browser/stubs/process.js'
 import * as browserPath from '../../src/browser/stubs/path.js'
 
 // A client token fixture: the SDK checks only the prefix of client tokens.
 const CLIENT_TOKEN = `pmfa_ct_${'fixture'.repeat(6)}`
+// A well-formed team key fixture for Platform commands. Not a real key.
+const API_KEY = `pmfa_${'A'.repeat(72)}`
+const PROJECT = '11111111-1111-4111-8111-111111111111'
 
-function run(line: string, respond: (url: URL, init: RequestInit) => Response) {
+function run(
+  line: string,
+  respond: (url: URL, init: RequestInit) => Response,
+  options: {env?: Record<string, string>; signal?: AbortSignal} = {},
+) {
   const output: {stream: 'stdout' | 'stderr'; text: string}[] = []
   const requests: {method: string; url: URL; authorization: string | null}[] =
     []
@@ -32,9 +40,10 @@ function run(line: string, respond: (url: URL, init: RequestInit) => Response) {
     return Promise.resolve(respond(url, init))
   }
   return runCommand(splitWords(line), {
-    env: {POLYMORFA_CLIENT_TOKEN: CLIENT_TOKEN},
+    env: options.env ?? {POLYMORFA_CLIENT_TOKEN: CLIENT_TOKEN},
     fetch: fetchFixture,
     write: (stream, text) => output.push({stream, text}),
+    ...(options.signal ? {signal: options.signal} : {}),
   }).then((result) => ({
     ...result,
     output,
@@ -74,6 +83,22 @@ describe('browser command runner', () => {
       'a b',
     ])
     expect(() => splitWords('api "open')).toThrow(SyntaxError)
+  })
+
+  it('keeps backslashes inside double quotes unless they escape a special character', () => {
+    expect(
+      splitWords(String.raw`message send text --body "C:\new\path"`),
+    ).toEqual(['message', 'send', 'text', '--body', String.raw`C:\new\path`])
+    expect(splitWords(String.raw`"a\"b \\ \$x \q"`)).toEqual([
+      String.raw`a"b \ $x \q`,
+    ])
+  })
+
+  it('resolves only real commands, not inherited object keys', async () => {
+    expect(resolveCommand(['constructor'])).toBeNull()
+    const result = await run('constructor', () => json({}))
+    expect(result).toMatchObject({exitCode: 2, command: null})
+    expect(result.stderr).toBe('Unknown command: polymorfa constructor\n')
   })
 
   it('resolves the longest command and keeps the rest as arguments', () => {
@@ -150,6 +175,64 @@ describe('browser command runner', () => {
     ])
   })
 
+  it('calls write callbacks and decodes UTF-8 bytes while a command runs', async () => {
+    let flushed = false
+    const result = await run(
+      'message send text --session 739182640518203 --to +15550002222 --body hi',
+      () => {
+        process.stdout.write(new TextEncoder().encode('héllo\n'), () => {
+          flushed = true
+        })
+        return json({success: true, data: {id: '3EB0FIXTURE', status: 'sent'}})
+      },
+    )
+    expect(flushed).toBe(true)
+    expect(result.stdout).toBe(
+      'héllo\nSent message 3EB0FIXTURE to +15550002222.\n',
+    )
+  })
+
+  it('refuses a command whose output is binary audio before it runs', async () => {
+    const result = await run('calls media --session 739182640518203', () =>
+      json({}),
+    )
+    expect(result).toMatchObject({exitCode: 1, command: 'calls media'})
+    expect(result.stderr).toContain('streams call audio as binary PCM')
+    expect(result.requests).toHaveLength(0)
+  })
+
+  it('stops a following command on abort, cleans up, then runs the next', async () => {
+    const before = process.listeners('SIGINT').length
+    const controller = new AbortController()
+    const tail = run(
+      `logs tail --project ${PROJECT} --backfill 0 --poll-interval 1 --json`,
+      () => {
+        setTimeout(() => controller.abort(), 0)
+        return json({
+          data: [],
+          page: {nextCursor: null, hasMore: false, followCursor: 'c1'},
+        })
+      },
+      {env: {POLYMORFA_API_KEY: API_KEY}, signal: controller.signal},
+    )
+    const next = run('nope', () => json({}))
+    const result = await tail
+    expect(result).toMatchObject({exitCode: 0, command: 'logs tail'})
+    expect(result.requests.length).toBeGreaterThan(0)
+    expect((await next).exitCode).toBe(2)
+    expect(process.listeners('SIGINT')).toHaveLength(before)
+  })
+
+  it('reports a command interrupted before it starts', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const result = await run('version', () => json({}), {
+      signal: controller.signal,
+    })
+    expect(result).toMatchObject({exitCode: 130, command: 'version'})
+    expect(result.stdout).toBe('')
+  })
+
   it('restores the process and fetch after each command', async () => {
     const before = {
       fetch: globalThis.fetch,
@@ -183,6 +266,23 @@ describe('browser command registry', () => {
 })
 
 describe('browser stand-ins', () => {
+  it('lets commands add and remove process and stream listeners', () => {
+    const stop = () => undefined
+    browserProcess.once('SIGINT', stop)
+    expect(browserProcess.listeners('SIGINT')).toEqual([stop])
+    browserProcess.removeListener('SIGINT', stop)
+    expect(browserProcess.listeners('SIGINT')).toEqual([])
+    const closed = () => undefined
+    browserProcess.stdout.on('error', closed)
+    browserProcess.stdout.removeListener('error', closed)
+    expect(browserProcess.stdout.listeners('error')).toEqual([])
+    let flushed = false
+    browserProcess.stdout.write('x', () => {
+      flushed = true
+    })
+    return Promise.resolve().then(() => expect(flushed).toBe(true))
+  })
+
   it('encodes and decodes like Node for the methods the CLI uses', () => {
     const value = 'héllo, wörld'
     expect(BrowserBuffer.from(value).toString('base64')).toBe(
