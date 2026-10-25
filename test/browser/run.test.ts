@@ -10,6 +10,7 @@ import {
   splitWords,
 } from '../../src/browser/index.js'
 import {Buffer as BrowserBuffer} from '../../src/browser/stubs/buffer.js'
+import {EventEmitter as BrowserEmitter} from '../../src/browser/stubs/events.js'
 import {process as browserProcess} from '../../src/browser/stubs/process.js'
 import * as browserPath from '../../src/browser/stubs/path.js'
 
@@ -18,6 +19,31 @@ const CLIENT_TOKEN = `pmfa_ct_${'fixture'.repeat(6)}`
 // A well-formed team key fixture for Platform commands. Not a real key.
 const API_KEY = `pmfa_${'A'.repeat(72)}`
 const PROJECT = '11111111-1111-4111-8111-111111111111'
+
+/**
+ * A signal that reports or fires an abort on its second `aborted` read: the
+ * runner reads it once before loading the command and once after.
+ */
+function abortOnSecondRead(mode: 'report' | 'fire'): AbortSignal {
+  let reads = 0
+  let onAbort: (() => void) | undefined
+  return {
+    get aborted() {
+      reads += 1
+      if (reads !== 2) return false
+      if (mode === 'report') return true
+      onAbort?.()
+      return false
+    },
+    addEventListener: (_event: string, listener: () => void) => {
+      onAbort = listener
+    },
+    removeEventListener: () => undefined,
+  } as unknown as AbortSignal
+}
+
+const pollEmpty = () =>
+  json({data: [], page: {nextCursor: null, hasMore: false, followCursor: 'c1'}})
 
 function run(
   line: string,
@@ -223,6 +249,30 @@ describe('browser command runner', () => {
     expect(process.listeners('SIGINT')).toHaveLength(before)
   })
 
+  it('does not start a command interrupted while its code loads', async () => {
+    const result = await run(
+      `logs tail --project ${PROJECT} --poll-interval 1`,
+      pollEmpty,
+      {
+        env: {POLYMORFA_API_KEY: API_KEY},
+        signal: abortOnSecondRead('report'),
+      },
+    )
+    expect(result).toMatchObject({exitCode: 130, command: 'logs tail'})
+    expect(result.requests).toHaveLength(0)
+  })
+
+  it('stops a command interrupted before it registers its Ctrl-C handler', async () => {
+    const before = process.listeners('SIGINT').length
+    const result = await run(
+      `logs tail --project ${PROJECT} --backfill 0 --poll-interval 1 --json`,
+      pollEmpty,
+      {env: {POLYMORFA_API_KEY: API_KEY}, signal: abortOnSecondRead('fire')},
+    )
+    expect(result).toMatchObject({exitCode: 0, command: 'logs tail'})
+    expect(process.listeners('SIGINT')).toHaveLength(before)
+  })
+
   it('reports a command interrupted before it starts', async () => {
     const controller = new AbortController()
     controller.abort()
@@ -266,6 +316,22 @@ describe('browser command registry', () => {
 })
 
 describe('browser stand-ins', () => {
+  it('removes one registration at a time and throws unhandled errors, like Node', () => {
+    const emitter = new BrowserEmitter()
+    const calls: string[] = []
+    const listener = () => calls.push('called')
+    emitter.on('tick', listener)
+    emitter.on('tick', listener)
+    emitter.removeListener('tick', listener)
+    emitter.emit('tick')
+    expect(calls).toEqual(['called'])
+    expect(() => emitter.emit('error', new Error('boom'))).toThrow('boom')
+    const announced: unknown[] = []
+    emitter.on('newListener', (event: unknown) => announced.push(event))
+    emitter.once('SIGINT', listener)
+    expect(announced).toEqual(['SIGINT'])
+  })
+
   it('lets commands add and remove process and stream listeners', () => {
     const stop = () => undefined
     browserProcess.once('SIGINT', stop)
