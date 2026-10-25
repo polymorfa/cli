@@ -1,25 +1,25 @@
 // Injected as the global `process` in the browser build. The runtime swaps env and the writers per command.
-const noop = (): void => {}
-const stream = (): {
-  write: (chunk: unknown) => boolean
-  isTTY: boolean
-  columns: number
-  on: typeof noop
-  once: typeof noop
-  off: typeof noop
-  end: typeof noop
-} => ({
-  write: () => true,
-  isTTY: false,
-  columns: 100,
-  on: noop,
-  once: noop,
-  off: noop,
-  end: noop,
-})
+// Process and its streams are emitters, so commands can add and remove listeners such as SIGINT.
+import {EventEmitter} from './events.js'
 
-export const process = {
-  env: {} as Record<string, string | undefined>,
+const noop = (): void => {}
+
+/** Standard output or error: an emitter whose writes succeed and call back, as Node's do once flushed. */
+const stream = () =>
+  Object.assign(new EventEmitter(), {
+    write: (_chunk: unknown, ...rest: unknown[]): boolean => {
+      const done = rest.find((value) => typeof value === 'function') as
+        ((error?: Error | null) => void) | undefined
+      if (done) queueMicrotask(() => done(null))
+      return true
+    },
+    isTTY: false,
+    columns: 100,
+    end: noop,
+  })
+
+export const process = Object.assign(new EventEmitter(), {
+  env: {},
   argv: ['node', 'polymorfa'],
   execArgv: [] as string[],
   execPath: '/usr/bin/node',
@@ -28,7 +28,7 @@ export const process = {
   arch: 'wasm',
   pid: 1,
   version: 'v22.0.0',
-  versions: {node: '22.0.0'} as Record<string, string>,
+  versions: {node: '22.0.0'},
   release: {name: 'browser'},
   exitCode: undefined as number | undefined,
   stdout: stream(),
@@ -44,12 +44,6 @@ export const process = {
   },
   cwd: (): string => '/',
   chdir: noop,
-  on: noop,
-  once: noop,
-  off: noop,
-  removeListener: noop,
-  listeners: (): unknown[] => [],
-  emit: (): boolean => false,
   emitWarning: noop,
   nextTick: (fn: (...args: unknown[]) => void, ...args: unknown[]): void =>
     queueMicrotask(() => fn(...args)),
@@ -72,4 +66,4 @@ export const process = {
   },
   umask: (): number => 0o22,
   getuid: (): number => 1000,
-}
+})

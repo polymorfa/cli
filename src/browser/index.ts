@@ -6,6 +6,7 @@
  * message naming the installed CLI.
  */
 import {COMMAND_LOADERS} from './registry.gen.js'
+import {BrowserUnsupportedError} from './stubs/unsupported.js'
 
 declare const __CLI_VERSION__: string | undefined
 declare const __CLI_COMMIT__: string | undefined
@@ -26,7 +27,20 @@ export interface BrowserIo {
    * the command started, never `globalThis.fetch`.
    */
   readonly fetch: typeof fetch
+  /** Receives the command's output. Byte chunks arrive decoded as UTF-8. */
   readonly write: (stream: 'stdout' | 'stderr', text: string) => void
+  /**
+   * Stops a running command the way Ctrl-C does: aborting it calls the
+   * `SIGINT` listeners the command registered, which is how following
+   * commands such as `logs tail` and `event stream` stop. The next command
+   * starts only after this one has returned.
+   */
+  readonly signal?: AbortSignal
+}
+
+/** Commands whose output the browser cannot show, with the reason. */
+const UNSUPPORTED: Readonly<Record<string, string>> = {
+  'calls media': 'streams call audio as binary PCM',
 }
 
 export interface RunResult {
@@ -41,10 +55,15 @@ export function resolveCommand(
 ): {id: string; rest: string[]} | null {
   for (let length = Math.min(words.length, 4); length > 0; length--) {
     const id = words.slice(0, length).join(' ')
-    if (id in COMMAND_LOADERS) return {id, rest: words.slice(length)}
+    if (Object.hasOwn(COMMAND_LOADERS, id))
+      return {id, rest: words.slice(length)}
   }
   return null
 }
+
+// Inside double quotes a POSIX shell treats a backslash as an escape only
+// before these characters; elsewhere it is literal, so `"C:\new"` keeps it.
+const DOUBLE_QUOTE_ESCAPES = new Set(['$', '`', '"', '\\', '\n'])
 
 /** Split a command line into words the way a POSIX shell quotes them. */
 export function splitWords(line: string): string[] {
@@ -56,7 +75,11 @@ export function splitWords(line: string): string[] {
     const char = line[index]!
     if (quote) {
       if (char === quote) quote = null
-      else if (char === '\\' && quote === '"' && index + 1 < line.length)
+      else if (
+        char === '\\' &&
+        quote === '"' &&
+        DOUBLE_QUOTE_ESCAPES.has(line[index + 1] ?? '')
+      )
         current += line[++index]
       else current += char
     } else if (char === '"' || char === "'") {
@@ -112,11 +135,64 @@ const config = {
   commandIDs: COMMAND_IDS,
 }
 
-interface ProcessLike {
+type Listener = (...args: unknown[]) => void
+type WriteCallback = (error?: Error | null) => void
+
+interface EmitterLike {
+  listeners: (event: string) => Listener[]
+  removeListener: (event: string, listener: Listener) => unknown
+}
+
+interface StreamLike extends EmitterLike {
+  write: (chunk: unknown, ...rest: unknown[]) => boolean
+}
+
+interface ProcessLike extends EmitterLike {
   env: Record<string, string | undefined>
   exitCode?: number | string | undefined
-  stdout: {write: (chunk: unknown) => boolean}
-  stderr: {write: (chunk: unknown) => boolean}
+  stdout: StreamLike
+  stderr: StreamLike
+}
+
+const utf8 = new TextDecoder('utf-8', {fatal: true})
+
+/** A chunk as text. Bytes must be UTF-8; anything else needs a real terminal. */
+function textOf(chunk: unknown): string {
+  if (typeof chunk === 'string') return chunk
+  if (chunk instanceof Uint8Array) {
+    try {
+      return utf8.decode(chunk)
+    } catch {
+      throw new BrowserUnsupportedError('writes binary data to its output')
+    }
+  }
+  return String(chunk)
+}
+
+/**
+ * A stream `write` that hands text to the page and calls the write callback,
+ * as Node does once a chunk is flushed. Commands such as `listen` wait for it.
+ */
+function writer(io: BrowserIo, stream: 'stdout' | 'stderr') {
+  return (chunk: unknown, ...rest: unknown[]): boolean => {
+    io.write(stream, textOf(chunk))
+    const done = rest.find(
+      (value): value is WriteCallback => typeof value === 'function',
+    )
+    if (done) queueMicrotask(() => done(null))
+    return true
+  }
+}
+
+/** Listeners a command may leave on the shared process and its streams. */
+function trackedListeners(proc: ProcessLike): [EmitterLike, string][] {
+  return [
+    [proc, 'SIGINT'],
+    [proc, 'SIGTERM'],
+    [proc.stdout, 'error'],
+    [proc.stdout, 'drain'],
+    [proc.stderr, 'error'],
+  ]
 }
 
 let queue: Promise<unknown> = Promise.resolve()
@@ -138,8 +214,22 @@ async function runNow(
   words: readonly string[],
   io: BrowserIo,
 ): Promise<RunResult> {
+  const resolved = resolveCommand(words)
+  if (!resolved) {
+    io.write('stderr', `Unknown command: polymorfa ${words.join(' ')}\n`)
+    return {exitCode: 2, command: null}
+  }
+  const unsupported = UNSUPPORTED[resolved.id]
+  if (unsupported) {
+    io.write('stderr', `${new BrowserUnsupportedError(unsupported).message}\n`)
+    return {exitCode: 1, command: resolved.id}
+  }
+  // Interrupted before it started, as a terminal reports Ctrl-C.
+  if (io.signal?.aborted) return {exitCode: 130, command: resolved.id}
   // The bare `process`: in the browser build it is the injected stand-in, under Node the real one.
   const proc = process as unknown as ProcessLike
+  const tracked = trackedListeners(proc)
+  const before = tracked.map(([emitter, event]) => emitter.listeners(event))
   const saved = {
     env: proc.env,
     exitCode: proc.exitCode,
@@ -147,23 +237,23 @@ async function runNow(
     err: proc.stderr.write,
     fetch: globalThis.fetch,
   }
+  // Only the listeners this command added: a host process's own stay untouched.
+  const added = (index: number): Listener[] => {
+    const [emitter, event] = tracked[index]!
+    return emitter
+      .listeners(event)
+      .filter((listener) => !before[index]!.includes(listener))
+  }
+  const interrupt = () => {
+    for (const listener of added(0)) listener('SIGINT')
+  }
   proc.env = {...io.env}
   proc.exitCode = undefined
-  proc.stdout.write = (chunk: unknown) => {
-    io.write('stdout', String(chunk))
-    return true
-  }
-  proc.stderr.write = (chunk: unknown) => {
-    io.write('stderr', String(chunk))
-    return true
-  }
+  proc.stdout.write = writer(io, 'stdout')
+  proc.stderr.write = writer(io, 'stderr')
   globalThis.fetch = io.fetch
-  const resolved = resolveCommand(words)
+  io.signal?.addEventListener('abort', interrupt)
   try {
-    if (!resolved) {
-      io.write('stderr', `Unknown command: polymorfa ${words.join(' ')}\n`)
-      return {exitCode: 2, command: null}
-    }
     const module = await COMMAND_LOADERS[resolved.id]!()
     // Each module's default export is a concrete oclif command class.
     const CommandClass = module.default as {
@@ -172,13 +262,14 @@ async function runNow(
     }
     CommandClass.id = resolved.id
     const command = new CommandClass(resolved.rest, config)
+    // The shared state is restored only after the command returns, even when
+    // interrupted, so it never runs against the next command's globals.
     await command._run()
     const code = Number(proc.exitCode ?? 0)
     return {exitCode: Number.isFinite(code) ? code : 1, command: resolved.id}
   } catch (error) {
     const exit = (error as {oclif?: {exit?: unknown}}).oclif?.exit
-    if (typeof exit === 'number')
-      return {exitCode: exit, command: resolved?.id ?? null}
+    if (typeof exit === 'number') return {exitCode: exit, command: resolved.id}
     const debug =
       io.env.POLYMORFA_BROWSER_DEBUG === '1' && error instanceof Error
         ? `\n${error.stack ?? ''}`
@@ -187,8 +278,13 @@ async function runNow(
       'stderr',
       `${error instanceof Error ? error.message : String(error)}${debug}\n`,
     )
-    return {exitCode: 1, command: resolved?.id ?? null}
+    return {exitCode: 1, command: resolved.id}
   } finally {
+    io.signal?.removeEventListener('abort', interrupt)
+    tracked.forEach(([emitter, event], index) => {
+      for (const listener of added(index))
+        emitter.removeListener(event, listener)
+    })
     proc.env = saved.env
     proc.exitCode = saved.exitCode
     proc.stdout.write = saved.out

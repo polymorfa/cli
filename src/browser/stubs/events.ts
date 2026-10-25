@@ -1,4 +1,6 @@
 type Listener = (...args: unknown[]) => void
+// A `once` wrapper remembers its listener, so removing the listener removes it.
+type Wrapped = Listener & {listener?: Listener}
 export class EventEmitter {
   #listeners = new Map<string | symbol, Listener[]>()
   on(name: string | symbol, listener: Listener): this {
@@ -9,16 +11,19 @@ export class EventEmitter {
     return this.on(name, listener)
   }
   once(name: string | symbol, listener: Listener): this {
-    const wrapped: Listener = (...args) => {
+    const wrapped: Wrapped = (...args) => {
       this.off(name, wrapped)
       listener(...args)
     }
+    wrapped.listener = listener
     return this.on(name, wrapped)
   }
   off(name: string | symbol, listener: Listener): this {
     this.#listeners.set(
       name,
-      (this.#listeners.get(name) ?? []).filter((entry) => entry !== listener),
+      (this.#listeners.get(name) ?? []).filter(
+        (entry: Wrapped) => entry !== listener && entry.listener !== listener,
+      ),
     )
     return this
   }
@@ -31,12 +36,15 @@ export class EventEmitter {
     return this
   }
   emit(name: string | symbol, ...args: unknown[]): boolean {
-    const list = this.#listeners.get(name) ?? []
+    const list = [...(this.#listeners.get(name) ?? [])]
     for (const listener of list) listener(...args)
     return list.length > 0
   }
+  /** The listeners as registered, like Node: `once` listeners unwrapped. */
   listeners(name: string | symbol): Listener[] {
-    return [...(this.#listeners.get(name) ?? [])]
+    return (this.#listeners.get(name) ?? []).map(
+      (entry: Wrapped) => entry.listener ?? entry,
+    )
   }
   listenerCount(name: string | symbol): number {
     return this.#listeners.get(name)?.length ?? 0
