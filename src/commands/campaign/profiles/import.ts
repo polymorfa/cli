@@ -28,7 +28,9 @@ export default class ProfilesImport extends BaseCommand {
     const {flags} = await this.parse(ProfilesImport)
     if (flags.csv === '-' && flags.mapping === '-')
       throw new Error('CSV and mapping cannot both read stdin.')
-    const csv = await readTextInput(flags.csv)
+    const csv = await readTextInput(flags.csv, process.stdin, {
+      strictUtf8: true,
+    })
     const mapping =
       flags.mapping === undefined
         ? undefined

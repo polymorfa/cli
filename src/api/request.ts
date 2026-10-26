@@ -66,11 +66,15 @@ export async function readJsonInput(
 export async function readTextInput(
   path: string,
   standardInput: AsyncIterable<string | Uint8Array> = process.stdin,
+  options: {readonly strictUtf8?: boolean} = {},
 ): Promise<string> {
   let contents: string
 
   if (path === '-') {
-    contents = await readBoundedInput(standardInput)
+    contents = await readBoundedInput(
+      standardInput,
+      options.strictUtf8 ?? false,
+    )
   } else {
     try {
       const details = await stat(path)
@@ -81,7 +85,9 @@ export async function readTextInput(
         )
       }
 
-      contents = await readFile(path, 'utf8')
+      contents = options.strictUtf8
+        ? decodeStrictUtf8(await readFile(path))
+        : await readFile(path, 'utf8')
     } catch (error) {
       if (error instanceof PolymorfaValidationError) throw error
       throw new PolymorfaValidationError(
@@ -98,6 +104,7 @@ export async function readTextInput(
 
 async function readBoundedInput(
   input: AsyncIterable<string | Uint8Array>,
+  strictUtf8: boolean,
 ): Promise<string> {
   const chunks: Buffer[] = []
   let totalBytes = 0
@@ -114,7 +121,22 @@ async function readBoundedInput(
     chunks.push(buffer)
   }
 
-  return Buffer.concat(chunks).toString('utf8')
+  const bytes = Buffer.concat(chunks)
+  return strictUtf8 ? decodeStrictUtf8(bytes) : bytes.toString('utf8')
+}
+
+/** Preserve valid bytes, including a BOM; never repair malformed CSV input. */
+function decodeStrictUtf8(bytes: Uint8Array): string {
+  try {
+    return new TextDecoder('utf-8', {fatal: true, ignoreBOM: true}).decode(
+      bytes,
+    )
+  } catch (error) {
+    throw new PolymorfaValidationError('API input must contain valid UTF-8.', {
+      code: 'invalid_utf8_input',
+      cause: error,
+    })
+  }
 }
 
 function parseHeaders(

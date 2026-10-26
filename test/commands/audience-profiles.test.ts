@@ -201,6 +201,42 @@ describe('campaign profiles commands', () => {
       '/platform/audience-profiles/%2B14155550123/consent?cursor=next&limit=2',
     )
   })
+  test('refuses malformed UTF-8 CSV before HTTP', async () => {
+    directory = await testDirectory('cli-import-utf8-')
+    const csv = join(directory, 'contacts.csv')
+    await writeFile(
+      csv,
+      Buffer.concat([
+        Buffer.from('phone,tags,attributes\n'),
+        Buffer.from([0xff]),
+      ]),
+    )
+    server = await startHttpServer({body: {data: job}})
+    const result = await run(
+      `campaign profiles import --csv ${csv} --replay-key utf8-invalid --json`,
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stdout + result.stderr).toContain('valid UTF-8')
+    expect(server.requests).toHaveLength(0)
+  })
+  test('preserves valid CSV BOM, Unicode and line endings on the wire', async () => {
+    directory = await testDirectory('cli-import-utf8-valid-')
+    const csv = join(directory, 'contacts.csv')
+    const bytes = Buffer.from(
+      '\uFEFFphone,tags,attributes\r\n+14155550123,[],"{""name"":""é""}"\r\n',
+    )
+    await writeFile(csv, bytes)
+    server = await startHttpServer({body: {data: job}})
+    const result = await run(
+      `campaign profiles import --csv ${csv} --replay-key utf8-valid`,
+    )
+    expect(result.error).toBeUndefined()
+    expect(server.requests).toHaveLength(1)
+    expect(JSON.parse(server.requests[0]!.body)).toEqual({
+      replayKey: 'utf8-valid',
+      csvBase64: bytes.toString('base64'),
+    })
+  })
   test('imports UTF-8 CSV with explicit mapping and stable replay identity', async () => {
     directory = await testDirectory('cli-import-')
     const csv = join(directory, 'contacts.csv'),

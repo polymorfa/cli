@@ -2677,7 +2677,9 @@ polymorfa campaign profiles delete +14155550123 --expected-revision 2
 and `consent` match the API body; assertions never override opt-outs. A stale
 revision returns 409. Deletion preserves opt-outs and existing campaign recipients.
 
-Imports accept at most 10 MiB and 10,000 rows. Use `--mapping mapping.json`
+Imports accept at most 10 MiB and 10,000 rows. CSV must contain valid UTF-8;
+malformed byte sequences are refused before upload. Valid UTF-8, including an
+initial BOM and the original line endings, is sent without text normalization. Use `--mapping mapping.json`
 for explicit CSV columns, for example
 `{"phone":"Phone","tags":"Tags","attributes":"Attributes"}`. Omitted mapping
 uses the API's standard column names. Poll the job until `completed` or
