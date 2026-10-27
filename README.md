@@ -2740,3 +2740,21 @@ Campaign analytics shows `Skipped by frequency cap`; recipient output includes
 This implementation keeps the published SDK pin unchanged. Release waits for a
 matching SDK prerelease and accepted API contract; source support does not imply
 package publication or beta availability.
+
+## Channel update metadata
+
+Use the existing event stream to read `newsletter.update` observations as JSON lines:
+
+```sh
+polymorfa event stream --owner project --project "$PROJECT_ID" --type newsletter.update --json
+```
+
+`live_update` messages contain reported counts and positions, with optional message
+references. Missing counts are not zero. Preserve every typed or untyped view
+value and unknown milestone type. Position-only observations do not provide
+message action authority. The payload contains no message body.
+
+`channel message list --json` and `channel message updates --json` preserve a
+reported `forwards` value, including zero. Event lists remain metadata-only;
+`event view --include-payload --json` returns exact retained bytes only when the
+API authorizes them. These commands do not request additional retention.
