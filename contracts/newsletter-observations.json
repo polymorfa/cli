@@ -4,10 +4,23 @@
   "sourcePath": "apps/api/docs/openapi.json",
   "sourceSha256": "9253f7fcf7b6e802411cc2f9b3b28bbf7c1e45e90c2ebee7fc461f5627ca9a32",
   "polymorfaVersion": "2026-09-22",
-  "sdkSourceCommit": "bc3c694d548b8550bface0f3d94a643affd06d80",
+  "sdkSourceCommit": "b39e76125dcb4816295285272b407f18f8a9962e",
   "localCandidateSdkArtifactSha256": "fc2b0ba01891c38956055e1719c726e73630d8fa8f778f6a6f1a69018d54d651",
   "published": false,
   "productionDependencyPinUnchanged": "0.1.0-dev.20261004024706",
   "scope": "Existing channel JSON and event view/stream retain optional newsletter metadata; no new commands. Event list stays metadata-only.",
-  "releaseGate": "Matching accepted and published SDK required before a real CLI dependency-pin update; local artifact testing is not registry publication."
+  "releaseGate": "Matching accepted and published SDK required before a real CLI dependency-pin update; local artifact testing is not registry publication.",
+  "qualification": {
+    "cliSource": "78c33475dae1883b9451c036df9cc6ae0630be90",
+    "cliArtifactSha256": "1fb43d831b475c069700ed3b3ebac5de8b49f6054805385f10d11d26c9d1b811",
+    "sdkArtifactSha256": "fc2b0ba01891c38956055e1719c726e73630d8fa8f778f6a6f1a69018d54d651",
+    "checks": [
+      "channel list/update forwards zero",
+      "metadata-only event list",
+      "exact retained event bytes",
+      "three native SSE events to CLI NDJSON"
+    ],
+    "dependencyRebind": "Final SDK source changes only type assertions after the tested source; the physical package SHA-256 is identical, so runtime proof applies to the same bytes.",
+    "liveAcceptance": false
+  }
 }
