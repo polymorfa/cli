@@ -35,7 +35,7 @@
     "@oclif/core": "^4.13.5",
     "@polymorfa/sdk": "0.1.0-dev.20261004024706",
     "jq-wasm": "3.0.0-jq-1.8.2",
-    "zod": "^4.6.6"
+    "zod": "4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",
