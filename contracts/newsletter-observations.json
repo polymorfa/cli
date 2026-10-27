@@ -1,0 +1,13 @@
+{
+  "repository": "polymorfa/polymorfa",
+  "sourceCommit": "d60f08042a5e3f36e53a7b378be7b7e710e80e9f",
+  "sourcePath": "apps/api/docs/openapi.json",
+  "sourceSha256": "9253f7fcf7b6e802411cc2f9b3b28bbf7c1e45e90c2ebee7fc461f5627ca9a32",
+  "polymorfaVersion": "2026-09-22",
+  "sdkSourceCommit": "bc3c694d548b8550bface0f3d94a643affd06d80",
+  "localCandidateSdkArtifactSha256": "fc2b0ba01891c38956055e1719c726e73630d8fa8f778f6a6f1a69018d54d651",
+  "published": false,
+  "productionDependencyPinUnchanged": "0.1.0-dev.20261004024706",
+  "scope": "Existing channel JSON and event view/stream retain optional newsletter metadata; no new commands. Event list stays metadata-only.",
+  "releaseGate": "Matching accepted and published SDK required before a real CLI dependency-pin update; local artifact testing is not registry publication."
+}
