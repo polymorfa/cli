@@ -90,7 +90,7 @@ clients need no confirmation. Non-interactive installation requires `--yes`.
 but never runs installers or reads installation listings. Setup does not load
 Polymorfa profiles, read credentials, or edit client settings directly. Client
 installers manage their own configuration. Their output is withheld because it
-may contain private local data. Each client gets a separate result; any failure
+may contain private local data. Each client command has a 120-second deadline and a\n1 MiB UTF-8 output limit. Windows tree cleanup is attempted for up to five more\nseconds. Timeout, overflow and cleanup failure report failed. Each client gets a separate result; any failure
 makes the command exit with code 1. Manual instructions are reported separately
 and do not claim installation succeeded.
 

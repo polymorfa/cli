@@ -14,6 +14,7 @@ function childFixture() {
   const child = Object.assign(new EventEmitter(), {
     stdout: new PassThrough(),
     kill: vi.fn(),
+    unref: vi.fn(),
   })
   vi.mocked(spawn).mockReturnValue(child as unknown as ReturnType<typeof spawn>)
   return child
@@ -33,7 +34,7 @@ test.each(['win32', 'linux', 'darwin'])(
     const options = {
       shell: platform === 'win32',
       stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 120_000,
+      ...(platform === 'win32' ? {} : {timeout: 120_000}),
     }
     if (platform === 'win32')
       expect(spawn).toHaveBeenLastCalledWith(
@@ -62,7 +63,7 @@ test('keeps the fixed Git installer URL intact in the Windows command', async ()
   await expect(result).resolves.toEqual({code: 0, stdout: ''})
   expect(spawn).toHaveBeenCalledWith(
     'gemini extensions install https://github.com/polymorfa/agent-kit --consent',
-    {shell: true, stdio: ['ignore', 'pipe', 'ignore'], timeout: 120_000},
+    {shell: true, stdio: ['ignore', 'pipe', 'ignore']},
   )
 })
 
@@ -110,7 +111,7 @@ test('keeps POSIX arguments literal without a shell', async () => {
   })
 })
 
-test('retains the output bound and kills a child exceeding it', async () => {
+test('retains the output bound and fails a child exceeding it', async () => {
   const child = childFixture()
   const result = runProcess('claude', ['plugin', 'list', '--json'])
   const allowed = 'a'.repeat(1024 * 1024)
@@ -118,5 +119,5 @@ test('retains the output bound and kills a child exceeding it', async () => {
   child.stdout.write('overflow')
   expect(child.kill).toHaveBeenCalledOnce()
   child.emit('close', 0)
-  await expect(result).resolves.toEqual({code: 0, stdout: allowed})
+  await expect(result).resolves.toEqual({code: 1, stdout: ''})
 })

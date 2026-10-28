@@ -1,3 +1,4 @@
+import {Buffer} from 'node:buffer'
 import {spawn} from 'node:child_process'
 import {access, stat} from 'node:fs/promises'
 import {constants} from 'node:fs'
@@ -21,6 +22,71 @@ export type ProcessRunner = (
   args: readonly string[],
 ) => Promise<ProcessResult>
 
+const PROCESS_TIMEOUT_MS = 120_000
+const CLEANUP_TIMEOUT_MS = 5_000
+
+/** Stop only the process started here. A shell's descendants need Windows' tree operation. */
+async function terminateProcess(
+  child: import('node:child_process').ChildProcess,
+  windows: boolean,
+  hasExited: () => boolean,
+): Promise<void> {
+  const killChild = () => {
+    if (hasExited()) return
+    try {
+      child.kill()
+    } catch {
+      // Cleanup failure must still produce a bounded, failed result.
+    }
+  }
+  if (hasExited()) return
+  if (!windows || !Number.isSafeInteger(child.pid) || child.pid! <= 0) {
+    killChild()
+    return
+  }
+  await new Promise<void>((resolve) => {
+    let finished = false
+    let killer: import('node:child_process').ChildProcess | undefined
+    const done = () => {
+      if (finished) return
+      finished = true
+      clearTimeout(timer)
+      killer?.unref()
+      resolve()
+    }
+    const timer = setTimeout(() => {
+      if (finished) return
+      try {
+        killer?.kill()
+      } catch {
+        // Neither a failed cleanup command nor inherited pipes may hold setup open.
+      }
+      killChild()
+      done()
+    }, CLEANUP_TIMEOUT_MS)
+    try {
+      killer = spawn('taskkill.exe', ['/pid', String(child.pid), '/t', '/f'], {
+        shell: false,
+        stdio: 'ignore',
+        windowsHide: true,
+      })
+      killer.on('error', () => {
+        if (finished) return
+        killChild()
+        done()
+      })
+      killer.once('close', (code) => {
+        if (finished) return
+        if (code !== 0) killChild()
+        done()
+      })
+    } catch {
+      killChild()
+      done()
+    }
+  })
+}
+
 /** Never forward child output: a client may include private local configuration. */
 export const runProcess: ProcessRunner = (binary, args) =>
   new Promise((resolve) => {
@@ -38,22 +104,60 @@ export const runProcess: ProcessRunner = (binary, args) =>
       ? spawn([binary, ...args].join(' '), {
           shell: true,
           stdio: ['ignore', 'pipe', 'ignore'],
-          timeout: 120_000,
         })
       : spawn(binary, [...args], {
           shell: false,
           stdio: ['ignore', 'pipe', 'ignore'],
-          timeout: 120_000,
+          timeout: PROCESS_TIMEOUT_MS,
         })
     let stdout = ''
+    let stdoutBytes = 0
+    let settled = false
+    let stopping = false
+    let exited = false
+    const finish = (result: ProcessResult) => {
+      if (settled) return
+      settled = true
+      clearTimeout(deadline)
+      child.stdout.off('data', onData)
+      child.off('close', onClose)
+      child.off('exit', onExit)
+      child.stdout.destroy()
+      child.unref()
+      stdout = ''
+      resolve(result)
+    }
+    const stop = () => {
+      if (stopping || settled) return
+      stopping = true
+      // Failure is reported only after the bounded cleanup attempt. A late
+      // successful close must not turn timeout or overflow into installation success.
+      void terminateProcess(child, windows, () => exited).then(
+        () => finish({code: 1, stdout: ''}),
+        () => finish({code: 1, stdout: ''}),
+      )
+    }
+    const onData = (chunk: string) => {
+      if (stopping || settled) return
+      const bytes = Buffer.byteLength(chunk, 'utf8')
+      if (stdoutBytes + bytes <= 1024 * 1024) {
+        stdout += chunk
+        stdoutBytes += bytes
+      } else stop()
+    }
+    const onExit = () => {
+      exited = true
+    }
+    const onClose = (code: number | null) => {
+      if (!stopping) finish({code: code ?? 1, stdout})
+    }
+    const deadline = setTimeout(stop, PROCESS_TIMEOUT_MS)
     child.stdout.setEncoding('utf8')
-    child.stdout.on('data', (chunk: string) => {
-      // Bound metadata/help output retained in memory.
-      if (stdout.length + chunk.length <= 1024 * 1024) stdout += chunk
-      else child.kill()
-    })
-    child.on('error', () => resolve({code: 1, stdout: ''}))
-    child.on('close', (code) => resolve({code: code ?? 1, stdout}))
+    child.stdout.on('data', onData)
+    child.once('exit', onExit)
+    child.once('close', onClose)
+    // Keep a guard for asynchronous error/close races after cleanup.
+    child.on('error', stop)
   })
 
 export async function binaryExists(binary: string): Promise<boolean> {
