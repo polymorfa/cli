@@ -128,6 +128,15 @@ verify` rebuilds the CLI and fails when the committed reference is stale. Regene
 it whenever public command metadata or the package version changes. No timestamp
 or local path is included.
 
+## Browser build
+
+Build the CLI module for a browser, then check the emitted artifact:
+
+    npm run build:browser
+    npm run verify:browser
+
+The registry comes from the real command files. Commands needing the installed CLI remain in that inventory with an unsupported reason. Agent setup is refused before loading its implementation or reading local client configuration; the installer is excluded from the bundle. Verification checks the emitted dependency graph and runs a synthetic text send with no network access. Package and Docs publication remain separate steps.
+
 ## Authentication profiles
 
 Until the backend exposes a revocable CLI device-authorization flow, login
