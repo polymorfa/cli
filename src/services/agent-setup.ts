@@ -24,12 +24,27 @@ export type ProcessRunner = (
 /** Never forward child output: a client may include private local configuration. */
 export const runProcess: ProcessRunner = (binary, args) =>
   new Promise((resolve) => {
-    const child = spawn(binary, [...args], {
-      // npm-installed clients use .cmd shims on Windows.
-      shell: process.platform === 'win32',
-      stdio: ['ignore', 'pipe', 'ignore'],
-      timeout: 120_000,
-    })
+    const windows = process.platform === 'win32'
+    // Every caller uses fixed client names and installer tokens. Refuse shell
+    // syntax here rather than turning a future argument into executable text.
+    if (
+      windows &&
+      [binary, ...args].some((token) => !/^[a-z0-9_.:@/=-]+$/i.test(token))
+    ) {
+      resolve({code: 1, stdout: ''})
+      return
+    }
+    const child = windows
+      ? spawn([binary, ...args].join(' '), {
+          shell: true,
+          stdio: ['ignore', 'pipe', 'ignore'],
+          timeout: 120_000,
+        })
+      : spawn(binary, [...args], {
+          shell: false,
+          stdio: ['ignore', 'pipe', 'ignore'],
+          timeout: 120_000,
+        })
     let stdout = ''
     child.stdout.setEncoding('utf8')
     child.stdout.on('data', (chunk: string) => {
