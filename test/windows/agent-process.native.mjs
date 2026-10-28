@@ -120,9 +120,8 @@ for (const mode of ['timeout', 'overflow']) {
                 Number((await readFile(join(scratch, file), 'utf8')).trim()),
               ),
             )
-            assert.ok(
-              found.every((pid) => Number.isSafeInteger(pid) && pid > 0),
-            )
+            if (!found.every((pid) => Number.isSafeInteger(pid) && pid > 0))
+              return false
             pids.splice(0, pids.length, ...found)
             return true
           } catch (error) {
