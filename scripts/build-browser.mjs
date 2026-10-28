@@ -2,7 +2,7 @@
 // Node built-ins and local-only packages resolve to src/browser/stubs; each command loads on demand.
 import console from 'node:console'
 import process from 'node:process'
-import {URL} from 'node:url'
+import {URL, fileURLToPath} from 'node:url'
 import {execFileSync} from 'node:child_process'
 import {readFileSync, writeFileSync, rmSync} from 'node:fs'
 import {builtinModules} from 'node:module'
@@ -12,7 +12,7 @@ const pkg = JSON.parse(
   readFileSync(new URL('../package.json', import.meta.url), 'utf8'),
 )
 const stub = (name) =>
-  new URL(`../src/browser/stubs/${name}.ts`, import.meta.url).pathname
+  fileURLToPath(new URL(`../src/browser/stubs/${name}.ts`, import.meta.url))
 const NODE = {
   fs: stub('fs'),
   'fs/promises': stub('fs-promises'),
@@ -92,6 +92,11 @@ const result = await build({
   metafile: true,
   logLevel: 'warning',
 })
+if (process.env.BROWSER_METAFILE)
+  writeFileSync(
+    process.env.BROWSER_METAFILE,
+    JSON.stringify(result.metafile, null, 2) + '\n',
+  )
 const bytes = Object.values(result.metafile.outputs).reduce(
   (sum, output) => sum + output.bytes,
   0,

@@ -6,6 +6,7 @@
  * message naming the installed CLI.
  */
 import {COMMAND_LOADERS} from './registry.gen.js'
+import {UNSUPPORTED_COMMANDS} from './command-support.js'
 import {BrowserUnsupportedError} from './stubs/unsupported.js'
 
 declare const __CLI_VERSION__: string | undefined
@@ -36,11 +37,6 @@ export interface BrowserIo {
    * starts only after this one has returned.
    */
   readonly signal?: AbortSignal
-}
-
-/** Commands whose output the browser cannot show, with the reason. */
-const UNSUPPORTED: Readonly<Record<string, string>> = {
-  'calls media': 'streams call audio as binary PCM',
 }
 
 export interface RunResult {
@@ -220,7 +216,9 @@ async function runNow(
     io.write('stderr', `Unknown command: polymorfa ${words.join(' ')}\n`)
     return {exitCode: 2, command: null}
   }
-  const unsupported = UNSUPPORTED[resolved.id]
+  const unsupported = Object.hasOwn(UNSUPPORTED_COMMANDS, resolved.id)
+    ? UNSUPPORTED_COMMANDS[resolved.id]
+    : undefined
   if (unsupported) {
     io.write('stderr', `${new BrowserUnsupportedError(unsupported).message}\n`)
     return {exitCode: 1, command: resolved.id}

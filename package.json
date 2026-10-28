@@ -346,9 +346,10 @@
     "prepare": "npm run build",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node --test scripts/cli-reference.test.mjs && node scripts/cli-reference.mjs --check && npm pack --dry-run --ignore-scripts && npm run audit:prod",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node --test scripts/cli-reference.test.mjs && node scripts/cli-reference.mjs --check && npm run verify:browser && npm pack --dry-run --ignore-scripts && npm run audit:prod",
     "docs:reference": "npm run build && node scripts/cli-reference.mjs",
-    "docs:reference:check": "npm run build && node scripts/cli-reference.mjs --check"
+    "docs:reference:check": "npm run build && node scripts/cli-reference.mjs --check",
+    "verify:browser": "node scripts/verify-browser.mjs"
   },
   "type": "module",
   "version": "0.1.0-dev.0"
