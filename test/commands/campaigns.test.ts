@@ -176,6 +176,66 @@ describe('Messaging campaign commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
+  test('sends one campaign test with a reusable key and renders its receipt', async () => {
+    const input = await jsonInput('test-send.json', {
+      sessionId: '00000000-0000-4000-8000-000000000001',
+      to: '+15550000002',
+      variables: {firstName: 'Ada'},
+    })
+    const receipt = {
+      campaignId: 'campaign_1',
+      createdAt: 1_780_000_000_000,
+      from: {
+        phone: '+15550000001',
+        sessionId: '00000000-0000-4000-8000-000000000001',
+      },
+      id: 'test_1',
+      messageId: 'wamid.1',
+      status: 'sent',
+      to: '+15550000002',
+      variables: {firstName: 'Ada'},
+    }
+    server = await startHttpServer({body: {data: receipt, success: true}})
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign test-send campaign_1 --project-slug project_1 --input ${input} --idempotency-key test_1 --yes`,
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toContain(
+      'Sent one campaign test to +15550000002 from +15550000001. Test ID: test_1.',
+    )
+    expect(server.requests[0]).toMatchObject({
+      body: JSON.stringify({
+        sessionId: '00000000-0000-4000-8000-000000000001',
+        to: '+15550000002',
+        variables: {firstName: 'Ada'},
+      }),
+      method: 'POST',
+      url: '/messaging/projects/project_1/campaigns/campaign_1/test-send',
+    })
+    expect(server.requests[0]?.headers['idempotency-key']).toBe('test_1')
+  })
+
+  test('requires explicit send confirmation before contacting the API', async () => {
+    const input = await jsonInput('test-send.json', {
+      sessionId: '00000000-0000-4000-8000-000000000001',
+      to: '+15550000002',
+    })
+    server = await startHttpServer({body: {data: {}, success: true}})
+
+    const result = await apiKeyEnvironment(() =>
+      runCommand(
+        `campaign test-send campaign_1 --project-slug project_1 --input ${input} --idempotency-key test_1`,
+      ),
+    )
+
+    expect(result.error).toBeDefined()
+    expect(server.requests).toHaveLength(0)
+  })
+
   test('pauses, resumes, and explicitly stops through distinct lifecycle routes', async () => {
     server = await startHttpSequenceServer([
       {body: {data: {...campaign(), operationId: 'op_pause'}, success: true}},

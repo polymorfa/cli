@@ -1762,6 +1762,11 @@ polymorfa campaign list --project-slug launch-project
 polymorfa campaign create --project-slug launch-project --input campaign.json
 polymorfa campaign view campaign_123 --project-slug launch-project
 polymorfa campaign analytics campaign_123 --project-slug launch-project
+polymorfa campaign test-send campaign_123 \
+  --project-slug launch-project \
+  --input test-send.json \
+  --idempotency-key campaign-test-001 \
+  --yes
 
 polymorfa campaign launch campaign_123 \
   --project-slug launch-project \
@@ -1780,6 +1785,15 @@ or reports an immediate cancellation with no operation ID when none is active.
 Check the campaign with `polymorfa campaign view`. When an operation ID is
 returned, follow it with `polymorfa operation wait` or
 `polymorfa operation watch`; see [Operations](#operations).
+
+`campaign test-send` sends one real message from a draft to a team-connected
+seed number. Its JSON input requires `sessionId` (the sending number's session
+ID) and `to` (the seed phone in E.164 format); `sampleRecipientId` and
+`variables` are optional. The command requires `--yes` and an explicit
+`--idempotency-key`. A timeout or `result_unknown` does not prove the message
+failed. Check the seed phone and reuse the same key to reconcile the attempt;
+do not send with a new key until you know the outcome. Test sends are limited
+to 20 per team and 5 per seed number in a rolling hour.
 
 Stop is terminal and requires `--yes`. A campaign that has an active delivery
 run answers with an operation ID, as the other lifecycle commands do. A
