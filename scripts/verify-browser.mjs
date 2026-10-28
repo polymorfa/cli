@@ -2,28 +2,25 @@
 import assert from 'node:assert/strict'
 import process from 'node:process'
 import {execFileSync} from 'node:child_process'
-import {mkdtempSync, mkdirSync, readFileSync} from 'node:fs'
-import {homedir} from 'node:os'
+import {readFileSync, rmSync} from 'node:fs'
 import {join} from 'node:path'
 import {builtinModules} from 'node:module'
 import {URL, pathToFileURL} from 'node:url'
 import console from 'node:console'
-const root = join(
-  homedir(),
-  '.polymorfa-agent-work',
-  'cli-browser-artifact-checks',
-)
-mkdirSync(root, {recursive: true})
-const work = mkdtempSync(join(root, 'check-'))
-const metaPath = join(work, 'metafile.json')
-execFileSync(process.execPath, ['scripts/gen-browser-registry.mjs'], {
-  stdio: 'inherit',
-})
-execFileSync(process.execPath, ['scripts/build-browser.mjs'], {
-  stdio: 'inherit',
-  env: {...process.env, BROWSER_METAFILE: metaPath},
-})
-const metadata = JSON.parse(readFileSync(metaPath, 'utf8'))
+const metaPath = join(process.cwd(), 'dist-browser', '.verify-metafile.json')
+let metadata
+try {
+  execFileSync(process.execPath, ['scripts/gen-browser-registry.mjs'], {
+    stdio: 'inherit',
+  })
+  execFileSync(process.execPath, ['scripts/build-browser.mjs'], {
+    stdio: 'inherit',
+    env: {...process.env, BROWSER_METAFILE: metaPath},
+  })
+  metadata = JSON.parse(readFileSync(metaPath, 'utf8'))
+} finally {
+  rmSync(metaPath, {force: true})
+}
 const inputs = Object.keys(metadata.inputs).map((path) =>
   path.replaceAll('\\', '/'),
 )
@@ -140,6 +137,5 @@ console.log(
     send: {method: requests[0].method, path: requests[0].path},
     files: manifest.files,
     bytes: manifest.bytes,
-    evidence: work,
   }),
 )
