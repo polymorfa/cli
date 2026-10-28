@@ -32,6 +32,7 @@ import {
   type ResponseMetadata,
   type SessionCallSettings,
   type SuccessResponse,
+  type UpdateSessionCallSettingsRequest,
   type VoipAcceptCallResult,
   type VoipParticipant,
   type VoipPlaceCallResult,
@@ -292,10 +293,36 @@ export async function ringCallParticipant(
   return result(response.data, response.metadata)
 }
 
+/**
+ * Simultaneous-calls fields from the Platform call settings contract
+ * (polymorfa/polymorfa#559). The pinned SDK predates them; delete these
+ * extensions and use the SDK types directly once the pin includes them.
+ */
+export type CallSettings = SessionCallSettings & {
+  readonly simultaneousCalls?: boolean
+  /**
+   * Preparatory, response-only: while simultaneous calls are off, the server's
+   * time before which Ban Insurance still excludes a new ban (polymorfa/polymorfa#798).
+   * Null while on or with no recent period, and absent from older servers. Null
+   * never means the number is covered. Delete with the extensions above once
+   * an accepted, published SDK supplies it; it is never sent in an update.
+   */
+  readonly simultaneousCallsCoverageExcludedUntil?: string | null
+}
+
+type CallSettingsUpdateBody = UpdateSessionCallSettingsRequest & {
+  readonly acknowledgeRisk?: boolean
+  readonly simultaneousCalls?: boolean
+}
+
+/** Shown before simultaneous calls turn on, and when the risk is unconfirmed. */
+export const SIMULTANEOUS_CALLS_RISK =
+  'Simultaneous calls let this number hold any number of calls at once. WhatsApp’s own apps never hold two calls at once, so this is unusual for a WhatsApp account. While it is on, and for 30 days after you turn it off, Ban Insurance does not cover a ban of this number.'
+
 export async function viewCallSettings(
   client: MessagingClient,
   session: string,
-): Promise<CallsResult<SessionCallSettings>> {
+): Promise<CallsResult<CallSettings>> {
   const response = await client.voip.retrieveCallSettings(
     validateSession(session),
   )
@@ -311,6 +338,10 @@ export interface CallSettingsChanges {
   readonly inboundRoute?: CallInboundRoute
   readonly sipClaim?: boolean
   readonly sipTrunkId?: string
+  /** `true` also requires `acknowledgeRisk`; see SIMULTANEOUS_CALLS_RISK. */
+  readonly simultaneousCalls?: boolean
+  /** Confirms the Ban Insurance risk of turning simultaneous calls on. */
+  readonly acknowledgeRisk?: boolean
 }
 
 /**
@@ -321,13 +352,25 @@ export async function updateCallSettings(
   client: MessagingClient,
   session: string,
   changes: CallSettingsChanges,
-): Promise<CallsResult<SessionCallSettings>> {
+): Promise<CallsResult<CallSettings>> {
   const name = validateSession(session)
-  const {expectedRevision, ...settings} = changes
+  const {expectedRevision, acknowledgeRisk, ...settings} = changes
+  if (acknowledgeRisk === true && changes.simultaneousCalls !== true) {
+    throw new PolymorfaConfigurationError(
+      '--acknowledge-risk applies only with --simultaneous-calls=true.',
+      'acknowledge-risk',
+    )
+  }
   if (Object.values(settings).every((value) => value === undefined)) {
     throw new PolymorfaConfigurationError(
       'Provide at least one setting to change.',
       'calls-enabled',
+    )
+  }
+  if (changes.simultaneousCalls === true && acknowledgeRisk !== true) {
+    throw new PolymorfaConfigurationError(
+      `${SIMULTANEOUS_CALLS_RISK} Re-run with --acknowledge-risk to turn simultaneous calls on.`,
+      'acknowledge-risk',
     )
   }
   if (changes.inboundRoute === 'clients' && changes.sipTrunkId !== undefined) {
@@ -340,7 +383,7 @@ export async function updateCallSettings(
   const inboundRoute =
     changes.inboundRoute ??
     (changes.sipTrunkId === undefined ? undefined : 'sip_trunk')
-  const response = await client.voip.updateCallSettings(name, {
+  const body: CallSettingsUpdateBody = {
     ...(changes.callsEnabled === undefined
       ? {}
       : {callsEnabled: changes.callsEnabled}),
@@ -355,8 +398,13 @@ export async function updateCallSettings(
     ...(changes.hostCloudApiCalls === undefined
       ? {}
       : {hostCloudApiCalls: changes.hostCloudApiCalls}),
+    ...(changes.simultaneousCalls === undefined
+      ? {}
+      : {simultaneousCalls: changes.simultaneousCalls}),
+    ...(changes.simultaneousCalls === true ? {acknowledgeRisk: true} : {}),
     ...(expectedRevision === undefined ? {} : {expectedRevision}),
-  })
+  }
+  const response = await client.voip.updateCallSettings(name, body)
   return result(response.data.data, response.metadata)
 }
 
@@ -599,10 +647,28 @@ export function renderCallParticipant(participant: VoipParticipant): string {
     .join('\n')
 }
 
+/**
+ * The exclusion end exactly as the server sent it, while simultaneous calls
+ * are off and that time is still ahead. Anything else prints nothing: an end
+ * that is missing, null or past never becomes a claim of cover.
+ */
+function coverageExclusionEnd(
+  settings: CallSettings,
+  now: number,
+): string | null {
+  const until = settings.simultaneousCallsCoverageExcludedUntil
+  if (settings.simultaneousCalls === true || typeof until !== 'string')
+    return null
+  const at = Date.parse(until)
+  return Number.isNaN(at) || at <= now ? null : until
+}
+
 export function renderCallSettings(
   session: string,
-  settings: SessionCallSettings,
+  settings: CallSettings,
+  now: number = Date.now(),
 ): string {
+  const exclusionEnd = coverageExclusionEnd(settings, now)
   return [
     `Session\t${session}`,
     `Calls\t${settings.callsEnabled === false ? 'off' : 'on'}`,
@@ -615,6 +681,10 @@ export function renderCallSettings(
         ]
       : []),
     `Cloud API calls answered by\t${settings.hostCloudApiCalls === true ? 'Polymorfa Calls' : 'your Graph API integration'}`,
+    `Simultaneous calls\t${settings.simultaneousCalls === true ? 'on (Ban Insurance does not cover this number)' : 'off'}`,
+    ...(exclusionEnd === null
+      ? []
+      : [`Ban Insurance exclusion ends\t${exclusionEnd}`]),
     `Revision\t${settings.revision ?? 0}`,
     `Updated\t${settings.updatedAt ?? 'never (defaults)'}`,
   ].join('\n')
