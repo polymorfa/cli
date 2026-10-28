@@ -469,20 +469,22 @@ polymorfa message send text \
   --body 'Your order shipped.' --idempotency-key order-123-shipped
 ```
 
-For 24 hours after the first request, the API prevents the same key and request
+For 1 hour after the first request, the API prevents the same key and request
 from running the write again:
 
-- A recorded success returns `409 idempotency_completed` with
-  `Idempotent-Replayed: true`. The CLI reports an error; the response does not
-  contain the original message or response body.
-- A recorded server error returns its status and error code with
-  `Idempotent-Replayed: true`. The write may have happened.
+- A finished request returns its original status and body, success or error,
+  with `Idempotent-Replayed: true`. A send whose response was lost prints the
+  original message.
+- A recorded error is returned again. Correct the request and use a new key.
 - A request still running returns `409 idempotency_in_progress` with
   `Retry-After`. An unrecorded outcome returns
   `409 idempotency_outcome_unknown` and blocks another attempt with that key.
-- Reusing a key for a changed request returns `409 idempotency_conflict`.
+- If the recorded response cannot be read right now, the API returns
+  `503 idempotency_replay_unavailable` with `Retry-After`. Retry with the same
+  key; the write does not run again.
+- Reusing a key for a changed request returns `422 idempotency_conflict`.
 
-Keep the first response when you receive it. If the outcome is uncertain, check
+If the outcome is uncertain, check
 message events or webhooks before deciding whether to use a new key. A new key
 does not resolve the uncertainty and can send a duplicate. See the
 [Messaging retry contract](https://docs.polymorfa.com/guides/communicate/overview#retry-sends-safely).
@@ -623,8 +625,8 @@ object with `name`, `language`, `category`, and `components` from `--input`, or
 from stdin when it is `-`. Template names and provider IDs remain strings.
 Edits read `{ "components": [...] }` and return acceptance, not approval to send.
 Deletion requires `--yes`. Create, edit and delete send one request and never
-retry. Create and delete accept `--idempotency-key`; reuse the same key after an
-unknown outcome and the API answers `idempotency_completed` instead of writing
+retry. Create and delete accept `--idempotency-key`; reuse the same key after a
+lost response and the API returns the original response instead of writing
 again. List the catalog before resubmitting. The template routes need an active
 Official API connection, including on a Hybrid Number; a Number with only a
 Linked Devices connection is rejected.
@@ -1791,9 +1793,9 @@ instants. List returns one complete newest-first array with no cursor. Requeue
 is synchronous and reports only the number moved.
 
 Create, launch, pause, resume and stop accept `--idempotency-key` to deduplicate
-the same request for 24 hours. A successful request repeated with the same key
-returns `409 idempotency_completed`, not the original response. Changed input
-returns `409 idempotency_conflict`; an in-progress or uncertain result must be
+the same request for 1 hour. A request repeated with the same key returns the
+original response, success or error. Changed input returns
+`422 idempotency_conflict`; an in-progress or uncertain result must be
 resolved before trying a new key. The SDK generates a fresh key for create and
 launch when the flag is omitted. Supply an explicit key from the first attempt
 to reuse it across CLI invocations with the same input, credential and API

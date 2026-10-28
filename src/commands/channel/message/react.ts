@@ -19,7 +19,7 @@ export default class ChannelMessageReact extends BaseCommand {
   static override flags = {
     'idempotency-key': Flags.string({
       description:
-        'Key that makes retries of this write safe for 24 hours. Generated when omitted.',
+        'Key that makes retries of this write safe for 1 hour. Generated when omitted.',
     }),
     reaction: Flags.string({
       description: 'Reaction text, at most 32 UTF-8 bytes; empty removes it.',
