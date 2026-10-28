@@ -27,7 +27,9 @@
     "prepare": "npm run build",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && npm pack --dry-run --ignore-scripts && npm run audit:prod"
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node --test scripts/cli-reference.test.mjs && node scripts/cli-reference.mjs --check && npm pack --dry-run --ignore-scripts && npm run audit:prod",
+    "docs:reference": "npm run build && node scripts/cli-reference.mjs",
+    "docs:reference:check": "npm run build && node scripts/cli-reference.mjs --check"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "2.3.1",
@@ -332,6 +334,9 @@
       },
       "analytics": {
         "description": "Read WhatsApp number activity and operational vitals."
+      },
+      "agent": {
+        "description": "Set up coding agents with the Polymorfa agent kit."
       }
     }
   },
