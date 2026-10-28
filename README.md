@@ -2652,6 +2652,46 @@ These commands use the pinned SDK's `analytics.get` and `analytics.metrics`
 methods and shared response types. A CLI release containing these commands and
 an API deployment exposing Analytics are separate requirements.
 
+### Audience profiles (beta)
+
+Use a team API key with `campaigns:read` for reads or `campaigns:manage` for
+changes. Project and client tokens cannot access team profiles. Profile writes
+and import creation require beta enrollment; reads, cancellation and deletion
+remain available after withdrawal. These commands are source additions pending
+the matching SDK prerelease and API acceptance.
+
+```sh
+polymorfa campaign profiles list --limit 50
+polymorfa campaign profiles list --cursor CURSOR
+polymorfa campaign profiles get +14155550123
+polymorfa campaign profiles upsert +14155550123 --input profile.json
+polymorfa campaign profiles consent +14155550123 --limit 25
+polymorfa campaign profiles import --csv contacts.csv --replay-key contacts-1
+polymorfa campaign profiles imports get JOB_ID
+polymorfa campaign profiles imports cancel JOB_ID
+polymorfa campaign profiles delete +14155550123 --expected-revision 2
+```
+
+`profile.json` must contain `tags` and `attributes`. Include the latest
+`expectedRevision` when replacing an existing profile. Optional `provenance`
+and `consent` match the API body; assertions never override opt-outs. A stale
+revision returns 409. Deletion preserves opt-outs and existing campaign recipients.
+
+Imports accept at most 10 MiB and 10,000 rows. CSV must contain valid UTF-8;
+malformed byte sequences are refused before upload. Valid UTF-8, including an
+initial BOM and the original line endings, is sent without text normalization. Use `--mapping mapping.json`
+for explicit CSV columns, for example
+`{"phone":"Phone","tags":"Tags","attributes":"Attributes"}`. Omitted mapping
+uses the API's standard column names. Poll the job until `completed` or
+`cancelled`. Cancellation leaves committed edits intact. Replay keys must be
+reused only with the same CSV, mapping and credential.
+
+`--tag` and `--phone-prefix` require API support not yet available (API #567).
+They fail locally without sending a request; this CLI does not offer profile
+filtering. Listing supports `--cursor` and `--limit`. `--json` preserves
+API envelopes and pagination. The CLI keeps its existing SDK pin and uses a
+local typed adapter until a matching SDK prerelease is published.
+
 ## Package release workflow
 
 CLI development and release PRs target `main`. Nightly packages use the `dev` npm tag after matching staging API acceptance; stable packages follow production acceptance. Each package pins an exact accepted SDK version. See [the release guide](RELEASING.md).
