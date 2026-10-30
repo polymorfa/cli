@@ -17,6 +17,7 @@ import WebhookTest from '../../src/commands/webhook/test.js'
 import WebhookUpdate from '../../src/commands/webhook/update.js'
 import WebhookView from '../../src/commands/webhook/view.js'
 import {withEnvironment} from '../helpers/http-server.js'
+import {API_KEY_FIXTURE} from '../helpers/opaque-credential.js'
 
 const state = vi.hoisted(() => ({
   calls: [] as Array<{args: unknown[]; method: string}>,
@@ -916,8 +917,7 @@ function findCall(method: string) {
 function developerEnvironment<T>(run: () => Promise<T>): Promise<T> {
   return withEnvironment(
     {
-      POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      POLYMORFA_API_KEY: API_KEY_FIXTURE,
       POLYMORFA_BASE_URL: 'https://api.example.test',
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_PROJECT_TOKEN: undefined,

@@ -8,6 +8,7 @@ import {
   withEnvironment,
   type TestHttpServer,
 } from '../helpers/http-server.js'
+import {API_KEY_FIXTURE} from '../helpers/opaque-credential.js'
 
 describe('Official API round-2 commands', () => {
   let server: TestHttpServer | undefined
@@ -22,7 +23,7 @@ describe('Official API round-2 commands', () => {
     if (!server) throw Error('Server missing')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY: `pmfa_${'A'.repeat(72)}`,
+        POLYMORFA_API_KEY: API_KEY_FIXTURE,
         POLYMORFA_PROJECT_TOKEN: undefined,
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
