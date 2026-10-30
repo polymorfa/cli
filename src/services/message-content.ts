@@ -396,10 +396,6 @@ const cardJson = z.object({
     .string()
     .min(1)
     .refine((s) => Buffer.byteLength(s, 'utf8') <= 4096),
-  footer: z
-    .string()
-    .refine((s) => Buffer.byteLength(s, 'utf8') <= 256)
-    .optional(),
   buttons: z.array(jsonButton).min(1).max(10),
 })
 const carouselCardsJson = z
@@ -452,7 +448,6 @@ export function parseCarouselCards(value: unknown): readonly CarouselCard[] {
     const common = {
       body: card.body,
       buttons,
-      ...(card.footer === undefined ? {} : {footer: card.footer}),
     }
     return 'image' in card
       ? {...common, image: source(card.image)}

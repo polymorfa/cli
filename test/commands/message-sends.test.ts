@@ -862,6 +862,10 @@ describe('typed message send commands', () => {
       [card],
       [card, card],
       [{...card, video: {base64: 'c3ludGhldGlj'}}, card],
+      [
+        {...card, footer: 'Unsupported card footer'},
+        {...card, buttons: [{type: 'reply', text: 'Choose', id: 'other'}]},
+      ],
     ]) {
       await writeFile(file, JSON.stringify(cards))
       const result = await send([
