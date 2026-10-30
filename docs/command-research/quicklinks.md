@@ -21,16 +21,16 @@ on the hosted page and preserves entitlement boundaries around direct pairing.
 | `quicklink view`   | `MessagingClient.quickLinks.retrieve` | `GET /messaging/quicklinks/{id}`    | Read one link's status and onboarding progress                                               |
 | `quicklink cancel` | `MessagingClient.quickLinks.cancel`   | `DELETE /messaging/quicklinks/{id}` | Invalidate an unconnected link; initial Number/session cleanup can continue after acceptance |
 
-All three routes require `quicklink:manage`. The API accepts organization keys
+All three routes require `quicklink:manage`. The API accepts team keys
 and exact-project tokens and scopes project tokens to their own project.
 
 `quicklink create` takes one JSON object from `--input` with `projectId`,
 `customerId`, `externalId`, and `configuration`, and rejects other top-level
 fields before transport. Presentation and callbacks belong in saved settings
-(`widget view|update`). It uses an organization API key; project-token support
+(`widget view|update`). It uses an team key; project-token support
 for creation is not exposed by this command.
 
-`quicklink view` and `quicklink cancel` accept an organization API key or an
+`quicklink view` and `quicklink cancel` accept an team key or an
 exact-project token and require explicit project context. Browser client tokens
 fail before transport. Cancellation requires TTY confirmation or `--yes` before
 a client is constructed. The route does not read an `Idempotency-Key`, so the

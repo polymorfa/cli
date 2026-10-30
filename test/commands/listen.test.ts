@@ -42,8 +42,7 @@ describe('listen', () => {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
-        POLYMORFA_PROJECT_TOKEN:
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_PROJECT_TOKEN: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       () => runCommand(`listen --project ${PROJECT} --event message.* --json`),
     )
@@ -122,8 +121,7 @@ describe('listen', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_CLIENT_TOKEN: undefined,
-        POLYMORFA_PROJECT_TOKEN:
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_PROJECT_TOKEN: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       () =>
         runCommand(
@@ -158,8 +156,7 @@ describe('listen', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_CLIENT_TOKEN: undefined,
-        POLYMORFA_PROJECT_TOKEN:
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_PROJECT_TOKEN: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       () =>
         runCommand(
@@ -176,8 +173,7 @@ describe('listen', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_CLIENT_TOKEN: undefined,
-        POLYMORFA_PROJECT_TOKEN:
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_PROJECT_TOKEN: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       () =>
         runCommand(
@@ -193,8 +189,7 @@ describe('listen', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_CLIENT_TOKEN: undefined,
-        POLYMORFA_PROJECT_TOKEN:
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_PROJECT_TOKEN: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       () =>
         runCommand(

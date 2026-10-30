@@ -25,9 +25,13 @@ describe('project Flow commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_PROJECT_TOKEN:
-          kind === 'project' ? `pmfa_pt_${'A'.repeat(94)}` : undefined,
+          kind === 'project'
+            ? 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+            : undefined,
         POLYMORFA_CLIENT_TOKEN:
-          kind === 'client' ? `pmfa_ct_${'A'.repeat(94)}` : undefined,
+          kind === 'client'
+            ? `pmfa_ct_AAECAwQFBgcICQoLDA0ODxAREhM73f-k`
+            : undefined,
         POLYMORFA_BASE_URL: server!.baseUrl,
       },
       () => runCommand(command),

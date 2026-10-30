@@ -13,7 +13,7 @@ polymorfa version
 ## Requirements
 
 - Node.js 22 or newer
-- A Polymorfa organization API key or exact-project token for developer requests
+- A Polymorfa team key or exact-project token for developer requests
 - A server API key or short-lived client token for Messaging requests
 
 ## Development installation
@@ -140,7 +140,7 @@ The registry comes from the real command files. Commands needing the installed C
 ## Authentication profiles
 
 Until the backend exposes a revocable CLI device-authorization flow, login
-accepts an organization API key or exact-project token through standard input:
+accepts an team key or exact-project token through standard input:
 
 ```shell
 printf '%s' "$POLYMORFA_API_KEY" | \
@@ -159,6 +159,12 @@ are stored separately in macOS Keychain, Windows Credential Manager, or Linux
 Secret Service. A keyring failure stops the command; the CLI never silently
 falls back to plaintext. `auth status` reports local secure-store availability
 in this development slice and does not yet claim remote identity validation.
+
+Treat all Polymorfa credentials as opaque strings. Pass them unchanged; never
+parse them or assume a fixed length. Credential columns must store at least 512
+characters, preferably unrestricted text. Client-token length varies with its
+bindings, Customer block and signing key ID. Local prefix, encoding and checksum
+checks do not authenticate a credential; the service checks live authority.
 
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
@@ -257,7 +263,7 @@ your shell to its startup file if you want completion in later sessions.
 
 ## Inspect sessions
 
-Use an organization API key with `sessions:read` to inspect stored session
+Use an team key with `sessions:read` to inspect stored session
 metadata:
 
 ```shell
@@ -272,7 +278,7 @@ Use a session ID from the list for `view` or `status`; these commands do not
 accept `--project`. `status` reads the stored status and optional reason from
 the session record. It does not probe the device or wait for a connection.
 Key metadata listing and revocation are available through `key list` and
-`key revoke`; the CLI does not mint or rotate organization keys.
+`key revoke`; the CLI does not mint or rotate team keys.
 
 ## QuickLinks
 
@@ -290,7 +296,7 @@ The request accepts `customerId`, `externalId`, and `configuration`. See
 [Guided session creation and configuration](#guided-session-creation-and-configuration)
 for the configuration fields.
 
-Inspect or cancel a link with an organization API key or an exact-project
+Inspect or cancel a link with an team key or an exact-project
 token that has `quicklink:manage`:
 
 ```shell
@@ -493,7 +499,7 @@ header.
 
 ### Flow drafts and provider lifecycle
 
-Flow commands require a project scope and an organization API key or project
+Flow commands require a project scope and an team key or project
 token. Reads use `sessions:read`; mutations use `sessions:manage`.
 
 ```shell
@@ -576,7 +582,7 @@ linked to another project; the API checks that the credential can access it.
 
 ### Official API observations and templates
 
-The `cloud` commands require an organization API key or a project token with the
+The `cloud` commands require an team key or a project token with the
 listed scope. Client tokens cannot use these commands. Server-side feature
 access still applies: an installed command does not enroll a Number or enable a
 beta feature.
@@ -1226,7 +1232,7 @@ sox greeting.wav -t raw -r 16000 -e signed -b 16 -c 1 - | \
 
 Polymorfa checks every call against the team's call policy before the
 destination rings. `calls policy` and `calls opt-outs` read and change that
-policy and require an organization API key (`POLYMORFA_API_KEY` or a profile).
+policy and require an team key (`POLYMORFA_API_KEY` or a profile).
 A project token used as the API key reaches the API, which refuses it with
 `403` (exit code 3). A client token is not a Platform credential, so the CLI
 refuses the command before sending a request (exit code 2).
@@ -1305,9 +1311,9 @@ polymorfa calls check +14155550123 --session support
 ### Call statistics and export
 
 `calls stats` summarizes calls and `calls export` writes call detail records.
-Both accept an organization API key or an exact-project token with the
+Both accept an team key or an exact-project token with the
 `sessions:read` scope. Pass `--project` to read one project. Without it, an
-organization API key reads every project in the organization. A project token
+team key reads every project in the organization. A project token
 reads only its own project and requires `--project`.
 
 ```shell
@@ -1396,7 +1402,7 @@ or times out, the command keeps the password on screen and exits successfully.
 Voice Automation is a beta (`calls.voice-automation`) for enrolled teams only.
 For other teams, every change except delete fails with `voice_not_enabled`.
 Reads, previews and deletes keep working after a team leaves the beta. The
-commands require an organization server API key with `voice:read` (lists,
+commands require an team key with `voice:read` (lists,
 views, previews) or `voice:manage` (changes).
 
 ### Audio library
@@ -1671,7 +1677,7 @@ request metadata.
 
 ## Platform access and security
 
-Organization server API keys can inspect the credential, membership, audit,
+Team keys can inspect the credential, membership, audit,
 ban, incident, saved QuickLink settings, and project-token metadata made
 available by the Platform API:
 
@@ -2234,7 +2240,7 @@ status, and safe counters, never primary credentials, listener credentials,
 forwarding secrets, or unrestricted payloads.
 
 `polymorfa_session_list` is a read-only discovery tool for one explicit project
-UUID. It uses the selected CLI organization API key with `sessions:read` and
+UUID. It uses the selected CLI team key with `sessions:read` and
 returns session ID, name, stored status, and test-mode flag. It omits phone
 numbers, credentials, and message data. The tool does not probe the live device.
 Project tokens and Messaging client tokens cannot use this tool. A failed read
@@ -2446,7 +2452,7 @@ the CLI never creates or confirms a replacement purchase automatically.
 
 ### Number tier changes
 
-Tier changes use an organization API key. Quote first, review the credit charge
+Tier changes use an team key. Quote first, review the credit charge
 and effective time, then confirm that exact quote:
 
 ```shell
@@ -2535,7 +2541,7 @@ polymorfa hybrid-link resume --session NUMBER --expected-revision REVISION
 For project and session routing scopes, `--project`, the nearest linked project,
 and the selected profile determine the project in that order. A project-token
 profile fails when its project differs from the linked directory. Team routing
-scope uses an organization API key and ignores directory project links. `quicklink
+scope uses an team key and ignores directory project links. `quicklink
 availability` shows existing connection status and any QuickLink that can be
 resumed.
 
@@ -2556,7 +2562,7 @@ transports within the restrictions inherited from the team and project.
 
 ### Functions
 
-Functions are project-owned. Select `--project` or use the linked project/profile context. The commands accept an organization API key or a project token; browser client tokens are refused. Access also depends on the team's enabled Functions release and the configured execution region.
+Functions are project-owned. Select `--project` or use the linked project/profile context. The commands accept an team key or a project token; browser client tokens are refused. Access also depends on the team's enabled Functions release and the configured execution region.
 
 ```bash
 polymorfa function list --project PROJECT_UUID
@@ -2641,7 +2647,7 @@ does not retrieve media or webhook deliveries.
 
 ### Spending limits and funding priority
 
-With an organization key carrying `billing:read`, inspect current controls:
+With an team key carrying `billing:read`, inspect current controls:
 
 ```bash
 polymorfa billing limits list --project <project-uuid> --json

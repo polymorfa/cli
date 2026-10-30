@@ -6,7 +6,7 @@ import {viewManagedSession} from '../../services/platform-management.js'
 
 export default class SessionStatus extends BaseCommand {
   static override description =
-    'Read the stored session status and reason. Requires an organization API key with sessions:read.'
+    'Read the stored session status and reason. Requires an team key with sessions:read.'
   static override args = {
     session: Args.string({description: 'Session ID.', required: true}),
   }

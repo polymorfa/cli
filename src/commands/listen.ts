@@ -74,7 +74,7 @@ export default class Listen extends BaseCommand {
     }),
     project: Flags.string({
       description:
-        'Use a project UUID; organization API keys may use a unique slug. Defaults to the linked or profile project.',
+        'Use a project UUID; team keys may use a unique slug. Defaults to the linked or profile project.',
     }),
   }
 

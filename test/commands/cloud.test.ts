@@ -113,7 +113,7 @@ describe('Official API commands', () => {
     )
     const keyring = vi
       .spyOn(AsyncEntry.prototype, 'getPassword')
-      .mockResolvedValue(`pmfa_pt_${'A'.repeat(94)}`)
+      .mockResolvedValue('pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k')
     server = await startHttpServer({
       status: 202,
       body: {success: true, data: {accepted: true}},
@@ -466,11 +466,15 @@ describe('Official API commands', () => {
     return withEnvironment(
       {
         POLYMORFA_API_KEY:
-          kind === 'api' ? `pmfa_${'A'.repeat(72)}` : undefined,
+          kind === 'api' ? 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k' : undefined,
         POLYMORFA_PROJECT_TOKEN:
-          kind === 'project' ? `pmfa_pt_${'A'.repeat(94)}` : undefined,
+          kind === 'project'
+            ? 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+            : undefined,
         POLYMORFA_CLIENT_TOKEN:
-          kind === 'client' ? `pmfa_ct_${'A'.repeat(94)}` : undefined,
+          kind === 'client'
+            ? `pmfa_ct_AAECAwQFBgcICQoLDA0ODxAREhM73f-k`
+            : undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
       },
       run,

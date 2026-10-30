@@ -18,10 +18,12 @@ describe('Official group commands (beta)', () => {
     return withEnvironment(
       {
         POLYMORFA_API_KEY:
-          kind === 'api' ? `pmfa_${'A'.repeat(72)}` : undefined,
+          kind === 'api' ? 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k' : undefined,
         POLYMORFA_PROJECT_TOKEN: undefined,
         POLYMORFA_CLIENT_TOKEN:
-          kind === 'client' ? `pmfa_ct_${'A'.repeat(94)}` : undefined,
+          kind === 'client'
+            ? `pmfa_ct_AAECAwQFBgcICQoLDA0ODxAREhM73f-k`
+            : undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
       },
       () => runCommand(command),
