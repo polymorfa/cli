@@ -1,4 +1,5 @@
 import {Args, Flags} from '@oclif/core'
+import type {ListCampaignRecipientsParams} from '@polymorfa/sdk'
 
 import {BaseCommand} from '../../../base-command.js'
 import {
@@ -21,10 +22,25 @@ export default class CampaignRecipientsList extends BaseCommand {
   ]
 
   static override flags = {
-    reason: Flags.string({
+    reason: Flags.option({
+      options: [
+        'opted_out',
+        'cold_held',
+        'campaign_cancelled',
+        'invalid_recipient',
+        'session_not_connected',
+        'ack_timeout',
+        'blocked_by_safety',
+        'send_failed',
+        'missing_variable',
+        'frequency_cap',
+        'other',
+      ] as const satisfies readonly NonNullable<
+        ListCampaignRecipientsParams['reason']
+      >[],
       description:
         'Filter by recipient failure reason, including frequency_cap.',
-    }),
+    })(),
     cursor: Flags.string({description: 'Continue from this opaque cursor.'}),
     limit: Flags.integer({
       description: 'Request this many recipients. The API defaults to 25.',
