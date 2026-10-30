@@ -56,6 +56,11 @@ export function renderWebhookDetail(webhook: {
   readonly eventTypes: readonly string[]
   readonly headers: readonly {readonly name: string}[]
   readonly phoneOfflineStartDay?: number
+  readonly batching?: {
+    readonly enabled: boolean
+    readonly maxEvents: number
+    readonly windowMs: number
+  }
   readonly createdAt: string
   readonly updatedAt: string
 }): string {
@@ -68,6 +73,14 @@ export function renderWebhookDetail(webhook: {
     ['Format', webhook.format],
     ['Event types', webhook.eventTypes.join(', ')],
     ['Phone offline warning', phoneOfflineWarning(webhook)],
+    [
+      'Batching (beta)',
+      webhook.batching === undefined
+        ? 'not reported'
+        : webhook.batching.enabled
+          ? `on, up to ${webhook.batching.maxEvents} events, ${webhook.batching.windowMs} ms`
+          : 'off',
+    ],
     ['Header names', webhook.headers.map(({name}) => name).join(', ')],
     ['Created', webhook.createdAt],
     ['Updated', webhook.updatedAt],
