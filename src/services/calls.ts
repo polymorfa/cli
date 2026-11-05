@@ -31,6 +31,7 @@ import {
   type MessagingCredential,
   type ResponseMetadata,
   type SessionCallSettings,
+  type SessionCallSettingsResponse,
   type SuccessResponse,
   type UpdateSessionCallSettingsRequest,
   type VoipAcceptCallResult,
@@ -404,7 +405,18 @@ export async function updateCallSettings(
     ...(changes.simultaneousCalls === true ? {acknowledgeRisk: true} : {}),
     ...(expectedRevision === undefined ? {} : {expectedRevision}),
   }
-  const response = await client.voip.updateCallSettings(name, body)
+  // The published SDK's typed validator predates simultaneousCalls. Keep its
+  // authenticated transport, but send the explicitly validated new setting
+  // through raw until the typed resource supports it. Never add an unrelated
+  // setting merely to satisfy the older validator.
+  const response =
+    body.simultaneousCalls === undefined
+      ? await client.voip.updateCallSettings(name, body)
+      : await client.raw.request<SessionCallSettingsResponse>({
+          method: 'PUT',
+          path: `/platform/sessions/${encodeURIComponent(name)}/call-settings`,
+          body,
+        })
   return result(response.data.data, response.metadata)
 }
 

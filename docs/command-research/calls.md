@@ -118,6 +118,13 @@ internal SDK module.
   without `--simultaneous-calls=true` is also refused locally, because the
   API rejects `acknowledgeRisk` on its own. The API refuses project tokens
   turning it on with 403 `permission_denied` (exit code 3).
+  The published SDK's typed settings validator predates simultaneous calls.
+  Updates containing that setting use the same SDK client's authenticated raw
+  transport to the Platform route after the CLI's risk checks. Standalone on
+  and off updates send only the requested fields; they never change conference
+  mode to satisfy the older validator. Other settings-only updates retain the
+  typed SDK method. The dependency pin is unchanged, and the local type
+  extensions remain until a matching SDK package is accepted.
 - `calls stats` and `calls export` accept an organization API key or an
   exact-project token (`sessions:read`), resolved like the developer
   commands. `--project` (or a project token, which requires it) reads one

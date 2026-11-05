@@ -621,7 +621,7 @@ describe('unified calls commands', () => {
     )
     const acknowledged = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --conference-mode --simultaneous-calls=true --acknowledge-risk',
+        'calls settings set --session support --simultaneous-calls=true --acknowledge-risk',
       ),
     )
     const json = await apiKey(() =>
@@ -631,7 +631,7 @@ describe('unified calls commands', () => {
     )
     const off = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --conference-mode --simultaneous-calls=false',
+        'calls settings set --session support --simultaneous-calls=false',
       ),
     )
 
@@ -656,14 +656,65 @@ describe('unified calls commands', () => {
     expect(
       server.requests.map(({body}) => JSON.parse(body) as unknown),
     ).toEqual([
-      {acknowledgeRisk: true, conferenceMode: true, simultaneousCalls: true},
+      {acknowledgeRisk: true, simultaneousCalls: true},
       {
         acknowledgeRisk: true,
         conferenceMode: true,
         expectedRevision: 1,
         simultaneousCalls: true,
       },
-      {conferenceMode: true, simultaneousCalls: false},
+      {simultaneousCalls: false},
+    ])
+  })
+
+  test('preserves authorization and revision refusals for standalone simultaneous calls', async () => {
+    server = await startHttpSequenceServer([
+      apiError(403, 'permission_denied', 'A team API key is required.'),
+      apiError(409, 'state_conflict', 'Call settings changed.'),
+    ])
+
+    const denied = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support/main --simultaneous-calls=true --acknowledge-risk --json',
+      ),
+    )
+    const stale = await apiKey(() =>
+      runCommand(
+        'calls settings set --session support/main --simultaneous-calls=false --expected-revision 2 --json',
+      ),
+    )
+
+    expect(exitCode(denied.error)).toBe(3)
+    expect(JSON.parse(denied.stderr.trim())).toMatchObject({
+      error: {category: 'authorization', code: 'permission_denied'},
+    })
+    expect(exitCode(stale.error)).toBe(4)
+    expect(JSON.parse(stale.stderr.trim())).toMatchObject({
+      error: {category: 'conflict', code: 'state_conflict'},
+    })
+    expect(
+      server.requests.map(({method, url, headers}) => ({
+        method,
+        url,
+        authorization: headers.authorization,
+      })),
+    ).toEqual([
+      {
+        method: 'PUT',
+        url: '/platform/sessions/support%2Fmain/call-settings',
+        authorization: `Bearer ${API_KEY}`,
+      },
+      {
+        method: 'PUT',
+        url: '/platform/sessions/support%2Fmain/call-settings',
+        authorization: `Bearer ${API_KEY}`,
+      },
+    ])
+    expect(
+      server.requests.map(({body}) => JSON.parse(body) as unknown),
+    ).toEqual([
+      {acknowledgeRisk: true, simultaneousCalls: true},
+      {expectedRevision: 2, simultaneousCalls: false},
     ])
   })
 
@@ -747,9 +798,7 @@ describe('unified calls commands', () => {
     const expired = await apiKey(() => runCommand(get))
     const turnedOff = await apiKey(() =>
       runCommand(
-        // The published SDK pin counts only its older settings as a change,
-        // so --simultaneous-calls=false alone fails before any request.
-        'calls settings set --session support/main --conference-mode --simultaneous-calls=false',
+        'calls settings set --session support/main --simultaneous-calls=false',
       ),
     )
 
@@ -793,7 +842,6 @@ describe('unified calls commands', () => {
       'PUT /platform/sessions/support%2Fmain/call-settings',
     ])
     expect(JSON.parse(server.requests[7]?.body ?? '')).toEqual({
-      conferenceMode: true,
       simultaneousCalls: false,
     })
   })
