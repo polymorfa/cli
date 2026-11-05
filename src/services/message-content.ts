@@ -378,13 +378,20 @@ const jsonButton = z.discriminatedUnion('type', [
     })
     .strict(),
 ])
+function isStandardBase64(value: string): boolean {
+  if (value.length === 0 || value.length % 4 !== 0) return false
+  const payload = value.endsWith('==')
+    ? value.slice(0, -2)
+    : value.endsWith('=')
+      ? value.slice(0, -1)
+      : value
+  // A character-class scan avoids repeated groups that overflow V8's stack.
+  return payload.length > 0 && !/[^A-Za-z0-9+/]/.test(payload)
+}
+
 const mediaJson = z.object({
   url: z.string().url().optional(),
-  base64: z
-    .string()
-    .min(1)
-    .regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/)
-    .optional(),
+  base64: z.string().min(1).refine(isStandardBase64).optional(),
   mimeType: z.string().max(256).optional(),
 })
 const oneSource = (value: {
