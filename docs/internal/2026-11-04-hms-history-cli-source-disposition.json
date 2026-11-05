@@ -1,4 +1,22 @@
 {
+  "reconciliation_followup": {
+    "impact": {
+      "API": "Unaffected: no route, scope, response, retention or credential contract changes.",
+      "SDKs": "Unaffected: the direct SDK dependency and its containing-package eligibility are unchanged.",
+      "CLI": "Updated: only the production Oclif glob dependency is overridden to a patched release; command names, flags and output contracts stay current.",
+      "Docs": "Updated internal source/provenance record. No public guide or changelog change is required for this transitive security fix because it adds no customer command or workflow; no availability announcement is made.",
+      "Feature releases": "Unaffected: no flag, entitlement, enrollment, release control, package publication or deployment action. Hosted verification and merge requirements remain intact.",
+      "Admin": "Unaffected: no staff controls, capabilities, database or provider access changes."
+    },
+    "kind": "Production dependency security remediation required by the genuine hosted audit gate",
+    "advisory": "https://github.com/advisories/GHSA-g3hv-75wg-m249",
+    "observed_hosted_failure": "The unchanged CLI production audit rejected vulnerable minimatch through @oclif/core after formatting, lint, typechecking, tests, build, browser and packaging stages.",
+    "remedy": "Scope an exact minimatch 11.0.4 override to @oclif/core only; preserve the direct Oclif and SDK versions and every existing command/flag/output policy.",
+    "producer": "npm install --package-lock-only --ignore-scripts, in an isolated directory made from authenticated API package.json/package-lock.json bytes, with empty isolated npm configuration and new producer cache. No old checkout or installed dependencies read.",
+    "compatibility": "CLI supports Node >=22; patched minimatch supports Node 20 or >=22. This crosses the consumer's declared transitive major range, so genuine hosted CLI tests/build/browser/pack/audit and exact-head Codex/security review remain required.",
+    "source_delta": "The final reconciliation now also changes package.json and the authoritative produced package-lock.json for this security fix. Prior one-record-only runtime/tree proofs apply to their earlier heads, not to this successor.",
+    "limits": "No audit assertion or threshold is weakened; no npm audit fix --force, SDK repin, old interface restore, registry publication or deployment. Extra local validation runs remain waived; no final-source hosted pass is asserted."
+  },
   "schema_version": 1,
   "purpose": "Retain historical authored source semantics and exact provenance during ordinary two-parent source reconciliation; no runtime restoration or publication/acceptance claim.",
   "disposition_authority": "Original source owner reconciliation under the human workflow of 2026-11-05. Preserve accepted main runtime and all authored history; retain candidate-only semantics here rather than restoring unaccepted interfaces or policies. No runtime/consumer/release pass is asserted.",
