@@ -53,7 +53,8 @@ calls
          [--cursor <cursor>] [--max-pages <n>]
   settings
     get --session <id>
-    set --session <id> [--[no-]conference-mode] [--calls-enabled=<true|false>] ...
+    set --session <id> [--[no-]conference-mode] [--calls-enabled=<true|false>]
+        [--simultaneous-calls=<true|false> [--acknowledge-risk]] ...
 ```
 
 ## Operation mapping
@@ -111,6 +112,19 @@ internal SDK module.
   Messaging client; the CLI builds that client from the Platform environment.
   `calls settings set --expected-revision` sends `expectedRevision`; a stale
   revision returns 409 `state_conflict`, which exits with code 4.
+  `--simultaneous-calls=true` sends `simultaneousCalls: true` with
+  `acknowledgeRisk: true` only when `--acknowledge-risk` is present; without
+  it the CLI exits with code 2 before any request. `--acknowledge-risk`
+  without `--simultaneous-calls=true` is also refused locally, because the
+  API rejects `acknowledgeRisk` on its own. The API refuses project tokens
+  turning it on with 403 `permission_denied` (exit code 3).
+  The published SDK's typed settings validator predates simultaneous calls.
+  Updates containing that setting use the same SDK client's authenticated raw
+  transport to the Platform route after the CLI's risk checks. Standalone on
+  and off updates send only the requested fields; they never change conference
+  mode to satisfy the older validator. Other settings-only updates retain the
+  typed SDK method. The dependency pin is unchanged, and the local type
+  extensions remain until a matching SDK package is accepted.
 - `calls stats` and `calls export` accept an organization API key or an
   exact-project token (`sessions:read`), resolved like the developer
   commands. `--project` (or a project token, which requires it) reads one

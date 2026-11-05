@@ -131,7 +131,7 @@
     {
       "id": "C03",
       "authored_paths": ["src/commands/chat/list.ts"],
-      "authored_semantics": "chat list session, kind four enum, limit 1–100, default 50, cursor, active-since/active-before; chats.list request mapped camelCase.",
+      "authored_semantics": "chat list session, kind four enum, limit 1\u2013100, default 50, cursor, active-since/active-before; chats.list request mapped camelCase.",
       "current_source_semantics": "Current chat list retains these flags, calls listHistoryChats -> chats.list, current page envelope.",
       "disposition": "Base list/filter intent replaced; exact human/example strings historical.",
       "evidence": [
@@ -918,5 +918,11 @@
       "message": "Merge remote-tracking branch 'origin/dev' into fix/cli-history-dev-20260923\n\n# Conflicts:\n#\tREADME.md\n#\tpackage-lock.json\n#\tpackage.json",
       "role": "Existing merge of the then-current CLI dev branch between authored d14aa988 and original head 752b5495; retained as original ancestry, not transplanted runtime content."
     }
-  ]
+  ],
+  "current_main_integration": {
+    "accepted_main": "b7ad48a3393f83b14058069f6948bfd9fb492c00",
+    "previous_own_head": "356aa7a769fdf914772f1c7c974954a8360f27ac",
+    "route": "ordinary two-parent merge; preserve all current accepted main leaves plus owned provenance and installed-package dependency protection",
+    "semantics": "Current simultaneous-call source, docs and generated reference retained exactly; no old history interfaces restored. Historical source comparisons remain pinned to their recorded original comparison heads."
+  }
 }

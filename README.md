@@ -1089,6 +1089,9 @@ polymorfa calls settings set --session support --calls-enabled=false \
   --expected-revision 3
 polymorfa calls settings set --session support \
   --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+polymorfa calls settings set --session support \
+  --simultaneous-calls=true --acknowledge-risk
+polymorfa calls settings set --session support --simultaneous-calls=false
 
 polymorfa calls retention get
 polymorfa calls retention set --policy compliance --expected-revision 0
@@ -1156,7 +1159,21 @@ never answers or declines on its own.
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
   call. On a Cloud API session, `--host-cloud-api-calls=true` has Polymorfa
   Calls answer incoming calls; with the default `false`, your Graph API
-  integration answers them. `calls settings set` sends only the flags you pass; the other
+  integration answers them. `--simultaneous-calls=true` lets a linked-device
+  number hold any number of calls at once (incoming, placed, and campaign
+  calls); Cloud API numbers ignore it. WhatsApp's own apps never hold two calls
+  at once. While it is on, and for 30 days after you turn it off, Ban Insurance
+  does not cover a ban of the number: a claim opens as `denied` with verdict
+  `simultaneous_calls`. Turning it on requires `--acknowledge-risk`; without
+  it the command exits with code 2 and sends nothing. Only a team API key can
+  turn it on. `--simultaneous-calls=false` needs no acknowledgment. After it
+  is off, `calls settings get` and `set` print `Ban Insurance exclusion ends`
+  with the server's time (`simultaneousCallsCoverageExcludedUntil` in
+  `--json`), until that time passes. Ban Insurance excludes a ban when
+  simultaneous calls were on during the 30 days before it; this timestamp is the
+  cutoff for a new ban from that period. Nothing is printed while the setting is on, and a missing or null
+  end does not mean the number is covered.
+  `calls settings set` sends only the flags you pass; the other
   settings keep their values. `calls settings get` and `set` print the
   settings `revision`, which increases on every change and is `0` while the
   session uses the defaults. Pass `--expected-revision <n>` to apply the
@@ -1665,7 +1682,9 @@ patches. Customer incident reports and retractions also require an idempotency k
 acknowledgement and enforcement appeals remain dashboard-only and are not
 available through server-key commands. Claim `amountCents`, `measuredCents`, and
 `capCents` are credit quantities with up to six decimal places, not cash minor
-units; text output labels them as credits. Use `--json` to retain explanations,
+units; text output labels them as credits. `claim view` prints whether
+simultaneous calls were on during the claim window when the claim records it;
+a claim with verdict `simultaneous_calls` is denied and pays nothing. Use `--json` to retain explanations,
 observed account state, collection metadata, action outcomes, cursors, and
 request metadata.
 
