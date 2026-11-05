@@ -1,0 +1,1051 @@
+{
+  "schema_version": 1,
+  "purpose": "Retain historical authored source semantics and exact provenance during ordinary two-parent source reconciliation; no runtime restoration or publication/acceptance claim.",
+  "disposition_authority": "Original source owner reconciliation under the human workflow of 2026-11-05. Preserve accepted main runtime and all authored history; retain candidate-only semantics here rather than restoring unaccepted interfaces or policies. No runtime/consumer/release pass is asserted.",
+  "repository": "polymorfa/cli",
+  "owning_pull_request": 93,
+  "original_head": "752b54959e9733ebdc9c07b45ebedffb1f852ddd",
+  "reconciliation_main": "044f8b75ae8b0689664fe489c22d4a3c64486717",
+  "main_tree": "60696819120f2a6b86388b828de99e3cf16c126b",
+  "original_authored_commits": [
+    {
+      "sha": "a4b4863775d9ba44a253e929855f5c90f2c3856d",
+      "parents": [
+        "9713a8ddf572440dd827cc89e01d50dd8b5c5bae"
+      ],
+      "message": "feat(cli): chat and message history commands\n\nPins @polymorfa/sdk to polymorfa/sdks#270 head c07ff14 (moves after merge).",
+      "tree": "83d82211eebb995e079bfaa683e7abf03c7767dd"
+    },
+    {
+      "sha": "d14aa98882114d23736aba518dab8162436f46da",
+      "parents": [
+        "a4b4863775d9ba44a253e929855f5c90f2c3856d"
+      ],
+      "message": "fix(history): keep apiVersion in list metadata and name chat activity flags in range errors",
+      "tree": "4c6f0615dd3dd2e663ef331de9ecf5d6efa32018"
+    },
+    {
+      "sha": "752b54959e9733ebdc9c07b45ebedffb1f852ddd",
+      "parents": [
+        "2d7127d191da36ea4b4214d78a5fcfeab99d3a49"
+      ],
+      "message": "fix(cli): align history commands with SDK page contract",
+      "tree": "b4f2a8dcd968650d80799120511590345aa802ed"
+    }
+  ],
+  "semantics": [
+    {
+      "id": "C01",
+      "authored_paths": [
+        "src/commands/chat/get.ts"
+      ],
+      "authored_semantics": "chat get CONVERSATION --session; conversation positional accepts ID/E164; chats.retrieve, response.data.data; serverApiKeyOnly.",
+      "current_source_semantics": "chat view CONVERSATION --session uses viewHistoryChat -> chats.retrieve, same identity target and envelope unwrapping.",
+      "disposition": "Read intent replaced; old get alias intentionally not restored.",
+      "evidence": [
+        "src/commands/chat/view.ts",
+        "src/services/history.ts",
+        "README.md"
+      ],
+      "old_objects": [
+        {
+          "path": "src/commands/chat/get.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "8ab359c33aa2341adbdd45d214e27c0df0baf115"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/commands/chat/view.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "9f0f8549a5ecf182e20d42d2d159fe840f43e47a"
+        },
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ae12ccf1526b6e5b1ca4c1dc5f31a9259ec62ae6"
+        },
+        {
+          "path": "README.md",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "55f947ffc778e9193973371e870fe81cf16c6244"
+        }
+      ]
+    },
+    {
+      "id": "C02",
+      "authored_paths": [
+        "src/commands/message/get.ts"
+      ],
+      "authored_semantics": "message get MESSAGE --conversation CONVERSATION --session; chats.retrieveMessage; response.data.data.",
+      "current_source_semantics": "chat message view CONVERSATION MESSAGE --session uses chats.retrieveMessage.",
+      "disposition": "Read intent replaced; distinct root command/argument layout not restored.",
+      "evidence": [
+        "src/commands/chat/message/view.ts",
+        "src/services/history.ts",
+        "README.md"
+      ],
+      "old_objects": [
+        {
+          "path": "src/commands/message/get.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "d9c7b6a83b5f2f5963c8368abddcfb96fd9b077e"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/commands/chat/message/view.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "4b76cf69f4575254ee5b7f04d952ae00b31a2596"
+        },
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ae12ccf1526b6e5b1ca4c1dc5f31a9259ec62ae6"
+        },
+        {
+          "path": "README.md",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "55f947ffc778e9193973371e870fe81cf16c6244"
+        }
+      ]
+    },
+    {
+      "id": "C03",
+      "authored_paths": [
+        "src/commands/chat/list.ts"
+      ],
+      "authored_semantics": "chat list session, kind four enum, limit1..100/default50, cursor, active-since/active-before; chats.list request mapped camelCase.",
+      "current_source_semantics": "Current chat list retains these flags, calls listHistoryChats -> chats.list, current page envelope.",
+      "disposition": "Base list/filter intent replaced; exact human/example strings historical.",
+      "evidence": [
+        "src/commands/chat/list.ts",
+        "src/services/history.ts",
+        "test/commands/history.test.ts"
+      ],
+      "old_objects": [
+        {
+          "path": "src/commands/chat/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "00c452584c63f89808f5bcfbf97b9de294457ab2"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/commands/chat/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c965c99c0a1defa52b23cfcb5ca15dd2c6f637cb"
+        },
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ae12ccf1526b6e5b1ca4c1dc5f31a9259ec62ae6"
+        },
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ac4ee258dbeb6a741a82308a79d8769ed96b5cf1"
+        }
+      ]
+    },
+    {
+      "id": "C04",
+      "authored_paths": [
+        "src/commands/message/list.ts"
+      ],
+      "authored_semantics": "Root message list with required --conversation, session, cursor, order desc/asc, direction, since/until, limit1..100.",
+      "current_source_semantics": "chat message list CONVERSATION --session retains current filter semantics and chats.listMessages.",
+      "disposition": "Read/filter intent replaced; old namespace and conversation flag excluded.",
+      "evidence": [
+        "src/commands/chat/message/list.ts",
+        "src/services/history.ts",
+        "test/commands/history.test.ts"
+      ],
+      "old_objects": [
+        {
+          "path": "src/commands/message/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "07a5a908ce6aed72e33443c784d5878af7ab7009"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/commands/chat/message/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "a2eac87e2222d7e07f1b0b4df5e29f33feaeb5c6"
+        },
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ae12ccf1526b6e5b1ca4c1dc5f31a9259ec62ae6"
+        },
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ac4ee258dbeb6a741a82308a79d8769ed96b5cf1"
+        }
+      ]
+    },
+    {
+      "id": "C05",
+      "authored_paths": [
+        "src/commands/message/list.ts"
+      ],
+      "authored_semantics": "--type singular comma string split/trim/drop empty then joined to types string; originally passed array/client.messages.list, final repair corrects SDK resource and serialization.",
+      "current_source_semantics": "--types plural forwards comma string through current typed params and SDK; no equivalent CLI trim/filter step.",
+      "disposition": "Correct SDK route/serialization intent replaced. Flag spelling/normalization is real difference intentionally not restored or claimed identical.",
+      "evidence": [
+        "src/commands/chat/message/list.ts",
+        "src/services/history.ts",
+        "README.md"
+      ],
+      "old_objects": [
+        {
+          "path": "src/commands/message/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "07a5a908ce6aed72e33443c784d5878af7ab7009"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/commands/chat/message/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "a2eac87e2222d7e07f1b0b4df5e29f33feaeb5c6"
+        },
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ae12ccf1526b6e5b1ca4c1dc5f31a9259ec62ae6"
+        },
+        {
+          "path": "README.md",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "55f947ffc778e9193973371e870fe81cf16c6244"
+        }
+      ]
+    },
+    {
+      "id": "C06",
+      "authored_paths": [
+        "src/commands/chat/list.ts",
+        "src/commands/message/list.ts",
+        "src/services/history.ts"
+      ],
+      "authored_semantics": "--max-items1..10000 automatic continuation via loadNext(cursor), identical params across pages; accumulated result and last resume cursor.",
+      "current_source_semantics": "Current commands expose explicit --cursor page calls only; manual same-filter continuation documented.",
+      "disposition": "Unique auto-pagination policy explicitly excluded by active task, not inferred equivalent. No restoration without actual current-contract requirement.",
+      "evidence": [
+        "src/commands/chat/list.ts",
+        "src/commands/chat/message/list.ts",
+        "README.md"
+      ],
+      "old_objects": [
+        {
+          "path": "src/commands/chat/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "00c452584c63f89808f5bcfbf97b9de294457ab2"
+        },
+        {
+          "path": "src/commands/message/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "07a5a908ce6aed72e33443c784d5878af7ab7009"
+        },
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "91bebc585fecc17e902e3303673855b05697e7e2"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/commands/chat/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c965c99c0a1defa52b23cfcb5ca15dd2c6f637cb"
+        },
+        {
+          "path": "src/commands/chat/message/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "a2eac87e2222d7e07f1b0b4df5e29f33feaeb5c6"
+        },
+        {
+          "path": "README.md",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "55f947ffc778e9193973371e870fe81cf16c6244"
+        }
+      ]
+    },
+    {
+      "id": "C07",
+      "authored_paths": [
+        "src/services/history.ts"
+      ],
+      "authored_semantics": "collectHistory missing next cursor error, immediate repeated cursor error, truncation to cap sets nextCursor null when discarding tail and hasMore true; previousCursor and metadata come from first page; no full-cycle detection.",
+      "current_source_semantics": "No collector in current command path; next/previous cursor passed through per page.",
+      "disposition": "Collector guard/truncation semantics remain historical; not transplanted into current cursor contract.",
+      "evidence": [
+        "src/services/history.ts",
+        "README.md"
+      ],
+      "old_objects": [
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "91bebc585fecc17e902e3303673855b05697e7e2"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ae12ccf1526b6e5b1ca4c1dc5f31a9259ec62ae6"
+        },
+        {
+          "path": "README.md",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "55f947ffc778e9193973371e870fe81cf16c6244"
+        }
+      ]
+    },
+    {
+      "id": "C08",
+      "authored_paths": [
+        "src/services/history.ts",
+        "test/commands/history.test.ts"
+      ],
+      "authored_semantics": "Custom list JSON {data,page:{hasMore,nextCursor,previousCursor},dataRegion,metadata}; header Polymorfa-Data-Region case-insensitive; lack header returns null.",
+      "current_source_semantics": "Current list keeps API page envelope as data within standard output and metadata; no dataRegion projection.",
+      "disposition": "Distinct output and routing-metadata projection intentionally excluded, not zero uniqueness.",
+      "evidence": [
+        "src/services/history.ts",
+        "test/commands/history.test.ts",
+        "README.md"
+      ],
+      "old_objects": [
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "91bebc585fecc17e902e3303673855b05697e7e2"
+        },
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "77ebdc2d01eb852c24f927deabf00665da894a56"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ae12ccf1526b6e5b1ca4c1dc5f31a9259ec62ae6"
+        },
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ac4ee258dbeb6a741a82308a79d8769ed96b5cf1"
+        },
+        {
+          "path": "README.md",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "55f947ffc778e9193973371e870fe81cf16c6244"
+        }
+      ]
+    },
+    {
+      "id": "C09",
+      "authored_paths": [
+        "src/services/history.ts",
+        "src/commands/chat/get.ts",
+        "src/commands/message/get.ts"
+      ],
+      "authored_semantics": "Final fix unwraps ApiResponse.data.data vs stale page.items/response, metadata from ApiResponse; retrieve outputs raw SDK metadata.",
+      "current_source_semantics": "Current service wrappers use response.data or response.data.data appropriately and metadata status/attempts/requestId/apiVersion projection.",
+      "disposition": "Envelope repair replaced; metadata shape differs for retrieve/list and is not aliased.",
+      "evidence": [
+        "src/services/history.ts",
+        "test/commands/history.test.ts"
+      ],
+      "old_objects": [
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "91bebc585fecc17e902e3303673855b05697e7e2"
+        },
+        {
+          "path": "src/commands/chat/get.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "8ab359c33aa2341adbdd45d214e27c0df0baf115"
+        },
+        {
+          "path": "src/commands/message/get.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "d9c7b6a83b5f2f5963c8368abddcfb96fd9b077e"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ae12ccf1526b6e5b1ca4c1dc5f31a9259ec62ae6"
+        },
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ac4ee258dbeb6a741a82308a79d8769ed96b5cf1"
+        }
+      ]
+    },
+    {
+      "id": "C10",
+      "authored_paths": [
+        "src/services/history.ts"
+      ],
+      "authored_semantics": "d14 fix adds applied apiVersion when present although old HistoryListValue interface does not declare it; first response attempts/status/requestId retained.",
+      "current_source_semantics": "Current typed HistoryResult metadata declares and emits apiVersion/status/attempts/requestId.",
+      "disposition": "Metadata intent replaced. Old undeclared-field mismatch not restored.",
+      "evidence": [
+        "src/services/history.ts"
+      ],
+      "old_objects": [
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "91bebc585fecc17e902e3303673855b05697e7e2"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ae12ccf1526b6e5b1ca4c1dc5f31a9259ec62ae6"
+        }
+      ]
+    },
+    {
+      "id": "C11",
+      "authored_paths": [
+        "src/input/time.ts",
+        "src/commands/chat/list.ts",
+        "test/commands/history.test.ts"
+      ],
+      "authored_semantics": "Adds optionalTimeRange flag-name object, strict RFC3339 finite/calendrical validation, until>since; chat activity errors name --active-since/--active-before and fail before transport.",
+      "current_source_semantics": "Shared optionalTimeRange has only --since/--until; current chat history command forwards activity filters and does not call it. No equivalent pretransport activity-range validation shown.",
+      "disposition": "Real candidate-only pretransport validation/error-timing behavior. Explicitly retained here and not restored into current history commands: the current documented command contract forwards these values to the SDK/API and no accepted in-scope requirement promises this earlier local validation. Any later requirement must be implemented in the current command tree with zero-transport invalid-input tests, not by restoring old interfaces.",
+      "evidence": [
+        "src/input/time.ts",
+        "src/commands/chat/list.ts",
+        "test/commands/history.test.ts"
+      ],
+      "old_objects": [
+        {
+          "path": "src/input/time.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1561dd879924f2cc35b521a83cbff2ca7c0a47e2"
+        },
+        {
+          "path": "src/commands/chat/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "00c452584c63f89808f5bcfbf97b9de294457ab2"
+        },
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "77ebdc2d01eb852c24f927deabf00665da894a56"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/input/time.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "29a086853f9f2c2313e9b6f7888cec202e215d00"
+        },
+        {
+          "path": "src/commands/chat/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "c965c99c0a1defa52b23cfcb5ca15dd2c6f637cb"
+        },
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ac4ee258dbeb6a741a82308a79d8769ed96b5cf1"
+        }
+      ]
+    },
+    {
+      "id": "C12",
+      "authored_paths": [
+        "src/commands/message/list.ts"
+      ],
+      "authored_semantics": "optionalTimeRange validates message range and rejects bad/reversed timestamps pretransport.",
+      "current_source_semantics": "Current message history forwards since/until to existing SDK; current CLI command does not call optionalTimeRange.",
+      "disposition": "Real candidate-only pretransport validation/error-timing behavior. Explicitly retained here and not restored into current history commands: the current documented command contract forwards these values to the SDK/API and no accepted in-scope requirement promises this earlier local validation. Any later requirement must be implemented in the current command tree with zero-transport invalid-input tests, not by restoring old interfaces.",
+      "evidence": [
+        "src/commands/chat/message/list.ts",
+        "src/input/time.ts"
+      ],
+      "old_objects": [
+        {
+          "path": "src/commands/message/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "07a5a908ce6aed72e33443c784d5878af7ab7009"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/commands/chat/message/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "a2eac87e2222d7e07f1b0b4df5e29f33feaeb5c6"
+        },
+        {
+          "path": "src/input/time.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "29a086853f9f2c2313e9b6f7888cec202e215d00"
+        }
+      ]
+    },
+    {
+      "id": "C13",
+      "authored_paths": [
+        "src/commands/chat/get.ts",
+        "src/commands/chat/list.ts",
+        "src/commands/message/get.ts",
+        "src/commands/message/list.ts"
+      ],
+      "authored_semantics": "serverApiKeyOnly rejects project/client history access before request.",
+      "current_source_semantics": "historyMessagingClient allows own-project token; current test covers project access and rejects browser credential; scoped server reads required.",
+      "disposition": "Current credential authority retained; do not restore team-only restriction or weaken live server checks.",
+      "evidence": [
+        "src/base-command.ts",
+        "src/context/environment.ts",
+        "test/commands/history.test.ts",
+        "README.md"
+      ],
+      "old_objects": [
+        {
+          "path": "src/commands/chat/get.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "8ab359c33aa2341adbdd45d214e27c0df0baf115"
+        },
+        {
+          "path": "src/commands/chat/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "00c452584c63f89808f5bcfbf97b9de294457ab2"
+        },
+        {
+          "path": "src/commands/message/get.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "d9c7b6a83b5f2f5963c8368abddcfb96fd9b077e"
+        },
+        {
+          "path": "src/commands/message/list.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "07a5a908ce6aed72e33443c784d5878af7ab7009"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/base-command.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1656741329f5f892125d116fe658c6d207d40de3"
+        },
+        {
+          "path": "src/context/environment.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "0f64c622e5d63a7054d80f79c2c1314b647ea6c5"
+        },
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ac4ee258dbeb6a741a82308a79d8769ed96b5cf1"
+        },
+        {
+          "path": "README.md",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "55f947ffc778e9193973371e870fe81cf16c6244"
+        }
+      ]
+    },
+    {
+      "id": "C14",
+      "authored_paths": [
+        "src/services/history.ts"
+      ],
+      "authored_semantics": "Chat TSV id,phone fallback -,kind,last activity,last type; message TSV timestamp,id,direction,type,text-or-caption flattened newline/tab,120char truncation; empty strings differ. Retrieve uses same row renderer.",
+      "current_source_semantics": "Current chat TSV drops phone; messages id before time, text only, no old flatten/truncate; individual views labeled full fields/caption/media count; page cursors printed.",
+      "disposition": "Display/caption/escaping/column-order distinctions are not silently dropped: preserve exact text; no presentation rollback requested. No current sanitization claim made.",
+      "evidence": [
+        "src/services/history.ts"
+      ],
+      "old_objects": [
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "91bebc585fecc17e902e3303673855b05697e7e2"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "src/services/history.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ae12ccf1526b6e5b1ca4c1dc5f31a9259ec62ae6"
+        }
+      ]
+    },
+    {
+      "id": "C15",
+      "authored_paths": [
+        "README.md"
+      ],
+      "authored_semantics": "Old scopes/beta enrollment/HMS ownership prose, old get/root message examples, max-items/dataRegion output and media-ID download pointer.",
+      "current_source_semantics": "Current README scopes/enrollment/HMS and manual cursors align with current command names; stored Official API media now has chat message media.",
+      "disposition": "Safety/access intent retained; old command/media/availability prose excluded. No live beta availability proved.",
+      "evidence": [
+        "README.md",
+        "test/commands/history.test.ts"
+      ],
+      "old_objects": [
+        {
+          "path": "README.md",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "5765c298cef268b3f6705bfc716a2b78cfb3cc54"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "README.md",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "55f947ffc778e9193973371e870fe81cf16c6244"
+        },
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ac4ee258dbeb6a741a82308a79d8769ed96b5cf1"
+        }
+      ]
+    },
+    {
+      "id": "C16",
+      "authored_paths": [
+        "package.json",
+        "package-lock.json"
+      ],
+      "authored_semantics": "Original manifest source pin advances github:polymorfa/sdks#8803f055... to #c07ff14a...; lock carries git+ssh resolved URL and its integrity, not a registry publication. Different dependency tree from current; SSH string is historical DATA only, never invoked.",
+      "current_source_semantics": "Current manifest and lock have their own exact SDK dependency and real containing-package/release eligibility gates.",
+      "disposition": "Never copy old/favorable lock, install, repin, or claim current containing package passed. Per-hunk original dependency text retained.",
+      "evidence": [
+        "package.json",
+        "package-lock.json"
+      ],
+      "old_objects": [
+        {
+          "path": "package.json",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "1660749b0cfb44b45ba777aa703940fec4755c75"
+        },
+        {
+          "path": "package-lock.json",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "efa8dd2144341516e8ee1958214fac221871b358"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "package.json",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "0a9df267a85172d678bd63b5582ef38c424a66ff"
+        },
+        {
+          "path": "package-lock.json",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "fd46807f9df8c9e2a80c9e0af7561f82205562d2"
+        }
+      ]
+    },
+    {
+      "id": "C17",
+      "authored_paths": [
+        "test/commands/history.test.ts"
+      ],
+      "authored_semantics": "Tests legacy JSON/filter path, pagination/truncation, TSV, retrieve IDs, active-range errors/no request, browser reject, hms_not_enabled. Fixtures test old API headers/version and normalized query.",
+      "current_source_semantics": "Current tests cover current envelope/cursors, correctedSDK reads, project token, browser reject, enrollment/HMS errors, stored media.",
+      "disposition": "Old-only tests not erased as failures or used to demand obsolete interfaces; current source/runtime checks still unrun.",
+      "evidence": [
+        "test/commands/history.test.ts"
+      ],
+      "old_objects": [
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "77ebdc2d01eb852c24f927deabf00665da894a56"
+        }
+      ],
+      "current_objects": [
+        {
+          "path": "test/commands/history.test.ts",
+          "mode": "100644",
+          "type": "blob",
+          "sha": "ac4ee258dbeb6a741a82308a79d8769ed96b5cf1"
+        }
+      ]
+    }
+  ],
+  "exact_authored_hunks": [
+    {
+      "path": "src/commands/chat/get.ts",
+      "hunk_header": "@@ -26,7 +26,10 @@",
+      "exact_text_sha256": "a64fddf5224b4ce7cc09569b6eab853cb3a33071af2037c7e07fcf431b23dfe9",
+      "exact_text": "@@ -26,7 +26,10 @@\n     const client = await this.messagingClient(flags, {\n       serverApiKeyOnly: 'Message history',\n     })\n-    const response = await client.chats.get(flags.session, args.conversation)\n+    const response = await client.chats.retrieve(\n+      flags.session,\n+      args.conversation,\n+    )\n     const chat = response.data.data\n     this.writeValue(\n       {data: chat, metadata: response.metadata},\n",
+      "semantic_ids": [
+        "C01",
+        "C09",
+        "C13"
+      ]
+    },
+    {
+      "path": "src/commands/chat/list.ts",
+      "hunk_header": "@@ -57,7 +57,7 @@",
+      "exact_text_sha256": "78b09f03b60e34d17513abae756369b68fdd813fac671ebc815e60f3b5230e72",
+      "exact_text": "@@ -57,7 +57,7 @@\n     const client = await this.messagingClient(flags, {\n       serverApiKeyOnly: 'Message history',\n     })\n-    const first = await client.chats.list(flags.session, {\n+    const params = {\n       ...(flags.limit === undefined ? {} : {limit: flags.limit}),\n       ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),\n       ...(flags.kind === undefined\n",
+      "semantic_ids": [
+        "C03",
+        "C06",
+        "C11",
+        "C13"
+      ]
+    },
+    {
+      "path": "src/commands/chat/list.ts",
+      "hunk_header": "@@ -65,8 +65,11 @@",
+      "exact_text_sha256": "fd53fc3e35f5c655dc43f97d1acb0c092f4532d481c895909a452a2380171b92",
+      "exact_text": "@@ -65,8 +65,11 @@\n         : {kind: flags.kind as 'direct' | 'group' | 'channel' | 'broadcast'}),\n       ...(range.since === undefined ? {} : {activeSince: range.since}),\n       ...(range.until === undefined ? {} : {activeBefore: range.until}),\n-    })\n-    const value = await collectHistory(first, flags['max-items'])\n+    }\n+    const first = await client.chats.list(flags.session, params)\n+    const value = await collectHistory(first, flags['max-items'], (cursor) =>\n+      client.chats.list(flags.session, {...params, cursor}),\n+    )\n     this.writeValue(value, renderChats(value.data), flags)\n   }\n }\n",
+      "semantic_ids": [
+        "C03",
+        "C06",
+        "C11",
+        "C13"
+      ]
+    },
+    {
+      "path": "src/commands/message/get.ts",
+      "hunk_header": "@@ -27,7 +27,7 @@",
+      "exact_text_sha256": "f3dbcb8ae4e8221b0997a8697f146d42d6a2487f824b0d0825b155b434dcb42f",
+      "exact_text": "@@ -27,7 +27,7 @@\n     const client = await this.messagingClient(flags, {\n       serverApiKeyOnly: 'Message history',\n     })\n-    const response = await client.messages.get(\n+    const response = await client.chats.retrieveMessage(\n       flags.session,\n       flags.conversation,\n       args.message,\n",
+      "semantic_ids": [
+        "C02",
+        "C09",
+        "C13"
+      ]
+    },
+    {
+      "path": "src/commands/message/list.ts",
+      "hunk_header": "@@ -65,23 +65,31 @@",
+      "exact_text_sha256": "eefb31a5f1b623878ea871da55747cbb07f4fa024a0e0cf251066070cd871228",
+      "exact_text": "@@ -65,23 +65,31 @@\n     const client = await this.messagingClient(flags, {\n       serverApiKeyOnly: 'Message history',\n     })\n-    const first = await client.messages.list(\n+    const params = {\n+      ...(flags.limit === undefined ? {} : {limit: flags.limit}),\n+      ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),\n+      ...(flags.order === undefined\n+        ? {}\n+        : {order: flags.order as 'asc' | 'desc'}),\n+      ...(flags.direction === undefined\n+        ? {}\n+        : {direction: flags.direction as 'inbound' | 'outbound'}),\n+      ...(types === undefined || types.length === 0\n+        ? {}\n+        : {types: types.join(',')}),\n+      ...range,\n+    }\n+    const first = await client.chats.listMessages(\n       flags.session,\n       flags.conversation,\n-      {\n-        ...(flags.limit === undefined ? {} : {limit: flags.limit}),\n-        ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),\n-        ...(flags.order === undefined\n-          ? {}\n-          : {order: flags.order as 'asc' | 'desc'}),\n-        ...(flags.direction === undefined\n-          ? {}\n-          : {direction: flags.direction as 'inbound' | 'outbound'}),\n-        ...(types === undefined || types.length === 0 ? {} : {types}),\n-        ...range,\n-      },\n+      params,\n     )\n-    const value = await collectHistory(first, flags['max-items'])\n+    const value = await collectHistory(first, flags['max-items'], (cursor) =>\n+      client.chats.listMessages(flags.session, flags.conversation, {\n+        ...params,\n+        cursor,\n+      }),\n+    )\n     this.writeValue(value, renderMessages(value.data), flags)\n   }\n }\n",
+      "semantic_ids": [
+        "C04",
+        "C05",
+        "C06",
+        "C12",
+        "C13"
+      ]
+    },
+    {
+      "path": "src/services/history.ts",
+      "hunk_header": "@@ -1,4 +1,9 @@",
+      "exact_text_sha256": "ba8e2ac2b265cee737f45a112111777d9f7821720a24ad40680b203cd5a03298",
+      "exact_text": "@@ -1,4 +1,9 @@\n-import type {HistoryChat, HistoryMessage, HistoryPage} from '@polymorfa/sdk'\n+import type {\n+  ApiResponse,\n+  HistoryChat,\n+  HistoryMessage,\n+  HistoryPage,\n+} from '@polymorfa/sdk'\n \n export interface HistoryListValue<T> {\n   readonly data: readonly T[]\n",
+      "semantic_ids": [
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C14"
+      ]
+    },
+    {
+      "path": "src/services/history.ts",
+      "hunk_header": "@@ -17,20 +22,23 @@",
+      "exact_text_sha256": "873af4b30f3530c2cec6f7f551134236d4bbb8d277631d4d73369b2b0c835473",
+      "exact_text": "@@ -17,20 +22,23 @@\n \n /** Machine output for one history page; cursors are passed back unchanged. */\n export function historyListValue<T>(\n-  page: HistoryPage<T>,\n-  items: readonly T[] = page.items,\n-  hasMore: boolean = page.hasMore,\n-  nextCursor: string | null = page.nextCursor ?? null,\n+  response: ApiResponse<HistoryPage<T>>,\n+  items: readonly T[] = response.data.data,\n+  hasMore: boolean = response.data.hasMore,\n+  nextCursor: string | null = response.data.nextCursor,\n ): HistoryListValue<T> {\n-  const metadata = page.response.metadata\n+  const metadata = response.metadata\n   return {\n     data: items,\n     page: {\n       hasMore,\n       nextCursor,\n-      previousCursor: page.previousCursor ?? null,\n+      previousCursor: response.data.previousCursor,\n     },\n-    dataRegion: page.dataRegion ?? null,\n+    dataRegion:\n+      Object.entries(metadata.headers).find(\n+        ([name]) => name.toLowerCase() === 'polymorfa-data-region',\n+      )?.[1] ?? null,\n     metadata: {\n       ...(metadata.apiVersion === undefined\n         ? {}\n",
+      "semantic_ids": [
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C14"
+      ]
+    },
+    {
+      "path": "src/services/history.ts",
+      "hunk_header": "@@ -46,27 +54,31 @@",
+      "exact_text_sha256": "68535f90aee758f1fd59ad59e9c61ea0245266bd49e346d5f575b502743ca105",
+      "exact_text": "@@ -46,27 +54,31 @@\n \n /** Follows nextCursor until maxItems or the last page. */\n export async function collectHistory<T>(\n-  first: HistoryPage<T>,\n+  first: ApiResponse<HistoryPage<T>>,\n   maxItems: number | undefined,\n+  loadNext: (cursor: string) => Promise<ApiResponse<HistoryPage<T>>>,\n ): Promise<HistoryListValue<T>> {\n   if (maxItems === undefined) return historyListValue(first)\n-  const items: T[] = [...first.items]\n-  let page: HistoryPage<T> = first\n-  while (items.length < maxItems && page.hasMore) {\n-    const next = await page.nextPage()\n-    if (next === null) break\n-    if (next.nextCursor !== undefined && next.nextCursor === page.nextCursor) {\n+  const items: T[] = [...first.data.data]\n+  let response = first\n+  while (items.length < maxItems && response.data.hasMore) {\n+    const cursor = response.data.nextCursor\n+    if (cursor === null) {\n+      throw new Error('The API omitted the next cursor for a history page.')\n+    }\n+    const next = await loadNext(cursor)\n+    if (next.data.nextCursor === cursor) {\n       throw new Error('The API returned the same cursor twice.')\n     }\n-    page = next\n-    items.push(...page.items)\n+    response = next\n+    items.push(...response.data.data)\n   }\n   const truncated = items.length > maxItems\n   return historyListValue(\n     first,\n     items.slice(0, maxItems),\n-    truncated || page.hasMore,\n-    truncated ? null : (page.nextCursor ?? null),\n+    truncated || response.data.hasMore,\n+    truncated ? null : response.data.nextCursor,\n   )\n }\n \n",
+      "semantic_ids": [
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C14"
+      ]
+    },
+    {
+      "path": "README.md",
+      "hunk_header": "@@ -191,9 +191,39 @@",
+      "exact_text_sha256": "6fd6e584079c3b81e1f3c4e170c3c7d277c5f972657b7608b0d6fd5ac14096e8",
+      "exact_text": "@@ -191,9 +191,39 @@\n keys require `messages:write`; client tokens remain subject to their live\n recipient rules, allowed actions, and rate limits.\n \n-The API does not expose message history, list, or search operations. Those\n-commands are not synthesized by the CLI. Additional typed send kinds will be\n-added as focused subcommands instead of a generic JSON payload interface.\n+Additional typed send kinds will be added as focused subcommands instead of a\n+generic JSON payload interface. The API has no message search operation.\n+\n+## Message history (beta)\n+\n+For Numbers with hosted message storage, and teams enrolled in the message\n+history beta, read stored conversations and messages with a server API key.\n+Conversation commands need `chats:read`; message commands need\n+`messages:read`. Client tokens are rejected before any request.\n+\n+```shell\n+polymorfa chat list --session session_123 --kind direct\n+polymorfa chat get +15551234567 --session session_123\n+\n+polymorfa message list \\\n+  --session session_123 \\\n+  --conversation +15551234567 \\\n+  --direction inbound \\\n+  --type text,image \\\n+  --since 2026-09-01T00:00:00Z \\\n+  --json\n+\n+polymorfa message get 740000000001 \\\n+  --session session_123 \\\n+  --conversation +15551234567\n+```\n+\n+Lists return one page (default 50, `--limit` up to 100). `--max-items` follows\n+later pages until that many items are collected. `--json` output includes\n+`page.nextCursor` and `page.previousCursor`; pass one back with `--cursor` and\n+the same filters. `message list` orders newest first; use `--order asc` for\n+oldest first. Media appears as media IDs for `polymorfa media download`.\n+A Number without hosted message storage fails with `hms_not_enabled`.\n \n ## Media\n \n",
+      "semantic_ids": [
+        "C15"
+      ]
+    },
+    {
+      "path": "package-lock.json",
+      "hunk_header": "@@ -12,7 +12,7 @@",
+      "exact_text_sha256": "cb95bcb6bce3ab45f8d3b840ab125b62016f51297cc1e6b88ace8721c425ab75",
+      "exact_text": "@@ -12,7 +12,7 @@\n         \"@modelcontextprotocol/server\": \"2.0.0\",\n         \"@napi-rs/keyring\": \"1.3.0\",\n         \"@oclif/core\": \"^4.13.5\",\n-        \"@polymorfa/sdk\": \"github:polymorfa/sdks#8803f0554314214519971cb3306e0c0efe21cb76\",\n+        \"@polymorfa/sdk\": \"github:polymorfa/sdks#c07ff14aecf2f6954dc971275a6e34af41cc92ff\",\n         \"zod\": \"4.2.0\"\n       },\n       \"bin\": {\n",
+      "semantic_ids": [
+        "C16"
+      ]
+    },
+    {
+      "path": "package-lock.json",
+      "hunk_header": "@@ -997,8 +997,8 @@",
+      "exact_text_sha256": "6a8e32b2c889de561e81758b584da9a7a1cd8e826257245183d90d10c7d2bb84",
+      "exact_text": "@@ -997,8 +997,8 @@\n     },\n     \"node_modules/@polymorfa/sdk\": {\n       \"version\": \"0.1.0-dev.0\",\n-      \"resolved\": \"git+ssh://git@github.com/polymorfa/sdks.git#8803f0554314214519971cb3306e0c0efe21cb76\",\n-      \"integrity\": \"sha512-rLG5Gg7X3U3iBxHU93PVZGrIIUnNlnX7I4TT1k8EaYQrkjPm6TkA83akOEPQzJbzTMQa13+hUqT/P4deYSyh5Q==\",\n+      \"resolved\": \"git+ssh://git@github.com/polymorfa/sdks.git#c07ff14aecf2f6954dc971275a6e34af41cc92ff\",\n+      \"integrity\": \"sha512-7FN0vXLrAcp4N1R+X833i2xzyf6DhbHvyJ+zyH7Pa+PqJdc1C9Sx7mRmsgYro7WwDpjewHW9qwqdga88fogUSQ==\",\n       \"workspaces\": [\n         \"packages/calls\",\n         \"packages/browser\",\n",
+      "semantic_ids": [
+        "C16"
+      ]
+    },
+    {
+      "path": "package.json",
+      "hunk_header": "@@ -33,7 +33,7 @@",
+      "exact_text_sha256": "80e9dce9c855e7dd7c70501234c3a45452d98a2f5f26e4ad930447f95de810b5",
+      "exact_text": "@@ -33,7 +33,7 @@\n     \"@modelcontextprotocol/server\": \"2.0.0\",\n     \"@napi-rs/keyring\": \"1.3.0\",\n     \"@oclif/core\": \"^4.13.5\",\n-    \"@polymorfa/sdk\": \"github:polymorfa/sdks#8803f0554314214519971cb3306e0c0efe21cb76\",\n+    \"@polymorfa/sdk\": \"github:polymorfa/sdks#c07ff14aecf2f6954dc971275a6e34af41cc92ff\",\n     \"zod\": \"4.2.0\"\n   },\n   \"devDependencies\": {\n",
+      "semantic_ids": [
+        "C16"
+      ]
+    },
+    {
+      "path": "src/commands/chat/get.ts",
+      "hunk_header": "@@ -0,0 +1,37 @@",
+      "exact_text_sha256": "b2c475b94b7b94fdb4993cd178db9f76fda73be0c4b6c41d9d70d44e6eefb32d",
+      "exact_text": "@@ -0,0 +1,37 @@\n+import {Args, Flags} from '@oclif/core'\n+\n+import {BaseCommand} from '../../base-command.js'\n+import {renderChats} from '../../services/history.js'\n+\n+export default class ChatGet extends BaseCommand {\n+  static override args = {\n+    conversation: Args.string({\n+      description: 'Conversation ID or E.164 phone number.',\n+      required: true,\n+    }),\n+  }\n+\n+  static override description =\n+    'Show one stored conversation (beta; requires chats:read).'\n+\n+  static override flags = {\n+    session: Flags.string({\n+      description: 'Messaging session ID.',\n+      required: true,\n+    }),\n+  }\n+\n+  async run(): Promise<void> {\n+    const {args, flags} = await this.parse(ChatGet)\n+    const client = await this.messagingClient(flags, {\n+      serverApiKeyOnly: 'Message history',\n+    })\n+    const response = await client.chats.get(flags.session, args.conversation)\n+    const chat = response.data.data\n+    this.writeValue(\n+      {data: chat, metadata: response.metadata},\n+      renderChats([chat]),\n+      flags,\n+    )\n+  }\n+}\n",
+      "semantic_ids": [
+        "C01",
+        "C09",
+        "C13"
+      ]
+    },
+    {
+      "path": "src/commands/chat/list.ts",
+      "hunk_header": "@@ -0,0 +1,71 @@",
+      "exact_text_sha256": "aa8e8d038250d47bbb91723bcac2ddb763727f7516717acfaf912c3930c76bd8",
+      "exact_text": "@@ -0,0 +1,71 @@\n+import {Flags} from '@oclif/core'\n+\n+import {BaseCommand} from '../../base-command.js'\n+import {optionalTimeRange} from '../../input/time.js'\n+import {collectHistory, renderChats} from '../../services/history.js'\n+\n+export default class ChatList extends BaseCommand {\n+  static override description =\n+    'List stored conversations for a Number with hosted message storage, most recent activity first (beta; requires chats:read).'\n+\n+  static override examples = [\n+    '<%= config.bin %> chat list --session support-line',\n+    '<%= config.bin %> chat list --session support-line --kind group --active-since 2026-09-01T00:00:00Z --json',\n+  ]\n+\n+  static override flags = {\n+    'active-before': Flags.string({\n+      description:\n+        'Only conversations whose latest activity is before this RFC 3339 time.',\n+    }),\n+    'active-since': Flags.string({\n+      description:\n+        'Only conversations with activity at or after this RFC 3339 time.',\n+    }),\n+    cursor: Flags.string({\n+      description:\n+        'Continue from nextCursor. Repeat the same filters used for the earlier page.',\n+    }),\n+    kind: Flags.string({\n+      description: 'Only conversations of this kind.',\n+      options: ['direct', 'group', 'channel', 'broadcast'],\n+    }),\n+    limit: Flags.integer({\n+      description: 'Conversations per page (default 50).',\n+      max: 100,\n+      min: 1,\n+    }),\n+    'max-items': Flags.integer({\n+      description:\n+        'Follow later pages until this many conversations are collected.',\n+      max: 10_000,\n+      min: 1,\n+    }),\n+    session: Flags.string({\n+      description: 'Messaging session ID.',\n+      required: true,\n+    }),\n+  }\n+\n+  async run(): Promise<void> {\n+    const {flags} = await this.parse(ChatList)\n+    const range = optionalTimeRange(\n+      flags['active-since'],\n+      flags['active-before'],\n+    )\n+    const client = await this.messagingClient(flags, {\n+      serverApiKeyOnly: 'Message history',\n+    })\n+    const first = await client.chats.list(flags.session, {\n+      ...(flags.limit === undefined ? {} : {limit: flags.limit}),\n+      ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),\n+      ...(flags.kind === undefined\n+        ? {}\n+        : {kind: flags.kind as 'direct' | 'group' | 'channel' | 'broadcast'}),\n+      ...(range.since === undefined ? {} : {activeSince: range.since}),\n+      ...(range.until === undefined ? {} : {activeBefore: range.until}),\n+    })\n+    const value = await collectHistory(first, flags['max-items'])\n+    this.writeValue(value, renderChats(value.data), flags)\n+  }\n+}\n",
+      "semantic_ids": [
+        "C03",
+        "C06",
+        "C11",
+        "C13"
+      ]
+    },
+    {
+      "path": "src/commands/message/get.ts",
+      "hunk_header": "@@ -0,0 +1,42 @@",
+      "exact_text_sha256": "b0ca0a3119ccf7040cdb406d119177d7037c9d1ffd8b0a7b8458bc21cfa39eb7",
+      "exact_text": "@@ -0,0 +1,42 @@\n+import {Args, Flags} from '@oclif/core'\n+\n+import {BaseCommand} from '../../base-command.js'\n+import {renderMessages} from '../../services/history.js'\n+\n+export default class MessageGet extends BaseCommand {\n+  static override args = {\n+    message: Args.string({description: 'Message ID.', required: true}),\n+  }\n+\n+  static override description =\n+    'Show one stored message (beta; requires messages:read).'\n+\n+  static override flags = {\n+    conversation: Flags.string({\n+      description: 'Conversation ID or E.164 phone number.',\n+      required: true,\n+    }),\n+    session: Flags.string({\n+      description: 'Messaging session ID.',\n+      required: true,\n+    }),\n+  }\n+\n+  async run(): Promise<void> {\n+    const {args, flags} = await this.parse(MessageGet)\n+    const client = await this.messagingClient(flags, {\n+      serverApiKeyOnly: 'Message history',\n+    })\n+    const response = await client.messages.get(\n+      flags.session,\n+      flags.conversation,\n+      args.message,\n+    )\n+    const message = response.data.data\n+    this.writeValue(\n+      {data: message, metadata: response.metadata},\n+      renderMessages([message]),\n+      flags,\n+    )\n+  }\n+}\n",
+      "semantic_ids": [
+        "C02",
+        "C09",
+        "C13"
+      ]
+    },
+    {
+      "path": "src/commands/message/list.ts",
+      "hunk_header": "@@ -0,0 +1,87 @@",
+      "exact_text_sha256": "48e6938058291a9107f3b86c97ca49582bccf530ccbad084c33b0ff91ce1ea99",
+      "exact_text": "@@ -0,0 +1,87 @@\n+import {Flags} from '@oclif/core'\n+\n+import {BaseCommand} from '../../base-command.js'\n+import {optionalTimeRange} from '../../input/time.js'\n+import {collectHistory, renderMessages} from '../../services/history.js'\n+\n+export default class MessageList extends BaseCommand {\n+  static override description =\n+    'List stored messages in one conversation, newest first (beta; requires messages:read and hosted message storage).'\n+\n+  static override examples = [\n+    '<%= config.bin %> message list --session support-line --conversation +15550001111',\n+    '<%= config.bin %> message list --session support-line --conversation 739182640518203 --direction inbound --type text,image --since 2026-09-01T00:00:00Z --json',\n+  ]\n+\n+  static override flags = {\n+    conversation: Flags.string({\n+      description: 'Conversation ID or E.164 phone number.',\n+      required: true,\n+    }),\n+    cursor: Flags.string({\n+      description:\n+        'Continue from nextCursor or previousCursor. Repeat the same filters used for the earlier page.',\n+    }),\n+    direction: Flags.string({\n+      description: 'inbound: from contacts; outbound: sent by the Number.',\n+      options: ['inbound', 'outbound'],\n+    }),\n+    limit: Flags.integer({\n+      description: 'Messages per page (default 50).',\n+      max: 100,\n+      min: 1,\n+    }),\n+    'max-items': Flags.integer({\n+      description: 'Follow later pages until this many messages are collected.',\n+      max: 10_000,\n+      min: 1,\n+    }),\n+    order: Flags.string({\n+      description: 'desc: newest first (default); asc: oldest first.',\n+      options: ['desc', 'asc'],\n+    }),\n+    session: Flags.string({\n+      description: 'Messaging session ID.',\n+      required: true,\n+    }),\n+    since: Flags.string({\n+      description: 'Messages sent at or after this RFC 3339 time.',\n+    }),\n+    type: Flags.string({\n+      description: 'Comma-separated message types, for example text,image.',\n+    }),\n+    until: Flags.string({\n+      description: 'Messages sent before this RFC 3339 time.',\n+    }),\n+  }\n+\n+  async run(): Promise<void> {\n+    const {flags} = await this.parse(MessageList)\n+    const range = optionalTimeRange(flags.since, flags.until)\n+    const types = flags.type\n+      ?.split(',')\n+      .map((value) => value.trim())\n+      .filter((value) => value.length > 0)\n+    const client = await this.messagingClient(flags, {\n+      serverApiKeyOnly: 'Message history',\n+    })\n+    const first = await client.messages.list(\n+      flags.session,\n+      flags.conversation,\n+      {\n+        ...(flags.limit === undefined ? {} : {limit: flags.limit}),\n+        ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),\n+        ...(flags.order === undefined\n+          ? {}\n+          : {order: flags.order as 'asc' | 'desc'}),\n+        ...(flags.direction === undefined\n+          ? {}\n+          : {direction: flags.direction as 'inbound' | 'outbound'}),\n+        ...(types === undefined || types.length === 0 ? {} : {types}),\n+        ...range,\n+      },\n+    )\n+    const value = await collectHistory(first, flags['max-items'])\n+    this.writeValue(value, renderMessages(value.data), flags)\n+  }\n+}\n",
+      "semantic_ids": [
+        "C04",
+        "C05",
+        "C06",
+        "C12",
+        "C13"
+      ]
+    },
+    {
+      "path": "src/services/history.ts",
+      "hunk_header": "@@ -0,0 +1,103 @@",
+      "exact_text_sha256": "4cbd23c307434440f6ad6662bc8666173b44de9039eb338813ee2a6500c620d5",
+      "exact_text": "@@ -0,0 +1,103 @@\n+import type {HistoryChat, HistoryMessage, HistoryPage} from '@polymorfa/sdk'\n+\n+export interface HistoryListValue<T> {\n+  readonly data: readonly T[]\n+  readonly page: {\n+    readonly hasMore: boolean\n+    readonly nextCursor: string | null\n+    readonly previousCursor: string | null\n+  }\n+  readonly dataRegion: string | null\n+  readonly metadata: {\n+    readonly attempts: number\n+    readonly requestId?: string\n+    readonly status: number\n+  }\n+}\n+\n+/** Machine output for one history page; cursors are passed back unchanged. */\n+export function historyListValue<T>(\n+  page: HistoryPage<T>,\n+  items: readonly T[] = page.items,\n+  hasMore: boolean = page.hasMore,\n+  nextCursor: string | null = page.nextCursor ?? null,\n+): HistoryListValue<T> {\n+  const metadata = page.response.metadata\n+  return {\n+    data: items,\n+    page: {\n+      hasMore,\n+      nextCursor,\n+      previousCursor: page.previousCursor ?? null,\n+    },\n+    dataRegion: page.dataRegion ?? null,\n+    metadata: {\n+      attempts: metadata.attempts,\n+      ...(metadata.requestId === undefined\n+        ? {}\n+        : {requestId: metadata.requestId}),\n+      status: metadata.status,\n+    },\n+  }\n+}\n+\n+/** Follows nextCursor until maxItems or the last page. */\n+export async function collectHistory<T>(\n+  first: HistoryPage<T>,\n+  maxItems: number | undefined,\n+): Promise<HistoryListValue<T>> {\n+  if (maxItems === undefined) return historyListValue(first)\n+  const items: T[] = [...first.items]\n+  let page: HistoryPage<T> = first\n+  while (items.length < maxItems && page.hasMore) {\n+    const next = await page.nextPage()\n+    if (next === null) break\n+    if (next.nextCursor !== undefined && next.nextCursor === page.nextCursor) {\n+      throw new Error('The API returned the same cursor twice.')\n+    }\n+    page = next\n+    items.push(...page.items)\n+  }\n+  const truncated = items.length > maxItems\n+  return historyListValue(\n+    first,\n+    items.slice(0, maxItems),\n+    truncated || page.hasMore,\n+    truncated ? null : (page.nextCursor ?? null),\n+  )\n+}\n+\n+export function renderChats(chats: readonly HistoryChat[]): string {\n+  if (chats.length === 0) return 'No stored conversations found.'\n+  return chats\n+    .map((chat) =>\n+      [\n+        chat.conversation.id,\n+        chat.conversation.phoneNumber ?? '-',\n+        chat.kind,\n+        chat.lastActivityAt,\n+        chat.lastMessage.type,\n+      ].join('\\t'),\n+    )\n+    .join('\\n')\n+}\n+\n+export function renderMessages(messages: readonly HistoryMessage[]): string {\n+  if (messages.length === 0) return 'No stored messages found.'\n+  return messages\n+    .map((message) =>\n+      [\n+        message.timestamp,\n+        message.id,\n+        message.direction,\n+        message.type,\n+        oneLine(message.text ?? message.caption ?? ''),\n+      ].join('\\t'),\n+    )\n+    .join('\\n')\n+}\n+\n+function oneLine(value: string): string {\n+  const flat = value.replace(/[\\r\\n\\t]+/g, ' ')\n+  return flat.length > 120 ? `${flat.slice(0, 117)}...` : flat\n+}\n",
+      "semantic_ids": [
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C14"
+      ]
+    },
+    {
+      "path": "test/commands/history.test.ts",
+      "hunk_header": "@@ -0,0 +1,215 @@",
+      "exact_text_sha256": "c6fa772f4cf20c4cf32c863e574fd030f6d0696c4bf46fed85b5b882cd62bc7a",
+      "exact_text": "@@ -0,0 +1,215 @@\n+import {runCommand} from '@oclif/test'\n+import {afterEach, describe, expect, test} from 'vitest'\n+\n+import {\n+  startHttpSequenceServer,\n+  startHttpServer,\n+  withEnvironment,\n+  type TestHttpServer,\n+} from '../helpers/http-server.js'\n+\n+describe('message history commands', () => {\n+  let server: TestHttpServer | undefined\n+\n+  afterEach(async () => {\n+    await server?.close()\n+    server = undefined\n+  })\n+\n+  test('lists stored messages with filters as JSON', async () => {\n+    server = await startHttpServer({\n+      body: page([message('1')], 'next-1', null),\n+      headers: {'polymorfa-data-region': 'ch', 'x-request-id': 'req_hist'},\n+    })\n+\n+    const result = await apiKeyEnvironment(() =>\n+      runCommand(\n+        'message list --session support/line --conversation +15550001111 --limit 10 --direction inbound --type text,image --since 2026-09-01T00:00:00Z --order asc --json',\n+      ),\n+    )\n+\n+    expect(result.error).toBeUndefined()\n+    expect(JSON.parse(result.stdout)).toEqual({\n+      data: [message('1')],\n+      dataRegion: 'ch',\n+      metadata: {attempts: 1, requestId: 'req_hist', status: 200},\n+      page: {hasMore: true, nextCursor: 'next-1', previousCursor: null},\n+    })\n+    const url = new URL(server.requests[0]!.url, 'http://x')\n+    expect(url.pathname).toBe(\n+      '/messaging/support%2Fline/chats/%2B15550001111/messages',\n+    )\n+    expect(Object.fromEntries(url.searchParams)).toEqual({\n+      direction: 'inbound',\n+      limit: '10',\n+      order: 'asc',\n+      since: '2026-09-01T00:00:00Z',\n+      types: 'text,image',\n+    })\n+  })\n+\n+  test('follows cursors up to --max-items and keeps the resume cursor', async () => {\n+    server = await startHttpSequenceServer([\n+      {body: page([message('1'), message('2')], 'c2', null)},\n+      {body: page([message('3'), message('4')], 'c3', 'p2')},\n+    ])\n+\n+    const result = await apiKeyEnvironment(() =>\n+      runCommand(\n+        'message list --session s --conversation 739182640518203 --limit 2 --max-items 3 --json',\n+      ),\n+    )\n+\n+    expect(result.error).toBeUndefined()\n+    const value = JSON.parse(result.stdout) as {\n+      data: {id: string}[]\n+      page: unknown\n+    }\n+    expect(value.data.map((item) => item.id)).toEqual(['1', '2', '3'])\n+    expect(value.page).toEqual({\n+      hasMore: true,\n+      nextCursor: null,\n+      previousCursor: null,\n+    })\n+    expect(\n+      new URL(server.requests[1]!.url, 'http://x').searchParams.get('cursor'),\n+    ).toBe('c2')\n+  })\n+\n+  test('lists conversations in human form', async () => {\n+    server = await startHttpServer({\n+      body: {\n+        data: [\n+          {\n+            conversation: {id: '739182640518203', phoneNumber: '+15550001111'},\n+            kind: 'direct',\n+            lastActivityAt: '2026-09-18T10:05:00.000Z',\n+            lastMessage: {\n+              direction: 'inbound',\n+              id: '2',\n+              timestamp: '2026-09-18T10:05:00.000Z',\n+              type: 'text',\n+              whatsapp_id: 'WA',\n+            },\n+          },\n+        ],\n+        hasMore: false,\n+        nextCursor: null,\n+        previousCursor: null,\n+        success: true,\n+      },\n+    })\n+\n+    const result = await apiKeyEnvironment(() =>\n+      runCommand(\n+        'chat list --session s --kind direct --active-since 2026-09-01T00:00:00Z',\n+      ),\n+    )\n+\n+    expect(result.error).toBeUndefined()\n+    expect(result.stdout).toContain('739182640518203\\t+15550001111\\tdirect')\n+    expect(server.requests[0]?.url).toBe(\n+      '/messaging/s/chats?kind=direct&activeSince=2026-09-01T00%3A00%3A00Z',\n+    )\n+  })\n+\n+  test('gets one message and one conversation', async () => {\n+    server = await startHttpServer({\n+      body: {data: message('9'), success: true},\n+    })\n+    const result = await apiKeyEnvironment(() =>\n+      runCommand(\n+        'message get 739182640518977 --session s --conversation 7391 --json',\n+      ),\n+    )\n+    expect(result.error).toBeUndefined()\n+    expect((JSON.parse(result.stdout) as {data: {id: string}}).data.id).toBe(\n+      '9',\n+    )\n+    expect(server.requests[0]?.url).toBe(\n+      '/messaging/s/chats/7391/messages/739182640518977',\n+    )\n+  })\n+\n+  test('rejects a client token before any history request', async () => {\n+    server = await startHttpServer({body: page([], null, null)})\n+    const result = await withEnvironment(\n+      {\n+        POLYMORFA_API_KEY: undefined,\n+        POLYMORFA_BASE_URL: server.baseUrl,\n+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser',\n+      },\n+      () => runCommand('message list --session s --conversation 1 --json'),\n+    )\n+    expect(exitCode(result.error)).toBe(2)\n+    expect(result.stderr).toContain(\n+      'Message history commands require a server API key',\n+    )\n+    expect(server.requests).toHaveLength(0)\n+  })\n+\n+  test('reports hms_not_enabled from the API', async () => {\n+    server = await startHttpServer({\n+      body: {\n+        data: null,\n+        docs: 'https://docs.polymorfa.com/api/errors#hms-not-enabled',\n+        error: {\n+          code: 'hms_not_enabled',\n+          message: 'Hosted message storage is not enabled for this Number.',\n+          param: null,\n+          type: 'invalid_request_error',\n+        },\n+      },\n+      status: 404,\n+    })\n+    const result = await apiKeyEnvironment(() =>\n+      runCommand('chat list --session s --json'),\n+    )\n+    expect(result.error).toBeDefined()\n+    expect(`${result.stdout}${result.stderr}`).toContain('hms_not_enabled')\n+  })\n+\n+  async function apiKeyEnvironment<T>(run: () => Promise<T>): Promise<T> {\n+    if (server === undefined) throw new Error('Test server was not started.')\n+    return withEnvironment(\n+      {\n+        POLYMORFA_API_KEY:\n+          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',\n+        POLYMORFA_BASE_URL: server.baseUrl,\n+        POLYMORFA_CLIENT_TOKEN: undefined,\n+      },\n+      run,\n+    )\n+  }\n+})\n+\n+function message(id: string) {\n+  return {\n+    conversation: {id: '739182640518203'},\n+    direction: 'inbound',\n+    fromMe: false,\n+    id,\n+    text: `m${id}`,\n+    timestamp: '2026-09-18T10:00:00.000Z',\n+    type: 'text',\n+    whatsapp_id: `WA-${id}`,\n+  }\n+}\n+\n+function page(\n+  data: readonly unknown[],\n+  nextCursor: string | null,\n+  previousCursor: string | null,\n+) {\n+  return {\n+    data,\n+    hasMore: nextCursor !== null,\n+    nextCursor,\n+    previousCursor,\n+    success: true,\n+  }\n+}\n+\n+function exitCode(error: unknown): number | undefined {\n+  return (error as {oclif?: {exit?: number}} | undefined)?.oclif?.exit\n+}\n",
+      "semantic_ids": [
+        "C08",
+        "C11",
+        "C17"
+      ]
+    },
+    {
+      "path": "src/commands/chat/list.ts",
+      "hunk_header": "@@ -52,6 +52,7 @@",
+      "exact_text_sha256": "8da9b331570d7da2b2c23806444a205f49b1a5e5c1f0b219d53ddb8aa9da7f7c",
+      "exact_text": "@@ -52,6 +52,7 @@\n     const range = optionalTimeRange(\n       flags['active-since'],\n       flags['active-before'],\n+      {since: '--active-since', until: '--active-before'},\n     )\n     const client = await this.messagingClient(flags, {\n       serverApiKeyOnly: 'Message history',\n",
+      "semantic_ids": [
+        "C03",
+        "C06",
+        "C11",
+        "C13"
+      ]
+    },
+    {
+      "path": "src/input/time.ts",
+      "hunk_header": "@@ -6,15 +6,19 @@",
+      "exact_text_sha256": "70f968bb6dbb6be134897dd5ab0ccef9e94f2bc8d88bfd3298227f68690c1cb6",
+      "exact_text": "@@ -6,15 +6,19 @@\n export function optionalTimeRange(\n   since: string | undefined,\n   until: string | undefined,\n+  flags: {readonly since: string; readonly until: string} = {\n+    since: '--since',\n+    until: '--until',\n+  },\n ): {readonly since?: string; readonly until?: string} {\n-  if (since !== undefined) validateTimestamp(since, '--since')\n-  if (until !== undefined) validateTimestamp(until, '--until')\n+  if (since !== undefined) validateTimestamp(since, flags.since)\n+  if (until !== undefined) validateTimestamp(until, flags.until)\n   if (\n     since !== undefined &&\n     until !== undefined &&\n     Date.parse(until) <= Date.parse(since)\n   ) {\n-    throw invalid('--until must be after --since.')\n+    throw invalid(`${flags.until} must be after ${flags.since}.`)\n   }\n   return {\n     ...(since === undefined ? {} : {since}),\n",
+      "semantic_ids": [
+        "C11"
+      ]
+    },
+    {
+      "path": "src/services/history.ts",
+      "hunk_header": "@@ -32,6 +32,9 @@",
+      "exact_text_sha256": "4c15ae7112ebdad154375ee93986d0905a4a2cfe3dae30e0984fe25e0b076234",
+      "exact_text": "@@ -32,6 +32,9 @@\n     },\n     dataRegion: page.dataRegion ?? null,\n     metadata: {\n+      ...(metadata.apiVersion === undefined\n+        ? {}\n+        : {apiVersion: metadata.apiVersion}),\n       attempts: metadata.attempts,\n       ...(metadata.requestId === undefined\n         ? {}\n",
+      "semantic_ids": [
+        "C06",
+        "C07",
+        "C08",
+        "C09",
+        "C10",
+        "C14"
+      ]
+    },
+    {
+      "path": "test/commands/history.test.ts",
+      "hunk_header": "@@ -19,7 +19,11 @@",
+      "exact_text_sha256": "019601b1c9759d2a4c1a0fefe6138008bc3bb47bb6f18206634f52dec8122593",
+      "exact_text": "@@ -19,7 +19,11 @@\n   test('lists stored messages with filters as JSON', async () => {\n     server = await startHttpServer({\n       body: page([message('1')], 'next-1', null),\n-      headers: {'polymorfa-data-region': 'ch', 'x-request-id': 'req_hist'},\n+      headers: {\n+        'polymorfa-data-region': 'ch',\n+        'polymorfa-version': '2026-09-01',\n+        'x-request-id': 'req_hist',\n+      },\n     })\n \n     const result = await apiKeyEnvironment(() =>\n",
+      "semantic_ids": [
+        "C08",
+        "C11",
+        "C17"
+      ]
+    },
+    {
+      "path": "test/commands/history.test.ts",
+      "hunk_header": "@@ -32,7 +36,12 @@",
+      "exact_text_sha256": "4dabfc228d10fe6fdb4b488b2326e93ad4d62f1d6267ba7b54d60e40d3243103",
+      "exact_text": "@@ -32,7 +36,12 @@\n     expect(JSON.parse(result.stdout)).toEqual({\n       data: [message('1')],\n       dataRegion: 'ch',\n-      metadata: {attempts: 1, requestId: 'req_hist', status: 200},\n+      metadata: {\n+        apiVersion: '2026-09-01',\n+        attempts: 1,\n+        requestId: 'req_hist',\n+        status: 200,\n+      },\n       page: {hasMore: true, nextCursor: 'next-1', previousCursor: null},\n     })\n     const url = new URL(server.requests[0]!.url, 'http://x')\n",
+      "semantic_ids": [
+        "C08",
+        "C11",
+        "C17"
+      ]
+    },
+    {
+      "path": "test/commands/history.test.ts",
+      "hunk_header": "@@ -131,6 +140,25 @@",
+      "exact_text_sha256": "f65c2e225b102e4a5f1cfcde4d2c2571870af65f4d9c9334de9b154422958ded",
+      "exact_text": "@@ -131,6 +140,25 @@\n     )\n   })\n \n+  test('names the chat activity flags in range errors', async () => {\n+    server = await startHttpServer({body: page([], null, null)})\n+    const invalid = await apiKeyEnvironment(() =>\n+      runCommand('chat list --session s --active-since yesterday --json'),\n+    )\n+    expect(exitCode(invalid.error)).toBe(2)\n+    expect(invalid.stderr).toContain('--active-since must be an RFC 3339')\n+    const reversed = await apiKeyEnvironment(() =>\n+      runCommand(\n+        'chat list --session s --active-since 2026-09-02T00:00:00Z --active-before 2026-09-01T00:00:00Z --json',\n+      ),\n+    )\n+    expect(exitCode(reversed.error)).toBe(2)\n+    expect(reversed.stderr).toContain(\n+      '--active-before must be after --active-since.',\n+    )\n+    expect(server.requests).toHaveLength(0)\n+  })\n+\n   test('rejects a client token before any history request', async () => {\n     server = await startHttpServer({body: page([], null, null)})\n     const result = await withEnvironment(\n",
+      "semantic_ids": [
+        "C08",
+        "C11",
+        "C17"
+      ]
+    }
+  ],
+  "historical_checks": "2026-10-30 old Python7pass/currentPythoncompile were historical at their then heads, not final-source/native/consumer/admission evidence. No new source checks performed.",
+  "constraints": [
+    "No old interface, workflow, dependency, retention, key policy or output shape restored.",
+    "No claim that absent old semantics are byte/behavior equivalent.",
+    "Current SDK production audit6moderates, Rust1.85diskfailure, publisherreader and source-pin eligibility gates remain independently owned.",
+    "Current CLI SDK-containing-package gate remains genuine.",
+    "No provider/SSH/host/pool/deploy or current914V8 custody change."
+  ],
+  "historical_packet": {
+    "sha256": "f41af418bff03fced5e9d084a982c04e24db423a8a1f5bb675a4576b0d769baa",
+    "date": "2026-11-04",
+    "description": "Authenticated API source/object DATA; this record includes the exact authored hunk text so historical provenance does not depend on a private artifact path."
+  }
+}

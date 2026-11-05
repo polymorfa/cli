@@ -339,9 +339,130 @@ describe('resolveEnvironment', () => {
         },
         surface: 'messaging',
       }),
-    ).toThrow(
-      'Messaging credentials are ambiguous; set only POLYMORFA_API_KEY or POLYMORFA_CLIENT_TOKEN.',
+    ).toThrow('Messaging credentials are ambiguous')
+  })
+
+  test('uses an environment project token before the active API-key profile', async () => {
+    const credentials = fakeCredentials('unused')
+    const loadLinkedProject = vi.fn(() =>
+      Promise.reject(new Error('invalid link')),
     )
+    await expect(
+      resolveCommandEnvironment(
+        {
+          env: {POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN},
+          surface: 'messaging',
+          allowProjectToken: true,
+          loadLinkedProject,
+        },
+        fakeProfiles(),
+        credentials,
+      ),
+    ).resolves.toMatchObject({
+      credential: {type: 'projectToken', value: PROJECT_TOKEN},
+      source: 'environment',
+    })
+    expect(credentials.get).not.toHaveBeenCalled()
+    expect(loadLinkedProject).not.toHaveBeenCalled()
+  })
+
+  test('loads a link only to check a project-token profile binding', async () => {
+    const loadLinkedProject = vi.fn(() => Promise.resolve(OTHER_PROJECT))
+    await expect(
+      resolveCommandEnvironment(
+        {
+          env: {},
+          surface: 'messaging',
+          allowProjectToken: true,
+          loadLinkedProject,
+        },
+        projectProfiles(),
+        fakeCredentials(PROJECT_TOKEN),
+      ),
+    ).rejects.toThrow('This directory is linked to project')
+    expect(loadLinkedProject).toHaveBeenCalledOnce()
+  })
+
+  test.each([
+    {POLYMORFA_API_KEY: 'key', POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN},
+    {POLYMORFA_CLIENT_TOKEN: 'client', POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN},
+  ])('rejects ambiguous Messaging environment credentials %o', (env) => {
+    expect(() =>
+      resolveEnvironment({env, surface: 'messaging', allowProjectToken: true}),
+    ).toThrow('ambiguous')
+  })
+
+  test.each([undefined, 'project'])(
+    'resolves active or explicit project-token Messaging profile %s',
+    async (profile) => {
+      await expect(
+        resolveCommandEnvironment(
+          {
+            env: profile
+              ? {
+                  POLYMORFA_API_KEY: 'ambient',
+                  POLYMORFA_CLIENT_TOKEN: 'ambient',
+                }
+              : {},
+            surface: 'messaging',
+            allowProjectToken: true,
+            profile,
+            project: PROJECT,
+          },
+          projectProfiles(),
+          fakeCredentials(PROJECT_TOKEN),
+        ),
+      ).resolves.toMatchObject({
+        credential: {type: 'projectToken', value: PROJECT_TOKEN},
+        source: 'profile',
+        profile: 'project',
+      })
+    },
+  )
+
+  test('rejects a different project before reading the project-profile credential', async () => {
+    const credentials = fakeCredentials(PROJECT_TOKEN)
+    await expect(
+      resolveCommandEnvironment(
+        {
+          env: {},
+          surface: 'messaging',
+          project: OTHER_PROJECT,
+          allowProjectToken: true,
+        },
+        projectProfiles(),
+        credentials,
+      ),
+    ).rejects.toThrow('different --project')
+    expect(credentials.get).not.toHaveBeenCalled()
+  })
+
+  test('preserves the organization Platform credential boundary for project profiles and environment', async () => {
+    expect(() =>
+      resolveEnvironment({
+        env: {POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN},
+        surface: 'platform',
+      }),
+    ).toThrow('POLYMORFA_API_KEY')
+    const credentials = fakeCredentials(PROJECT_TOKEN)
+    await expect(
+      resolveCommandEnvironment(
+        {env: {}, surface: 'platform'},
+        projectProfiles(),
+        credentials,
+      ),
+    ).rejects.toThrow('organization API key')
+    expect(credentials.get).not.toHaveBeenCalled()
+  })
+
+  test('names the Messaging credential boundary for a project-token profile', async () => {
+    await expect(
+      resolveCommandEnvironment(
+        {env: {}, surface: 'messaging'},
+        projectProfiles(),
+        fakeCredentials(PROJECT_TOKEN),
+      ),
+    ).rejects.toThrow('this Messaging command requires')
   })
 
   test('prefers an environment credential over the active profile', async () => {
@@ -555,4 +676,23 @@ function fakeCredentials(value: string): CredentialStore {
     get: vi.fn(() => Promise.resolve(value)),
     set: vi.fn(() => Promise.resolve()),
   }
+}
+
+const PROJECT_TOKEN = `pmfa_pt_${'A'.repeat(94)}`
+function projectProfiles() {
+  const config: ProfileConfig = {
+    version: 2,
+    activeProfile: 'project',
+    profiles: {
+      project: {
+        credential: {
+          kind: 'projectToken',
+          account: 'profile:project:projectToken',
+        },
+        owner: 'project',
+        project: PROJECT,
+      },
+    },
+  }
+  return {load: () => Promise.resolve(config), save: () => Promise.resolve()}
 }

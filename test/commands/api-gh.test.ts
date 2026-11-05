@@ -99,6 +99,15 @@ describe('api gh-style options', () => {
     expect(result.stdout).toBe('plain text\n')
   })
 
+  test('preserves leading and trailing whitespace in jq strings', async () => {
+    server = await startHttpServer({body: {data: ['  padded  ', 'line\n']}})
+
+    const result = await run('api /v1/thing --surface platform --jq .data[]')
+
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(result.stdout).toBe('  padded  \nline\n\n')
+  })
+
   test('applies --jq to each page when paginating', async () => {
     server = await startHttpSequenceServer(pages)
 
@@ -153,6 +162,23 @@ describe('api gh-style options', () => {
 
     expect(result.error, result.stderr).toBeUndefined()
     expect(result.stdout).toBe('3\n')
+  })
+
+  test('retains each page metadata with --paginate --slurp --include', async () => {
+    server = await startHttpSequenceServer([
+      {...pages[0], headers: {'request-id': 'req_1'}},
+      {...pages[1], headers: {'request-id': 'req_2'}},
+    ])
+
+    const result = await run(
+      'api /platform/customers --surface platform --paginate --slurp --include',
+    )
+
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toMatchObject([
+      {data: pages[0]?.body, metadata: {requestId: 'req_1', status: 200}},
+      {data: pages[1]?.body, metadata: {requestId: 'req_2', status: 200}},
+    ])
   })
 
   test('renders --template against the response', async () => {

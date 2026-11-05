@@ -3,7 +3,14 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['coverage/**', 'dist/**', 'node_modules/**'],
+    ignores: [
+      '.sdk-source/**',
+      '.release/**',
+      'coverage/**',
+      'dist/**',
+      'dist-browser/**',
+      'node_modules/**',
+    ],
   },
   {
     linterOptions: {reportUnusedDisableDirectives: 'error'},

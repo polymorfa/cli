@@ -44,19 +44,29 @@ export interface PresentedError {
   readonly exitCode: number
   readonly message: string
   readonly requestId?: string
+  readonly operationId?: string
   /** Console request log for this request, when the API returned one. */
   readonly requestLogUrl?: string
   /** Documentation for the error code. */
   readonly docUrl?: string
   readonly retryable: boolean
+  /** Seconds to wait before retrying, from the API's `Retry-After` header. */
+  readonly retryAfterSeconds?: number
 }
 
 export function presentError(
   error: unknown,
   secrets: readonly string[] = [],
 ): PresentedError {
-  const message = redact(errorMessage(error), secrets)
   const classified = classifyError(error)
+  const retryAfterSeconds =
+    classified.category === 'rate_limit' ? retryAfter(error) : undefined
+  const message = redact(
+    retryAfterSeconds === undefined
+      ? errorMessage(error)
+      : `${errorMessage(error)} Retry after ${retryAfterSeconds} seconds.`,
+    secrets,
+  )
   const requestId =
     error instanceof PolymorfaError || error instanceof ListenerProtocolError
       ? error.requestId
@@ -84,18 +94,47 @@ export function presentError(
             : error instanceof PolymorfaError && error.code
               ? redact(error.code, secrets)
               : `${classified.category}_error`,
-    message,
+    message:
+      error instanceof PolymorfaError && error.code === 'send_outcome_unknown'
+        ? `${message} Read message operation status; do not resend or change transport.`
+        : error instanceof PolymorfaError &&
+            error.code === 'hybrid_choice_required'
+          ? `${message} Choose --keep linked_devices|official_api, or --split --stay linked_devices|official_api --new-number-name NAME, and quote again.`
+          : error instanceof PolymorfaError &&
+              error.code === 'hybrid_transition_ineligible' &&
+              /\bhms_enabled$/.test(error.message)
+            ? `${message} A Number with hosted message storage must be kept: quote the merge on it and pass the other Number to --merge-with.`
+            : message,
+    ...(error instanceof PolymorfaError && error.metadata?.operationId
+      ? {operationId: redact(error.metadata.operationId, secrets)}
+      : {}),
     retryable:
-      (error instanceof ListenerProtocolError && error.retryable) ||
-      ['network', 'rate_limit', 'server', 'timeout'].includes(
-        classified.category,
-      ),
+      !(error instanceof PolymorfaError && error.metadata?.operationId) &&
+      ((error instanceof ListenerProtocolError && error.retryable) ||
+        ['network', 'rate_limit', 'server', 'timeout'].includes(
+          classified.category,
+        )),
     ...(requestId === undefined ? {} : {requestId}),
+    ...(retryAfterSeconds === undefined ? {} : {retryAfterSeconds}),
     ...(requestLogUrl === undefined ? {} : {requestLogUrl}),
     ...(docUrl === undefined ? {} : {docUrl}),
   }
 }
 
+/** `Retry-After` as whole seconds from now, from delta-seconds or an HTTP-date. */
+export function retryAfter(
+  error: unknown,
+  now = Date.now(),
+): number | undefined {
+  if (!(error instanceof PolymorfaError)) return undefined
+  const header = error.metadata?.headers['retry-after']?.trim()
+  if (header === undefined || header.length === 0) return undefined
+  if (/^\d+$/.test(header)) return Number(header)
+  const date = Date.parse(header)
+  return Number.isFinite(date)
+    ? Math.max(0, Math.ceil((date - now) / 1000))
+    : undefined
+}
 /**
  * API error codes with their own exit code, whatever their HTTP status, so
  * scripts can tell a missing beta enrollment or a reached limit apart from
@@ -113,6 +152,9 @@ export const CODE_EXIT_CODES: ReadonlyMap<
 export function renderErrorDetails(presented: PresentedError): string {
   return [
     `Error: ${presented.message}`,
+    ...(presented.operationId === undefined
+      ? []
+      : [`Operation ID: ${presented.operationId}`]),
     ...(presented.requestId === undefined
       ? []
       : [`Request ID: ${presented.requestId}`]),

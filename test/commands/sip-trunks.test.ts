@@ -94,6 +94,7 @@ describe('sip-trunk commands', () => {
       `${TRUNK_ID}\tHead office PBX\tboth\tenabled\tsips:pbx.example.com\n`,
     )
     expect(viewed.stdout).toContain('Password stored\tyes')
+    expect(viewed.stdout).toContain('From user\tcaller identity (automatic)')
     expect(viewed.stdout).toContain('Calling session\tnot set (calls refused)')
     expect(viewed.stdout).toContain('Allowed destinations\tany')
     expect(viewed.stdout).toContain('Revision\t3')

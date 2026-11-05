@@ -2,7 +2,11 @@ import {Args, Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
 import {confirmDangerous} from '../../input/confirmation.js'
-import {idempotencyOptions} from '../../input/message-send.js'
+import {
+  idempotencyOptions,
+  transportFlag,
+  messageTransport,
+} from '../../input/message-send.js'
 import {deleteMessage} from '../../services/messages.js'
 
 export default class MessageDelete extends BaseCommand {
@@ -18,6 +22,7 @@ export default class MessageDelete extends BaseCommand {
   ]
 
   static override flags = {
+    transport: transportFlag,
     chat: Flags.string({
       description: 'Conversation that contains the message.',
       required: true,
@@ -46,7 +51,12 @@ export default class MessageDelete extends BaseCommand {
       flags.session,
       flags.chat,
       args.message,
-      idempotencyOptions(flags['idempotency-key']),
+      {
+        ...idempotencyOptions(flags['idempotency-key']),
+        ...(flags.transport === undefined
+          ? {}
+          : {transport: messageTransport(flags.transport)}),
+      },
     )
     this.writeValue(result, `Deleted message ${args.message}.`, flags)
   }

@@ -1,6 +1,7 @@
 import {
   PolymorfaConfigurationError,
   type MessageResponse,
+  type MessageTransport,
   type MessageReceipt,
   type MessagingClient,
   type ReactRequest,
@@ -21,6 +22,9 @@ export interface MessageResult<T> {
     readonly attempts: number
     readonly requestId?: string
     readonly status: number
+    readonly transport?: ResponseMetadata['transport']
+    readonly routingReason?: ResponseMetadata['routingReason']
+    readonly operationId?: string
   }
 }
 
@@ -57,7 +61,7 @@ export async function editMessage(
   chat: string,
   message: string,
   text: string,
-  options: RequestOptions = {},
+  options: RequestOptions & {readonly transport?: MessageTransport} = {},
 ): Promise<MessageResult<SuccessResponse>> {
   if (text.trim().length === 0) {
     throw new PolymorfaConfigurationError(
@@ -69,7 +73,12 @@ export async function editMessage(
     session,
     chat,
     message,
-    {text},
+    {
+      text,
+      ...(options.transport === undefined
+        ? {}
+        : {transport: options.transport}),
+    },
     options,
   )
   return result(response.data, response.metadata)
@@ -80,7 +89,7 @@ export async function deleteMessage(
   session: string,
   chat: string,
   message: string,
-  options: RequestOptions = {},
+  options: RequestOptions & {readonly transport?: MessageTransport} = {},
 ): Promise<MessageResult<SuccessResponse>> {
   const response = await client.chats.deleteMessage(
     session,
@@ -136,6 +145,15 @@ function result<T>(data: T, metadata: ResponseMetadata): MessageResult<T> {
     data,
     metadata: {
       attempts: metadata.attempts,
+      ...(metadata.transport === undefined
+        ? {}
+        : {transport: metadata.transport}),
+      ...(metadata.routingReason === undefined
+        ? {}
+        : {routingReason: metadata.routingReason}),
+      ...(metadata.operationId === undefined
+        ? {}
+        : {operationId: metadata.operationId}),
       status: metadata.status,
       ...(metadata.apiVersion === undefined
         ? {}

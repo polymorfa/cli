@@ -1,14 +1,37 @@
+import {mkdtemp, readFile, rm, writeFile} from 'node:fs/promises'
+import {tmpdir} from 'node:os'
+import {join} from 'node:path'
 import {runCommand} from '@oclif/test'
 import {afterEach, describe, expect, test} from 'vitest'
 
 import {
-  startHttpSequenceServer,
   startHttpServer,
   withEnvironment,
   type TestHttpServer,
 } from '../helpers/http-server.js'
 
-describe('message history commands', () => {
+const chat = {
+  conversation: {id: '739182640518203', phoneNumber: '+15550001111'},
+  kind: 'direct',
+  lastActivityAt: '2026-09-18T10:05:00Z',
+  lastMessage: {
+    id: '739182640518204',
+    whatsapp_id: 'wamid.1',
+    direction: 'inbound',
+    type: 'text',
+    timestamp: '2026-09-18T10:05:00Z',
+  },
+}
+
+const message = {
+  ...chat.lastMessage,
+  conversation: chat.conversation,
+  fromMe: false,
+  text: 'Hello',
+  media: [],
+}
+
+describe('stored chat history commands', () => {
   let server: TestHttpServer | undefined
 
   afterEach(async () => {
@@ -16,228 +39,182 @@ describe('message history commands', () => {
     server = undefined
   })
 
-  test('lists stored messages with filters as JSON', async () => {
-    server = await startHttpServer({
-      body: page([message('1')], 'next-1', null),
-      headers: {
-        'polymorfa-data-region': 'ch',
-        'polymorfa-version': '2026-09-01',
-        'x-request-id': 'req_hist',
-      },
-    })
-
-    const result = await apiKeyEnvironment(() =>
-      runCommand(
-        'message list --session support/line --conversation +15550001111 --limit 10 --direction inbound --type text,image --since 2026-09-01T00:00:00Z --order asc --json',
-      ),
-    )
-
-    expect(result.error).toBeUndefined()
-    expect(JSON.parse(result.stdout)).toEqual({
-      data: [message('1')],
-      dataRegion: 'ch',
-      metadata: {
-        apiVersion: '2026-09-01',
-        attempts: 1,
-        requestId: 'req_hist',
-        status: 200,
-      },
-      page: {hasMore: true, nextCursor: 'next-1', previousCursor: null},
-    })
-    const url = new URL(server.requests[0]!.url, 'http://x')
-    expect(url.pathname).toBe(
-      '/messaging/support%2Fline/chats/%2B15550001111/messages',
-    )
-    expect(Object.fromEntries(url.searchParams)).toEqual({
-      direction: 'inbound',
-      limit: '10',
-      order: 'asc',
-      since: '2026-09-01T00:00:00Z',
-      types: 'text,image',
-    })
-  })
-
-  test('follows cursors up to --max-items and keeps the resume cursor', async () => {
-    server = await startHttpSequenceServer([
-      {body: page([message('1'), message('2')], 'c2', null)},
-      {body: page([message('3'), message('4')], 'c3', 'p2')},
-    ])
-
-    const result = await apiKeyEnvironment(() =>
-      runCommand(
-        'message list --session s --conversation 739182640518203 --limit 2 --max-items 3 --json',
-      ),
-    )
-
-    expect(result.error).toBeUndefined()
-    const value = JSON.parse(result.stdout) as {
-      data: {id: string}[]
-      page: unknown
-    }
-    expect(value.data.map((item) => item.id)).toEqual(['1', '2', '3'])
-    expect(value.page).toEqual({
-      hasMore: true,
-      nextCursor: null,
-      previousCursor: null,
-    })
-    expect(
-      new URL(server.requests[1]!.url, 'http://x').searchParams.get('cursor'),
-    ).toBe('c2')
-  })
-
-  test('lists conversations in human form', async () => {
+  test('lists chats with filters and preserves page cursors in JSON', async () => {
     server = await startHttpServer({
       body: {
-        data: [
-          {
-            conversation: {id: '739182640518203', phoneNumber: '+15550001111'},
-            kind: 'direct',
-            lastActivityAt: '2026-09-18T10:05:00.000Z',
-            lastMessage: {
-              direction: 'inbound',
-              id: '2',
-              timestamp: '2026-09-18T10:05:00.000Z',
-              type: 'text',
-              whatsapp_id: 'WA',
-            },
-          },
-        ],
-        hasMore: false,
-        nextCursor: null,
-        previousCursor: null,
         success: true,
+        data: [chat],
+        hasMore: true,
+        nextCursor: 'older',
+        previousCursor: null,
       },
     })
-
-    const result = await apiKeyEnvironment(() =>
+    const result = await apiKey(() =>
       runCommand(
-        'chat list --session s --kind direct --active-since 2026-09-01T00:00:00Z',
+        'chat list --session number/one --limit 20 --kind direct --active-since 2026-09-01T00:00:00Z --cursor page_1 --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
-    expect(result.stdout).toContain('739182640518203\t+15550001111\tdirect')
-    expect(server.requests[0]?.url).toBe(
-      '/messaging/s/chats?kind=direct&activeSince=2026-09-01T00%3A00%3A00Z',
-    )
-  })
-
-  test('gets one message and one conversation', async () => {
-    server = await startHttpServer({
-      body: {data: message('9'), success: true},
+    expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual({
+      success: true,
+      data: [chat],
+      hasMore: true,
+      nextCursor: 'older',
+      previousCursor: null,
     })
-    const result = await apiKeyEnvironment(() =>
-      runCommand(
-        'message get 739182640518977 --session s --conversation 7391 --json',
-      ),
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/messaging/number%2Fone/chats?limit=20&cursor=page_1&kind=direct&activeSince=2026-09-01T00%3A00%3A00Z',
+    })
+  })
+
+  test('reads a chat by E.164 number', async () => {
+    server = await startHttpServer({body: {success: true, data: chat}})
+    const result = await apiKey(() =>
+      runCommand('chat view +15550001111 --session number_1'),
     )
     expect(result.error).toBeUndefined()
-    expect((JSON.parse(result.stdout) as {data: {id: string}}).data.id).toBe(
-      '9',
-    )
+    expect(result.stdout).toContain('Conversation\t739182640518203')
     expect(server.requests[0]?.url).toBe(
-      '/messaging/s/chats/7391/messages/739182640518977',
+      '/messaging/number_1/chats/%2B15550001111',
     )
   })
 
-  test('names the chat activity flags in range errors', async () => {
-    server = await startHttpServer({body: page([], null, null)})
-    const invalid = await apiKeyEnvironment(() =>
-      runCommand('chat list --session s --active-since yesterday --json'),
-    )
-    expect(exitCode(invalid.error)).toBe(2)
-    expect(invalid.stderr).toContain('--active-since must be an RFC 3339')
-    const reversed = await apiKeyEnvironment(() =>
-      runCommand(
-        'chat list --session s --active-since 2026-09-02T00:00:00Z --active-before 2026-09-01T00:00:00Z --json',
-      ),
-    )
-    expect(exitCode(reversed.error)).toBe(2)
-    expect(reversed.stderr).toContain(
-      '--active-before must be after --active-since.',
-    )
-    expect(server.requests).toHaveLength(0)
-  })
-
-  test('rejects a client token before any history request', async () => {
-    server = await startHttpServer({body: page([], null, null)})
+  test('allows a project token for its own Number', async () => {
+    server = await startHttpServer({body: {success: true, data: chat}})
     const result = await withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,
+        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_${'A'.repeat(94)}`,
+        POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser',
       },
-      () => runCommand('message list --session s --conversation 1 --json'),
+      () => runCommand('chat view 739182640518203 --session number_1 --json'),
     )
-    expect(exitCode(result.error)).toBe(2)
+    expect(result.error).toBeUndefined()
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/number_1/chats/739182640518203',
+    )
+  })
+
+  test('lists messages with filters and both page cursors', async () => {
+    server = await startHttpServer({
+      body: {
+        success: true,
+        data: [message],
+        hasMore: true,
+        nextCursor: 'older',
+        previousCursor: 'newer',
+      },
+    })
+    const result = await apiKey(() =>
+      runCommand(
+        'chat message list +15550001111 --session number_1 --limit 10 --cursor page_2 --order asc --since 2026-09-01T00:00:00Z --until 2026-09-20T00:00:00Z --direction inbound --types text,image',
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toContain('Next cursor\tolder')
+    expect(result.stdout).toContain('Previous cursor\tnewer')
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/number_1/chats/%2B15550001111/messages?limit=10&cursor=page_2&order=asc&since=2026-09-01T00%3A00%3A00Z&until=2026-09-20T00%3A00%3A00Z&direction=inbound&types=text%2Cimage',
+    )
+  })
+
+  test('reads one opaque message ID', async () => {
+    server = await startHttpServer({body: {success: true, data: message}})
+    const result = await apiKey(() =>
+      runCommand(
+        'chat message view +15550001111 739182640518204 --session number_1 --json',
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual(message)
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/number_1/chats/%2B15550001111/messages/739182640518204',
+    )
+  })
+
+  test('rejects client tokens before transport', async () => {
+    server = await startHttpServer({body: {success: true, data: []}})
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser',
+        POLYMORFA_BASE_URL: server.baseUrl,
+      },
+      () => runCommand('chat list --session number_1 --json'),
+    )
+    expect(result.error).toBeDefined()
     expect(result.stderr).toContain(
-      'Message history commands require a server API key',
+      'Hosted message history requires a server credential',
     )
     expect(server.requests).toHaveLength(0)
   })
 
-  test('reports hms_not_enabled from the API', async () => {
-    server = await startHttpServer({
-      body: {
-        data: null,
-        docs: 'https://docs.polymorfa.com/api/errors#hms-not-enabled',
-        error: {
-          code: 'hms_not_enabled',
-          message: 'Hosted message storage is not enabled for this Number.',
-          param: null,
-          type: 'invalid_request_error',
-        },
-      },
-      status: 404,
-    })
-    const result = await apiKeyEnvironment(() =>
-      runCommand('chat list --session s --json'),
-    )
-    expect(result.error).toBeDefined()
-    expect(`${result.stdout}${result.stderr}`).toContain('hms_not_enabled')
+  test('preserves API enrollment denial and missing HMS errors', async () => {
+    for (const [status, code] of [
+      [403, 'permission_denied'],
+      [404, 'hms_not_enabled'],
+    ] as const) {
+      server = await startHttpServer({
+        status,
+        body: {success: false, error: {code, message: 'History unavailable.'}},
+      })
+      const result = await apiKey(() =>
+        runCommand('chat list --session number_1 --json'),
+      )
+      expect(result.error).toBeDefined()
+      expect(result.stderr).toContain(code)
+      await server.close()
+      server = undefined
+    }
   })
 
-  async function apiKeyEnvironment<T>(run: () => Promise<T>): Promise<T> {
+  test('downloads stored message media to a new file only', async () => {
+    const directory = await mkdtemp(join(tmpdir(), 'history-media-test-'))
+    try {
+      server = await startHttpServer({
+        rawBody: Uint8Array.from([1, 2, 3]),
+        headers: {'content-type': 'image/jpeg', 'content-length': '3'},
+      })
+      const output = join(directory, 'photo.jpg')
+      const result = await apiKey(() =>
+        runCommand(
+          `chat message media +15550001111 739182640518204 --session number/one --output ${output} --json`,
+        ),
+      )
+      expect(result.error).toBeUndefined()
+      expect(server.requests[0]).toMatchObject({
+        method: 'GET',
+        url: '/messaging/number%2Fone/chats/%2B15550001111/messages/739182640518204/media',
+      })
+      expect([...(await readFile(output))]).toEqual([1, 2, 3])
+
+      await writeFile(output, 'keep')
+      const refused = await apiKey(() =>
+        runCommand(
+          `chat message media +15550001111 739182640518204 --session number/one --output ${output}`,
+        ),
+      )
+      expect(refused.error).toBeDefined()
+      expect(await readFile(output, 'utf8')).toBe('keep')
+      expect(server.requests).toHaveLength(1)
+    } finally {
+      await rm(directory, {recursive: true, force: true})
+    }
+  })
+
+  async function apiKey<T>(run: () => Promise<T>): Promise<T> {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
         POLYMORFA_API_KEY:
           'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-        POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_BASE_URL: server.baseUrl,
       },
       run,
     )
   }
 })
-
-function message(id: string) {
-  return {
-    conversation: {id: '739182640518203'},
-    direction: 'inbound',
-    fromMe: false,
-    id,
-    text: `m${id}`,
-    timestamp: '2026-09-18T10:00:00.000Z',
-    type: 'text',
-    whatsapp_id: `WA-${id}`,
-  }
-}
-
-function page(
-  data: readonly unknown[],
-  nextCursor: string | null,
-  previousCursor: string | null,
-) {
-  return {
-    data,
-    hasMore: nextCursor !== null,
-    nextCursor,
-    previousCursor,
-    success: true,
-  }
-}
-
-function exitCode(error: unknown): number | undefined {
-  return (error as {oclif?: {exit?: number}} | undefined)?.oclif?.exit
-}

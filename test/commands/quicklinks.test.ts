@@ -42,24 +42,24 @@ test('creates a QuickLink and uploads separate test history with exact project s
       },
       async () => {
         const created = await runCommand(
-          `quicklink create --project project/1 --input ${input} --json`,
+          `quicklink create --project ${projectId} --input ${input} --json`,
         )
         expect(created.error).toBeUndefined()
         expect(JSON.parse(created.stdout)).toMatchObject({
           data: {id: 'ql_test', expiresAt: null},
         })
         const uploaded = await runCommand(
-          `testing history-fixture create --project project/1 --input ${history} --json`,
+          `testing history-fixture create --project ${projectId} --input ${history} --json`,
         )
         expect(uploaded.error).toBeUndefined()
       },
     )
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
       'POST /messaging/quicklinks',
-      'POST /messaging/testing/project%2F1/history-fixtures',
+      `POST /messaging/testing/${projectId}/history-fixtures`,
     ])
     expect(JSON.parse(server.requests[0]!.body)).toEqual({
-      projectId: 'project/1',
+      projectId,
       configuration,
     })
   } finally {
@@ -118,7 +118,10 @@ test('retrieves QuickLink status with an exact-project token and encoded ID', as
 
 test('cancels a QuickLink only after confirmation', async () => {
   const server = await startHttpSequenceServer([
-    {body: {message: 'QuickLink cancelled', success: true}},
+    {
+      status: 202,
+      body: {message: 'QuickLink cancellation requested', success: true},
+    },
   ])
   try {
     await withEnvironment(
@@ -146,6 +149,17 @@ test('cancels a QuickLink only after confirmation', async () => {
           `quicklink cancel ql_123 --project ${projectId} --yes --json`,
         )
         expect(cancelled.error, cancelled.stderr).toBeUndefined()
+        expect(JSON.parse(cancelled.stdout)).toMatchObject({
+          data: {message: 'QuickLink cancellation requested', success: true},
+          metadata: {status: 202},
+        })
+
+        const requested = await runCommand(
+          `quicklink cancel ql_123 --project ${projectId} --yes`,
+        )
+        expect(requested.error, requested.stderr).toBeUndefined()
+        expect(requested.stdout).toContain('QuickLink cancellation requested')
+        expect(requested.stdout).toContain('cleanup may continue')
       },
     )
     expect(server.requests[0]).toMatchObject({
@@ -158,6 +172,70 @@ test('cancels a QuickLink only after confirmation', async () => {
   }
 })
 
+test('reports completed QuickLink cancellation after a synchronous response', async () => {
+  const server = await startHttpSequenceServer([
+    {status: 200, body: {message: 'QuickLink cancelled', success: true}},
+  ])
+  try {
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: apiKey,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: undefined,
+      },
+      () => runCommand(`quicklink cancel ql_123 --project ${projectId} --yes`),
+    )
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(result.stdout).toContain('Cancelled QuickLink ql_123.')
+  } finally {
+    await server.close()
+  }
+})
+
 function exitCode(error: unknown): number | undefined {
   return (error as {oclif?: {exit?: number}} | undefined)?.oclif?.exit
 }
+
+test('includes initial number financial controls and rejects invalid precision before transport', async () => {
+  const server = await startHttpSequenceServer([
+    {
+      body: {
+        success: true,
+        data: {
+          id: 'ql_budget',
+          url: 'https://example.test/connect/budget',
+          session: 'reserved',
+          expiresAt: null,
+        },
+      },
+    },
+  ])
+  try {
+    await withEnvironment(
+      {
+        POLYMORFA_API_KEY: apiKey,
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+        POLYMORFA_PROJECT_TOKEN: undefined,
+      },
+      async () => {
+        const result = await runCommand(
+          `quicklink create --project ${projectId} --limit-credits 250 --priority 30 --json`,
+        )
+        expect(result.error, result.stderr).toBeUndefined()
+        expect(JSON.parse(server.requests[0]!.body)).toMatchObject({
+          projectId,
+          billingControls: {limitCredits: 250, priority: 30},
+        })
+        const invalid = await runCommand(
+          `quicklink create --project ${projectId} --limit-credits 0.0000001 --priority 30 --json`,
+        )
+        expect(invalid.error).toBeDefined()
+        expect(server.requests).toHaveLength(1)
+      },
+    )
+  } finally {
+    await server.close()
+  }
+})

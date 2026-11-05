@@ -53,7 +53,6 @@ export default class Trigger extends BaseCommand {
     '<%= config.bin %> trigger message.received --session my-test-number --text "hi" --project <projectId>',
     '<%= config.bin %> trigger message.ack --session my-test-number --override ackStatus=read --project <projectId>',
     '<%= config.bin %> trigger template.status --session my-test-number --override templateStatus=REJECTED --override reason=INVALID_FORMAT --project <projectId>',
-    '<%= config.bin %> trigger bansafe.enforcement --session my-test-number --override enforcementKind=temporary_ban --project <projectId>',
   ]
 
   async run(): Promise<void> {

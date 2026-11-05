@@ -1,118 +1,228 @@
-import type {
-  ApiResponse,
-  HistoryChat,
-  HistoryMessage,
-  HistoryPage,
-} from '@polymorfa/sdk'
+import {stat} from 'node:fs/promises'
+import {resolve} from 'node:path'
 
-export interface HistoryListValue<T> {
-  readonly data: readonly T[]
-  readonly page: {
-    readonly hasMore: boolean
-    readonly nextCursor: string | null
-    readonly previousCursor: string | null
-  }
-  readonly dataRegion: string | null
+import {
+  PolymorfaConfigurationError,
+  PolymorfaConflictError,
+  type HistoryChat,
+  type HistoryMessage,
+  type HistoryPage,
+  type ListHistoryChatsParams,
+  type ListHistoryMessagesParams,
+  type MessagingClient,
+  type ResponseMetadata,
+} from '@polymorfa/sdk'
+import {writeStreamToFile} from '@polymorfa/sdk/node'
+
+export const DEFAULT_MAX_HISTORY_MEDIA_BYTES = 32 * 1024 * 1024
+
+interface HistoryResult<T> {
+  readonly data: T
   readonly metadata: {
+    readonly apiVersion?: string
     readonly attempts: number
     readonly requestId?: string
     readonly status: number
   }
 }
 
-/** Machine output for one history page; cursors are passed back unchanged. */
-export function historyListValue<T>(
-  response: ApiResponse<HistoryPage<T>>,
-  items: readonly T[] = response.data.data,
-  hasMore: boolean = response.data.hasMore,
-  nextCursor: string | null = response.data.nextCursor,
-): HistoryListValue<T> {
-  const metadata = response.metadata
-  return {
-    data: items,
-    page: {
-      hasMore,
-      nextCursor,
-      previousCursor: response.data.previousCursor,
-    },
-    dataRegion:
-      Object.entries(metadata.headers).find(
-        ([name]) => name.toLowerCase() === 'polymorfa-data-region',
-      )?.[1] ?? null,
-    metadata: {
-      ...(metadata.apiVersion === undefined
-        ? {}
-        : {apiVersion: metadata.apiVersion}),
-      attempts: metadata.attempts,
-      ...(metadata.requestId === undefined
-        ? {}
-        : {requestId: metadata.requestId}),
-      status: metadata.status,
-    },
-  }
+export async function listHistoryChats(
+  client: MessagingClient,
+  session: string,
+  params: ListHistoryChatsParams,
+): Promise<HistoryResult<HistoryPage<HistoryChat>>> {
+  const response = await client.chats.list(session, params)
+  return result(response.data, response.metadata)
 }
 
-/** Follows nextCursor until maxItems or the last page. */
-export async function collectHistory<T>(
-  first: ApiResponse<HistoryPage<T>>,
-  maxItems: number | undefined,
-  loadNext: (cursor: string) => Promise<ApiResponse<HistoryPage<T>>>,
-): Promise<HistoryListValue<T>> {
-  if (maxItems === undefined) return historyListValue(first)
-  const items: T[] = [...first.data.data]
-  let response = first
-  while (items.length < maxItems && response.data.hasMore) {
-    const cursor = response.data.nextCursor
-    if (cursor === null) {
-      throw new Error('The API omitted the next cursor for a history page.')
+export async function viewHistoryChat(
+  client: MessagingClient,
+  session: string,
+  conversation: string,
+): Promise<HistoryResult<HistoryChat>> {
+  const response = await client.chats.retrieve(session, conversation)
+  return result(response.data.data, response.metadata)
+}
+
+export async function listHistoryMessages(
+  client: MessagingClient,
+  session: string,
+  conversation: string,
+  params: ListHistoryMessagesParams,
+): Promise<HistoryResult<HistoryPage<HistoryMessage>>> {
+  const response = await client.chats.listMessages(
+    session,
+    conversation,
+    params,
+  )
+  return result(response.data, response.metadata)
+}
+
+export async function viewHistoryMessage(
+  client: MessagingClient,
+  session: string,
+  conversation: string,
+  messageId: string,
+): Promise<HistoryResult<HistoryMessage>> {
+  const response = await client.chats.retrieveMessage(
+    session,
+    conversation,
+    messageId,
+  )
+  return result(response.data.data, response.metadata)
+}
+
+/** Download a stored Official API message copy through the enrolled history API. */
+export async function downloadHistoryMessageMedia(
+  client: MessagingClient,
+  session: string,
+  conversation: string,
+  messageId: string,
+  options: {
+    readonly force: boolean
+    readonly maxBytes: number
+    readonly output: string
+  },
+): Promise<
+  HistoryResult<{
+    readonly bytes: number
+    readonly path: string
+    readonly contentType?: string
+  }>
+> {
+  const output = resolve(options.output)
+  if (!options.force) {
+    try {
+      await stat(output)
+      throw new PolymorfaConflictError(
+        `Output file ${output} already exists. Pass --force to overwrite it.`,
+      )
+    } catch (error) {
+      if ((error as {code?: string}).code !== 'ENOENT') throw error
     }
-    const next = await loadNext(cursor)
-    if (next.data.nextCursor === cursor) {
-      throw new Error('The API returned the same cursor twice.')
-    }
-    response = next
-    items.push(...response.data.data)
   }
-  const truncated = items.length > maxItems
-  return historyListValue(
-    first,
-    items.slice(0, maxItems),
-    truncated || response.data.hasMore,
-    truncated ? null : response.data.nextCursor,
+
+  const download = await client.chats.downloadMessageMediaStream(
+    session,
+    conversation,
+    messageId,
+  )
+  if (
+    download.contentLength !== undefined &&
+    download.contentLength > options.maxBytes
+  ) {
+    await download.body.cancel().catch(() => {})
+    throw new PolymorfaConfigurationError(
+      `Stored media exceeds the ${options.maxBytes} byte download limit. Increase --max-bytes to allow larger files.`,
+      'max-bytes',
+    )
+  }
+
+  const written = await writeStreamToFile(download.body, output, {
+    maxBytes: options.maxBytes,
+    overwrite: options.force,
+  }).catch((error: unknown) => {
+    if (error instanceof PolymorfaConflictError) {
+      throw new PolymorfaConflictError(
+        `Output file ${output} already exists. Pass --force to overwrite it.`,
+      )
+    }
+    if ((error as {code?: unknown} | undefined)?.code === 'media_too_large') {
+      throw new PolymorfaConfigurationError(
+        `Stored media exceeds the ${options.maxBytes} byte download limit. Increase --max-bytes to allow larger files.`,
+        'max-bytes',
+      )
+    }
+    throw error
+  })
+
+  return result(
+    {
+      bytes: written.bytes,
+      path: output,
+      ...(download.contentType === undefined
+        ? {}
+        : {contentType: download.contentType}),
+    },
+    download.metadata,
   )
 }
 
-export function renderChats(chats: readonly HistoryChat[]): string {
-  if (chats.length === 0) return 'No stored conversations found.'
-  return chats
-    .map((chat) =>
-      [
-        chat.conversation.id,
-        chat.conversation.phoneNumber ?? '-',
-        chat.kind,
-        chat.lastActivityAt,
-        chat.lastMessage.type,
-      ].join('\t'),
-    )
-    .join('\n')
+export function renderHistoryChats(page: HistoryPage<HistoryChat>): string {
+  const lines = page.data.map((chat) =>
+    [
+      chat.conversation.id,
+      chat.kind,
+      chat.lastActivityAt,
+      chat.lastMessage.type,
+    ].join('\t'),
+  )
+  return renderPage(lines, page, 'No stored chats found.')
 }
 
-export function renderMessages(messages: readonly HistoryMessage[]): string {
-  if (messages.length === 0) return 'No stored messages found.'
-  return messages
-    .map((message) =>
-      [
-        message.timestamp,
-        message.id,
-        message.direction,
-        message.type,
-        oneLine(message.text ?? message.caption ?? ''),
-      ].join('\t'),
-    )
-    .join('\n')
+export function renderHistoryChat(chat: HistoryChat): string {
+  return [
+    `Conversation\t${chat.conversation.id}`,
+    `Kind\t${chat.kind}`,
+    `Last activity\t${chat.lastActivityAt}`,
+    `Last message\t${chat.lastMessage.id}`,
+  ].join('\n')
 }
 
-function oneLine(value: string): string {
-  const flat = value.replace(/[\r\n\t]+/g, ' ')
-  return flat.length > 120 ? `${flat.slice(0, 117)}...` : flat
+export function renderHistoryMessages(
+  page: HistoryPage<HistoryMessage>,
+): string {
+  const lines = page.data.map((message) =>
+    [
+      message.id,
+      message.timestamp,
+      message.direction,
+      message.type,
+      message.text ?? '',
+    ].join('\t'),
+  )
+  return renderPage(lines, page, 'No stored messages found.')
+}
+
+export function renderHistoryMessage(message: HistoryMessage): string {
+  return [
+    `ID\t${message.id}`,
+    `Conversation\t${message.conversation.id}`,
+    `Time\t${message.timestamp}`,
+    `Direction\t${message.direction}`,
+    `Type\t${message.type}`,
+    ...(message.text === undefined ? [] : [`Text\t${message.text}`]),
+    ...(message.caption === undefined ? [] : [`Caption\t${message.caption}`]),
+    ...(message.media === undefined ? [] : [`Media\t${message.media.length}`]),
+  ].join('\n')
+}
+
+function renderPage<T>(
+  lines: string[],
+  page: HistoryPage<T>,
+  empty: string,
+): string {
+  return [
+    ...(lines.length === 0 ? [empty] : lines),
+    ...(page.nextCursor === null ? [] : [`Next cursor\t${page.nextCursor}`]),
+    ...(page.previousCursor === null
+      ? []
+      : [`Previous cursor\t${page.previousCursor}`]),
+  ].join('\n')
+}
+
+function result<T>(data: T, metadata: ResponseMetadata): HistoryResult<T> {
+  return {
+    data,
+    metadata: {
+      attempts: metadata.attempts,
+      status: metadata.status,
+      ...(metadata.apiVersion === undefined
+        ? {}
+        : {apiVersion: metadata.apiVersion}),
+      ...(metadata.requestId === undefined
+        ? {}
+        : {requestId: metadata.requestId}),
+    },
+  }
 }

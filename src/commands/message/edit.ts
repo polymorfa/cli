@@ -1,7 +1,11 @@
 import {Args, Flags} from '@oclif/core'
 
 import {BaseCommand} from '../../base-command.js'
-import {idempotencyOptions} from '../../input/message-send.js'
+import {
+  idempotencyOptions,
+  transportFlag,
+  messageTransport,
+} from '../../input/message-send.js'
 import {editMessage} from '../../services/messages.js'
 
 export default class MessageEdit extends BaseCommand {
@@ -16,6 +20,7 @@ export default class MessageEdit extends BaseCommand {
   ]
 
   static override flags = {
+    transport: transportFlag,
     body: Flags.string({description: 'Replacement text.', required: true}),
     chat: Flags.string({
       description: 'Conversation that contains the message.',
@@ -39,7 +44,12 @@ export default class MessageEdit extends BaseCommand {
       flags.chat,
       args.message,
       flags.body,
-      idempotencyOptions(flags['idempotency-key']),
+      {
+        ...idempotencyOptions(flags['idempotency-key']),
+        ...(flags.transport === undefined
+          ? {}
+          : {transport: messageTransport(flags.transport)}),
+      },
     )
     this.writeValue(result, `Edited message ${args.message}.`, flags)
   }

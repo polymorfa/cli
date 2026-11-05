@@ -95,7 +95,7 @@ export abstract class BaseCommand extends Command {
     const session = await createDeveloperSession(
       flags,
       (secret) => this.registerSecret(secret),
-      await this.linkedProject(flags),
+      () => this.linkedProject(flags),
     )
     this.errorContext = session.context
     return session
@@ -131,19 +131,50 @@ export abstract class BaseCommand extends Command {
 
   protected async messagingClient(
     flags: GlobalFlags,
-    options: {readonly serverApiKeyOnly?: string} = {},
+    options: {
+      readonly ignoreProjectLink?: boolean
+      readonly serverApiKeyOnly?: string
+      readonly serverCredentialOnly?: string
+    } = {},
   ): Promise<MessagingClient> {
-    const environment = await this.messagingEnvironment(flags)
+    const environment = await this.messagingEnvironment(flags, {
+      allowProjectToken:
+        options.serverCredentialOnly !== undefined ||
+        options.serverApiKeyOnly !== undefined,
+      readProjectLink:
+        options.serverCredentialOnly !== undefined &&
+        options.ignoreProjectLink !== true,
+    })
     if (
       options.serverApiKeyOnly !== undefined &&
       environment.credential.type !== 'apiKey'
     ) {
       throw new PolymorfaConfigurationError(
-        `${options.serverApiKeyOnly} commands require a server API key; Messaging client tokens do not have ${options.serverApiKeyOnly} access. Set POLYMORFA_API_KEY or select an API-key profile.`,
+        `${options.serverApiKeyOnly} commands require a server API key; project and Messaging client tokens do not have ${options.serverApiKeyOnly} access. Set POLYMORFA_API_KEY or select an API-key profile.`,
+        'credential',
+      )
+    }
+    if (
+      options.serverCredentialOnly !== undefined &&
+      environment.credential.type === 'clientToken'
+    ) {
+      throw new PolymorfaConfigurationError(
+        `${options.serverCredentialOnly} commands require a server API key or project token; Messaging client tokens do not have this access. Set POLYMORFA_API_KEY or POLYMORFA_PROJECT_TOKEN, or select a server-credential profile.`,
         'credential',
       )
     }
     return createMessagingClient(environment)
+  }
+
+  /** History reads also accept exact-project server tokens. */
+  protected async historyMessagingClient(
+    flags: GlobalFlags,
+  ): Promise<MessagingClient> {
+    return createMessagingClient(
+      await this.resolveEnvironment(flags, 'messaging', {
+        allowProjectToken: true,
+      }),
+    )
   }
 
   protected async quickLinksClient(flags: GlobalFlags): Promise<{
@@ -202,8 +233,12 @@ export abstract class BaseCommand extends Command {
   /** Resolve Messaging credentials once, for commands that also open sockets. */
   protected async messagingEnvironment(
     flags: GlobalFlags,
+    options: {
+      readonly allowProjectToken?: boolean
+      readonly readProjectLink?: boolean
+    } = {},
   ): Promise<ResolvedEnvironment> {
-    return this.resolveEnvironment(flags, 'messaging')
+    return this.resolveEnvironment(flags, 'messaging', options)
   }
 
   protected async platformClient(
@@ -242,10 +277,19 @@ export abstract class BaseCommand extends Command {
   private async resolveEnvironment(
     flags: GlobalFlags,
     surface: ResolvedEnvironment['surface'],
+    options: {
+      readonly allowProjectToken?: boolean
+      readonly readProjectLink?: boolean
+    } = {},
   ): Promise<ResolvedEnvironment> {
     const environment = await resolveCommandEnvironment({
       env: process.env,
       surface,
+      ...(options.allowProjectToken === true ? {allowProjectToken: true} : {}),
+      ...(surface === 'messaging' && options.readProjectLink === true
+        ? {loadLinkedProject: () => this.linkedProject(flags)}
+        : {}),
+      ...(flags.project === undefined ? {} : {project: flags.project}),
       ...(flags.profile === undefined ? {} : {profile: flags.profile}),
       ...(flags['api-version'] === undefined
         ? {}
@@ -286,6 +330,12 @@ export abstract class BaseCommand extends Command {
               ? {}
               : {docUrl: presented.docUrl}),
             retryable: presented.retryable,
+            ...(presented.operationId === undefined
+              ? {}
+              : {operationId: presented.operationId}),
+            ...(presented.retryAfterSeconds === undefined
+              ? {}
+              : {retryAfterSeconds: presented.retryAfterSeconds}),
           }),
         )}\n`,
       )

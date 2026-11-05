@@ -269,6 +269,31 @@ describe('project context', () => {
     expect(environment.context.projectId).toBeUndefined()
   })
 
+  test('organization-owned profiles do not read a project link', async () => {
+    const loadLinkedProject = vi.fn(() =>
+      Promise.reject(new Error('Broken project link')),
+    )
+    const environment = await resolveDeveloperEnvironment(
+      {env: {}, loadLinkedProject},
+      {
+        load: () =>
+          Promise.resolve({
+            ...config,
+            profiles: {
+              ...config.profiles,
+              work: {...config.profiles.work!, owner: 'organization'},
+            },
+          }),
+        save: () => Promise.resolve(),
+      },
+      credentials,
+      lookup,
+    )
+
+    expect(environment.context.owner).toBe('organization')
+    expect(loadLinkedProject).not.toHaveBeenCalled()
+  })
+
   test('a project-token profile fails closed on a different linked project', async () => {
     await expect(
       resolveDeveloperEnvironment(

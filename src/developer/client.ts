@@ -26,11 +26,11 @@ export interface DeveloperSession {
 export async function createDeveloperSession(
   flags: GlobalFlags,
   registerSecret?: (secret: string) => void,
-  linkedProject?: string,
+  loadLinkedProject?: () => Promise<string | undefined>,
 ): Promise<DeveloperSession> {
   const environment = await resolveDeveloperEnvironment({
     env: process.env,
-    ...(linkedProject === undefined ? {} : {linkedProject}),
+    ...(loadLinkedProject === undefined ? {} : {loadLinkedProject}),
     ...(flags['api-version'] === undefined
       ? {}
       : {apiVersion: flags['api-version']}),

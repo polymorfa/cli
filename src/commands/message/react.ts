@@ -1,3 +1,4 @@
+import {transportFlag, messageTransport} from '../../input/message-send.js'
 import {Args, Flags} from '@oclif/core'
 import {conversationReference} from '../../services/conversation.js'
 
@@ -13,6 +14,7 @@ export default class MessageReact extends BaseCommand {
   static override description = 'React to a message.'
 
   static override flags = {
+    transport: transportFlag,
     chat: Flags.string({
       description: 'Conversation ID, E.164 phone number, or BSUID.',
       required: true,
@@ -37,6 +39,9 @@ export default class MessageReact extends BaseCommand {
         conversation: conversationReference(flags.chat),
         id: args.message,
         reaction: flags.emoji,
+        ...(flags.transport === undefined
+          ? {}
+          : {transport: messageTransport(flags.transport)}),
       },
       {idempotencyKey: idempotencyKey(flags['idempotency-key'])},
     )

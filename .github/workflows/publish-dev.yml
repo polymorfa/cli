@@ -1,0 +1,115 @@
+name: Publish accepted CLI packages
+on:
+  schedule:
+    - cron: '30 2 * * *'
+  workflow_dispatch:
+    inputs:
+      channel:
+        type: choice
+        description: Package channel from main
+        options: [nightly, stable]
+        default: nightly
+      version:
+        type: string
+        description: Exact x.y.z for stable; leave empty for nightly
+permissions:
+  contents: read
+concurrency:
+  group: cli-publication
+  cancel-in-progress: false
+jobs:
+  package:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      publish: ${{ steps.gate.outputs.publish }}
+      version: ${{ steps.gate.outputs.version }}
+      sdk: ${{ steps.gate.outputs.sdk }}
+    env:
+      RELEASE_CHANNEL: ${{ inputs.channel || 'nightly' }}
+      STABLE_VERSION: ${{ inputs.version }}
+      RELEASE_OUTPUT: .release/packs
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+          package-manager-cache: false
+      - name: Require an exact published SDK with matching API acceptance
+        id: gate
+        run: node scripts/prepare-release.mjs
+      - if: steps.gate.outputs.publish == 'true'
+        run: |
+          npm ci
+          npm run verify
+          node --test scripts/release-evidence.test.mjs
+      - if: steps.gate.outputs.publish == 'true'
+        name: Pack and smoke-test the accepted CLI and exact SDK
+        env:
+          RELEASE_VERSION: ${{ steps.gate.outputs.version }}
+          SDK_VERSION: ${{ steps.gate.outputs.sdk }}
+        run: |
+          npm version "$RELEASE_VERSION" --no-git-tag-version --ignore-scripts --allow-same-version
+          npm run build
+          cp "$RELEASE_OUTPUT/release-contract.json" dist/release-contract.json
+          npm pack --ignore-scripts --json --pack-destination "$RELEASE_OUTPUT" > "$RELEASE_OUTPUT/pack.json"
+          mkdir -p .release/smoke
+          npm install --prefix .release/smoke --ignore-scripts "$(pwd)/$RELEASE_OUTPUT/polymorfa-cli-$RELEASE_VERSION.tgz"
+          .release/smoke/node_modules/.bin/polymorfa version --json > .release/smoke/version.json
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import {readFileSync} from 'node:fs';
+          const versions = JSON.parse(readFileSync('.release/smoke/version.json'));
+          assert.equal(versions.cli, process.env.RELEASE_VERSION);
+          assert.equal(versions.sdk, process.env.SDK_VERSION);
+          NODE
+      - if: steps.gate.outputs.publish == 'true'
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: accepted-cli-packs
+          include-hidden-files: true
+          path: .release/packs
+          if-no-files-found: error
+          retention-days: 90
+  publish:
+    needs: package
+    if: needs.package.outputs.publish == 'true'
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.channel == 'stable' && 'npm-stable' || 'npm-prerelease' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      RELEASE_CHANNEL: ${{ inputs.channel || 'nightly' }}
+      RELEASE_OUTPUT: .release/packs
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+          package-manager-cache: false
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c
+        with:
+          name: accepted-cli-packs
+          include-hidden-files: true
+          path: .release/packs
+      - run: npm install --global npm@11.6.2
+      - name: Publish exact verified artifact and verify registry integrity
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: node scripts/publish-release.mjs
+      - name: Save release stage evidence for the later Linear bot
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: cli-publication-receipts
+          path: |
+            .release/packs/release-contract.json
+            .release/packs/stage-events.json
+          if-no-files-found: error
+          retention-days: 90

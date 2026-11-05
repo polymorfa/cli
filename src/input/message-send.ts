@@ -1,11 +1,23 @@
 import {Flags} from '@oclif/core'
-import type {MessageSendContext, RequestOptions} from '@polymorfa/sdk'
+import {
+  PolymorfaConfigurationError,
+  type MessageSendContext,
+  type MessageTransport,
+  type RequestOptions,
+} from '@polymorfa/sdk'
 
 import {conversationReference} from '../services/conversation.js'
 import {idempotencyKey} from './idempotency.js'
 
+export const transportFlag = Flags.string({
+  description:
+    'Send using routing rules (auto), Linked Devices, or Official API. Explicit choices never fall back.',
+  options: ['auto', 'linked_devices', 'official_api'] as const,
+})
+
 /** Flags shared by every `message send <kind>` command. */
 export const sendContextFlags = {
+  transport: transportFlag,
   forwarded: Flags.boolean({
     description: 'Mark the message as forwarded.',
   }),
@@ -31,6 +43,7 @@ export const sendContextFlags = {
 }
 
 export interface SendContextFlagValues {
+  readonly transport?: string | undefined
   readonly forwarded?: boolean | undefined
   readonly mention?: readonly string[] | undefined
   readonly 'reply-to'?: string | undefined
@@ -40,6 +53,9 @@ export interface SendContextFlagValues {
 export function sendContext(flags: SendContextFlagValues): MessageSendContext {
   return {
     conversation: conversationReference(flags.to),
+    ...(flags.transport === undefined
+      ? {}
+      : {transport: messageTransport(flags.transport)}),
     ...(flags.forwarded === true ? {isForwarded: true} : {}),
     ...(flags.mention === undefined ? {} : {mentions: flags.mention}),
     ...(flags['reply-to'] === undefined
@@ -50,6 +66,19 @@ export function sendContext(flags: SendContextFlagValues): MessageSendContext {
 
 export function idempotencyOptions(key: string | undefined): RequestOptions {
   return key === undefined ? {} : {idempotencyKey: key}
+}
+
+export function messageTransport(value: string): MessageTransport {
+  if (
+    value === 'auto' ||
+    value === 'linked_devices' ||
+    value === 'official_api'
+  )
+    return value
+  throw new PolymorfaConfigurationError(
+    'Invalid message transport.',
+    'transport',
+  )
 }
 
 /** Request options for `message send <kind>`: always carries an idempotency key, generated when omitted. */

@@ -47,7 +47,7 @@ function tokenize(template: string): Token[] {
       start += 1
     }
     if (text.length > 0) tokens.push({kind: 'text', value: text})
-    const close = template.indexOf('}}', start)
+    const close = actionEnd(template, start)
     if (close < 0) throw templateError('unclosed action "{{"')
     let end = close
     let trimRight = false
@@ -63,6 +63,30 @@ function tokenize(template: string): Token[] {
     }
   }
   return tokens
+}
+
+function actionEnd(template: string, start: number): number {
+  let quoted = false
+  let escaped = false
+  let comment = template.startsWith('/*', start)
+  for (let index = start; index < template.length - 1; index++) {
+    const character = template[index]
+    if (comment) {
+      if (character === '*' && template[index + 1] === '/') {
+        comment = false
+        index++
+      }
+    } else if (quoted) {
+      if (escaped) escaped = false
+      else if (character === '\\') escaped = true
+      else if (character === '"') quoted = false
+    } else if (character === '"') {
+      quoted = true
+    } else if (character === '}' && template[index + 1] === '}') {
+      return index
+    }
+  }
+  return -1
 }
 
 function parse(tokens: Token[]): Node[] {

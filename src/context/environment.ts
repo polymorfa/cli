@@ -27,6 +27,7 @@ export interface ResolvedEnvironment {
 }
 
 export interface ResolveEnvironmentInput {
+  readonly allowProjectToken?: boolean | undefined
   readonly apiVersion?: string | undefined
   readonly env: Readonly<Record<string, string | undefined>>
   readonly surface: ApiSurface
@@ -34,7 +35,10 @@ export interface ResolveEnvironmentInput {
 }
 
 export interface ResolveCommandEnvironmentInput extends ResolveEnvironmentInput {
+  readonly linkedProject?: string | undefined
+  readonly loadLinkedProject?: (() => Promise<string | undefined>) | undefined
   readonly profile?: string | undefined
+  readonly project?: string | undefined
 }
 
 export interface ListenerEnvironment {
@@ -77,6 +81,7 @@ export interface ResolveDeveloperEnvironmentInput {
   readonly inferOwner?: boolean | undefined
   /** Project from the nearest `polymorfa link` file; below --project. */
   readonly linkedProject?: string | undefined
+  readonly loadLinkedProject?: (() => Promise<string | undefined>) | undefined
   readonly owner?: string | undefined
   readonly profile?: string | undefined
   readonly project?: string | undefined
@@ -115,7 +120,7 @@ export async function resolveDeveloperEnvironment(
         : undefined)
     const requestedProject =
       environmentOwner === 'project'
-        ? (explicitProject ?? nonEmpty(input.linkedProject))
+        ? (explicitProject ?? (await developerLinkedProject(input)))
         : explicitProject
     const unresolvedContext = resolveOwnerContext({
       principalType: environmentCredential.principalType,
@@ -196,7 +201,10 @@ export async function resolveDeveloperEnvironment(
       'project',
     )
   }
-  const linkedProject = nonEmpty(input.linkedProject)
+  const linkedProject =
+    owner === 'project' && explicitProject === undefined
+      ? await developerLinkedProject(input)
+      : undefined
   if (
     principalType === 'project_token' &&
     owner === 'project' &&
@@ -246,6 +254,12 @@ export async function resolveDeveloperEnvironment(
     ...(apiVersion === undefined ? {} : {apiVersion}),
     ...(input.timeoutMs === undefined ? {} : {timeoutMs: input.timeoutMs}),
   }
+}
+
+async function developerLinkedProject(
+  input: ResolveDeveloperEnvironmentInput,
+): Promise<string | undefined> {
+  return nonEmpty(input.linkedProject ?? (await input.loadLinkedProject?.()))
 }
 
 export async function resolveListenerEnvironment(
@@ -416,7 +430,9 @@ export async function resolveCommandEnvironment(
   const explicitProfile = nonEmpty(input.profile)
   const hasEnvironmentCredential =
     nonEmpty(input.env.POLYMORFA_API_KEY) !== undefined ||
-    nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN) !== undefined
+    nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN) !== undefined ||
+    (input.allowProjectToken === true &&
+      nonEmpty(input.env.POLYMORFA_PROJECT_TOKEN) !== undefined)
 
   if (explicitProfile === undefined && hasEnvironmentCredential) {
     return {
@@ -439,17 +455,48 @@ export async function resolveCommandEnvironment(
     )
   }
 
-  if (profile.credential.kind !== 'apiKey') {
+  if (
+    profile.credential.kind !== 'apiKey' &&
+    !(
+      input.allowProjectToken === true &&
+      profile.credential.kind === 'projectToken'
+    )
+  ) {
     throw new PolymorfaConfigurationError(
-      `Profile ${selected} contains a project token, which is accepted only by project-owned developer commands and polymorfa listen.`,
+      input.surface === 'platform'
+        ? `Profile ${selected} contains a project token; this Platform command requires an organization API key.`
+        : `Profile ${selected} contains a project token; this Messaging command requires an organization API key or a Messaging client token.`,
       'credential',
     )
   }
 
-  const apiKey = await credentials.get(profile.credential.account)
-  if (apiKey === undefined) {
+  if (
+    profile.credential.kind === 'projectToken' &&
+    nonEmpty(input.project) !== undefined &&
+    profile.project !== nonEmpty(input.project)
+  ) {
     throw new PolymorfaConfigurationError(
-      `Profile ${selected} has no credential in the operating-system keyring. Run polymorfa auth login --with-api-key --profile ${selected}.`,
+      'A project-token profile cannot access a different --project.',
+      'project',
+    )
+  }
+
+  const linkedProject =
+    profile.credential.kind === 'projectToken' &&
+    nonEmpty(input.project) === undefined
+      ? nonEmpty(input.linkedProject ?? (await input.loadLinkedProject?.()))
+      : undefined
+  if (linkedProject !== undefined && profile.project !== linkedProject) {
+    throw new PolymorfaConfigurationError(
+      `This directory is linked to project ${linkedProject}, but project-token profile ${selected} is bound to ${profile.project ?? 'another project'}. Pass --project or run polymorfa link again.`,
+      'project',
+    )
+  }
+
+  const storedCredential = await credentials.get(profile.credential.account)
+  if (storedCredential === undefined) {
+    throw new PolymorfaConfigurationError(
+      `Profile ${selected} has no credential in the operating-system keyring. Run polymorfa auth login ${profile.credential.kind === 'projectToken' ? '--with-project-token' : '--with-api-key'} --profile ${selected}.`,
       'keyring',
     )
   }
@@ -458,7 +505,9 @@ export async function resolveCommandEnvironment(
     ...input,
     apiVersion: input.apiVersion ?? profile.apiVersion,
     env: {
-      POLYMORFA_API_KEY: apiKey,
+      ...(profile.credential.kind === 'projectToken'
+        ? {POLYMORFA_PROJECT_TOKEN: storedCredential}
+        : {POLYMORFA_API_KEY: storedCredential}),
       POLYMORFA_BASE_URL:
         nonEmpty(input.env.POLYMORFA_BASE_URL) ?? profile.baseUrl,
     },
@@ -555,6 +604,10 @@ export function resolveEnvironment(
 ): ResolvedEnvironment {
   const apiKey = nonEmpty(input.env.POLYMORFA_API_KEY)
   const clientToken = nonEmpty(input.env.POLYMORFA_CLIENT_TOKEN)
+  const projectToken =
+    input.allowProjectToken === true
+      ? nonEmpty(input.env.POLYMORFA_PROJECT_TOKEN)
+      : undefined
   const baseUrl = nonEmpty(input.env.POLYMORFA_BASE_URL)
 
   if (input.surface === 'platform') {
@@ -568,11 +621,17 @@ export function resolveEnvironment(
     return resolved(input, {type: 'apiKey', value: apiKey}, baseUrl)
   }
 
-  if (apiKey !== undefined && clientToken !== undefined) {
+  if ([apiKey, clientToken, projectToken].filter(Boolean).length > 1) {
     throw new PolymorfaConfigurationError(
-      'Messaging credentials are ambiguous; set only POLYMORFA_API_KEY or POLYMORFA_CLIENT_TOKEN.',
+      input.allowProjectToken === true
+        ? 'Messaging credentials are ambiguous; set only one credential environment variable.'
+        : 'Messaging credentials are ambiguous; set only POLYMORFA_API_KEY or POLYMORFA_CLIENT_TOKEN.',
       'credential',
     )
+  }
+
+  if (projectToken !== undefined) {
+    return resolved(input, {type: 'projectToken', value: projectToken}, baseUrl)
   }
 
   if (clientToken !== undefined) {
@@ -584,7 +643,9 @@ export function resolveEnvironment(
   }
 
   throw new PolymorfaConfigurationError(
-    'Messaging API requests require POLYMORFA_API_KEY or POLYMORFA_CLIENT_TOKEN.',
+    input.allowProjectToken === true
+      ? 'Messaging API requests require POLYMORFA_API_KEY, POLYMORFA_PROJECT_TOKEN, or POLYMORFA_CLIENT_TOKEN.'
+      : 'Messaging API requests require POLYMORFA_API_KEY or POLYMORFA_CLIENT_TOKEN.',
     'credential',
   )
 }

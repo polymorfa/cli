@@ -14,10 +14,12 @@ export default class QuickLinkView extends BaseCommand {
     const {client} = await this.quickLinksClient(flags)
     const response = await client.quickLinks.retrieve(args.quicklink)
     const quickLink = response.data.data
-    this.writeValue(
-      response,
-      `${quickLink.id}\t${quickLink.status}\t${quickLink.session}`,
-      flags,
-    )
+    const sync = quickLink.onboarding?.sync
+    const summary = `${quickLink.id}\t${quickLink.status}\t${quickLink.session}`
+    const progress =
+      sync === undefined
+        ? ''
+        : `\nContacts request: ${sync.contacts.request}; receipt recorded: ${sync.contacts.receiptRecorded}\nHistory request: ${sync.history.request}; receipt recorded: ${sync.history.receiptRecorded}; delivery: ${sync.history.delivery}`
+    this.writeValue(response, summary + progress, flags)
   }
 }
