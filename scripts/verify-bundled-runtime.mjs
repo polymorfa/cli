@@ -27,64 +27,64 @@ assert.ok(
 )
 
 const temporary = mkdtempSync(join(tmpdir(), 'polymorfa-bundled-runtime-'))
-const childEnvironment = {...process.env}
-for (const key of Object.keys(childEnvironment)) {
-  if (
-    /^npm_config_/i.test(key) ||
-    key.startsWith('POLYMORFA_') ||
-    ['NODE_AUTH_TOKEN', 'NPM_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN'].includes(key)
-  ) {
-    delete childEnvironment[key]
-  }
-}
-const emptyUserConfig = join(temporary, 'empty-user.npmrc')
-const emptyGlobalConfig = join(temporary, 'empty-global.npmrc')
-writeFileSync(emptyUserConfig, '', {mode: 0o600})
-writeFileSync(emptyGlobalConfig, '', {mode: 0o600})
-
-/** Run npm with isolated configuration and cache, without inherited credentials. */
-function npm(args, cwd) {
-  return execFileSync(
-    process.execPath,
-    [
-      process.env.npm_execpath,
-      ...args,
-      `--userconfig=${emptyUserConfig}`,
-      `--globalconfig=${emptyGlobalConfig}`,
-      `--cache=${join(temporary, 'npm-cache')}`,
-      '--registry=https://registry.npmjs.org',
-    ],
-    {cwd, env: childEnvironment, encoding: 'utf8'},
-  )
-}
-
-/** Reject dependency resolutions outside the canonical installed-package root. */
-function inside(path, directory) {
-  const location = relative(realpathSync(directory), realpathSync(path))
-  assert.ok(
-    location !== '..' &&
-      !location.startsWith(`..${sep}`) &&
-      !isAbsolute(location),
-    'Runtime dependency must resolve inside the isolated installed CLI',
-  )
-}
-
-/** Find the named package manifest without walking outside its allowed root. */
-function packageFor(entry, name, installedCli) {
-  inside(entry, installedCli)
-  let directory = dirname(entry)
-  while (true) {
-    inside(directory, installedCli)
-    const file = join(directory, 'package.json')
-    if (existsSync(file)) {
-      const metadata = JSON.parse(readFileSync(file, 'utf8'))
-      if (metadata.name === name) return {file, metadata}
-    }
-    directory = dirname(directory)
-  }
-}
-
 try {
+  const childEnvironment = {...process.env}
+  for (const key of Object.keys(childEnvironment)) {
+    if (
+      /^npm_config_/i.test(key) ||
+      key.startsWith('POLYMORFA_') ||
+      ['NODE_AUTH_TOKEN', 'NPM_TOKEN', 'GITHUB_TOKEN', 'GH_TOKEN'].includes(key)
+    ) {
+      delete childEnvironment[key]
+    }
+  }
+  const emptyUserConfig = join(temporary, 'empty-user.npmrc')
+  const emptyGlobalConfig = join(temporary, 'empty-global.npmrc')
+  writeFileSync(emptyUserConfig, '', {mode: 0o600})
+  writeFileSync(emptyGlobalConfig, '', {mode: 0o600})
+
+  /** Run npm with isolated configuration and cache, without inherited credentials. */
+  function npm(args, cwd) {
+    return execFileSync(
+      process.execPath,
+      [
+        process.env.npm_execpath,
+        ...args,
+        `--userconfig=${emptyUserConfig}`,
+        `--globalconfig=${emptyGlobalConfig}`,
+        `--cache=${join(temporary, 'npm-cache')}`,
+        '--registry=https://registry.npmjs.org',
+      ],
+      {cwd, env: childEnvironment, encoding: 'utf8'},
+    )
+  }
+
+  /** Reject dependency resolutions outside the canonical installed-package root. */
+  function inside(path, directory) {
+    const location = relative(realpathSync(directory), realpathSync(path))
+    assert.ok(
+      location !== '..' &&
+        !location.startsWith(`..${sep}`) &&
+        !isAbsolute(location),
+      'Runtime dependency must resolve inside the isolated installed CLI',
+    )
+  }
+
+  /** Find the named package manifest without walking outside its allowed root. */
+  function packageFor(entry, name, installedCli) {
+    inside(entry, installedCli)
+    let directory = dirname(entry)
+    while (true) {
+      inside(directory, installedCli)
+      const file = join(directory, 'package.json')
+      if (existsSync(file)) {
+        const metadata = JSON.parse(readFileSync(file, 'utf8'))
+        if (metadata.name === name) return {file, metadata}
+      }
+      directory = dirname(directory)
+    }
+  }
+
   const [packed] = JSON.parse(
     npm(
       ['pack', '--json', '--ignore-scripts', '--pack-destination', temporary],
