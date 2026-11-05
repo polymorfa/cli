@@ -111,7 +111,7 @@
     {
       "id": "C03",
       "authored_paths": ["src/commands/chat/list.ts"],
-      "authored_semantics": "chat list session, kind four enum, limit1..100/default50, cursor, active-since/active-before; chats.list request mapped camelCase.",
+      "authored_semantics": "chat list session, kind four enum, limit 1–100, default 50, cursor, active-since/active-before; chats.list request mapped camelCase.",
       "current_source_semantics": "Current chat list retains these flags, calls listHistoryChats -> chats.list, current page envelope.",
       "disposition": "Base list/filter intent replaced; exact human/example strings historical.",
       "evidence": [
@@ -235,7 +235,7 @@
         "src/commands/message/list.ts",
         "src/services/history.ts"
       ],
-      "authored_semantics": "--max-items1..10000 automatic continuation via loadNext(cursor), identical params across pages; accumulated result and last resume cursor.",
+      "authored_semantics": "--max-items from 1 to 10,000 automatic continuation via loadNext(cursor), identical params across pages; accumulated result and last resume cursor.",
       "current_source_semantics": "Current commands expose explicit --cursor page calls only; manual same-filter continuation documented.",
       "disposition": "Unique auto-pagination policy explicitly excluded by active task, not inferred equivalent. No restoration without actual current-contract requirement.",
       "evidence": [
@@ -289,7 +289,7 @@
       "authored_paths": ["src/services/history.ts"],
       "authored_semantics": "collectHistory missing next cursor error, immediate repeated cursor error, truncation to cap sets nextCursor null when discarding tail and hasMore true; previousCursor and metadata come from first page; no full-cycle detection.",
       "current_source_semantics": "No collector in current command path; next/previous cursor passed through per page.",
-      "disposition": "Collector guard/truncation semantics remain historical; not transplanted into current cursor contract.",
+      "disposition": "Collector guard/truncation semantics remain historical; not transplanted into current cursor contract. Historical defect: truncating a fetched page can drop unreturned records while emitting hasMore with a null cursor. The original unresolved resume-cursor finding applies to that old collector, which is not present in the reconciled runtime.",
       "evidence": ["src/services/history.ts", "README.md"],
       "old_objects": [
         {
@@ -683,7 +683,7 @@
       "id": "C17",
       "authored_paths": ["test/commands/history.test.ts"],
       "authored_semantics": "Tests legacy JSON/filter path, pagination/truncation, TSV, retrieve IDs, active-range errors/no request, browser reject, hms_not_enabled. Fixtures test old API headers/version and normalized query.",
-      "current_source_semantics": "Current tests cover current envelope/cursors, correctedSDK reads, project token, browser reject, enrollment/HMS errors, stored media.",
+      "current_source_semantics": "Current tests cover current envelope/cursors, corrected SDK reads, project token, browser reject, enrollment/HMS errors, stored media.",
       "disposition": "Old-only tests not erased as failures or used to demand obsolete interfaces; current source/runtime checks still unrun.",
       "evidence": ["test/commands/history.test.ts"],
       "old_objects": [
@@ -874,17 +874,29 @@
       "semantic_ids": ["C08", "C11", "C17"]
     }
   ],
-  "historical_checks": "2026-10-30 old Python7pass/currentPythoncompile were historical at their then heads, not final-source/native/consumer/admission evidence. No new source checks performed.",
+  "historical_checks": "2026-10-30 old Python test run (7 passed)/then-current Python compilation were historical at their then heads, not final-source/native/consumer/admission evidence. No new source checks performed.",
   "constraints": [
     "No old interface, workflow, dependency, retention, key policy or output shape restored.",
     "No claim that absent old semantics are byte/behavior equivalent.",
-    "Current SDK production audit6moderates, Rust1.85diskfailure, publisherreader and source-pin eligibility gates remain independently owned.",
+    "Current SDK production audit with six moderate findings, Rust 1.85 disk failure, publisher/reader and source-pin eligibility gates remain independently owned.",
     "Current CLI SDK-containing-package gate remains genuine.",
-    "No provider/SSH/host/pool/deploy or current914V8 custody change."
+    "No provider/SSH/host/pool/deploy or separate 914 V8 custody change."
   ],
   "historical_packet": {
     "sha256": "f41af418bff03fced5e9d084a982c04e24db423a8a1f5bb675a4576b0d769baa",
     "date": "2026-11-04",
     "description": "Authenticated API source/object DATA; this record includes the exact authored hunk text so historical provenance does not depend on a private artifact path."
-  }
+  },
+  "original_reconciliation_commits": [
+    {
+      "sha": "2d7127d191da36ea4b4214d78a5fcfeab99d3a49",
+      "parents": [
+        "d14aa98882114d23736aba518dab8162436f46da",
+        "1fd51d63744bbc31ef1c5f7fc2d1148c4cbbe325"
+      ],
+      "tree": "34407effa24f59095b2088f49fe21d2d73f27dfe",
+      "message": "Merge remote-tracking branch 'origin/dev' into fix/cli-history-dev-20260923\n\n# Conflicts:\n#\tREADME.md\n#\tpackage-lock.json\n#\tpackage.json",
+      "role": "Existing merge of the then-current CLI dev branch between authored d14aa988 and original head 752b5495; retained as original ancestry, not transplanted runtime content."
+    }
+  ]
 }
