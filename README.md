@@ -62,6 +62,81 @@ paths, and links. `--json` prints a result array. Open launches the exact page
 in a browser; `--print` emits its URL instead. These commands use network
 access but do not use your Polymorfa credentials.
 
+## Set up coding agents
+
+Install the [Polymorfa agent kit](https://github.com/polymorfa/agent-kit) in
+coding agents detected on your machine:
+
+```shell
+polymorfa agent setup --dry-run
+polymorfa agent setup
+polymorfa agent setup --client claude --client codex --yes
+```
+
+Setup detects `claude`, `codex`, `gemini`, and `cursor` on PATH. A `~/.cursor`
+directory also detects Cursor. Repeat `--client` to select clients explicitly;
+an unavailable requested client fails. Without `--yes`, setup asks for confirmation
+immediately before the first installation. Instructions and already-installed
+clients need no confirmation. Non-interactive installation requires `--yes`.
+
+| Client      | Installation behavior                                                                                                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code | Adds `polymorfa/agent-kit` as the `polymorfa` marketplace, then installs `polymorfa@polymorfa`. The repository must contain its marketplace manifest.                                          |
+| Codex       | Checks local help for Git marketplace and plugin installation support, then adds the same marketplace and plugin through the native installer. Older versions receive repository instructions. |
+| Gemini CLI  | Installs the repository through `gemini extensions install`, passing `--consent` after setup confirmation.                                                                                     |
+| Cursor      | Prints instructions to install from the Cursor marketplace or repository.                                                                                                                      |
+
+`--dry-run` prints exact installation commands. It may run Codex help probes,
+but never runs installers or reads installation listings. Setup does not load
+Polymorfa profiles, read credentials, or edit client settings directly. Client
+installers manage their own configuration. Their output is withheld because it
+may contain private local data. Each client command has a 120-second deadline and a
+1 MiB UTF-8 output limit. Windows tree cleanup is attempted for up to five more
+seconds. Timeout, overflow and cleanup failure report failed. Each client gets a
+separate result; any failure
+makes the command exit with code 1. Manual instructions are reported separately
+and do not claim installation succeeded.
+
+Repeat runs use native plugin or extension listings to report `already installed`
+when the client can identify the kit. Existing marketplaces are retained only
+when their source matches agent-kit; a name conflict fails without replacing it.
+Installation adds skills, plugin manifests, and the public documentation MCP.
+It does not configure authenticated API access. Marketplace publication, native
+client acceptance, and CLI package publication remain separate steps.
+
+## Generate the CLI reference
+
+```shell
+npm run docs:reference
+npm run docs:reference:check
+```
+
+The generator builds the CLI, creates an oclif manifest from compiled commands,
+and writes `contracts/cli-reference.json`. Schema version 1 includes `cliVersion`
+and sorted public commands with space-separated IDs, summaries, descriptions,
+usage arrays, aliases, positional arguments, flags, examples, and command state.
+It excludes hidden commands, aliases, arguments, and flags. Arguments retain
+positional order; commands and flags are sorted by name. Missing optional scalar
+metadata is `null`, missing text is an empty string, and missing lists are empty.
+Examples contain `command` and `description`; plain oclif examples have an empty
+description. Fallback usage includes positional arguments and `[flags]`; flag
+details live in the separate `flags` array.
+
+The docs site can consume this file to build one `/cli` page per command. This
+repository exports the reference; it does not publish those pages. `npm run
+verify` rebuilds the CLI and fails when the committed reference is stale. Regenerate
+it whenever public command metadata or the package version changes. No timestamp
+or local path is included.
+
+## Browser build
+
+Build the CLI module for a browser, then check the emitted artifact:
+
+    npm run build:browser
+    npm run verify:browser
+
+The registry comes from the real command files. Commands needing the installed CLI remain in that inventory with an unsupported reason. Agent setup is refused before loading its implementation or reading local client configuration; the installer is excluded from the bundle. Verification checks the emitted dependency graph and runs a synthetic text send with no network access. Package and Docs publication remain separate steps.
+
 ## Authentication profiles
 
 Until the backend exposes a revocable CLI device-authorization flow, login
@@ -397,10 +472,11 @@ polymorfa message send text \
 For 1 hour after the first request, the API prevents the same key and request
 from running the write again:
 
-- A finished request returns its original status and body, success or error,
-  with `Idempotent-Replayed: true`. A send whose response was lost prints the
-  original message.
-- A recorded error is returned again. Correct the request and use a new key.
+- Keep the first response. Exact replay depends on the API contract and available
+  replay data. A replayed response carries `Idempotent-Replayed: true`.
+- A recorded error does not prove the write had no effect. Reconcile message
+  events or webhooks before deciding whether a new write is safe. Do not change
+  keys merely to bypass an uncertain outcome.
 - A request still running returns `409 idempotency_in_progress` with
   `Retry-After`. An unrecorded outcome returns
   `409 idempotency_outcome_unknown` and blocks another attempt with that key.
@@ -551,8 +627,8 @@ from stdin when it is `-`. Template names and provider IDs remain strings.
 Edits read `{ "components": [...] }` and return acceptance, not approval to send.
 Deletion requires `--yes`. Create, edit and delete send one request and never
 retry. Create and delete accept `--idempotency-key`; reuse the same key after a
-lost response and the API returns the original response instead of writing
-again. List the catalog before resubmitting. The template routes need an active
+lost response so the retained receipt prevents another execution. Replay data
+may be unavailable; keep the first response and reconcile uncertain outcomes. List the catalog before resubmitting. The template routes need an active
 Official API connection, including on a Hybrid Number; a Number with only a
 Linked Devices connection is rejected.
 
@@ -1718,8 +1794,8 @@ instants. List returns one complete newest-first array with no cursor. Requeue
 is synchronous and reports only the number moved.
 
 Create, launch, pause, resume and stop accept `--idempotency-key` to deduplicate
-the same request for 1 hour. A request repeated with the same key returns the
-original response, success or error. Changed input returns
+the same request for 1 hour in the response-replay contract. Retain the first
+response; unavailable replay data does not release the execution fence. Changed input returns
 `422 idempotency_conflict`; an in-progress or uncertain result must be
 resolved before trying a new key. The SDK generates a fresh key for create and
 launch when the flag is omitted. Supply an explicit key from the first attempt

@@ -37,7 +37,7 @@ function lifecycleFlags() {
   return {
     'idempotency-key': Flags.string({
       description:
-        'Deduplicate this request for 1 hour. A repeat with the same key returns the original response.',
+        'Deduplicate this request for 1 hour. Keep the first response; unavailable replay data does not permit another execution.',
     }),
     'project-slug': Flags.string({
       description: 'Project slug in the Messaging API path.',
