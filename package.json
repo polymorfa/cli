@@ -23,6 +23,11 @@
     "typescript-eslint": "^8.67.0",
     "vitest": "3.2.7"
   },
+  "overrides": {
+    "@oclif/core": {
+      "minimatch": "11.0.4"
+    }
+  },
   "engines": {
     "node": ">=22"
   },
@@ -352,8 +357,5 @@
     "verify:browser": "node scripts/verify-browser.mjs"
   },
   "type": "module",
-  "version": "0.1.0-dev.0",
-  "overrides": {
-    "minimatch@>=7.0.0 <11.0.1": "11.0.1"
-  }
+  "version": "0.1.0-dev.0"
 }
