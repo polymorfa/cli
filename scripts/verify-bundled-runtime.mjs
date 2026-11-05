@@ -42,6 +42,7 @@ const emptyGlobalConfig = join(temporary, 'empty-global.npmrc')
 writeFileSync(emptyUserConfig, '', {mode: 0o600})
 writeFileSync(emptyGlobalConfig, '', {mode: 0o600})
 
+/** Run npm with isolated configuration and cache, without inherited credentials. */
 function npm(args, cwd) {
   return execFileSync(
     process.execPath,
@@ -57,6 +58,7 @@ function npm(args, cwd) {
   )
 }
 
+/** Reject dependency resolutions outside the canonical installed-package root. */
 function inside(path, directory) {
   const location = relative(realpathSync(directory), realpathSync(path))
   assert.ok(
@@ -67,6 +69,7 @@ function inside(path, directory) {
   )
 }
 
+/** Find the named package manifest without walking outside its allowed root. */
 function packageFor(entry, name, installedCli) {
   inside(entry, installedCli)
   let directory = dirname(entry)
