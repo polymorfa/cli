@@ -23,6 +23,11 @@
     "typescript-eslint": "^8.67.0",
     "vitest": "3.2.7"
   },
+  "overrides": {
+    "@oclif/core": {
+      "minimatch": "11.0.4"
+    }
+  },
   "engines": {
     "node": ">=22"
   },
