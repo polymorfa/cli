@@ -3,7 +3,7 @@
     "impact": {
       "API": "Unaffected: no route, scope, response, retention or credential contract changes.",
       "SDKs": "Unaffected: the direct SDK dependency and its containing-package eligibility are unchanged.",
-      "CLI": "Updated: only the production Oclif glob dependency is overridden to a patched release; command names, flags and output contracts stay current.",
+      "CLI": "Updated production glob dependency and bundled framework distribution; current command names, flags, output and direct SDK/framework versions remain unchanged. A real tarball/installed-consumer guard prevents an audit-only checkout fix.",
       "Docs": "Updated internal source/provenance record. No public guide or changelog change is required for this transitive security fix because it adds no customer command or workflow; no availability announcement is made.",
       "Feature releases": "Unaffected: no flag, entitlement, enrollment, release control, package publication or deployment action. Hosted verification and merge requirements remain intact.",
       "Admin": "Unaffected: no staff controls, capabilities, database or provider access changes."
@@ -13,9 +13,11 @@
     "observed_hosted_failure": "The unchanged CLI production audit rejected vulnerable minimatch through @oclif/core after formatting, lint, typechecking, tests, build, browser and packaging stages.",
     "remedy": "Scope an exact minimatch 11.0.4 override to @oclif/core only; preserve the direct Oclif and SDK versions and every existing command/flag/output policy.",
     "producer": "npm install --package-lock-only --ignore-scripts, in an isolated directory made from authenticated API package.json/package-lock.json bytes, with empty isolated npm configuration and new producer cache. No old checkout or installed dependencies read.",
-    "compatibility": "CLI supports Node >=22; patched minimatch supports Node 20 or >=22. This crosses the consumer's declared transitive major range, so genuine hosted CLI tests/build/browser/pack/audit and exact-head Codex/security review remain required.",
-    "source_delta": "The final reconciliation now also changes package.json and the authoritative produced package-lock.json for this security fix. Prior one-record-only runtime/tree proofs apply to their earlier heads, not to this successor.",
-    "limits": "No audit assertion or threshold is weakened; no npm audit fix --force, SDK repin, old interface restore, registry publication or deployment. Extra local validation runs remain waived; no final-source hosted pass is asserted."
+    "compatibility": "CLI supports Node >=22; patched minimatch supports Node 20 or >=22. The scoped override crosses the consumer's declared transitive major range, so the existing CLI test suite and actual bundled installed-consumer guard are mandatory before commit and in hosted verification.",
+    "source_delta": "This successor additionally changes package.json, the authoritative npm-produced package-lock.json, and scripts/verify-bundled-runtime.mjs. The guard is part of normal npm verify. Prior one-record-only proofs apply only to their earlier heads.",
+    "limits": "No audit assertion or threshold is weakened; no npm audit fix --force, SDK repin, old interface restore, registry publication or deployment. Extra local validation runs remain waived; no final-source hosted pass is asserted.",
+    "bundle_protection": "Bundle only @oclif/core and its actual patched dependency subtree into the CLI tarball. Root-only overrides and an unpublished package lock alone do not protect users installing the package.",
+    "physical_guard": "The real packed CLI is installed in a clean isolated consumer. Resolve Oclif from that installed CLI and minimatch from Oclif, require both real paths inside the installed package, inspect the matching tarball entry, verify actual SDK and CLI versions, run the installed CLI version entrypoint, and require a clean production audit. No fallback to the checkout dependency tree is accepted."
   },
   "schema_version": 1,
   "purpose": "Retain historical authored source semantics and exact provenance during ordinary two-parent source reconciliation; no runtime restoration or publication/acceptance claim.",

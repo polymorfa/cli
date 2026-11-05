@@ -26,7 +26,13 @@
   "engines": {
     "node": ">=22"
   },
-  "files": ["bin/run.js", "dist", "skills", "README.md", "LICENSE"],
+  "files": [
+    "bin/run.js",
+    "dist",
+    "skills",
+    "README.md",
+    "LICENSE"
+  ],
   "license": "MIT",
   "name": "@polymorfa/cli",
   "oclif": {
@@ -340,10 +346,11 @@
     "prepare": "npm run build",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node --test scripts/cli-reference.test.mjs && node scripts/cli-reference.mjs --check && npm run verify:browser && npm pack --dry-run --ignore-scripts && npm run audit:prod",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node --test scripts/cli-reference.test.mjs && node scripts/cli-reference.mjs --check && npm run verify:browser && npm pack --dry-run --ignore-scripts && npm run verify:bundled-runtime && npm run audit:prod",
     "docs:reference": "npm run build && node scripts/cli-reference.mjs",
     "docs:reference:check": "npm run build && node scripts/cli-reference.mjs --check",
-    "verify:browser": "node scripts/verify-browser.mjs"
+    "verify:browser": "node scripts/verify-browser.mjs",
+    "verify:bundled-runtime": "node scripts/verify-bundled-runtime.mjs"
   },
   "type": "module",
   "version": "0.1.0-dev.0",
@@ -351,5 +358,8 @@
     "@oclif/core": {
       "minimatch": "11.0.4"
     }
-  }
+  },
+  "bundleDependencies": [
+    "@oclif/core"
+  ]
 }
