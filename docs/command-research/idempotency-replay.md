@@ -1,7 +1,7 @@
 # Idempotency replay integration
 
 This guidance binds to backend source
-`8aded38f41f27252df383fe2ac83e8f2f782c773` in
+`ec2b28bd47d210e14bb2a488df46b45b19cc317f` in
 [API #890](https://github.com/polymorfa/polymorfa/pull/890) and the exact
 consumer work in [SDK #369](https://github.com/polymorfa/sdks/pull/369).
 It adds no automatic retry, key rearm or new provider/financial action.
