@@ -23,6 +23,11 @@
     "typescript-eslint": "^8.67.0",
     "vitest": "3.2.7"
   },
+  "overrides": {
+    "@oclif/core": {
+      "minimatch": "11.0.4"
+    }
+  },
   "engines": {
     "node": ">=22"
   },
@@ -41,6 +46,9 @@
     "commands": "./dist/commands",
     "topicSeparator": " ",
     "topics": {
+      "account": {
+        "description": "Sign in with browser approval and inspect allowed account resources."
+      },
       "audience": {
         "description": "Manage campaign audiences and their members."
       },

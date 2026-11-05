@@ -16,6 +16,48 @@ polymorfa version
 - A Polymorfa team key or exact-project token for developer requests
 - A server API key or short-lived client token for Messaging requests
 
+## Account browser sign-in
+
+The separate `account` commands require an API environment that registers the
+Polymorfa CLI device client. Installing a CLI package does not enable that server
+feature. Supply the trusted API and Console origins for the same environment:
+
+```shell
+polymorfa account login --profile personal \
+  --api-origin https://api.example.invalid \
+  --console-origin https://console.example.invalid
+polymorfa account status --profile personal --json
+polymorfa account teams --profile personal --limit 25 --json
+polymorfa account projects --profile personal --team TEAM_UUID --json
+polymorfa account logout --profile personal --json
+```
+
+Replace the example origins with your configured environment. Login prints the
+validated approval URL and user code to standard error; open that URL and approve
+the request in the browser. It never opens a browser automatically or accepts a
+session token on the command line. `--json` prints one final result to standard
+output. `--timeout` cancels the operation without extending the server's original
+device-code expiry. Interrupting an already redeemed sign-in attempts to revoke
+that new session; an uncertain revocation is reported as uncertain.
+
+Account sessions use their own profile file and operating-system keyring
+namespace. The opaque session stays in the keyring; short-lived verified JWTs
+stay in memory. `account list` and `account use NAME` inspect or select only these
+account profiles. They do not change the active machine profile. API-key,
+project-token and Messaging commands cannot use an account session.
+
+The only account resource commands are the read-only `account teams` and
+`account projects`. Each response is one page; pass `--after` the returned
+`nextAfter` UUID to continue. Current membership and approved live team/project
+grants are checked by the API on every read. Approval for all current and future
+resources does not add command permissions. There is no account raw-request,
+key-minting or messaging command. These commands require the local Node.js CLI
+and are refused by the browser build before reading its environment or fetching.
+
+Logout reports remote session revocation and local profile/keyring cleanup
+separately. Incomplete cleanup or unconfirmed revocation exits unsuccessfully;
+local removal alone is not proof that a remote session was revoked.
+
 ## Development installation
 
 With access to the private source repository, install the current development
@@ -1095,6 +1137,9 @@ polymorfa calls settings set --session support --calls-enabled=false \
   --expected-revision 3
 polymorfa calls settings set --session support \
   --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+polymorfa calls settings set --session support \
+  --simultaneous-calls=true --acknowledge-risk
+polymorfa calls settings set --session support --simultaneous-calls=false
 
 polymorfa calls retention get
 polymorfa calls retention set --policy compliance --expected-revision 0
@@ -1162,7 +1207,21 @@ never answers or declines on its own.
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
   call. On a Cloud API session, `--host-cloud-api-calls=true` has Polymorfa
   Calls answer incoming calls; with the default `false`, your Graph API
-  integration answers them. `calls settings set` sends only the flags you pass; the other
+  integration answers them. `--simultaneous-calls=true` lets a linked-device
+  number hold any number of calls at once (incoming, placed, and campaign
+  calls); Cloud API numbers ignore it. WhatsApp's own apps never hold two calls
+  at once. While it is on, and for 30 days after you turn it off, Ban Insurance
+  does not cover a ban of the number: a claim opens as `denied` with verdict
+  `simultaneous_calls`. Turning it on requires `--acknowledge-risk`; without
+  it the command exits with code 2 and sends nothing. Only a team API key can
+  turn it on. `--simultaneous-calls=false` needs no acknowledgment. After it
+  is off, `calls settings get` and `set` print `Ban Insurance exclusion ends`
+  with the server's time (`simultaneousCallsCoverageExcludedUntil` in
+  `--json`), until that time passes. Ban Insurance excludes a ban when
+  simultaneous calls were on during the 30 days before it; this timestamp is the
+  cutoff for a new ban from that period. Nothing is printed while the setting is on, and a missing or null
+  end does not mean the number is covered.
+  `calls settings set` sends only the flags you pass; the other
   settings keep their values. `calls settings get` and `set` print the
   settings `revision`, which increases on every change and is `0` while the
   session uses the defaults. Pass `--expected-revision <n>` to apply the
@@ -1671,7 +1730,9 @@ patches. Customer incident reports and retractions also require an idempotency k
 acknowledgement and enforcement appeals remain dashboard-only and are not
 available through server-key commands. Claim `amountCents`, `measuredCents`, and
 `capCents` are credit quantities with up to six decimal places, not cash minor
-units; text output labels them as credits. Use `--json` to retain explanations,
+units; text output labels them as credits. `claim view` prints whether
+simultaneous calls were on during the claim window when the claim records it;
+a claim with verdict `simultaneous_calls` is denied and pays nothing. Use `--json` to retain explanations,
 observed account state, collection metadata, action outcomes, cursors, and
 request metadata.
 

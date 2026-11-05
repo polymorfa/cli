@@ -32,6 +32,14 @@ for (const local of [
     !inputs.some((path) => path.endsWith(local)),
     local + ' was bundled',
   )
+assert.ok(
+  !inputs.some(
+    (path) =>
+      path.startsWith('src/account-device/') ||
+      path.startsWith('src/commands/account/'),
+  ),
+  'Local account-session implementation was bundled',
+)
 for (const nativePackage of [
   'node_modules/@napi-rs/keyring/',
   'node_modules/@modelcontextprotocol/server/',
@@ -82,6 +90,39 @@ assert.ok(
   ),
 )
 assert.equal(globalThis.fetch, beforeFetch)
+for (const command of [
+  'login',
+  'list',
+  'use',
+  'status',
+  'logout',
+  'teams',
+  'projects',
+]) {
+  const id = `account ${command}`
+  assert.ok(actual.COMMAND_IDS.includes(id))
+  const output = []
+  const result = await actual.runCommand(['account', command], {
+    get env() {
+      throw new Error(
+        'account refusal touched caller credentials/configuration',
+      )
+    },
+    get fetch() {
+      throw new Error('account refusal touched fetch')
+    },
+    write: (stream, text) => output.push({stream, text}),
+  })
+  assert.deepEqual(result, {exitCode: 1, command: id})
+  assert.ok(
+    output.some(
+      (entry) =>
+        entry.stream === 'stderr' &&
+        entry.text.includes('operating-system keyring'),
+    ),
+  )
+}
+assert.equal(globalThis.fetch, beforeFetch)
 const requests = []
 const output = []
 const sent = await actual.runCommand(
@@ -97,7 +138,7 @@ const sent = await actual.runCommand(
     'Hello from Polymorfa',
   ],
   {
-    env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_' + 'fixture'.repeat(6)},
+    env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_' + 'A'.repeat(43)},
     fetch: async (input, init = {}) => {
       requests.push({
         path: new URL(String(input)).pathname,
@@ -134,6 +175,7 @@ console.log(
     commands: actual.COMMAND_IDS.length,
     localInstallerBundled: false,
     agentSetup: 'refused before environment/fetch',
+    accountDevice: 'all seven commands refused before environment/fetch',
     send: {method: requests[0].method, path: requests[0].path},
     files: manifest.files,
     bytes: manifest.bytes,

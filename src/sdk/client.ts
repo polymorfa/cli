@@ -33,6 +33,8 @@ export function createMessagingClient(
     )
   }
 
+  assertMachineCredential(environment)
+
   return new MessagingClient({
     credential: environment.credential,
     ...sharedOptions(environment),
@@ -54,6 +56,8 @@ export function createCallSettingsClient(
       'surface',
     )
   }
+
+  assertMachineCredential(environment)
 
   return new MessagingClient({
     credential: {type: 'apiKey', value: environment.credential.value},
@@ -81,6 +85,15 @@ export interface CallRetentionClient {
 export function createCallRetentionClient(
   environment: TeamSettingEnvironment,
 ): CallRetentionClient {
+  if (
+    environment.principalType !== 'organization_key' &&
+    environment.principalType !== 'project_token'
+  ) {
+    throw new PolymorfaConfigurationError(
+      'Machine clients require an explicit machine credential kind.',
+      'credential',
+    )
+  }
   const callRetention = createTeamCallRetentionClient({
     baseUrl: environment.baseUrl,
     credential: {
@@ -114,6 +127,8 @@ export function createPlatformClient(
     )
   }
 
+  assertMachineCredential(environment)
+
   return new Client({
     credential: {
       type: 'organizationApiKey',
@@ -121,6 +136,19 @@ export function createPlatformClient(
     },
     ...sharedOptions(environment),
   })
+}
+
+function assertMachineCredential(environment: ResolvedEnvironment): void {
+  if (
+    environment.credential?.type !== 'apiKey' &&
+    environment.credential?.type !== 'projectToken' &&
+    environment.credential?.type !== 'clientToken'
+  ) {
+    throw new PolymorfaConfigurationError(
+      'Machine clients require an explicit machine credential kind.',
+      'credential',
+    )
+  }
 }
 
 function sharedOptions(environment: ResolvedEnvironment): SharedClientOptions {
