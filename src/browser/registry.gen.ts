@@ -454,6 +454,7 @@ export const COMMAND_LOADERS: Readonly<
   'sip-trunk update': () => import('../commands/sip-trunk/update.js'),
   'sip-trunk view': () => import('../commands/sip-trunk/view.js'),
   'template submit': () => import('../commands/template/submit.js'),
+  'testing account-mode': () => import('../commands/testing/account-mode.js'),
   'testing history-fixture create': () =>
     import('../commands/testing/history-fixture/create.js'),
   trigger: () => import('../commands/trigger.js'),
