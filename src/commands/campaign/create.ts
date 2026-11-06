@@ -32,7 +32,7 @@ export default class CampaignCreate extends BaseCommand {
     }),
     'idempotency-key': Flags.string({
       description:
-        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).',
+        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).',
     }),
     input: Flags.string({
       description: 'Read the campaign JSON object from a file or stdin (-).',

@@ -16831,7 +16831,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -17207,7 +17207,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -17504,7 +17504,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Deduplicate this request for 24 hours. A completed key returns 409 idempotency_completed.",
+          "description": "Deduplicate this request for 1 hour. Keep the first response; unavailable replay data does not permit another execution.",
           "env": null,
           "helpGroup": null
         },
@@ -18230,7 +18230,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Deduplicate this request for 24 hours. A completed key returns 409 idempotency_completed.",
+          "description": "Deduplicate this request for 1 hour. Keep the first response; unavailable replay data does not permit another execution.",
           "env": null,
           "helpGroup": null
         },
@@ -19619,7 +19619,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Deduplicate this request for 24 hours. A completed key returns 409 idempotency_completed.",
+          "description": "Deduplicate this request for 1 hour. Keep the first response; unavailable replay data does not permit another execution.",
           "env": null,
           "helpGroup": null
         },
@@ -21283,7 +21283,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Key that makes retries of this write safe for 24 hours. Generated when omitted.",
+          "description": "Key that makes retries of this write safe for 1 hour. Generated when omitted.",
           "env": null,
           "helpGroup": null
         },
@@ -25998,7 +25998,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Key that fences a manual retry: reuse it after an unknown outcome and the API returns idempotency_completed instead of writing again.",
+          "description": "Reuse this key after a lost response to preserve the execution fence. Keep the first response and reconcile an unknown outcome before another write.",
           "env": null,
           "helpGroup": null
         },
@@ -26162,7 +26162,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Key that fences a manual retry: reuse it after an unknown outcome and the API returns idempotency_completed instead of writing again.",
+          "description": "Reuse this key after a lost response to preserve the execution fence. Keep the first response and reconcile an unknown outcome before another write.",
           "env": null,
           "helpGroup": null
         },
@@ -42440,7 +42440,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -42645,7 +42645,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -43142,7 +43142,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -43323,7 +43323,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -43621,7 +43621,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -43847,7 +43847,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -44145,7 +44145,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -44419,7 +44419,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -44705,7 +44705,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -44951,7 +44951,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -45173,7 +45173,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key to check a previous attempt (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key to check a previous attempt (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -45375,7 +45375,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key to check a previous attempt (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key to check a previous attempt (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -45616,7 +45616,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -45874,7 +45874,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -46124,7 +46124,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -46353,7 +46353,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },

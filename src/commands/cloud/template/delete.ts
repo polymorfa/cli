@@ -23,7 +23,7 @@ export default class CloudTemplateDelete extends BaseCommand {
     }),
     'idempotency-key': Flags.string({
       description:
-        'Key that fences a manual retry: reuse it after an unknown outcome and the API returns idempotency_completed instead of writing again.',
+        'Reuse this key after a lost response to preserve the execution fence. Keep the first response and reconcile an unknown outcome before another write.',
     }),
   }
   async run(): Promise<void> {
