@@ -118,7 +118,7 @@ export function renderCampaignBetas(campaign: object): string[] {
   const variations = field(campaign, 'messageVariations')
   if (variations !== undefined && variations !== null) {
     lines.push(
-      Array.isArray(variations)
+      isVariationList(variations)
         ? `Message variations\t${variations.length} weighted ${variations.length === 1 ? 'alternative' : 'alternatives'}`
         : `Message variations\t${UNREADABLE}`,
     )
@@ -238,6 +238,20 @@ function variantSummaries(value: unknown): VariantSummary[] | undefined {
     summaries.push({key: variant.key, label: variant.label})
   }
   return summaries
+}
+
+function isVariationList(value: unknown): value is readonly unknown[] {
+  return (
+    Array.isArray(value) &&
+    value.every(
+      (variation) =>
+        isRecord(variation) &&
+        typeof variation.key === 'string' &&
+        typeof variation.weight === 'number' &&
+        Number.isSafeInteger(variation.weight) &&
+        isRecord(variation.blueprint),
+    )
+  )
 }
 
 function field(value: object, name: string): unknown {

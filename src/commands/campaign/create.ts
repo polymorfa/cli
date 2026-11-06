@@ -20,8 +20,8 @@ export default class CampaignCreate extends BaseCommand {
 
 For Messaging campaigns (--project-slug), A/B tests and weighted message variation are betas that require team enrollment and live feature access; a team without access gets 403 feature_unavailable:
 
-- A/B test: "variants" (two to four, each with key, label, integer weight and blueprint; weights add up to 100) and "variantStrategy" (winnerCriterion delivery, read or reply; holdoutPercent; optional testSlicePercent; autoPromote true; testWindowMinutes). View the results with polymorfa campaign analytics.
-- Weighted message variation: "messageVariations", two to five alternatives (key, integer weight, blueprint; weights add up to 100). Each recipient receives one alternative. Linked-device numbers only.
+- A/B test: "variants" (two to four, each with key, label, integer weight from 1 to 99 and blueprint; weights add up to 100) and "variantStrategy" (winnerCriterion delivery, read or reply; holdoutPercent; optional testSlicePercent; autoPromote true; testWindowMinutes). View the results with polymorfa campaign analytics.
+- Weighted message variation: "messageVariations", two to five alternatives (key, integer weight from 1 to 99, blueprint; weights add up to 100). Each recipient receives one alternative. Linked-device numbers only.
 
 An A/B test cannot use templateId. messageVariations cannot be combined with templateId, composed messages or an A/B test.`
 

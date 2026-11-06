@@ -197,6 +197,34 @@ describe('campaign A/B test and weighted variation output (beta)', () => {
     )
   })
 
+  test.each([
+    ['a missing weight', [{blueprint: {source: 'Hi!', version: 2}, key: 'hi'}]],
+    ['a missing blueprint', [{key: 'hi', weight: 40}]],
+    [
+      'a non-integer weight',
+      [{blueprint: {source: 'Hi!', version: 2}, key: 'hi', weight: 40.5}],
+    ],
+    ['a missing key', [{blueprint: {source: 'Hi!', version: 2}, weight: 40}]],
+    ['a non-object entry', ['hi']],
+  ])(
+    'reports weighted alternatives with %s as unreadable',
+    async (_case, malformed) => {
+      const output = await humanOutput('campaign view campaign_1', {
+        ...campaign(),
+        messageVariations: [
+          {blueprint: {source: 'Hello!', version: 2}, key: 'hello', weight: 60},
+          ...malformed,
+        ],
+        variants: null,
+      })
+
+      expect(output).toContain(
+        'Message variations\tUnreadable in this CLI version; use --json for the full response.',
+      )
+      expect(output).not.toContain('weighted alternative')
+    },
+  )
+
   test('keeps a broadcast campaign view unchanged', async () => {
     const output = await humanOutput('campaign view campaign_1', {
       ...campaign(),
@@ -215,6 +243,9 @@ describe('campaign A/B test and weighted variation output (beta)', () => {
     expect(result.stdout).toContain('variantStrategy')
     expect(result.stdout).toContain('messageVariations')
     expect(result.stdout).toContain('403 feature_unavailable')
+    expect(result.stdout.match(/integer weight from\s+1 to 99/g)).toHaveLength(
+      2,
+    )
   })
 
   async function humanOutput(command: string, data: unknown): Promise<string> {

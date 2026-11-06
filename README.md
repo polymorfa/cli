@@ -1859,7 +1859,8 @@ access gets `403 feature_unavailable`. For Messaging campaign creation, use
 `campaign create --project-slug` with these fields in the `--input` object.
 
 - **A/B test:** `variants` holds two to four messages, each with a `key`, a
-  `label`, an integer `weight` (the weights add up to 100) and a `blueprint`.
+  `label`, an integer `weight` from 1 to 99 (the weights add up to 100) and a
+  `blueprint`.
   `variantStrategy` sets `winnerCriterion` (`delivery`, `read` or `reply`),
   `holdoutPercent` (0 to 30), an optional `testSlicePercent` (5 to 50,
   default 20), `autoPromote: true` and `testWindowMinutes` (15 to 1,440). An
