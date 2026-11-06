@@ -30,6 +30,7 @@ try {
   validateSdk(sdk.provenance, sdk.version, channel)
   validateFeatureContractPins(sdk.provenance, [
     JSON.parse(readFileSync('contracts/abprops-capabilities.json')),
+    JSON.parse(readFileSync('contracts/interactive-messages.json')),
   ])
   const files = execFileSync('git', [
     'ls-files',
