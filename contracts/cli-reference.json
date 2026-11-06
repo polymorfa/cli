@@ -17308,6 +17308,18 @@
           "helpGroup": null
         },
         {
+          "name": "skip-missing-variables",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Skip recipients missing a template variable with no value or fallback. Without this flag launch fails.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
           "name": "timeout",
           "char": null,
           "type": "option",

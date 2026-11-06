@@ -148,7 +148,9 @@ export async function listCampaignRecipients(
   client: MessagingClient,
   projectSlug: string,
   campaignId: string,
-  params: ListCampaignRecipientsParams & {readonly reason?: string},
+  params: Omit<ListCampaignRecipientsParams, 'reason'> & {
+    readonly reason?: string
+  },
 ): Promise<CampaignResult<CampaignRecipientPageResult>> {
   const response = await client.raw.request<{
     data: readonly CampaignRecipient[]
