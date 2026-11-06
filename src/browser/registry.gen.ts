@@ -207,9 +207,11 @@ export const COMMAND_LOADERS: Readonly<
   'chat message media': () => import('../commands/chat/message/media.js'),
   'chat message view': () => import('../commands/chat/message/view.js'),
   'chat view': () => import('../commands/chat/view.js'),
+  'cloud catalog get': () => import('../commands/cloud/catalog/get.js'),
   'cloud catalog list': () => import('../commands/cloud/catalog/list.js'),
   'cloud catalog products': () =>
     import('../commands/cloud/catalog/products.js'),
+  'cloud catalog sync': () => import('../commands/cloud/catalog/sync.js'),
   'cloud credentials get': () => import('../commands/cloud/credentials/get.js'),
   'cloud credentials reauthorize': () =>
     import('../commands/cloud/credentials/reauthorize.js'),
@@ -225,6 +227,7 @@ export const COMMAND_LOADERS: Readonly<
   'cloud group join-requests reject': () =>
     import('../commands/cloud/group/join-requests/reject.js'),
   'cloud group list': () => import('../commands/cloud/group/list.js'),
+  'cloud group picture': () => import('../commands/cloud/group/picture.js'),
   'cloud group pin': () => import('../commands/cloud/group/pin.js'),
   'cloud group remove-participants': () =>
     import('../commands/cloud/group/remove-participants.js'),
@@ -335,6 +338,7 @@ export const COMMAND_LOADERS: Readonly<
     import('../commands/group/participants/promote.js'),
   'group participants remove': () =>
     import('../commands/group/participants/remove.js'),
+  'group picture': () => import('../commands/group/picture.js'),
   'group settings': () => import('../commands/group/settings.js'),
   'group subject': () => import('../commands/group/subject.js'),
   'group view': () => import('../commands/group/view.js'),

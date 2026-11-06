@@ -17,6 +17,7 @@ import WebhookTest from '../../src/commands/webhook/test.js'
 import WebhookUpdate from '../../src/commands/webhook/update.js'
 import WebhookView from '../../src/commands/webhook/view.js'
 import {withEnvironment} from '../helpers/http-server.js'
+import {API_KEY_FIXTURE} from '../helpers/opaque-credential.js'
 
 const state = vi.hoisted(() => ({
   calls: [] as Array<{args: unknown[]; method: string}>,
@@ -495,6 +496,41 @@ describe('developer webhook commands', () => {
     },
   )
 
+  test('updates native batching settings without input and can disable after withdrawal', async () => {
+    stdout()
+    await developerEnvironment(() =>
+      WebhookUpdate.run([
+        'wh_1',
+        '--owner',
+        'organization',
+        '--batching',
+        'on',
+        '--batch-max-events',
+        '2',
+        '--batch-window-ms',
+        '100',
+        '--json',
+      ]),
+    )
+    expect(findCall('webhooks.update').args[1]).toEqual({
+      batching: {enabled: true, maxEvents: 2, windowMs: 100},
+    })
+    state.calls.splice(0)
+    await developerEnvironment(() =>
+      WebhookUpdate.run([
+        'wh_1',
+        '--owner',
+        'organization',
+        '--batching',
+        'off',
+        '--json',
+      ]),
+    )
+    expect(findCall('webhooks.update').args[1]).toEqual({
+      batching: {enabled: false},
+    })
+  })
+
   test('requires an input or a start day for updates', async () => {
     const stderr = vi
       .spyOn(process.stderr, 'write')
@@ -504,7 +540,7 @@ describe('developer webhook commands', () => {
     ).catch((caught: unknown) => caught)
     expect(exitCode(error)).toBe(2)
     expect(String(stderr.mock.calls.flat().join(''))).toContain(
-      'Provide --input or --phone-offline-start-day.',
+      'Provide --input, --phone-offline-start-day or --batching.',
     )
     expect(state.calls).toHaveLength(0)
   })
@@ -881,8 +917,7 @@ function findCall(method: string) {
 function developerEnvironment<T>(run: () => Promise<T>): Promise<T> {
   return withEnvironment(
     {
-      POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      POLYMORFA_API_KEY: API_KEY_FIXTURE,
       POLYMORFA_BASE_URL: 'https://api.example.test',
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_PROJECT_TOKEN: undefined,

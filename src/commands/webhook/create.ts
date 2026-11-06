@@ -1,3 +1,4 @@
+import {batchingFlags, withBatching} from '../../developer/batching.js'
 import {Flags} from '@oclif/core'
 import type {CreateProjectWebhookInput} from '@polymorfa/sdk'
 
@@ -15,9 +16,11 @@ import {
 } from '../../developer/phone-offline.js'
 
 export default class WebhookCreate extends BaseCommand {
-  static override description = 'Create a webhook from one JSON object.'
+  static override description =
+    'Create a webhook from one JSON object. Batching is an enrolled beta for native-format endpoints; prepare the receiver before enabling it.'
 
   static override flags = {
+    ...batchingFlags,
     'idempotency-key': idempotencyFlag,
     input: Flags.string({
       description: 'Read the webhook JSON object from a file or stdin (-).',
@@ -48,7 +51,10 @@ export default class WebhookCreate extends BaseCommand {
       }
     }
     const session = await this.developerSession(flags)
-    const input = merged as unknown as CreateProjectWebhookInput
+    const input = withBatching(
+      merged,
+      flags,
+    ) as unknown as CreateProjectWebhookInput
     const response = await session.client.webhooks.create(input, {
       ...session.requestOptions,
       idempotencyKey: idempotencyKey(flags['idempotency-key']),
