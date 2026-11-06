@@ -27,6 +27,14 @@ assert.ok(
 )
 
 const temporary = mkdtempSync(join(tmpdir(), 'polymorfa-bundled-runtime-'))
+// A handled signal waits for the synchronous child to exit, so `finally`
+// removes the workspace; the signal is then re-raised with its default action.
+const interruption = {signal: undefined}
+for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) {
+  process.once(signal, () => {
+    interruption.signal ??= signal
+  })
+}
 try {
   const childEnvironment = {...process.env}
   for (const key of Object.keys(childEnvironment)) {
@@ -55,7 +63,12 @@ try {
         `--cache=${join(temporary, 'npm-cache')}`,
         '--registry=https://registry.npmjs.org',
       ],
-      {cwd, env: childEnvironment, encoding: 'utf8'},
+      {
+        cwd,
+        env: childEnvironment,
+        encoding: 'utf8',
+        maxBuffer: 64 * 1024 * 1024,
+      },
     )
   }
 
@@ -166,4 +179,5 @@ try {
   )
 } finally {
   rmSync(temporary, {recursive: true, force: true})
+  if (interruption.signal) process.kill(process.pid, interruption.signal)
 }

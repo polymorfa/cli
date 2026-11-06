@@ -3,7 +3,7 @@
     "impact": {
       "API": "Unaffected: no route, scope, response, retention or credential contract changes.",
       "SDKs": "Unaffected: the direct SDK dependency and its containing-package eligibility are unchanged.",
-      "CLI": "Updated production glob dependency and bundled framework distribution; current command names, flags, output and direct SDK/framework versions remain unchanged. A real tarball/installed-consumer guard prevents an audit-only checkout fix.",
+      "CLI": "Updated the production minimatch dependency of the bundled @oclif/core framework; current command names, flags, output and direct SDK/framework versions remain unchanged. A real tarball/installed-consumer guard prevents an audit-only checkout fix.",
       "Docs": "Updated internal source/provenance record. No public guide or changelog change is required for this transitive security fix because it adds no customer command or workflow; no availability announcement is made.",
       "Feature releases": "Unaffected: no flag, entitlement, enrollment, release control, package publication or deployment action. Hosted verification and merge requirements remain intact.",
       "Admin": "Unaffected: no staff controls, capabilities, database or provider access changes."
@@ -894,7 +894,7 @@
       "semantic_ids": ["C08", "C11", "C17"]
     }
   ],
-  "historical_checks": "2026-10-30 old Python test run (7 passed)/then-current Python compilation were historical at their then heads, not final-source/native/consumer/admission evidence. No new source checks performed.",
+  "historical_checks": "This record claims no historical CLI check results. Current-head evidence is the hosted CI run on the pull request head, not this record.",
   "constraints": [
     "No old interface, workflow, dependency, retention, key policy or output shape restored.",
     "No claim that absent old semantics are byte/behavior equivalent.",
