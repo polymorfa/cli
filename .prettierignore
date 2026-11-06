@@ -4,3 +4,6 @@ node_modules/
 package-lock.json
 *.tgz
 .sdk-source/
+
+# Preserve the upstream golden vectors byte-for-byte.
+test/fixtures/machine-credentials-v1.json

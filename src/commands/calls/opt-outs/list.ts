@@ -9,7 +9,7 @@ import {
 
 export default class CallsOptOutsList extends BaseCommand {
   static override description =
-    'List the team’s do-not-call list, newest first. One page is returned unless --paginate follows page.nextCursor up to --max-items entries; human output ends with the --cursor for the next page. --phone-number or --bsuid returns only that person’s entry, if any. Requires an organization API key.'
+    'List the team’s do-not-call list, newest first. One page is returned unless --paginate follows page.nextCursor up to --max-items entries; human output ends with the --cursor for the next page. --phone-number or --bsuid returns only that person’s entry, if any. Requires an team key.'
 
   static override examples = [
     '<%= config.bin %> calls opt-outs list',

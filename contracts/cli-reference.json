@@ -3,6 +3,435 @@
   "cliVersion": "0.1.0-dev.0",
   "commands": [
     {
+      "id": "account list",
+      "summary": "List local account-device profile metadata without reading credentials or making requests.",
+      "description": "List local account-device profile metadata without reading credentials or making requests.",
+      "usage": ["polymorfa account list [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account login",
+      "summary": "Sign in through browser approval and store only the account session in its separate OS keyring.",
+      "description": "Sign in through browser approval and store only the account session in its separate OS keyring.",
+      "usage": ["polymorfa account login [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-origin",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Trusted HTTPS API origin for this Polymorfa environment.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "console-origin",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Trusted HTTPS Console origin for browser approval.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account logout",
+      "summary": "Revoke only the selected account session and report remote revocation separately from local cleanup.",
+      "description": "Revoke only the selected account session and report remote revocation separately from local cleanup.",
+      "usage": ["polymorfa account logout [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account projects",
+      "summary": "Read one page of projects in a currently allowed team; this grants no command or messaging access.",
+      "description": "Read one page of projects in a currently allowed team; this grants no command or messaging access.",
+      "usage": ["polymorfa account projects [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "after",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Continue after this project UUID.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "limit",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Page size, up to 100.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "team",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Team UUID returned by account teams.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account status",
+      "summary": "Check the selected account session against its pinned API issuer.",
+      "description": "Check the selected account session against its pinned API issuer.",
+      "usage": ["polymorfa account status [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account teams",
+      "summary": "Read one page of teams currently allowed to the selected account session.",
+      "description": "Read one page of teams currently allowed to the selected account session.",
+      "usage": ["polymorfa account teams [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "after",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Continue after this team UUID.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "limit",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Page size, up to 100.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account use",
+      "summary": "Select a local account-device profile without changing the active machine profile or its authority.",
+      "description": "Select a local account-device profile without changing the active machine profile or its authority.",
+      "usage": ["polymorfa account use NAME [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {"name": "name", "description": "", "required": true, "options": []}
+      ],
+      "flags": [
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
       "id": "agent setup",
       "summary": "Install the Polymorfa agent kit in detected coding agents.",
       "description": "Detect Claude Code, Codex, Gemini CLI, and Cursor. Confirm before installing skills, plugin manifests, and the public documentation MCP through client installers. Cursor and unsupported Codex versions receive manual instructions. No Polymorfa credentials are needed.",
@@ -1675,8 +2104,8 @@
     },
     {
       "id": "auth login",
-      "summary": "Store an organization key or project token in the operating-system keyring.",
-      "description": "Store an organization key or project token in the operating-system keyring.",
+      "summary": "Store an opaque team key or project token in the operating-system keyring. Never parse credentials or assume a fixed length.",
+      "description": "Store an opaque team key or project token in the operating-system keyring. Never parse credentials or assume a fixed length.",
       "usage": ["polymorfa auth login [flags]"],
       "aliases": [],
       "hidden": false,
@@ -5881,7 +6310,7 @@
     {
       "id": "billing limits list",
       "summary": "Read monthly project and number spending limits.",
-      "description": "Requires an organization key with billing:read. Use --project to include its number limits. Months reset on the first day at 00:00 UTC.",
+      "description": "Requires an team key with billing:read. Use --project to include its number limits. Months reset on the first day at 00:00 UTC.",
       "usage": ["polymorfa billing limits list [flags]"],
       "aliases": [],
       "hidden": false,
@@ -6002,7 +6431,7 @@
     {
       "id": "billing limits set",
       "summary": "Set or remove a monthly spending limit.",
-      "description": "Requires Pay-As-You-Go and an organization key with billing:manage. Zero blocks new charges; already-paid service continues. A stale observed revision fails without overwriting newer settings.",
+      "description": "Requires Pay-As-You-Go and an team key with billing:manage. Zero blocks new charges; already-paid service continues. A stale observed revision fails without overwriting newer settings.",
       "usage": ["polymorfa billing limits set ID [flags]"],
       "aliases": [],
       "hidden": false,
@@ -6178,7 +6607,7 @@
     {
       "id": "billing priority list",
       "summary": "Read project, customer and number funding priorities.",
-      "description": "Requires an organization key with billing:read. Project priority takes precedence. Numbers inherit customer priority; a higher number priority overrides it. Use --project for its funding controls. Includes the revision used for changes.",
+      "description": "Requires an team key with billing:read. Project priority takes precedence. Numbers inherit customer priority; a higher number priority overrides it. Use --project for its funding controls. Includes the revision used for changes.",
       "usage": ["polymorfa billing priority list [flags]"],
       "aliases": [],
       "hidden": false,
@@ -6299,7 +6728,7 @@
     {
       "id": "billing priority reorder",
       "summary": "Save a complete funding order atomically.",
-      "description": "Requires Pay-As-You-Go and an organization key with billing:manage. Pass every active project, customer or real number for its scope. Resource scope mixes all customers and numbers in --project, highest first. Incomplete or stale orders fail without partial changes.",
+      "description": "Requires Pay-As-You-Go and an team key with billing:manage. Pass every active project, customer or real number for its scope. Resource scope mixes all customers and numbers in --project, highest first. Incomplete or stale orders fail without partial changes.",
       "usage": ["polymorfa billing priority reorder [flags]"],
       "aliases": [],
       "hidden": false,
@@ -6468,7 +6897,7 @@
     {
       "id": "billing priority set",
       "summary": "Set a project or number funding priority.",
-      "description": "Requires Pay-As-You-Go and an organization key with billing:manage. Changes future renewal protection and recovery; paid windows keep their expiry.",
+      "description": "Requires Pay-As-You-Go and an team key with billing:manage. Changes future renewal protection and recovery; paid windows keep their expiry.",
       "usage": ["polymorfa billing priority set ID [flags]"],
       "aliases": [],
       "hidden": false,
@@ -11295,7 +11724,7 @@
     {
       "id": "calls export",
       "summary": "Export call detail records.",
-      "description": "Export call detail records as CSV or newline-delimited JSON, newest first.\n\nEach record has callId, projectId, sessionId, direction, upstream, outcome, state, hasVideo, peerRef, startedAt, connectedAt, endedAt, durationSeconds, and endReason. peerRef is a team-specific pseudonym of the other party, never a phone number.\n\nThe command requests every page until no records remain and writes one CSV header. Records go to standard output, or to --output. Progress and the next cursor go to standard error, as JSON lines with --json. --max-pages stops early; resume with --cursor and the same filters. When a page fails, the command reports the cursor that resumes from that page and exits non-zero.\n\nPass --project to read one project. Without it, an organization API key reads every project in the organization. A project token reads only its own project and requires --project. Credentials need the sessions:read scope.",
+      "description": "Export call detail records as CSV or newline-delimited JSON, newest first.\n\nEach record has callId, projectId, sessionId, direction, upstream, outcome, state, hasVideo, peerRef, startedAt, connectedAt, endedAt, durationSeconds, and endReason. peerRef is a team-specific pseudonym of the other party, never a phone number.\n\nThe command requests every page until no records remain and writes one CSV header. Records go to standard output, or to --output. Progress and the next cursor go to standard error, as JSON lines with --json. --max-pages stops early; resume with --cursor and the same filters. When a page fails, the command reports the cursor that resumes from that page and exits non-zero.\n\nPass --project to read one project. Without it, an team key reads every project in the organization. A project token reads only its own project and requires --project. Credentials need the sessions:read scope.",
       "usage": ["polymorfa calls export [flags]"],
       "aliases": [],
       "hidden": false,
@@ -12837,7 +13266,7 @@
     {
       "id": "calls opt-outs add",
       "summary": "Add a person to the do-not-call list.",
-      "description": "Add a person to the team’s do-not-call list by phone number or BSUID. From then on, calls to them are refused with call_recipient_opted_out, including calls your PBX places through a SIP trunk. Adding a person already on the list changes nothing and returns their entry (metadata.status 200 instead of 201). The list holds up to 100,000 entries; a full list fails with call_opt_out_limit (exit code 4). Requires an organization API key.",
+      "description": "Add a person to the team’s do-not-call list by phone number or BSUID. From then on, calls to them are refused with call_recipient_opted_out, including calls your PBX places through a SIP trunk. Adding a person already on the list changes nothing and returns their entry (metadata.status 200 instead of 201). The list holds up to 100,000 entries; a full list fails with call_opt_out_limit (exit code 4). Requires an team key.",
       "usage": ["polymorfa calls opt-outs add [flags]"],
       "aliases": [],
       "hidden": false,
@@ -13003,7 +13432,7 @@
     {
       "id": "calls opt-outs import",
       "summary": "Import entries into the do-not-call list.",
-      "description": "Add many people to the team’s do-not-call list from a file of up to 10 MiB. CSV needs a header row naming phoneNumber, bsuid and optionally note; each row names a phone number (E.164) or a BSUID. JSON is an array of {\"phoneNumber\" | \"bsuid\", \"note\"} objects, or an object with that array as \"entries\". The CLI sends 5,000 entries per request and reports the entries added, already listed and rejected, with each rejected entry's zero-based position (and CSV line). Running an import again is safe: entries already on the list are counted as already listed. Exit codes: 0 when every entry is listed; 12 when some entries were rejected, or when a later request failed after earlier batches were stored (run the import again); the request's own exit code when nothing was stored. Requires an organization API key.",
+      "description": "Add many people to the team’s do-not-call list from a file of up to 10 MiB. CSV needs a header row naming phoneNumber, bsuid and optionally note; each row names a phone number (E.164) or a BSUID. JSON is an array of {\"phoneNumber\" | \"bsuid\", \"note\"} objects, or an object with that array as \"entries\". The CLI sends 5,000 entries per request and reports the entries added, already listed and rejected, with each rejected entry's zero-based position (and CSV line). Running an import again is safe: entries already on the list are counted as already listed. Exit codes: 0 when every entry is listed; 12 when some entries were rejected, or when a later request failed after earlier batches were stored (run the import again); the request's own exit code when nothing was stored. Requires an team key.",
       "usage": ["polymorfa calls opt-outs import FILE [flags]"],
       "aliases": [],
       "hidden": false,
@@ -13156,7 +13585,7 @@
     {
       "id": "calls opt-outs list",
       "summary": "List the do-not-call list.",
-      "description": "List the team’s do-not-call list, newest first. One page is returned unless --paginate follows page.nextCursor up to --max-items entries; human output ends with the --cursor for the next page. --phone-number or --bsuid returns only that person’s entry, if any. Requires an organization API key.",
+      "description": "List the team’s do-not-call list, newest first. One page is returned unless --paginate follows page.nextCursor up to --max-items entries; human output ends with the --cursor for the next page. --phone-number or --bsuid returns only that person’s entry, if any. Requires an team key.",
       "usage": ["polymorfa calls opt-outs list [flags]"],
       "aliases": [],
       "hidden": false,
@@ -13359,7 +13788,7 @@
     {
       "id": "calls opt-outs remove",
       "summary": "Remove a person from the do-not-call list.",
-      "description": "Remove one entry from the team’s do-not-call list. The person can be called again at once. Requires --yes and an organization API key; an unknown ID fails with exit code 4.",
+      "description": "Remove one entry from the team’s do-not-call list. The person can be called again at once. Requires --yes and an team key; an unknown ID fails with exit code 4.",
       "usage": ["polymorfa calls opt-outs remove OPTOUTID [flags]"],
       "aliases": [],
       "hidden": false,
@@ -14209,7 +14638,7 @@
     {
       "id": "calls policy get",
       "summary": "Read the team call policy.",
-      "description": "Read the team call policy: the blocked country codes, the number of entries on the do-not-call list, and the revision to pass to `calls policy set --expected-revision`. The revision is 0 before the codes are first saved. Requires an organization API key: a project token used as the API key is refused by the API (exit code 3), and a client token is not accepted for this command (exit code 2).",
+      "description": "Read the team call policy: the blocked country codes, the number of entries on the do-not-call list, and the revision to pass to `calls policy set --expected-revision`. The revision is 0 before the codes are first saved. Requires an team key: a project token used as the API key is refused by the API (exit code 3), and a client token is not accepted for this command (exit code 2).",
       "usage": ["polymorfa calls policy get [flags]"],
       "aliases": [],
       "hidden": false,
@@ -14332,7 +14761,7 @@
     {
       "id": "calls policy set",
       "summary": "Replace the blocked country codes.",
-      "description": "Replace the team’s blocked country codes. Calls to phone numbers that start with a blocked code are refused with call_destination_blocked, and while any code is blocked, calls to a person whose phone number is not known are refused too. The list you pass replaces the stored list; --clear allows every country. Codes are country calling codes or longer dialing prefixes of 1 to 4 digits (44, 1876), at most 300. New calls use the new list at once; calls in progress continue. --expected-revision applies the change only if the policy still has that revision (see `calls policy get`); otherwise the command fails with state_conflict (exit code 4) and changes nothing. Requires an organization API key.",
+      "description": "Replace the team’s blocked country codes. Calls to phone numbers that start with a blocked code are refused with call_destination_blocked, and while any code is blocked, calls to a person whose phone number is not known are refused too. The list you pass replaces the stored list; --clear allows every country. Codes are country calling codes or longer dialing prefixes of 1 to 4 digits (44, 1876), at most 300. New calls use the new list at once; calls in progress continue. --expected-revision applies the change only if the policy still has that revision (see `calls policy get`); otherwise the command fails with state_conflict (exit code 4) and changes nothing. Requires an team key.",
       "usage": ["polymorfa calls policy set [flags]"],
       "aliases": [],
       "hidden": false,
@@ -15681,7 +16110,7 @@
     {
       "id": "calls stats",
       "summary": "Summarize call volume, outcomes, and duration.",
-      "description": "Summarize calls: counts by outcome, answer rate, and connected time, grouped by day, hour, session, or outcome.\n\nThe range defaults to the last 7 days. --group-by day covers at most 366 days and --group-by hour at most 31. Day and hour buckets, and the heatmap, use --timezone (UTC by default).\n\nPass --project to read one project. Without it, an organization API key reads every project in the organization. A project token reads only its own project and requires --project. Credentials need the sessions:read scope.",
+      "description": "Summarize calls: counts by outcome, answer rate, and connected time, grouped by day, hour, session, or outcome.\n\nThe range defaults to the last 7 days. --group-by day covers at most 366 days and --group-by hour at most 31. Day and hour buckets, and the heatmap, use --timezone (UTC by default).\n\nPass --project to read one project. Without it, an team key reads every project in the organization. A project token reads only its own project and requires --project. Credentials need the sessions:read scope.",
       "usage": ["polymorfa calls stats [flags]"],
       "aliases": [],
       "hidden": false,
@@ -39014,8 +39443,8 @@
     },
     {
       "id": "key revoke",
-      "summary": "Revoke an organization API key.",
-      "description": "Revoke an organization API key.",
+      "summary": "Revoke an team key.",
+      "description": "Revoke an team key.",
       "usage": ["polymorfa key revoke KEY [flags]"],
       "aliases": [],
       "hidden": false,
@@ -40483,7 +40912,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Use a project UUID; organization API keys may use a unique slug. Defaults to the linked or profile project.",
+          "description": "Use a project UUID; team keys may use a unique slug. Defaults to the linked or profile project.",
           "env": null,
           "helpGroup": null
         },
@@ -53041,8 +53470,8 @@
     },
     {
       "id": "session list",
-      "summary": "List session metadata for the team or one project. Requires an organization API key with sessions:read.",
-      "description": "List session metadata for the team or one project. Requires an organization API key with sessions:read.",
+      "summary": "List session metadata for the team or one project. Requires an team key with sessions:read.",
+      "description": "List session metadata for the team or one project. Requires an team key with sessions:read.",
       "usage": ["polymorfa session list [flags]"],
       "aliases": [],
       "hidden": false,
@@ -53168,8 +53597,8 @@
     },
     {
       "id": "session status",
-      "summary": "Read the stored session status and reason. Requires an organization API key with sessions:read.",
-      "description": "Read the stored session status and reason. Requires an organization API key with sessions:read.",
+      "summary": "Read the stored session status and reason. Requires an team key with sessions:read.",
+      "description": "Read the stored session status and reason. Requires an team key with sessions:read.",
       "usage": ["polymorfa session status SESSION [flags]"],
       "aliases": [],
       "hidden": false,
@@ -53963,8 +54392,8 @@
     },
     {
       "id": "session view",
-      "summary": "Read one session by its ID. Requires an organization API key with sessions:read.",
-      "description": "Read one session by its ID. Requires an organization API key with sessions:read.",
+      "summary": "Read one session by its ID. Requires an team key with sessions:read.",
+      "description": "Read one session by its ID. Requires an team key with sessions:read.",
       "usage": ["polymorfa session view SESSION [flags]"],
       "aliases": [],
       "hidden": false,

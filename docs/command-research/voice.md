@@ -79,7 +79,7 @@ URL itself with no credential, no redirects, a bounded response, and a timeout.
 
 ## Credential rules
 
-- The commands resolve Platform credentials: an organization server API key
+- The commands resolve Platform credentials: an team key
   (`POLYMORFA_API_KEY` or an API-key profile). Client tokens fail before any
   request. The API also accepts project tokens; the CLI does not use them for
   these commands, matching `sip-trunk`.

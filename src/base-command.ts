@@ -102,9 +102,9 @@ export abstract class BaseCommand extends Command {
   }
 
   /**
-   * Resolve an organization API key or exact-project token without building a
+   * Resolve an team key or exact-project token without building a
    * typed client, for commands that span projects. With `inferOwner`, --project
-   * or a project token reads one project and an organization key otherwise
+   * or a project token reads one project and an team key otherwise
    * reads the whole organization.
    */
   protected async developerEnvironment(

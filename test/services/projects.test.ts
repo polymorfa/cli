@@ -17,8 +17,7 @@ import {
 } from '../../src/context/environment.js'
 import {ProjectContextService} from '../../src/services/projects.js'
 
-const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const APP = '11111111-1111-4111-8111-111111111111'
 const WEB = '22222222-2222-4222-8222-222222222222'
 

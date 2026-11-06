@@ -7,8 +7,7 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 
-const key =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const key = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const project = '22222222-2222-4222-8222-222222222222'
 let server: TestHttpServer
 

@@ -1,7 +1,7 @@
 # Customer command contract
 
 The Customer command family maps the complete public Customers surface in the
-Platform contract. Every request uses an organization server API key and an
+Platform contract. Every request uses an team key and an
 explicit project ID.
 
 | Command                        | Platform operation                                                   |

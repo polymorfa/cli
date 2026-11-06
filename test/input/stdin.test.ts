@@ -7,13 +7,9 @@ describe('readSecretFromStdin', () => {
   test('reads one trimmed secret without returning extra input', async () => {
     await expect(
       readSecretFromStdin(
-        Readable.from([
-          '  pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n',
-        ]),
+        Readable.from(['  pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k\n']),
       ),
-    ).resolves.toBe(
-      'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-    )
+    ).resolves.toBe('pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k')
   })
 
   test('rejects empty and oversized input', async () => {
