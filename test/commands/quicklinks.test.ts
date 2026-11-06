@@ -56,7 +56,7 @@ test('creates a QuickLink and uploads separate test history with exact project s
     )
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
       'POST /messaging/quicklinks',
-      `POST /messaging/testing/${projectId}/history-fixtures`,
+      `POST /messaging/projects/${projectId}/test-history-fixtures`,
     ])
     expect(JSON.parse(server.requests[0]!.body)).toEqual({
       projectId,

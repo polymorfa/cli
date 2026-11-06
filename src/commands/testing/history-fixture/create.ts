@@ -1,8 +1,5 @@
 import {Flags} from '@oclif/core'
-import {
-  PolymorfaConfigurationError,
-  type TestingHistoryMessage,
-} from '@polymorfa/sdk'
+import {PolymorfaConfigurationError} from '@polymorfa/sdk'
 import {readJsonInput} from '../../../api/request.js'
 import {BaseCommand} from '../../../base-command.js'
 
@@ -36,10 +33,11 @@ export default class TestingHistoryFixtureCreate extends BaseCommand {
       )
     const response = await (
       await this.messagingClient(flags, {serverApiKeyOnly: 'Testing history'})
-    ).testing.createHistoryFixture(
-      flags.project,
-      input as {messages: TestingHistoryMessage[]},
-    )
+    ).raw.request<{fixtureId: string}>({
+      method: 'POST',
+      path: `/messaging/projects/${encodeURIComponent(flags.project)}/test-history-fixtures`,
+      body: input,
+    })
     this.writeValue(
       {data: response.data, metadata: response.metadata},
       response.data.fixtureId,
