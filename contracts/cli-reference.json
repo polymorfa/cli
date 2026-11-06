@@ -55423,7 +55423,7 @@
           "helpGroup": null
         },
         {
-          "name": "from-session",
+          "name": "from-number",
           "char": null,
           "type": "option",
           "required": false,
@@ -55538,7 +55538,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Test number session name in the project.",
+          "description": "Test Number ID.",
           "env": null,
           "helpGroup": null
         },
@@ -55580,20 +55580,17 @@
         }
       ],
       "examples": [
+        {"command": "polymorfa trigger --list", "description": ""},
         {
-          "command": "polymorfa trigger --list --project <projectId>",
+          "command": "polymorfa trigger message.received --session my-test-number --text \"hi\"",
           "description": ""
         },
         {
-          "command": "polymorfa trigger message.received --session my-test-number --text \"hi\" --project <projectId>",
+          "command": "polymorfa trigger message.ack --session my-test-number --override ackStatus=read",
           "description": ""
         },
         {
-          "command": "polymorfa trigger message.ack --session my-test-number --override ackStatus=read --project <projectId>",
-          "description": ""
-        },
-        {
-          "command": "polymorfa trigger template.status --session my-test-number --override templateStatus=REJECTED --override reason=INVALID_FORMAT --project <projectId>",
+          "command": "polymorfa trigger template.status --session my-test-number --override templateStatus=REJECTED --override reason=INVALID_FORMAT",
           "description": ""
         }
       ],
