@@ -160,6 +160,21 @@ export const COMMAND_LOADERS: Readonly<
   'campaign launch': () => import('../commands/campaign/launch.js'),
   'campaign list': () => import('../commands/campaign/list.js'),
   'campaign pause': () => import('../commands/campaign/pause.js'),
+  'campaign profiles consent': () =>
+    import('../commands/campaign/profiles/consent.js'),
+  'campaign profiles delete': () =>
+    import('../commands/campaign/profiles/delete.js'),
+  'campaign profiles get': () => import('../commands/campaign/profiles/get.js'),
+  'campaign profiles import': () =>
+    import('../commands/campaign/profiles/import.js'),
+  'campaign profiles imports cancel': () =>
+    import('../commands/campaign/profiles/imports/cancel.js'),
+  'campaign profiles imports get': () =>
+    import('../commands/campaign/profiles/imports/get.js'),
+  'campaign profiles list': () =>
+    import('../commands/campaign/profiles/list.js'),
+  'campaign profiles upsert': () =>
+    import('../commands/campaign/profiles/upsert.js'),
   'campaign recipients add': () =>
     import('../commands/campaign/recipients/add.js'),
   'campaign recipients list': () =>
