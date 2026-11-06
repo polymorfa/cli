@@ -12,9 +12,12 @@ import {
   type SecurityIncident,
   type SecurityIncidentAcknowledgement,
   type SessionBan,
+  type Session,
   type SessionBatchRemoveResult,
   type SessionBatchRequest,
   type SessionBatchStopResult,
+  type PlatformSession,
+  type SessionCapabilities,
   type UpdateQuickLinkSettingsInput,
   type OrganizationQuickLinkSettings,
   type ProjectQuickLinkSettings,
@@ -100,6 +103,79 @@ export async function listProjectTokens(
   return result(response.data.data, response.metadata)
 }
 
+export async function listManagedSessions(
+  client: ClientInstance<'organization'>,
+  projectId?: string,
+): Promise<PlatformResult<readonly PlatformSession[]>> {
+  const response = await client.sessions.list(
+    projectId === undefined ? {} : {projectId},
+  )
+  return result(response.data.data, response.metadata)
+}
+
+export async function viewManagedSession(
+  client: ClientInstance<'organization'>,
+  sessionId: string,
+): Promise<PlatformResult<Session>> {
+  const response = await client.sessions.retrieve(sessionId)
+  return result(response.data.data, response.metadata)
+}
+
+export function renderManagedSessions(
+  sessions: readonly PlatformSession[],
+): string {
+  if (sessions.length === 0) return 'No sessions found.'
+  return sessions
+    .map((session) =>
+      [
+        session.sessionId,
+        session.name,
+        session.status,
+        session.testMode ? 'test' : 'real',
+        session.projectId,
+      ].join('\t'),
+    )
+    .join('\n')
+}
+
+export function renderManagedSession(session: Session): string {
+  return [
+    `ID\t${session.sessionId}`,
+    `Name\t${session.name}`,
+    `Status\t${session.status}`,
+    ...(session.statusReason === undefined
+      ? []
+      : [`Status reason\t${session.statusReason}`]),
+    `Connection\t${session.type}`,
+    `Number\t${session.testMode ? 'test' : 'real'}`,
+    ...newChatCapLine(session),
+    `Updated\t${session.updatedAt}`,
+  ].join('\n')
+}
+
+/** WhatsApp's per-number new-chat cap, as Get session returns it. */
+interface NewChatCapView {
+  readonly enabled: boolean | null
+  readonly capped: boolean
+  readonly limit: number | null
+  readonly used: number | null
+  readonly resetsAt: string | null
+}
+
+function newChatCapLine(session: Session): string[] {
+  const cap = (session as Session & {newChatCapping?: NewChatCapView | null})
+    .newChatCapping
+  if (cap === undefined) return []
+  if (cap === null) return ['New-chat cap\tnot observed yet']
+  if (cap.enabled === null) return ['New-chat cap\tundetermined']
+  if (!cap.enabled) return ['New-chat cap\tnot enabled by WhatsApp']
+  const reset = cap.resetsAt === null ? '' : ` until ${cap.resetsAt}`
+  if (cap.capped) return [`New-chat cap\tcapped${reset}`]
+  if (cap.limit === null || cap.used === null)
+    return ['New-chat cap\tenabled by WhatsApp']
+  return [`New-chat cap\t${cap.used} of ${cap.limit} used${reset}`]
+}
+
 export async function stopSessions(
   client: ClientInstance<'organization'>,
   sessionIds: readonly string[],
@@ -111,6 +187,38 @@ export async function stopSessions(
     options,
   )
   return result(response.data.data, response.metadata)
+}
+
+/** WhatsApp features and limits WhatsApp enabled for a number (beta). */
+export async function getSessionCapabilities(
+  client: ClientInstance<'organization'>,
+  session: string,
+): Promise<PlatformResult<SessionCapabilities>> {
+  const response = await client.sessions.getCapabilities(session)
+  return result(response.data.data, response.metadata)
+}
+
+export function renderSessionCapabilities(
+  capabilities: SessionCapabilities,
+): string {
+  const header = [
+    `Session\t${capabilities.session}`,
+    `Status\t${capabilities.status}`,
+    `Synced\t${capabilities.syncedAt ?? 'never'}`,
+    `Account\t${capabilities.accountType ?? 'unknown'}`,
+  ]
+  const rows = capabilities.capabilities.map((capability) => {
+    const value =
+      capability.value === null
+        ? 'unknown'
+        : typeof capability.value === 'boolean'
+          ? capability.value
+            ? 'enabled'
+            : 'off'
+          : `${capability.value}${capability.unit === null ? '' : ` ${capability.unit}`}`
+    return `${capability.key}\t${value}\t${capability.source ?? '-'}`
+  })
+  return [...header, '', ...rows].join('\n')
 }
 
 export async function deleteSessions(

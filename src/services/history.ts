@@ -1,4 +1,9 @@
+import {stat} from 'node:fs/promises'
+import {resolve} from 'node:path'
+
 import {
+  PolymorfaConfigurationError,
+  PolymorfaConflictError,
   type HistoryChat,
   type HistoryMessage,
   type HistoryPage,
@@ -7,6 +12,9 @@ import {
   type MessagingClient,
   type ResponseMetadata,
 } from '@polymorfa/sdk'
+import {writeStreamToFile} from '@polymorfa/sdk/node'
+
+export const DEFAULT_MAX_HISTORY_MEDIA_BYTES = 32 * 1024 * 1024
 
 interface HistoryResult<T> {
   readonly data: T
@@ -62,6 +70,82 @@ export async function viewHistoryMessage(
     messageId,
   )
   return result(response.data.data, response.metadata)
+}
+
+/** Download a stored Official API message copy through the enrolled history API. */
+export async function downloadHistoryMessageMedia(
+  client: MessagingClient,
+  session: string,
+  conversation: string,
+  messageId: string,
+  options: {
+    readonly force: boolean
+    readonly maxBytes: number
+    readonly output: string
+  },
+): Promise<
+  HistoryResult<{
+    readonly bytes: number
+    readonly path: string
+    readonly contentType?: string
+  }>
+> {
+  const output = resolve(options.output)
+  if (!options.force) {
+    try {
+      await stat(output)
+      throw new PolymorfaConflictError(
+        `Output file ${output} already exists. Pass --force to overwrite it.`,
+      )
+    } catch (error) {
+      if ((error as {code?: string}).code !== 'ENOENT') throw error
+    }
+  }
+
+  const download = await client.chats.downloadMessageMediaStream(
+    session,
+    conversation,
+    messageId,
+  )
+  if (
+    download.contentLength !== undefined &&
+    download.contentLength > options.maxBytes
+  ) {
+    await download.body.cancel().catch(() => {})
+    throw new PolymorfaConfigurationError(
+      `Stored media exceeds the ${options.maxBytes} byte download limit. Increase --max-bytes to allow larger files.`,
+      'max-bytes',
+    )
+  }
+
+  const written = await writeStreamToFile(download.body, output, {
+    maxBytes: options.maxBytes,
+    overwrite: options.force,
+  }).catch((error: unknown) => {
+    if (error instanceof PolymorfaConflictError) {
+      throw new PolymorfaConflictError(
+        `Output file ${output} already exists. Pass --force to overwrite it.`,
+      )
+    }
+    if ((error as {code?: unknown} | undefined)?.code === 'media_too_large') {
+      throw new PolymorfaConfigurationError(
+        `Stored media exceeds the ${options.maxBytes} byte download limit. Increase --max-bytes to allow larger files.`,
+        'max-bytes',
+      )
+    }
+    throw error
+  })
+
+  return result(
+    {
+      bytes: written.bytes,
+      path: output,
+      ...(download.contentType === undefined
+        ? {}
+        : {contentType: download.contentType}),
+    },
+    download.metadata,
+  )
 }
 
 export function renderHistoryChats(page: HistoryPage<HistoryChat>): string {

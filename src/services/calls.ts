@@ -1,3 +1,7 @@
+import {
+  assertCallMediaMuteSupported,
+  muteCallMedia,
+} from './call-media-controls.js'
 import {randomBytes} from 'node:crypto'
 
 import {
@@ -27,7 +31,9 @@ import {
   type MessagingCredential,
   type ResponseMetadata,
   type SessionCallSettings,
+  type SessionCallSettingsResponse,
   type SuccessResponse,
+  type UpdateSessionCallSettingsRequest,
   type VoipAcceptCallResult,
   type VoipParticipant,
   type VoipPlaceCallResult,
@@ -138,7 +144,8 @@ export interface PlaceCallInput {
   readonly exclusive?: boolean | undefined
   readonly participant?: string | undefined
   readonly session?: string | undefined
-  readonly to: string
+  readonly to?: string | readonly string[] | undefined
+  readonly groupId?: string | undefined
   readonly video?: boolean | undefined
 }
 
@@ -147,21 +154,48 @@ export async function placeCall(
   credential: CallsCredential,
   input: PlaceCallInput,
 ): Promise<CallsResult<VoipPlaceCallResult>> {
-  const to = validateCallTarget(input.to)
+  const groupId = input.groupId
+  if (
+    groupId !== undefined &&
+    (input.to !== undefined || !/^[1-9][0-9]{0,18}$/.test(groupId))
+  ) {
+    throw new PolymorfaValidationError(
+      'Provide one public group ID without --to.',
+    )
+  }
+  if (groupId === undefined && input.to === undefined)
+    throw new PolymorfaValidationError('Provide --to or --group-id.')
+  const to =
+    typeof input.to === 'string'
+      ? validateCallTarget(input.to)
+      : input.to?.map((target) => validateCallTarget(target))
+  if (
+    to !== undefined &&
+    typeof to !== 'string' &&
+    (to.length < 2 || to.length > 31 || new Set(to).size !== to.length)
+  ) {
+    throw new PolymorfaValidationError(
+      'A group call needs 2 to 31 distinct participants.',
+    )
+  }
   const session = requireServerSession(
     credential,
     input.session,
     'Placing a call',
   )
   const participant = validateParticipant(credential, input.participant)
+  const options = {
+    ...(session === undefined ? {} : {session}),
+    ...(input.video === undefined ? {} : {video: input.video}),
+    ...(input.exclusive === undefined ? {} : {exclusive: input.exclusive}),
+    ...(participant === undefined ? {} : {participant}),
+  }
   const response = await callRequest(() =>
-    client.voip.place({
-      to,
-      ...(session === undefined ? {} : {session}),
-      ...(input.video === undefined ? {} : {video: input.video}),
-      ...(input.exclusive === undefined ? {} : {exclusive: input.exclusive}),
-      ...(participant === undefined ? {} : {participant}),
-    }),
+    groupId
+      ? client.voip.place({groupId, ...options})
+      : typeof to === 'string'
+        ? client.voip.place({to, ...options})
+        : client.voip.place({participants: to!, ...options}),
   )
   return result(response.data.data, response.metadata)
 }
@@ -247,10 +281,49 @@ export async function inviteToCall(
   return result(response.data.data, response.metadata)
 }
 
+export async function ringCallParticipant(
+  client: MessagingClient,
+  callId: string,
+  target: string,
+): Promise<CallsResult<SuccessResponse>> {
+  validateCallId(callId)
+  const to = validateCallTarget(target, 'target')
+  const response = await callRequest(() =>
+    client.voip.ringParticipant(callId, {to}),
+  )
+  return result(response.data, response.metadata)
+}
+
+/**
+ * Simultaneous-calls fields from the Platform call settings contract
+ * (polymorfa/polymorfa#559). The pinned SDK predates them; delete these
+ * extensions and use the SDK types directly once the pin includes them.
+ */
+export type CallSettings = SessionCallSettings & {
+  readonly simultaneousCalls?: boolean
+  /**
+   * Preparatory, response-only: while simultaneous calls are off, the server's
+   * time before which Ban Insurance still excludes a new ban (polymorfa/polymorfa#798).
+   * Null while on or with no recent period, and absent from older servers. Null
+   * never means the number is covered. Delete with the extensions above once
+   * an accepted, published SDK supplies it; it is never sent in an update.
+   */
+  readonly simultaneousCallsCoverageExcludedUntil?: string | null
+}
+
+type CallSettingsUpdateBody = UpdateSessionCallSettingsRequest & {
+  readonly acknowledgeRisk?: boolean
+  readonly simultaneousCalls?: boolean
+}
+
+/** Shown before simultaneous calls turn on, and when the risk is unconfirmed. */
+export const SIMULTANEOUS_CALLS_RISK =
+  'Simultaneous calls let this number hold any number of calls at once. WhatsApp’s own apps never hold two calls at once, so this is unusual for a WhatsApp account. While it is on, and for 30 days after you turn it off, Ban Insurance does not cover a ban of this number.'
+
 export async function viewCallSettings(
   client: MessagingClient,
   session: string,
-): Promise<CallsResult<SessionCallSettings>> {
+): Promise<CallsResult<CallSettings>> {
   const response = await client.voip.retrieveCallSettings(
     validateSession(session),
   )
@@ -266,6 +339,10 @@ export interface CallSettingsChanges {
   readonly inboundRoute?: CallInboundRoute
   readonly sipClaim?: boolean
   readonly sipTrunkId?: string
+  /** `true` also requires `acknowledgeRisk`; see SIMULTANEOUS_CALLS_RISK. */
+  readonly simultaneousCalls?: boolean
+  /** Confirms the Ban Insurance risk of turning simultaneous calls on. */
+  readonly acknowledgeRisk?: boolean
 }
 
 /**
@@ -276,13 +353,25 @@ export async function updateCallSettings(
   client: MessagingClient,
   session: string,
   changes: CallSettingsChanges,
-): Promise<CallsResult<SessionCallSettings>> {
+): Promise<CallsResult<CallSettings>> {
   const name = validateSession(session)
-  const {expectedRevision, ...settings} = changes
+  const {expectedRevision, acknowledgeRisk, ...settings} = changes
+  if (acknowledgeRisk === true && changes.simultaneousCalls !== true) {
+    throw new PolymorfaConfigurationError(
+      '--acknowledge-risk applies only with --simultaneous-calls=true.',
+      'acknowledge-risk',
+    )
+  }
   if (Object.values(settings).every((value) => value === undefined)) {
     throw new PolymorfaConfigurationError(
       'Provide at least one setting to change.',
       'calls-enabled',
+    )
+  }
+  if (changes.simultaneousCalls === true && acknowledgeRisk !== true) {
+    throw new PolymorfaConfigurationError(
+      `${SIMULTANEOUS_CALLS_RISK} Re-run with --acknowledge-risk to turn simultaneous calls on.`,
+      'acknowledge-risk',
     )
   }
   if (changes.inboundRoute === 'clients' && changes.sipTrunkId !== undefined) {
@@ -295,7 +384,7 @@ export async function updateCallSettings(
   const inboundRoute =
     changes.inboundRoute ??
     (changes.sipTrunkId === undefined ? undefined : 'sip_trunk')
-  const response = await client.voip.updateCallSettings(name, {
+  const body: CallSettingsUpdateBody = {
     ...(changes.callsEnabled === undefined
       ? {}
       : {callsEnabled: changes.callsEnabled}),
@@ -310,12 +399,28 @@ export async function updateCallSettings(
     ...(changes.hostCloudApiCalls === undefined
       ? {}
       : {hostCloudApiCalls: changes.hostCloudApiCalls}),
+    ...(changes.simultaneousCalls === undefined
+      ? {}
+      : {simultaneousCalls: changes.simultaneousCalls}),
+    ...(changes.simultaneousCalls === true ? {acknowledgeRisk: true} : {}),
     ...(expectedRevision === undefined ? {} : {expectedRevision}),
-  })
+  }
+  // The published SDK's typed validator predates simultaneousCalls. Keep its
+  // authenticated transport, but send the explicitly validated new setting
+  // through raw until the typed resource supports it. Never add an unrelated
+  // setting merely to satisfy the older validator.
+  const response =
+    body.simultaneousCalls === undefined
+      ? await client.voip.updateCallSettings(name, body)
+      : await client.raw.request<SessionCallSettingsResponse>({
+          method: 'PUT',
+          path: `/platform/sessions/${encodeURIComponent(name)}/call-settings`,
+          body,
+        })
   return result(response.data.data, response.metadata)
 }
 
-function validateSession(session: string): string {
+export function validateSession(session: string): string {
   const trimmed = session.trim()
   if (trimmed.length === 0 || trimmed.length > 128) {
     throw new PolymorfaConfigurationError(
@@ -554,10 +659,28 @@ export function renderCallParticipant(participant: VoipParticipant): string {
     .join('\n')
 }
 
+/**
+ * The exclusion end exactly as the server sent it, while simultaneous calls
+ * are off and that time is still ahead. Anything else prints nothing: an end
+ * that is missing, null or past never becomes a claim of cover.
+ */
+function coverageExclusionEnd(
+  settings: CallSettings,
+  now: number,
+): string | null {
+  const until = settings.simultaneousCallsCoverageExcludedUntil
+  if (settings.simultaneousCalls === true || typeof until !== 'string')
+    return null
+  const at = Date.parse(until)
+  return Number.isNaN(at) || at <= now ? null : until
+}
+
 export function renderCallSettings(
   session: string,
-  settings: SessionCallSettings,
+  settings: CallSettings,
+  now: number = Date.now(),
 ): string {
+  const exclusionEnd = coverageExclusionEnd(settings, now)
   return [
     `Session\t${session}`,
     `Calls\t${settings.callsEnabled === false ? 'off' : 'on'}`,
@@ -570,6 +693,10 @@ export function renderCallSettings(
         ]
       : []),
     `Cloud API calls answered by\t${settings.hostCloudApiCalls === true ? 'Polymorfa Calls' : 'your Graph API integration'}`,
+    `Simultaneous calls\t${settings.simultaneousCalls === true ? 'on (Ban Insurance does not cover this number)' : 'off'}`,
+    ...(exclusionEnd === null
+      ? []
+      : [`Ban Insurance exclusion ends\t${exclusionEnd}`]),
     `Revision\t${settings.revision ?? 0}`,
     `Updated\t${settings.updatedAt ?? 'never (defaults)'}`,
   ].join('\n')
@@ -585,11 +712,11 @@ export function renderCallRetention(retention: CallRetention): string {
   ].join('\n')
 }
 
-function yesNo(value: boolean): string {
+export function yesNo(value: boolean): string {
   return value ? 'yes' : 'no'
 }
 
-function result<T>(data: T, metadata: ResponseMetadata): CallsResult<T> {
+export function result<T>(data: T, metadata: ResponseMetadata): CallsResult<T> {
   return {
     data,
     metadata: {
@@ -914,6 +1041,7 @@ export async function watchCalls(
 }
 
 export interface CallMediaInput extends CallsClientInput {
+  readonly muted?: boolean | undefined
   /** Answer this inbound call; without it, the next inbound call. */
   readonly callId?: string | undefined
   readonly exclusive?: boolean | undefined
@@ -974,6 +1102,7 @@ export async function bridgeCallMedia(
   const target =
     input.place === undefined ? undefined : validateCallTarget(input.place)
   if (input.callId !== undefined) validateCallId(input.callId)
+  if (input.muted === true) assertCallMediaMuteSupported()
   const client = createCallsClient(input, 'Carrying call media')
 
   let bytesReceived = 0
@@ -1071,36 +1200,41 @@ export async function bridgeCallMedia(
       input.output(bytes)
     })
     call.once('connected', () => {
-      status({
-        type: 'connected',
-        callId: call.id,
-        connectionId: call.connectionId,
-        sampleRate: call.audio.sampleRate,
-      })
-      if (input.input === undefined) return
-      pacePcm({
-        input: input.input,
-        isClosed: () => finished || call.ended,
-        now: input.now ?? Date.now,
-        sampleRate: () => call.audio.sampleRate,
-        write: (pcm) => {
-          if (call.audio.write(pcm)) bytesSent += pcm.length * 2
-        },
-      }).then(
-        (bytes) => {
-          if (finished || call.ended) return
-          status({type: 'input_ended', bytes})
-          if (input.leaveOnEnd === true) hangUp(call)
-        },
-        (error: unknown) => {
-          status({
-            type: 'notice',
-            code: 'input_failed',
-            message: error instanceof Error ? error.message : String(error),
-          })
-          hangUp(call)
-        },
-      )
+      const start = async (): Promise<void> => {
+        if (input.muted === true) await muteCallMedia(call)
+        if (finished || call.ended) return
+        status({
+          type: 'connected',
+          callId: call.id,
+          connectionId: call.connectionId,
+          sampleRate: call.audio.sampleRate,
+        })
+        if (input.input === undefined) return
+        pacePcm({
+          input: input.input,
+          isClosed: () => finished || call.ended,
+          now: input.now ?? Date.now,
+          sampleRate: () => call.audio.sampleRate,
+          write: (pcm) => {
+            if (call.audio.write(pcm)) bytesSent += pcm.length * 2
+          },
+        }).then(
+          (bytes) => {
+            if (finished || call.ended) return
+            status({type: 'input_ended', bytes})
+            if (input.leaveOnEnd === true) hangUp(call)
+          },
+          (error: unknown) => {
+            status({
+              type: 'notice',
+              code: 'input_failed',
+              message: error instanceof Error ? error.message : String(error),
+            })
+            hangUp(call)
+          },
+        )
+      }
+      void start().catch((error: unknown) => finish(callsClientError(error)))
     })
   }
 
@@ -1304,4 +1438,52 @@ function samplesFor(sampleRate: number, milliseconds: number): number {
 
 function bytesFor(sampleRate: number, milliseconds: number): number {
   return samplesFor(sampleRate, milliseconds) * 2
+}
+
+export type CallReactionEmoji = '' | '👍' | '❤️' | '😂' | '😮' | '😢' | '🙏'
+interface SocialInput {
+  readonly connectionId: string
+  readonly participant?: string | undefined
+}
+export async function reactToCall(
+  client: MessagingClient,
+  credential: CallsCredential,
+  callId: string,
+  input: SocialInput & {readonly emoji: string},
+): Promise<CallsResult<SuccessResponse>> {
+  validateCallId(callId)
+  const connectionId = validateConnectionId(input.connectionId)
+  const participant = validateParticipant(credential, input.participant)
+  if (!['', '👍', '❤️', '😂', '😮', '😢', '🙏'].includes(input.emoji))
+    throw new PolymorfaConfigurationError(
+      'Reaction must be 👍, ❤️, 😂, 😮, 😢, 🙏, or empty to clear.',
+      'emoji',
+    )
+  const resource = client.voip
+  const response = await callRequest(() =>
+    resource.sendReaction(callId, {
+      connectionId,
+      emoji: input.emoji as CallReactionEmoji,
+      ...(participant === undefined ? {} : {participant}),
+    }),
+  )
+  return result(response.data, response.metadata)
+}
+export async function setCallHand(
+  client: MessagingClient,
+  credential: CallsCredential,
+  callId: string,
+  input: SocialInput & {readonly raised: boolean},
+): Promise<CallsResult<SuccessResponse>> {
+  validateCallId(callId)
+  const connectionId = validateConnectionId(input.connectionId)
+  const participant = validateParticipant(credential, input.participant)
+  const response = await callRequest(() =>
+    client.voip.setHandRaised(callId, {
+      connectionId,
+      raised: input.raised,
+      ...(participant === undefined ? {} : {participant}),
+    }),
+  )
+  return result(response.data, response.metadata)
 }

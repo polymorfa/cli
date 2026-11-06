@@ -84,7 +84,7 @@ describe('doctor', () => {
         },
       }),
     )
-    expect(status(report)).toMatchObject({credential: 'warn', keyring: 'fail'})
+    expect(status(report)).toMatchObject({credential: 'fail', keyring: 'fail'})
     expect(report.ok).toBe(false)
   })
 
@@ -195,10 +195,76 @@ describe('doctor', () => {
     expect(report.ok).toBe(true)
   })
 
+  test('fails when no credential can be used', async () => {
+    const lookup = vi.fn()
+    const report = await runDoctor(
+      deps({
+        credentials: {
+          delete: () => Promise.resolve(),
+          get: () => Promise.resolve(undefined),
+          set: () => Promise.resolve(),
+        },
+        lookup,
+        profiles: {
+          load: () => Promise.resolve({profiles: {}, version: 2}),
+          save: () => Promise.resolve(),
+        },
+      }),
+    )
+    expect(status(report)).toMatchObject({credential: 'fail', keyring: 'ok'})
+    expect(report.ok).toBe(false)
+    expect(lookup).not.toHaveBeenCalled()
+  })
+
+  test('rejects ambiguous environment credentials without remote validation', async () => {
+    const lookup = vi.fn()
+    const report = await runDoctor(
+      deps({
+        env: {
+          POLYMORFA_API_KEY: KEY,
+          POLYMORFA_PROJECT_TOKEN: 'secret-project',
+        },
+        lookup,
+      }),
+    )
+    expect(status(report).credential).toBe('fail')
+    expect(report.ok).toBe(false)
+    expect(lookup).not.toHaveBeenCalled()
+    expect(JSON.stringify(report)).not.toContain(KEY)
+    expect(JSON.stringify(report)).not.toContain('secret-project')
+  })
+
+  test('an explicit profile ignores ambient environment credentials', async () => {
+    const lookup = vi.fn(() => Promise.resolve([]))
+    const report = await runDoctor(
+      deps({
+        env: {
+          POLYMORFA_API_KEY: 'secret-api',
+          POLYMORFA_CLIENT_TOKEN: 'secret-client',
+        },
+        lookup,
+        profile: 'work',
+      }),
+    )
+    expect(report.ok).toBe(true)
+    expect(lookup).toHaveBeenCalledWith(
+      expect.objectContaining({credential: KEY}),
+    )
+  })
+
   test('does not remotely validate client tokens', async () => {
     const report = await runDoctor(
       deps({env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_x'}}),
     )
     expect(status(report).credential).toBe('skip')
+    expect(report.ok).toBe(false)
+  })
+
+  test('does not report success for an unvalidated project token', async () => {
+    const report = await runDoctor(
+      deps({env: {POLYMORFA_PROJECT_TOKEN: 'pmfa_pt_x'}}),
+    )
+    expect(status(report).credential).toBe('skip')
+    expect(report.ok).toBe(false)
   })
 })

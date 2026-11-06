@@ -57,7 +57,7 @@ describe('Messaging campaign commands', () => {
 
       const result = await apiKeyEnvironment(() =>
         runCommand(
-          `campaign create --project-slug project_1 --input ${input} ${key === undefined ? '' : `--idempotency-key ${key}`} --json`,
+          `campaign create --project-slug project_1 --input ${input} --frequency-cap-24-hours 2 ${key === undefined ? '' : `--idempotency-key ${key}`} --json`,
         ),
       )
 
@@ -67,6 +67,7 @@ describe('Messaging campaign commands', () => {
         recipientListId: 'recipients_1',
         senderConfig: {session: 'session_1'},
         templateId: 'template_1',
+        frequencyCap: {maxPer24Hours: 2, maxPer7Days: null},
       })
       expect(server.requests[0]).toMatchObject({
         method: 'POST',

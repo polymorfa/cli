@@ -54,7 +54,8 @@ export default class Api extends BaseCommand {
     }),
     include: Flags.boolean({
       char: 'i',
-      description: 'Include response metadata in human output.',
+      description:
+        'Include response metadata in human output, including each page with --paginate --slurp.',
       exclusive: ['jq', 'template'],
     }),
     input: Flags.string({
@@ -64,7 +65,7 @@ export default class Api extends BaseCommand {
     jq: Flags.string({
       char: 'q',
       description:
-        'Filter the response with a jq expression (embedded jq 1.8). Strings print without quotes.',
+        'Filter the response with a jq expression (embedded jq 1.8). Strings print without quotes and keep their whitespace.',
       exclusive: ['json', 'template'],
     }),
     'max-pages': Flags.integer({
@@ -90,7 +91,7 @@ export default class Api extends BaseCommand {
     slurp: Flags.boolean({
       dependsOn: ['paginate'],
       description:
-        'With --paginate, combine all pages into one JSON array before --jq or --template.',
+        'With --paginate, collect pages into one array before filtering or printing.',
     }),
     surface: Flags.option({
       description: 'API credential surface.',
@@ -193,7 +194,7 @@ export default class Api extends BaseCommand {
     const last = pages[pages.length - 1] as RawApiResult
     this.writeValue(
       {data: bodies, metadata: {...last.metadata, pages: pages.length}},
-      formatHuman(bodies),
+      formatHuman(flags.include ? pages : bodies),
       flags,
     )
   }

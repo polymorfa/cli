@@ -12,6 +12,10 @@ Keep these actions distinct:
 - `webhook delivery retry` creates a new immutable attempt on the same delivery.
 - `listen` receives the project event stream and may forward locally; it does not create webhook history or alter a delivery.
 
+For `webhook test`, pass `--event`. Team tests accept only that event type.
+Project tests may also use `--input` with both `body` and `sessionId` for an
+exact native event from an HMS-enabled Number in the same project.
+
 ## Inspect before changing
 
 1. Resolve `--owner` and project context explicitly.
