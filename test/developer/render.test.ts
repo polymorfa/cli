@@ -60,10 +60,32 @@ describe('developer detail renderers', () => {
       'Enabled\ttrue',
       'Format\tnative',
       'Event types\tmessage.received, session.connected',
+      'Phone offline warning\toff',
       'Header names\tx-team',
       'Created\t2026-09-08T00:00:00Z',
       'Updated\t2026-09-08T01:00:00Z',
     ])
+  })
+
+  test('renders the phone offline start day for a subscribed webhook', () => {
+    const base = {
+      createdAt: '2026-09-08T00:00:00Z',
+      enabled: true,
+      eventTypes: ['session.phone_offline'],
+      format: 'native',
+      headers: [],
+      id: 'wh_1',
+      owner: 'project',
+      projectId: '11111111-1111-4111-8111-111111111111',
+      updatedAt: '2026-09-08T01:00:00Z',
+      url: 'https://hooks.example.test/polymorfa',
+    }
+    expect(renderWebhookDetail({...base, phoneOfflineStartDay: 8})).toContain(
+      'Phone offline warning\tfrom day 8',
+    )
+    expect(renderWebhookDetail(base)).toContain(
+      'Phone offline warning\tnot reported',
+    )
   })
 
   test('renders delivery status and last outcome', () => {

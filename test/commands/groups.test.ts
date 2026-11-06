@@ -53,6 +53,34 @@ describe('group commands', () => {
     })
   })
 
+  test('prints unknown group capabilities as JSON', async () => {
+    const data = {
+      status: 'unknown',
+      syncedAt: null,
+      checkedAt: null,
+      capabilities: [
+        {
+          key: 'polls.endTime',
+          kind: 'feature',
+          unit: null,
+          value: null,
+          source: null,
+        },
+      ],
+    }
+    server = await startHttpServer({body: {success: true, data}})
+    const result = await environment(() =>
+      runCommand(
+        'group capabilities 9007199254740993 --session session_1 --json',
+      ),
+    )
+    expect(result.error).toBeUndefined()
+    expect(JSON.parse(result.stdout)).toMatchObject({data})
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/session_1/groups/9007199254740993/capabilities',
+    )
+  })
+
   test('requires explicit session scope before making a request', async () => {
     const result = await runCommand('group list --json')
 

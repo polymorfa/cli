@@ -12,6 +12,7 @@ export async function createQuickLink(
     )
   const body = input as Record<string, unknown>
   const allowed = new Set([
+    'billingControls',
     'projectId',
     'purpose',
     'connectionGoal',
@@ -31,6 +32,31 @@ export async function createQuickLink(
       'Input projectId conflicts with --project.',
       'project',
     )
+  if (body.billingControls !== undefined) {
+    const financial = body.billingControls as Record<string, unknown>
+    if (
+      !financial ||
+      typeof financial !== 'object' ||
+      Array.isArray(financial) ||
+      Object.keys(financial).some(
+        (key) => !['limitCredits', 'priority'].includes(key),
+      ) ||
+      (financial.limitCredits !== null &&
+        (typeof financial.limitCredits !== 'number' ||
+          !/^\d+(\.\d{1,6})?$/.test(String(financial.limitCredits)) ||
+          financial.limitCredits > 1000000)) ||
+      typeof financial.priority !== 'number' ||
+      !Number.isInteger(financial.priority) ||
+      financial.priority < 0 ||
+      financial.priority > 1000000 ||
+      body.purpose === 'add_connection' ||
+      (body.configuration as {testing?: unknown} | undefined)?.testing
+    )
+      throw new PolymorfaConfigurationError(
+        'Billing controls require a real new number, credits and numeric priority.',
+        'input',
+      )
+  }
   const response = await client.quickLinks.create({
     ...body,
     ...(projectId ? {projectId} : {}),

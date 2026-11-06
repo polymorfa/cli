@@ -168,6 +168,66 @@ describe('BanSafe commands', () => {
     expect(result.stdout).toContain('Measured credits\t0.000001')
     expect(result.stdout).toContain('Cap credits\t50.5')
     expect(result.stdout).not.toContain('cents')
+    expect(result.stdout).not.toContain('Simultaneous calls')
+  })
+
+  test('shows the simultaneous calls verdict and evidence on a claim', async () => {
+    server = await startHttpServer({
+      body: {
+        data: {
+          amountCents: 0,
+          capCents: 50,
+          createdAt: '2026-10-11T00:00:00Z',
+          decidedAt: '2026-10-11T00:00:00Z',
+          evidence: {
+            attributionRuleVersion: 2,
+            criticalFindingDays: 0,
+            deviceEvidence: true,
+            measuredHours: 24,
+            otherDevices: 0,
+            restrictedInWindow: true,
+            sharedConnection: false,
+            simultaneousCalls: true,
+            windowDays: 30,
+          },
+          id: 'claim_2',
+          incidentId: 'incident_2',
+          measuredCents: 10,
+          paidAt: null,
+          phoneNumber: '+1',
+          projectId: 'p1',
+          reason:
+            'Simultaneous calls were on for this number during the 30 days before the ban. Ban Insurance does not cover a number with simultaneous calls on.',
+          session: 's1',
+          sessionId: 'id1',
+          status: 'denied',
+          summary:
+            'This claim was not approved because simultaneous calls were on for this number.',
+          verdict: 'simultaneous_calls',
+          windowEnd: '2026-10-11T00:00:00Z',
+          windowStart: '2026-09-11T00:00:00Z',
+        },
+      },
+    })
+
+    const human = await platformEnvironment(() =>
+      runCommand('bansafe claim view claim_2'),
+    )
+    const json = await platformEnvironment(() =>
+      runCommand('bansafe claim view claim_2 --json'),
+    )
+
+    expect(human.error).toBeUndefined()
+    expect(human.stdout).toContain('Status\tdenied')
+    expect(human.stdout).toContain('Verdict\tsimultaneous_calls')
+    expect(human.stdout).toContain('Simultaneous calls on in window\tyes')
+    expect(json.error).toBeUndefined()
+    expect(JSON.parse(json.stdout)).toMatchObject({
+      data: {
+        evidence: {simultaneousCalls: true},
+        verdict: 'simultaneous_calls',
+      },
+    })
   })
 
   test('requires idempotency for Health policy updates', async () => {

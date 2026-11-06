@@ -7,15 +7,21 @@ import {setMessageTyping} from '../../services/messages.js'
 const states = ['typing', 'recording', 'paused'] as const
 
 export default class MessageTyping extends BaseCommand {
-  static override description = 'Set the typing state for a chat.'
+  static override description =
+    'Set typing for a chat. Official Numbers require --id and --state typing; the inbound message is marked read.'
 
   static override flags = {
     chat: Flags.string({
       description: 'Conversation ID, E.164 phone number, or BSUID.',
       required: true,
     }),
+    id: Flags.string({
+      description:
+        'Inbound message ID. Required on Official Numbers; marks the message read and shows typing for up to 25 seconds.',
+    }),
     'idempotency-key': Flags.string({
-      description: 'Safely identify retries of this typing update.',
+      description:
+        'Request identifier. The API does not deduplicate typing updates by this header.',
     }),
     session: Flags.string({
       description: 'Messaging session ID.',
@@ -33,7 +39,11 @@ export default class MessageTyping extends BaseCommand {
     const result = await setMessageTyping(
       await this.messagingClient(flags),
       flags.session,
-      {conversation: conversationReference(flags.chat), state: flags.state},
+      {
+        conversation: conversationReference(flags.chat),
+        state: flags.state,
+        ...(flags.id === undefined ? {} : {id: flags.id}),
+      },
       flags['idempotency-key'] === undefined
         ? {}
         : {idempotencyKey: flags['idempotency-key']},

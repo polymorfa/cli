@@ -23,6 +23,152 @@ describe('Platform management commands', () => {
     directory = undefined
   })
 
+  test('lists team sessions and filters by exact project ID', async () => {
+    server = await startHttpServer({
+      body: {
+        data: [
+          {
+            _id: 'row_1',
+            _creationTime: 1_723_000_000_000,
+            projectId: 'project_1',
+            sessionId: 'session_1',
+            name: 'Support',
+            phone: null,
+            platform: 'android',
+            isBusiness: true,
+            testMode: false,
+            tierOverride: null,
+            status: 'CONNECTED',
+            messageCount: 0,
+            lastActiveAt: null,
+            paidUntil: null,
+          },
+        ],
+      },
+      headers: {'request-id': 'req_sessions'},
+    })
+
+    const all = await platformEnvironment(() => runCommand('session list'))
+    const project = await platformEnvironment(() =>
+      runCommand('session list --project project_1 --json'),
+    )
+
+    expect(all.error).toBeUndefined()
+    expect(all.stdout).toContain(
+      'session_1\tSupport\tCONNECTED\treal\tproject_1',
+    )
+    expect(project.error).toBeUndefined()
+    expect(JSON.parse(project.stdout)).toMatchObject({
+      data: [{sessionId: 'session_1', status: 'CONNECTED'}],
+      metadata: {requestId: 'req_sessions', status: 200},
+    })
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/sessions',
+      'GET /platform/sessions?projectId=project_1',
+    ])
+  })
+
+  test('views a session and reports only its stored status in the status command', async () => {
+    server = await startHttpServer({
+      body: {
+        success: true,
+        data: {
+          sessionId: 'session_1',
+          name: 'Support',
+          tenantId: 'org_1',
+          type: 'linked_device',
+          testMode: false,
+          status: 'DISCONNECTED',
+          statusReason: 'PHONE_OFFLINE',
+          configuration: {revisions: {team: 1, project: 2, session: 3}},
+          createdAt: '2026-09-26T00:00:00.000Z',
+          updatedAt: '2026-09-27T00:00:00.000Z',
+        },
+      },
+    })
+
+    const view = await platformEnvironment(() =>
+      runCommand('session view session_1 --json'),
+    )
+    const status = await platformEnvironment(() =>
+      runCommand('session status session_1 --json'),
+    )
+    const human = await platformEnvironment(() =>
+      runCommand('session status session_1'),
+    )
+
+    expect(view.error).toBeUndefined()
+    expect(JSON.parse(view.stdout)).toMatchObject({
+      data: {sessionId: 'session_1', status: 'DISCONNECTED'},
+    })
+    expect(status.error).toBeUndefined()
+    expect(JSON.parse(status.stdout)).toMatchObject({
+      data: {
+        sessionId: 'session_1',
+        status: 'DISCONNECTED',
+        statusReason: 'PHONE_OFFLINE',
+      },
+    })
+    const statusJson: unknown = JSON.parse(status.stdout)
+    expect(statusJson).not.toHaveProperty('data.configuration')
+    expect(human.stdout).toBe('session_1\tDISCONNECTED\tPHONE_OFFLINE\n')
+    expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
+      'GET /platform/sessions/session_1',
+      'GET /platform/sessions/session_1',
+      'GET /platform/sessions/session_1',
+    ])
+  })
+
+  test('rejects a project filter on session view and status before transport', async () => {
+    server = await startHttpServer({body: {success: true, data: {}}})
+
+    for (const command of ['view', 'status']) {
+      const result = await platformEnvironment(() =>
+        runCommand(`session ${command} session_1 --project project_1`),
+      )
+      expect(exitCode(result.error)).toBe(2)
+      expect(result.stderr).toContain('omit --project')
+    }
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('rejects a project token for team session reads before transport', async () => {
+    server = await startHttpServer({body: {data: []}})
+    const result = await withEnvironment(
+      {
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_${'A'.repeat(94)}`,
+        POLYMORFA_BASE_URL: server.baseUrl,
+      },
+      () => runCommand('session list --json'),
+    )
+    expect(exitCode(result.error)).toBe(2)
+    expect(result.stderr).toContain(
+      'Platform API requests require POLYMORFA_API_KEY',
+    )
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('does not turn a missing session into a disconnected status', async () => {
+    server = await startHttpServer({
+      status: 404,
+      body: {
+        error: {
+          type: 'not_found_error',
+          code: 'not_found',
+          message: 'session not found',
+        },
+      },
+    })
+
+    const result = await platformEnvironment(() =>
+      runCommand('session status missing'),
+    )
+    expect(result.error).toBeDefined()
+    expect(result.stdout).not.toContain('DISCONNECTED')
+    expect(server.requests).toHaveLength(1)
+  })
+
   test('reads and updates session configuration using Platform authority', async () => {
     server = await startHttpServer({
       body: {success: true, data: {name: 'support', configuration: {}}},
@@ -339,6 +485,60 @@ describe('Platform management commands', () => {
     expect(exitCode(result.error)).toBe(2)
     expect(result.stderr).toContain('Provide --project')
     expect(server.requests).toHaveLength(0)
+  })
+
+  test("reads a number's WhatsApp capabilities", async () => {
+    server = await startHttpServer({
+      body: {
+        data: {
+          session: 'support/line',
+          projectId: 'project_1',
+          status: 'synced',
+          syncedAt: '2026-09-24T10:00:00.000Z',
+          checkedAt: '2026-09-24T11:00:00.000Z',
+          accountType: 'personal',
+          capabilities: [
+            {
+              key: 'channels',
+              kind: 'feature',
+              unit: null,
+              value: true,
+              source: 'server',
+            },
+            {
+              key: 'messageEdit.windowSeconds',
+              kind: 'limit',
+              unit: 'seconds',
+              value: 1200,
+              source: 'client_default',
+            },
+            {
+              key: 'metaAi',
+              kind: 'feature',
+              unit: null,
+              value: null,
+              source: null,
+            },
+          ],
+        },
+      },
+    })
+
+    const result = await platformEnvironment(() =>
+      runCommand('session capabilities support/line'),
+    )
+
+    expect(result.error, result.stderr).toBeUndefined()
+    expect(server.requests[0]).toMatchObject({
+      method: 'GET',
+      url: '/platform/sessions/support%2Fline/capabilities',
+    })
+    expect(result.stdout).toContain('Status\tsynced')
+    expect(result.stdout).toContain('channels\tenabled\tserver')
+    expect(result.stdout).toContain(
+      'messageEdit.windowSeconds\t1200 seconds\tclient_default',
+    )
+    expect(result.stdout).toContain('metaAi\tunknown\t-')
   })
 
   test('requests asynchronous stops for a bounded session batch', async () => {

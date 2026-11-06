@@ -1,4 +1,17 @@
 import {
+  renderDripConfiguration,
+  renderDripStats,
+} from './campaign-segments-drip.js'
+import {
+  renderFrequencyCapAnalytics,
+  frequencyCapRecipientCell,
+} from './campaign-frequency-cap.js'
+import {
+  followUpCell,
+  renderFollowUpAnalytics,
+  renderFollowUpConfiguration,
+} from './campaign-follow-ups.js'
+import {
   type AddCampaignRecipientsResult,
   type Campaign,
   type CampaignAnalytics,
@@ -135,13 +148,21 @@ export async function listCampaignRecipients(
   client: MessagingClient,
   projectSlug: string,
   campaignId: string,
-  params: ListCampaignRecipientsParams,
+  params: ListCampaignRecipientsParams & {readonly reason?: string},
 ): Promise<CampaignResult<CampaignRecipientPageResult>> {
-  const response = await client.campaigns.listRecipients(
-    projectSlug,
-    campaignId,
-    params,
-  )
+  const response = await client.raw.request<{
+    data: readonly CampaignRecipient[]
+    page: CampaignRecipientPage
+  }>({
+    method: 'GET',
+    path: `/messaging/projects/${encodeURIComponent(projectSlug)}/campaigns/${encodeURIComponent(campaignId)}/recipients`,
+    query: {
+      ...(params.status === undefined ? {} : {status: params.status}),
+      ...(params.reason === undefined ? {} : {reason: params.reason}),
+      ...(params.cursor === undefined ? {} : {cursor: params.cursor}),
+      ...(params.limit === undefined ? {} : {limit: params.limit}),
+    },
+  })
   return result(
     {data: response.data.data, page: response.data.page},
     response.metadata,
@@ -228,6 +249,8 @@ export function renderCampaign(campaign: Campaign): string {
     `Failed\t${campaign.failedCount}`,
     `Skipped\t${campaign.skippedCount}`,
     `Scheduled\t${formatCampaignTime(campaign.scheduledAt)}`,
+    ...renderFollowUpConfiguration(campaign),
+    ...renderDripConfiguration(campaign),
   ].join('\n')
 }
 
@@ -242,6 +265,9 @@ export function renderCampaignAnalytics(analytics: CampaignAnalytics): string {
     `Skipped\t${analytics.skippedCount}`,
     `Responded\t${analytics.respondedCount}`,
     `Response rate\t${analytics.responseRate}`,
+    ...renderFollowUpAnalytics(analytics),
+    ...renderDripStats(analytics),
+    ...renderFrequencyCapAnalytics(analytics),
   ].join('\n')
 }
 
@@ -290,6 +316,11 @@ export function renderCampaignRecipients(
   result: CampaignRecipientPageResult,
 ): string {
   if (result.data.length === 0) return 'No recipients found.'
+  // The follow-up column appears only when a recipient has a follow-up, so
+  // campaigns without the beta keep their existing columns.
+  const followUps = result.data.some(
+    (recipient) => followUpCell(recipient) !== '',
+  )
   const rows = result.data.map((recipient) =>
     [
       recipient.id,
@@ -297,7 +328,9 @@ export function renderCampaignRecipients(
       recipient.status,
       String(recipient.attempts),
       recipient.lastError ?? '',
+      ...frequencyCapRecipientCell(recipient),
       formatCampaignTime(recipient.sentAt),
+      ...(followUps ? [followUpCell(recipient)] : []),
     ].join('\t'),
   )
   if (result.page.hasMore && result.page.nextCursor !== null) {

@@ -64,12 +64,12 @@ export async function runDoctor(
   }
 
   const envKey = nonEmpty(deps.env.POLYMORFA_API_KEY)
-  const envOther =
-    nonEmpty(deps.env.POLYMORFA_PROJECT_TOKEN) ??
-    nonEmpty(deps.env.POLYMORFA_CLIENT_TOKEN)
-  const useEnv =
-    nonEmpty(deps.profile) === undefined &&
-    (envKey !== undefined || envOther !== undefined)
+  const envProjectToken = nonEmpty(deps.env.POLYMORFA_PROJECT_TOKEN)
+  const envClientToken = nonEmpty(deps.env.POLYMORFA_CLIENT_TOKEN)
+  const envCredentialCount = [envKey, envProjectToken, envClientToken].filter(
+    (value) => value !== undefined,
+  ).length
+  const useEnv = nonEmpty(deps.profile) === undefined && envCredentialCount > 0
   const profileName = nonEmpty(deps.profile) ?? config?.activeProfile
   const profile =
     profileName === undefined ? undefined : config?.profiles[profileName]
@@ -120,11 +120,11 @@ export async function runDoctor(
     })
   }
   if (useEnv) {
-    credential = envKey ?? envOther
+    credential = envKey ?? envProjectToken ?? envClientToken
     kind =
       envKey !== undefined
         ? 'apiKey'
-        : nonEmpty(deps.env.POLYMORFA_PROJECT_TOKEN) !== undefined
+        : envProjectToken !== undefined
           ? 'projectToken'
           : 'clientToken'
   }
@@ -151,18 +151,30 @@ export async function runDoctor(
   }
 
   checks.push(
-    await credentialCheck({
-      baseUrl,
-      credential,
-      kind,
-      lookup: deps.lookup ?? listProjectsPing,
-      reachable,
-      source: useEnv ? 'environment' : `profile ${profileName ?? '-'}`,
-      timeoutMs: deps.timeoutMs,
-    }),
+    useEnv && envCredentialCount > 1
+      ? {
+          name: 'credential',
+          status: 'fail',
+          detail:
+            'Environment credentials are ambiguous. Set only one of POLYMORFA_API_KEY, POLYMORFA_PROJECT_TOKEN, or POLYMORFA_CLIENT_TOKEN, or select --profile.',
+        }
+      : await credentialCheck({
+          baseUrl,
+          credential,
+          kind,
+          lookup: deps.lookup ?? listProjectsPing,
+          reachable,
+          source: useEnv ? 'environment' : `profile ${profileName ?? '-'}`,
+          timeoutMs: deps.timeoutMs,
+        }),
   )
 
-  return {checks, ok: checks.every((check) => check.status !== 'fail')}
+  return {
+    checks,
+    ok: checks.every(
+      (check) => check.status !== 'fail' && check.status !== 'skip',
+    ),
+  }
 }
 
 function nodeCheck(version: string): DoctorCheck {
@@ -188,7 +200,7 @@ async function credentialCheck(input: {
   if (input.credential === undefined || input.kind === undefined) {
     return {
       name: 'credential',
-      status: 'warn',
+      status: 'fail',
       detail:
         'No credential is configured. Set POLYMORFA_API_KEY or run polymorfa auth login --with-api-key.',
     }
@@ -204,7 +216,7 @@ async function credentialCheck(input: {
     return {
       name: 'credential',
       status: 'skip',
-      detail: `A ${input.kind === 'projectToken' ? 'project token' : 'client token'} from ${input.source} is present; doctor validates only server API keys remotely.`,
+      detail: `A ${input.kind === 'projectToken' ? 'project token' : 'client token'} from ${input.source} is present but was not validated. Doctor needs a server API key to verify authentication; this token's command access depends on the command.`,
     }
   }
   try {

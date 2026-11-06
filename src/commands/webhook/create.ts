@@ -9,6 +9,10 @@ import {prepareOneTimeSecretDelivery} from '../../developer/secrets.js'
 import {record, stringField} from '../../developer/support.js'
 import {CliConditionError} from '../../errors/conditions.js'
 import {idempotencyKey} from '../../input/idempotency.js'
+import {
+  phoneOfflineStartDayFlag,
+  withPhoneOfflineStartDay,
+} from '../../developer/phone-offline.js'
 
 export default class WebhookCreate extends BaseCommand {
   static override description = 'Create a webhook from one JSON object.'
@@ -19,6 +23,7 @@ export default class WebhookCreate extends BaseCommand {
       description: 'Read the webhook JSON object from a file or stdin (-).',
       required: true,
     }),
+    'phone-offline-start-day': phoneOfflineStartDayFlag,
     'secret-out': Flags.string({
       description: 'Write the one-time signing secret to a new mode-0600 file.',
     }),
@@ -30,11 +35,20 @@ export default class WebhookCreate extends BaseCommand {
       json: flags.json === true,
       ...(flags['secret-out'] === undefined ? {} : {path: flags['secret-out']}),
     })
+    const body = record(await readJsonInput(flags.input), 'Webhook input')
+    let merged: Readonly<Record<string, unknown>> = body
+    if (flags['phone-offline-start-day'] !== undefined) {
+      try {
+        merged = withPhoneOfflineStartDay(
+          body,
+          flags['phone-offline-start-day'],
+        )
+      } catch (error) {
+        this.error((error as Error).message, {exit: 2})
+      }
+    }
     const session = await this.developerSession(flags)
-    const input = record(
-      await readJsonInput(flags.input),
-      'Webhook input',
-    ) as unknown as CreateProjectWebhookInput
+    const input = merged as unknown as CreateProjectWebhookInput
     const response = await session.client.webhooks.create(input, {
       ...session.requestOptions,
       idempotencyKey: idempotencyKey(flags['idempotency-key']),

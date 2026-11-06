@@ -255,3 +255,42 @@ function result<T>(data: T, metadata: ResponseMetadata): ResourceResult<T> {
     },
   }
 }
+
+/** Wire contract shared with the SDK's GroupCapabilities type. Raw request is
+ * supported by the pinned SDK; this command needs no unpublished dependency. */
+export interface GroupCapabilities {
+  readonly status: 'synced' | 'unknown'
+  readonly syncedAt: string | null
+  readonly checkedAt: string | null
+  readonly capabilities: readonly {
+    readonly key: string
+    readonly kind: 'feature'
+    readonly unit: null
+    readonly value: boolean | null
+    readonly source: 'server' | 'client_default' | null
+  }[]
+}
+export async function getGroupCapabilities(
+  client: MessagingClient,
+  session: string,
+  group: string,
+): Promise<ResourceResult<GroupCapabilities>> {
+  const response = await client.raw.request<{
+    success: true
+    data: GroupCapabilities
+  }>({
+    method: 'GET',
+    path: `/messaging/${encodeURIComponent(session)}/groups/${encodeURIComponent(group)}/capabilities`,
+  })
+  return result(response.data.data, response.metadata)
+}
+export function renderGroupCapabilities(view: GroupCapabilities): string {
+  return [
+    `Status\t${view.status}`,
+    `Synced\t${view.syncedAt ?? 'never'}`,
+    ...view.capabilities.map(
+      (c) =>
+        `${c.key}\t${c.value === null ? 'unknown' : String(c.value)}\t${c.source ?? 'unknown'}`,
+    ),
+  ].join('\n')
+}

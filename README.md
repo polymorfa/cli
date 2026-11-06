@@ -2,10 +2,13 @@
 
 The official command-line interface for Polymorfa.
 
-The package is under active development. `@polymorfa/cli` is not published to
-npm yet, so `npm install --global @polymorfa/cli` does not work. Once the CLI is
-published, that command will be the supported installation. Until then, install
-from the private source repository, which requires repository access.
+The package is under active development and is published to npm as
+development prereleases on the `dev` tag:
+
+```shell
+npm install --global @polymorfa/cli@dev
+polymorfa version
+```
 
 ## Requirements
 
@@ -15,7 +18,8 @@ from the private source repository, which requires repository access.
 
 ## Development installation
 
-Install the current private development branch globally:
+With access to the private source repository, install the current development
+branch globally:
 
 ```shell
 npm install --global github:polymorfa/cli#dev
@@ -38,12 +42,100 @@ prerelease in `package.json`.
 The version output includes both runtime components:
 
 ```text
-polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20260926005918
+polymorfa/0.1.0-dev.0 sdk/0.1.0-dev.20261004011426
 ```
 
 The SDK component reports the version built into the installed SDK. Dev
 prereleases include their full timestamped version. Run `npm ls @polymorfa/sdk`
 to see the installed build.
+
+## Documentation from the terminal
+
+```shell
+polymorfa docs search "rate limits"
+polymorfa docs open api/rate-limits
+polymorfa docs open api/rate-limits --print
+```
+
+Search reads the published documentation index and prints matching titles,
+paths, and links. `--json` prints a result array. Open launches the exact page
+in a browser; `--print` emits its URL instead. These commands use network
+access but do not use your Polymorfa credentials.
+
+## Set up coding agents
+
+Install the [Polymorfa agent kit](https://github.com/polymorfa/agent-kit) in
+coding agents detected on your machine:
+
+```shell
+polymorfa agent setup --dry-run
+polymorfa agent setup
+polymorfa agent setup --client claude --client codex --yes
+```
+
+Setup detects `claude`, `codex`, `gemini`, and `cursor` on PATH. A `~/.cursor`
+directory also detects Cursor. Repeat `--client` to select clients explicitly;
+an unavailable requested client fails. Without `--yes`, setup asks for confirmation
+immediately before the first installation. Instructions and already-installed
+clients need no confirmation. Non-interactive installation requires `--yes`.
+
+| Client      | Installation behavior                                                                                                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code | Adds `polymorfa/agent-kit` as the `polymorfa` marketplace, then installs `polymorfa@polymorfa`. The repository must contain its marketplace manifest.                                          |
+| Codex       | Checks local help for Git marketplace and plugin installation support, then adds the same marketplace and plugin through the native installer. Older versions receive repository instructions. |
+| Gemini CLI  | Installs the repository through `gemini extensions install`, passing `--consent` after setup confirmation.                                                                                     |
+| Cursor      | Prints instructions to install from the Cursor marketplace or repository.                                                                                                                      |
+
+`--dry-run` prints exact installation commands. It may run Codex help probes,
+but never runs installers or reads installation listings. Setup does not load
+Polymorfa profiles, read credentials, or edit client settings directly. Client
+installers manage their own configuration. Their output is withheld because it
+may contain private local data. Each client command has a 120-second deadline and a
+1 MiB UTF-8 output limit. Windows tree cleanup is attempted for up to five more
+seconds. Timeout, overflow and cleanup failure report failed. Each client gets a
+separate result; any failure
+makes the command exit with code 1. Manual instructions are reported separately
+and do not claim installation succeeded.
+
+Repeat runs use native plugin or extension listings to report `already installed`
+when the client can identify the kit. Existing marketplaces are retained only
+when their source matches agent-kit; a name conflict fails without replacing it.
+Installation adds skills, plugin manifests, and the public documentation MCP.
+It does not configure authenticated API access. Marketplace publication, native
+client acceptance, and CLI package publication remain separate steps.
+
+## Generate the CLI reference
+
+```shell
+npm run docs:reference
+npm run docs:reference:check
+```
+
+The generator builds the CLI, creates an oclif manifest from compiled commands,
+and writes `contracts/cli-reference.json`. Schema version 1 includes `cliVersion`
+and sorted public commands with space-separated IDs, summaries, descriptions,
+usage arrays, aliases, positional arguments, flags, examples, and command state.
+It excludes hidden commands, aliases, arguments, and flags. Arguments retain
+positional order; commands and flags are sorted by name. Missing optional scalar
+metadata is `null`, missing text is an empty string, and missing lists are empty.
+Examples contain `command` and `description`; plain oclif examples have an empty
+description. Fallback usage includes positional arguments and `[flags]`; flag
+details live in the separate `flags` array.
+
+The docs site can consume this file to build one `/cli` page per command. This
+repository exports the reference; it does not publish those pages. `npm run
+verify` rebuilds the CLI and fails when the committed reference is stale. Regenerate
+it whenever public command metadata or the package version changes. No timestamp
+or local path is included.
+
+## Browser build
+
+Build the CLI module for a browser, then check the emitted artifact:
+
+    npm run build:browser
+    npm run verify:browser
+
+The registry comes from the real command files. Commands needing the installed CLI remain in that inventory with an unsupported reason. Agent setup is refused before loading its implementation or reading local client configuration; the installer is excluded from the bundle. Verification checks the emitted dependency graph and runs a synthetic text send with no network access. Package and Docs publication remain separate steps.
 
 ## Authentication profiles
 
@@ -70,6 +162,22 @@ in this development slice and does not yet claim remote identity validation.
 
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
+
+## Start a Node project
+
+Create a Node.js and TypeScript starter in an existing directory:
+
+```shell
+polymorfa init
+```
+
+The command writes `package.json`, `src/index.ts`, `.env.example`, and
+`README.md`. It pins an exact published SDK development version. It does not
+read or write credentials, select a project, or overwrite
+any existing starter file. If a target already exists, it stops before writing
+anything. Set the example's `POLYMORFA_API_KEY` through your shell or secret
+manager when you choose to run it. Use `polymorfa link` separately to associate
+the directory with a project for CLI commands.
 
 ## Project context
 
@@ -105,18 +213,66 @@ polymorfa doctor
 polymorfa doctor --profile work --json
 ```
 
-`doctor` runs five checks and exits with code 1 if any fails:
+`doctor` runs five checks and exits with code 1 if any fails or credential
+validation is skipped. A successful run needs one server API key. It does not
+change credentials or configuration.
 
-| Check        | What it does                                                                                                                                                                                                                         |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `node`       | Requires Node.js 22 or newer.                                                                                                                                                                                                        |
-| `config`     | Loads and validates the profile config and reports the active profile.                                                                                                                                                               |
-| `keyring`    | Reads the selected profile's entry from the operating-system keyring. A locked or unavailable keyring fails, or warns when an environment credential is in use.                                                                      |
-| `api`        | Calls the unauthenticated `/ping` on the configured base URL, without retries.                                                                                                                                                       |
-| `credential` | For a server API key, lists projects as an authenticated ping. `401` fails; `403` warns that the key authenticated but project listing was denied. Project and client tokens are reported as present but are not validated remotely. |
+| Check        | What it does                                                                                                                                                                                                                                                                              |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `node`       | Requires Node.js 22 or newer.                                                                                                                                                                                                                                                             |
+| `config`     | Loads and validates the profile config and reports the active profile.                                                                                                                                                                                                                    |
+| `keyring`    | Reads the selected profile's entry from the operating-system keyring. A locked or unavailable keyring fails, or warns when an environment credential is in use.                                                                                                                           |
+| `api`        | Calls the unauthenticated `/ping` on the configured base URL, without retries.                                                                                                                                                                                                            |
+| `credential` | For a server API key, lists projects as an authenticated ping. `401` fails; `403` warns that the key authenticated but project listing was denied. Missing credentials fail. Project and client tokens are reported as present, but remote validation is skipped and the command exits 1. |
 
-Environment credentials take precedence over the active profile, as for other
-commands. Output never contains credential values.
+An explicit `--profile` selects that profile. Otherwise, one environment
+credential takes precedence over the active profile; multiple credential
+environment variables fail as ambiguous. Output never contains credential values.
+
+## Shell completion
+
+Generate and load completion for your shell after installing a CLI source build:
+
+```bash
+source <(polymorfa completion bash)
+```
+
+For Zsh, initialize its completion system before loading the script:
+
+```zsh
+autoload -Uz compinit && compinit
+source <(polymorfa completion zsh)
+```
+
+For Fish:
+
+```fish
+polymorfa completion fish | source
+```
+
+Completion suggests command names, flags, and fixed flag choices from the
+installed CLI. It does not look up profile names, project IDs, credentials, or
+other argument values, and it does not contact the API. Add the command for
+your shell to its startup file if you want completion in later sessions.
+
+## Inspect sessions
+
+Use an organization API key with `sessions:read` to inspect stored session
+metadata:
+
+```shell
+polymorfa session list
+polymorfa session list --project PROJECT_ID --json
+polymorfa session view SESSION_ID
+polymorfa session status SESSION_ID --json
+```
+
+`session list` reads every session in the team unless you pass a project UUID.
+Use a session ID from the list for `view` or `status`; these commands do not
+accept `--project`. `status` reads the stored status and optional reason from
+the session record. It does not probe the device or wait for a connection.
+Key metadata listing and revocation are available through `key list` and
+`key revoke`; the CLI does not mint or rotate organization keys.
 
 ## QuickLinks
 
@@ -238,6 +394,22 @@ order info editing, messaging, member add, join approval. If one fails, the
 error names the settings that were already applied. Removing participants
 requires `--yes`.
 
+### Stored group capabilities
+
+Use `polymorfa group capabilities GROUP_ID --session SESSION` to read the
+linked number's stored group configuration. Add `--json` for the complete
+response. This read requires `groups:read`, current group membership, and
+number-capabilities beta enrollment. Unknown configuration stays `unknown`;
+the command does not open the group chat or fetch its configuration.
+
+The keys `polls.endTime`, `polls.hideVoters`, and `polls.creatorEdit` describe
+WhatsApp configuration. They do not grant poll-editing permissions. The API
+must include the group-capabilities contract.
+
+The capability extension is pinned in `contracts/abprops-capabilities.json` to
+API source `205369ff8f5ecb71dd085a190d8ec80aa2b9e483`. This is the same scoped revision consumed by the SDK;
+other command contracts and the published SDK dependency keep their recorded revisions.
+
 ## Messages
 
 Send text and perform the complete set of source-defined Messaging actions:
@@ -319,6 +491,187 @@ does not resolve the uncertainty and can send a duplicate. See the
 `--idempotency-key`, but the API does not deduplicate those actions by that
 header.
 
+### Flow drafts and provider lifecycle
+
+Flow commands require a project scope and an organization API key or project
+token. Reads use `sessions:read`; mutations use `sessions:manage`.
+
+```shell
+polymorfa flow list --project PROJECT_UUID
+polymorfa flow create --project PROJECT_UUID --input draft.json
+polymorfa flow get FLOW_UUID --project PROJECT_UUID
+polymorfa flow update FLOW_UUID --project PROJECT_UUID --input update.json
+polymorfa flow upload FLOW_UUID --project PROJECT_UUID --session number_123 --category APPOINTMENT_BOOKING --request-id REQUEST_UUID
+polymorfa flow receipts FLOW_UUID --project PROJECT_UUID
+polymorfa flow sync FLOW_UUID --project PROJECT_UUID --session number_123
+polymorfa flow publish FLOW_UUID --project PROJECT_UUID --session number_123 --yes
+```
+
+Creation input contains `name` and `definition`, plus an optional `draftId`.
+Update input requires the draft's observed `expectedUpdatedAt` and optional
+`name`, `status`, or `definition`. JSON input accepts a file or `-` for stdin.
+Project and Flow identity come from command arguments and cannot be overridden
+inside the file.
+
+Provider actions are beta and require an eligible Number. `publish`, `deprecate`,
+`discard`, and local `delete` require `--yes`. Discard removes a provider draft;
+local deletion is separate. Writes make one attempt. A successful HTTP response
+can still carry an `uncertain` operation: read its receipt and use `sync` to
+reconcile. Preserve `--request-id` for the exact same operation; a new ID does
+not resolve an uncertain outcome.
+
+Customer-hosted dynamic Flow endpoints use a public key registered to the Meta
+phone number. Read that key with `polymorfa flow key get --phone-number-id
+PHONE_NUMBER_ID --graph-version v26.0`. Register or replace it with `polymorfa
+flow key register --phone-number-id PHONE_NUMBER_ID --graph-version v26.0
+--input public-key.json --yes`, where the JSON file contains only
+`business_public_key` as a 2048-bit RSA public key in PEM format. The matching
+private key stays on your endpoint. Registration affects every dynamic Flow on
+the phone number, so read the registered key after an uncertain outcome before
+submitting another replacement. Reading requires `sessions:read`; registration
+requires `sessions:manage`, an eligible Official API Number, and Graph access.
+These commands make Polymorfa release its managed key custody for that Number.
+
+Polymorfa can also host the data endpoint (beta). It can hold a managed key per
+Number, decrypt each WhatsApp request, and either forward it to your HTTPS URL
+or run a deployed Function:
+
+```shell
+polymorfa flow key rotate --project PROJECT_UUID --session number_123 --yes
+polymorfa flow key custody --project PROJECT_UUID --session number_123
+polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --session number_123 --mode forward --url https://example.com/flow
+polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --session number_123 --mode function --function FUNCTION_UUID
+polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --session number_123 --mode direct --url https://example.com/flow
+polymorfa flow endpoint get FLOW_UUID --project PROJECT_UUID --session number_123
+polymorfa flow endpoint receipts FLOW_UUID --project PROJECT_UUID --limit 20
+polymorfa flow endpoint delete FLOW_UUID --project PROJECT_UUID --session number_123 --yes
+```
+
+`forward` and `function` need a Polymorfa-managed key on the Number. `direct`
+needs your own key, registered with `flow key register`. A forward endpoint's
+signing secret is printed once, when it is created, switched to forward, or
+rotated with `--rotate-signing-secret`. Verify `X-Polymorfa-Flow-Signature`
+with the SDK's `verifyFlowForwardSignature`. Configure the endpoint before
+`flow upload`, which attaches its URI to the Flow. Key rotation affects every
+Flow on the Number; the previous managed key decrypts for 24 hours. Rotation
+and endpoint writes make one attempt. Receipts are metadata only.
+
+### Submit a project template
+
+```shell
+polymorfa template submit TEMPLATE_ID --project-slug support --session number_123 --yes
+```
+
+This command uses a server API key or project token with `templates:manage`.
+The saved project template and Number must belong to the same project. The API
+checks the definition before submitting it to Meta. A successful response
+records the submission, not approval. Read the Number's template with
+`polymorfa cloud template get NAME --session number_123 --language en_US` to
+check its status. If the request times out or its response is lost, read the
+template before choosing whether to submit again. The command makes one
+network attempt and requires `--yes` because a second submission can create a
+duplicate provider effect.
+`--project-slug` selects the target project even when the current directory is
+linked to another project; the API checks that the credential can access it.
+
+### Official API observations and templates
+
+The `cloud` commands require an organization API key or a project token with the
+listed scope. Client tokens cannot use these commands. Server-side feature
+access still applies: an installed command does not enroll a Number or enable a
+beta feature.
+
+```shell
+polymorfa cloud catalog list --waba WABA_ID --graph-version v26.0 --limit 25
+polymorfa cloud catalog products --waba WABA_ID --catalog CATALOG_ID --graph-version v26.0 --limit 25
+polymorfa cloud marketing status --waba WABA_ID --graph-version v26.0
+polymorfa cloud template list --session number_123
+polymorfa cloud template get order_update --session number_123 --language en_US
+polymorfa cloud template create --session number_123 --input template.json --idempotency-key tpl-order-update
+polymorfa cloud template edit order_update --session number_123 --language en_US --input components.json
+polymorfa cloud template delete order_update --session number_123 --yes
+polymorfa cloud service-window +15551234567 --session number_123
+polymorfa cloud pricing --session number_123 --since 2026-09-01T00:00:00Z --until 2026-09-26T00:00:00Z
+polymorfa cloud credentials get --session number_123
+polymorfa cloud credentials reauthorize --session number_123
+```
+
+`cloud group` commands (beta) manage WhatsApp groups on an Official API
+Number. They need team enrollment and a Number whose WhatsApp Business Account
+is an Official Business Account; otherwise the API returns
+`whatsapp_groups_ineligible`. People join with the invite link and cannot be
+added; a group holds at most 8 participants besides your business. `create`
+returns a `requestId`; the group's conversation ID and invite link arrive in a
+`group.update` event. Every change makes one network attempt; pass
+`--idempotency-key` so a manual retry after an unknown outcome is answered by
+the API instead of changing the group again.
+
+```bash
+polymorfa cloud group create --session number_123 --subject "Order 1042" --join-approval --idempotency-key grp-1042
+polymorfa cloud group list --session number_123
+polymorfa cloud group get GROUP_ID --session number_123
+polymorfa cloud group invite-link GROUP_ID --session number_123
+polymorfa cloud group join-requests list GROUP_ID --session number_123
+polymorfa cloud group join-requests approve GROUP_ID --session number_123 --request JOIN_REQUEST_ID
+polymorfa cloud group pin GROUP_ID --session number_123 --message MESSAGE_ID --days 7
+polymorfa cloud group delete GROUP_ID --session number_123 --yes
+```
+
+Template commands use `messages:write` and the connected Meta business template
+catalog. They are separate from project template drafts. Creation reads a JSON
+object with `name`, `language`, `category`, and `components` from `--input`, or
+from stdin when it is `-`. Template names and provider IDs remain strings.
+Edits read `{ "components": [...] }` and return acceptance, not approval to send.
+Deletion requires `--yes`. Create, edit and delete send one request and never
+retry. Create and delete accept `--idempotency-key`; reuse the same key after an
+unknown outcome and the API answers `idempotency_completed` instead of writing
+again. List the catalog before resubmitting. The template routes need an active
+Official API connection, including on a Hybrid Number; a Number with only a
+Linked Devices connection is rejected.
+
+Service-window reads use `chats:read`. They report observed `open`, `closed`, or
+`unknown` state; missing or interrupted notifications can prevent a reliable
+window observation. Pricing reads use `sessions:read` and report Meta's message
+classifications and counts, without calculating prices or invoice totals. The
+optional ISO time range defaults to 30 days and cannot exceed 93 days.
+
+Credential reads use `sessions:read`; reauthorization uses `quicklink:manage`.
+`cloud catalog list` reads linked product-catalog IDs and names with `sessions:read`
+and Graph access. Pass the returned opaque cursor using `--after` for another
+page. Catalog visibility does not grant merchant ownership or permission to sell.
+`cloud catalog products` reads only IDs, optional retailer IDs, names and
+availability from one catalog linked to the authenticated WABA. Pass its
+`paging.cursors.after` value as `--after` to read the next page. The API rejects
+unlinked catalogs and simulated Numbers. This read does not send a product or
+establish that the merchant may sell it.
+
+`cloud marketing status` uses `sessions:read` to return Meta's raw WABA
+`marketing_messages_lite_api_status` and
+`marketing_messages_onboarding_status` strings when present. The values do not
+establish accepted terms, recipient permission, eligibility, or a right to
+send. Simulated Numbers and unsupported accounts return API errors; the CLI
+does not convert status strings into an eligibility decision.
+
+Reauthorization creates a QuickLink for a stopped or disconnected standalone
+Official Number. It never stops the Number or opens the link automatically.
+Running Numbers return a conflict; Hybrid reauthorization is unsupported.
+
+Template writes and credential reauthorization do not retry uncertain provider
+outcomes. Inspect the catalog or onboarding state before another write. API
+access, state, and server failures retain the CLI's exit codes: 3 for forbidden
+access, 4 for conflicts, and 5 for server failures. Use `--json` to retain the
+observation fields and structured errors.
+
+For Official Numbers, `message typing` requires `--id` for a message you received
+and `--state typing`. It marks that message read and shows typing until a reply
+is sent or 25 seconds pass. Linked Device Numbers also support `recording` and
+`paused` without an inbound ID.
+
+`quicklink view` shows contacts/history request receipts and history-delivery
+progress when present. An accepted request is distinct from delivered history;
+`unknown` does not establish that a request failed. The connection status alone
+does not establish that sync completed.
+
 ### Typed sends
 
 Every `message send <kind>` command accepts the same `--session`, `--to`,
@@ -362,6 +715,35 @@ polymorfa message send list --session session_123 --to +15551234567 \
 - `list` takes repeatable `--row` values `[<section>/]<id>=<title>[|<description>]`.
   Rows with the same section are grouped in order.
 
+### Brazil payment orders (beta)
+
+Teams enrolled in the beta can send Brazil orders from Official API Numbers
+that Meta has made eligible for payments in Brazil. Polymorfa relays the order
+and payment reports; it does not collect, hold or confirm funds.
+
+```sh
+polymorfa message send order --session session_123 --to +5511987654321 \
+  --order order.json --idempotency-key order-1522
+polymorfa message send order-status --session session_123 --to +5511987654321 \
+  --reference-id order-1522 --body 'Payment received' \
+  --order-status processing --payment-status captured
+```
+
+- `order --order` reads the `orderDetails` JSON object from a file or `-`:
+  `referenceId`, `type`, `body`, `currency: "BRL"`, `totalAmount` in centavos
+  with `offset: 100`, at least one of `paymentSettings.pixDynamicCode`,
+  `paymentLink` or `boleto`, and an optional itemized `order`. The API checks
+  totals, the Pix key and the dynamic Pix code, and names the failing field.
+- `order-status` needs `--order-status`, `--payment-status`, or both. Send a
+  payment status only after your payment provider confirms it.
+- Both commands send through the Official API connection and make one
+  attempt. After an uncertain failure, rerun with the same `--idempotency-key`
+  to read the recorded outcome instead of sending again.
+- WhatsApp refuses invalid status changes with `order_status_transition_invalid`
+  and refused cancellations with `order_cancellation_failed`. Teams outside the
+  beta receive `feature_unavailable`. Never resend an order after an uncertain
+  result; use a new `referenceId` for every order.
+
 The API has no sticker send kind, so the CLI has no `message send sticker`.
 
 ### Edit and delete
@@ -387,6 +769,7 @@ polymorfa chat list --session NUMBER_ID --limit 20 --kind direct
 polymorfa chat view +15550001111 --session NUMBER_ID
 polymorfa chat message list +15550001111 --session NUMBER_ID --limit 20 --order desc
 polymorfa chat message view +15550001111 739182640518204 --session NUMBER_ID
+polymorfa chat message media +15550001111 739182640518204 --session NUMBER_ID --output ./attachment.bin
 ```
 
 Chat reads require `chats:read`; message reads require `messages:read`. Older
@@ -404,6 +787,14 @@ the Number it returns `404 hms_not_enabled`. `503 service_unavailable` means
 the Number's regional history service cannot be reached. No search command is
 available. See the [message history guide](https://docs.polymorfa.com/guides/communicate/message-history)
 for retention and media download behavior.
+
+For a stored Official API media copy, `chat message media` streams the bytes to
+a temporary sibling file and moves it into place only after the download
+finishes. It requires both `messages:read` and `media:read`; the message's
+`mediaRetrieval.state` is `stored` when a copy is available. Use `--force` to
+replace an existing file and `--max-bytes` to change the 32 MiB local limit.
+The API returns 404 if no copy exists and 503 if the regional service is
+unavailable. The command does not create a signed URL.
 
 ## Media
 
@@ -698,11 +1089,31 @@ polymorfa calls settings set --session support --calls-enabled=false \
   --expected-revision 3
 polymorfa calls settings set --session support \
   --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+polymorfa calls settings set --session support \
+  --simultaneous-calls=true --acknowledge-risk
+polymorfa calls settings set --session support --simultaneous-calls=false
 
 polymorfa calls retention get
 polymorfa calls retention set --policy compliance --expected-revision 0
 polymorfa calls retention set --policy custom --days 14 --expected-revision 1 --yes
 ```
+
+`calls place-group` places a group call and `calls ring` rings an existing
+participant again:
+
+```shell
+polymorfa calls place-group --session support --to +15550100 --to +15550101
+polymorfa calls place-group --session support --group-id 9007199254740996
+polymorfa calls ring call_123 +15550101
+```
+
+Group placement accepts 2 to 31 distinct recipients and checks every recipient's
+calling permissions. Use `--group-id` instead of `--to` to call every remote
+member of an existing group using its public ID. The Number must belong to the
+group, and it must have 2 to 31 remote members. Membership changes during
+placement refuse the call. Group calls require a Linked Device Number. `calls ring`
+only rings a non-connected participant already in the call roster; successful
+submission does not mean that the participant answered.
 
 Every inbound call rings until a participant answers or declines it. The CLI
 never answers or declines on its own.
@@ -748,7 +1159,21 @@ never answers or declines on its own.
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
   call. On a Cloud API session, `--host-cloud-api-calls=true` has Polymorfa
   Calls answer incoming calls; with the default `false`, your Graph API
-  integration answers them. `calls settings set` sends only the flags you pass; the other
+  integration answers them. `--simultaneous-calls=true` lets a linked-device
+  number hold any number of calls at once (incoming, placed, and campaign
+  calls); Cloud API numbers ignore it. WhatsApp's own apps never hold two calls
+  at once. While it is on, and for 30 days after you turn it off, Ban Insurance
+  does not cover a ban of the number: a claim opens as `denied` with verdict
+  `simultaneous_calls`. Turning it on requires `--acknowledge-risk`; without
+  it the command exits with code 2 and sends nothing. Only a team API key can
+  turn it on. `--simultaneous-calls=false` needs no acknowledgment. After it
+  is off, `calls settings get` and `set` print `Ban Insurance exclusion ends`
+  with the server's time (`simultaneousCallsCoverageExcludedUntil` in
+  `--json`), until that time passes. Ban Insurance excludes a ban when
+  simultaneous calls were on during the 30 days before it; this timestamp is the
+  cutoff for a new ban from that period. Nothing is printed while the setting is on, and a missing or null
+  end does not mean the number is covered.
+  `calls settings set` sends only the flags you pass; the other
   settings keep their values. `calls settings get` and `set` print the
   settings `revision`, which increases on every change and is `0` while the
   session uses the defaults. Pass `--expected-revision <n>` to apply the
@@ -802,7 +1227,9 @@ placed call that is still ringing. If the `--output` file cannot be written,
 or the `--input` file cannot be read, the command leaves the call and exits
 with code 2. It exits with code 2 before connecting when the `--input` file
 cannot be opened or when `--input` and `--output` name the same file. The
-command carries audio only.
+command carries audio only. `--muted` receives audio with this connection muted;
+it cannot be combined with `--input`. The command refuses `--muted` before
+connecting when its pinned Calls SDK lacks media-control support.
 
 Convert audio with any tool that writes raw PCM, for example:
 
@@ -942,6 +1369,10 @@ Both commands filter with `--session`, `--direction` (`inbound` or
   number.
 
 ### SIP trunks
+
+`sip-trunk view` displays a null `outbound.fromUser` as automatic caller
+identity. Set `outbound.fromUser` in your trunk JSON when your PBX needs a fixed
+From user.
 
 SIP trunks connect a PBX to WhatsApp calls. They are part of Calls and need no
 enrollment. Commands require a server API key.
@@ -1251,7 +1682,9 @@ patches. Customer incident reports and retractions also require an idempotency k
 acknowledgement and enforcement appeals remain dashboard-only and are not
 available through server-key commands. Claim `amountCents`, `measuredCents`, and
 `capCents` are credit quantities with up to six decimal places, not cash minor
-units; text output labels them as credits. Use `--json` to retain explanations,
+units; text output labels them as credits. `claim view` prints whether
+simultaneous calls were on during the claim window when the claim records it;
+a claim with verdict `simultaneous_calls` is denied and pays nothing. Use `--json` to retain explanations,
 observed account state, collection metadata, action outcomes, cursors, and
 request metadata.
 
@@ -1274,7 +1707,19 @@ polymorfa widget view --project project_123
 polymorfa widget update --project project_123 --input widget-patch.json
 polymorfa session stop session_1 session_2 --project project_123
 polymorfa session delete session_1 session_2 --project project_123 --yes
+polymorfa session capabilities support-line
 ```
+
+`session capabilities` shows the WhatsApp configuration gates and limits for
+one number, as of its last configuration sync. An enabled gate does not prove
+that the feature is usable in a particular client or environment, or that
+WhatsApp will accept an operation. Each line
+is the capability key, its value (`enabled`, `off`, a limit, or `unknown`), and
+its source: `server` (WhatsApp sent the setting), `client_default` (WhatsApp
+sent none, so its default applies) or `account_type` (the capability does not
+apply to this kind of account, for example a business-only feature on a
+personal number). Before the number's first sync every value is `unknown`.
+It is a beta: the team must be enrolled, and it needs `sessions:read`.
 
 Key and project-token lists contain metadata only; neither command returns raw
 bearer material. The API's reported API-key scope mask is retained in JSON but
@@ -1397,6 +1842,34 @@ Requeue also accepts the header, but the API does not deduplicate it. Each
 invocation moves recipients eligible at that time, so a retry can move newly
 failed recipients rather than returning the first result.
 
+#### Receipt-timed follow-ups (beta)
+
+Add `followUp` to the `campaign create` input to send each recipient one more
+message from the number that sent the first one:
+
+```json
+{
+  "name": "Spring offer",
+  "followUp": {
+    "delaySeconds": 86400,
+    "expirySeconds": 604800,
+    "message": {"type": "text", "text": "Still interested?"}
+  }
+}
+```
+
+The wait starts at the first delivery, and the first read restarts it until
+sending starts. A follow-up not sent before `expirySeconds` (counted from the
+first send) never sends; replies and opt-outs cancel it. The campaign must send
+a single first message, and follow-up text cannot contain tracked links. A team
+that is not enrolled receives `403 feature_unavailable`. There is no campaign
+update command; change or remove a draft's follow-up with `polymorfa api`.
+
+`campaign view` shows the follow-up's message type, wait and expiry, never its
+text. `campaign analytics` adds follow-up outcomes after the first-message
+counts, and `campaign recipients list` adds a follow-up status column when a
+recipient has one. `--json` returns the API response unchanged.
+
 ### Campaign recipients
 
 Recipients are appended to a campaign that has not started sending, and read
@@ -1444,6 +1917,33 @@ List returns `{data, page}`. Pass `page.nextCursor` back as `--cursor` while
 `page.hasMore` is true; the CLI prints the next cursor in human output. Filter
 with `--status queued|sending|sent|delivered|read|failed|skipped`. A recipient
 suppressed by an opt-out appears as `skipped` with `lastError` `opted_out`.
+
+#### Campaign conversions (beta)
+
+Campaign conversion reporting is a beta. The team must be enrolled, otherwise
+both commands exit with the API's `403`. They use a team API key and the
+campaign's project ID:
+
+```shell
+polymorfa campaign conversions record campaign_123 \
+  --project-id project_123 \
+  --recipient recipient_123 \
+  --event-id order-1001 \
+  --event-type purchase \
+  --occurred-at 2026-10-01T10:00:00Z \
+  --amount-minor 1999 --currency USD
+
+polymorfa campaign conversions report campaign_123 --project-id project_123
+```
+
+Name the recipient by its ID from `campaign recipients list`. A conversion is
+attributed when `--occurred-at` is within 7 days after that recipient was sent.
+Otherwise the outcome is `outside_window` or `not_sent`. A recipient on the
+opt-out list is recorded as `opted_out`, with no link and no value. Running
+`record` again with the same `--event-id` and details prints `Already
+recorded`; changed details are refused. `--amount-minor` is in the currency's
+minor unit and needs `--currency`. Human output never prints the event ID.
+The report lists reported value per currency and never converts between them.
 
 The source exposes no campaign update, delete, validate, archive, duplicate,
 event, history, or replay route on the Messaging surface. The CLI does not
@@ -1530,6 +2030,11 @@ polymorfa webhook create \
   --input webhook.json \
   --secret-out ./webhook.secret
 
+polymorfa webhook update webhook_123 \
+  --owner project \
+  --project project_123 \
+  --phone-offline-start-day 8
+
 polymorfa webhook test webhook_123 \
   --owner project \
   --project project_123 \
@@ -1544,6 +2049,21 @@ polymorfa webhook delivery attempt list delivery_123 \
   --owner project \
   --project project_123
 ```
+
+`--phone-offline-start-day` on `webhook create` and `webhook update` sets the
+first day without the phone, from `7` to `13`, on which the webhook receives
+`session.phone_offline`. The API default is `10`. `off` removes that event from
+the webhook's event types; `webhook update` reads the saved event types when
+`--input` has none, and refuses `off` when it would leave no event. `webhook
+update` accepts the flag without `--input`. See
+[Phone offline warnings](https://docs.polymorfa.com/api/webhooks#phone-offline-warnings).
+
+`webhook test` requires `--event`. Team tests accept that event type only.
+Project tests can also read a JSON object with `body` and `sessionId` from
+`--input`; supply both fields together. The CLI rejects a team body or an
+incomplete project body before requesting a delivery. The `body` must be an
+exact base64-encoded native event for an HMS-enabled Number in the same
+project. See the [webhook guide](https://docs.polymorfa.com/api/webhooks#send-a-test-delivery).
 
 Webhook creation and secret rotation return a signing secret once. JSON and
 noninteractive runs require `--secret-out`; the CLI preflights a new path and
@@ -1627,6 +2147,35 @@ blocked, stopping discards queued output instead of waiting for the reader.
 Use `event stream` to consume events in a script. Use `listen` to forward exact
 bodies to a local webhook handler.
 
+### Request logs
+
+`polymorfa logs tail` prints a project's API requests as they happen, like
+`stripe logs tail`. It needs a team key or project token with `logs:read`.
+
+```shell
+polymorfa logs tail \
+  --project project_123 \
+  --status 4xx,5xx \
+  --method POST
+```
+
+Each line shows the time, method, route pattern, status, duration, error code,
+source, request ID and W3C trace ID. The command prints the 10 most recent
+matching requests (`--backfill 0` to 100), then polls for new ones every
+`--poll-interval` seconds (default 2, 1 to 60). It reads again at once while
+more requests are waiting, and waits for `Retry-After` when the read limit of
+120 a minute is reached. `--json` writes one JSON line per request.
+`--max-events` stops after a fixed number. Ctrl-C stops with exit code 0.
+
+Filters: `--status` (codes or classes), `--method`, `--route` (exact pattern
+such as `/messaging/:session/messages`), `--source api|mcp`, `--credential`
+(key or token ID), `--request-id` and `--trace-id`. Send a `traceparent` header
+with your API requests to find them by your own trace ID.
+
+`polymorfa logs list` prints one page, newest first, with the same filters plus
+`--since`, `--until` and `--limit`. Pass the printed `--cursor` for older
+requests. Requests older than 30 days are not listed.
+
 ## Local event listening and forwarding
 
 `polymorfa listen` opens the project listener stream and can forward the exact
@@ -1647,6 +2196,15 @@ default; explicit redirect following revalidates each hop. The listener writes
 checkpoints only after stdout and every forwarding destination have accepted an
 event. A cursor gap stops with a nonzero exit unless `--on-gap continue` was
 selected.
+
+Use `-H 'X-Local-Mode: test'` to add a custom header to forwarded requests.
+Repeat `-H` for multiple headers. Reserved authentication, framing, and
+Polymorfa signature headers cannot be overridden; custom headers cannot follow
+a cross-origin redirect. Avoid passing secrets in command arguments. For a
+self-signed loopback HTTPS handler, add `--skip-verify`. This option never
+changes verification for the Polymorfa API or a public forwarding destination.
+`--json` already provides JSONL output. Noninteractive and JSON forwarding
+require `--forward-secret-out`; the per-run secret is not printed to stdout.
 
 ## Trigger test events
 
@@ -1694,7 +2252,7 @@ test the end of a restriction. `--from-session OTHER_TEST_NUMBER` sends a real s
 another Test number in the project instead, producing an ordinary
 `message.received` event you can reply to. Use `--json` for one JSON document.
 
-## MCP listener controls
+## Local MCP tools
 
 The package includes a standards-based stdio MCP server for Codex and Claude:
 
@@ -1711,6 +2269,13 @@ The MCP tools `polymorfa_listen_start`, `polymorfa_listen_status`, and
 They do not create detached daemons. MCP responses contain listener IDs,
 status, and safe counters, never primary credentials, listener credentials,
 forwarding secrets, or unrestricted payloads.
+
+`polymorfa_session_list` is a read-only discovery tool for one explicit project
+UUID. It uses the selected CLI organization API key with `sessions:read` and
+returns session ID, name, stored status, and test-mode flag. It omits phone
+numbers, credentials, and message data. The tool does not probe the live device.
+Project tokens and Messaging client tokens cannot use this tool. A failed read
+returns a generic error without exposing the credential or API response body.
 
 ## Agent skills
 
@@ -1813,15 +2378,20 @@ polymorfa api /platform/customers --surface platform \
   page bodies and whose `metadata.pages` is the page count.
 - `--slurp` requires `--paginate` and combines the page bodies into one array
   before `--jq` or `--template` runs. Without `--slurp`, filters run on each page.
+  In human output, `--slurp --include` prints an array with each page's body and
+  response metadata. `--json` prints one document with an array of page bodies
+  and the final response metadata plus the page count; `--include` only changes
+  human output.
 - `-q/--jq` runs a jq 1.8 program with an embedded WebAssembly jq, so no `jq`
-  binary is required. Strings print without quotes. The jq runtime has its own
+  binary is required. Strings print without quotes and keep leading and trailing
+  whitespace. The jq runtime has its own
   environment, so `$ENV` does not expose your shell variables or credentials.
 - `-t/--template` renders a Go-style template: `{{.path.to.value}}`,
   `{{range .list}}…{{else}}…{{end}}`, `{{if .value}}…{{else}}…{{end}}`,
   `{{$.root}}` inside a range, `{{json .x}}`, `{{len .x}}`, `{{upper .x}}`,
   `{{lower .x}}`, `{{join ", " .list}}`, string literals such as `{{"\n"}}`,
   comments, and `{{-`/`-}}` whitespace trimming. Missing values render as an
-  empty string.
+  empty string. Quoted strings can contain `}}`.
 - `--jq`, `--template`, and `--json` are mutually exclusive, as are `--include`
   and a filter.
 
@@ -1911,20 +2481,72 @@ server error. Add credit or resolve the billing restriction in the Console befor
 retrying. HTTP 409 from an expired tier quote also requires reviewing a new quote;
 the CLI never creates or confirms a replacement purchase automatically.
 
-For a tier change, use the raw API command to create a quote with
-`POST /platform/sessions/{sessionId}/tier-quotes`, review the returned charge,
-then explicitly submit its `quoteId` with `PATCH /platform/sessions/{sessionId}`.
-Read `GET /platform/sessions/{sessionId}/tier-quotes/{quoteId}` until the result is
-applied or rejected. Store the full JSON request in a file and pass `--input` when
-it contains numeric values or `null`; `--field` creates string values.
+### Number tier changes
+
+Tier changes use an organization API key. Quote first, review the credit charge
+and effective time, then confirm that exact quote:
+
+```shell
+polymorfa session tier quote support --tier pro
+polymorfa session tier confirm support --quote QUOTE_UUID --yes
+polymorfa session tier status support QUOTE_UUID
+```
+
+`--tier inherit` restores the project default tier. A quote does not change the
+Number or spend credit. `confirm` requires `--yes` and accepts
+`--idempotency-key`; it never creates a replacement quote. Read `status` until
+the change is applied or rejected.
+
+A Hybrid Link Number leaving Pro needs a choice. Without one, the quote fails
+with `hybrid_choice_required` (exit code 4) and the CLI names the flags to
+add. This includes `--tier inherit` when the project default lacks Hybrid Link.
+
+```shell
+# Keep one connection; the other is disconnected when Pro ends.
+polymorfa session tier quote support --tier standard --keep linked_devices
+# Split into two Standard Numbers. This Number keeps the Official API; Linked
+# Devices moves to a new Number named support-linked without re-pairing.
+polymorfa session tier quote support --tier standard --split --stay official_api --new-number-name support-linked
+```
+
+The choice runs when the paid Pro window ends. A queued change that is rejected
+because no choice is recorded shows `rejected (hybrid_choice_required)` in
+`session tier status`; quote again with a choice. To merge two Numbers that are the
+same WhatsApp Business number into one Hybrid Link Number, list the pairs, then
+quote Pro on the Number that keeps its ID:
+
+```shell
+polymorfa session hybrid-merge-candidates --project PROJECT_UUID
+polymorfa session tier quote KEEP_UUID --tier pro --merge-with OTHER_UUID
+```
+
+`hybrid-merge-candidates` marks each Number "can be absorbed" or "must be
+kept". A Number that uses hosted message storage must be kept, so quote the
+merge on it and pass the other Number to `--merge-with`; the output prints that
+command for eligible pairs. An ineligible pair shows its reason, such as
+`pairing_in_progress`, `transition_in_progress` or `hms_enabled`. Listing
+candidates requires Hybrid Link access; without it the command exits with code 3
+(`feature_unavailable`).
+
+`--keep`, `--split` and `--merge-with` are mutually exclusive, and invalid
+combinations exit with code 2 before any request. The quote, confirm and status
+output shows the Hybrid Link plan and its status (`scheduled`, `running`,
+`completed`, `failed` or `cancelled`) separately from the tier change, plus the
+new Number ID after a split. When the output says action is required, disconnect
+the Official API in the WhatsApp Business app under Settings > Account >
+Business Platform > Disconnect Account. An ineligible Number or pair fails with
+`hybrid_transition_ineligible` (exit code 4) and the API's reason in the message.
+Merging requires Hybrid Link access, which the API enforces.
+
+These commands use published SDK `0.1.0-dev.20261004011426`, which pins API
+contract `171a9683ff45d11a4b5d3917dc428ad2722b0d99`.
 
 ### Hybrid Link controls
 
-These additions are under development and are not available in the published
-CLI. They are tested against the companion Hybrid Link SDK source using API
-contract `d5245f76d5d6bc7b9af439571bd1f157185b1b87`. The registry SDK dependency
-must be updated after that SDK artifact is published before releasing this CLI.
-The companion SDK defaults native requests to API revision `2026-09-22`. An
+These additions require a CLI release containing the Hybrid Link commands.
+They use published SDK `0.1.0-dev.20261004011426`, which pins API contract
+`171a9683ff45d11a4b5d3917dc428ad2722b0d99`. The SDK defaults native requests
+to API revision `2026-09-22`. An
 explicit `--api-version` or saved-profile version remains explicit; retired
 versions fail without an automatic upgrade or resend.
 
@@ -2002,3 +2624,231 @@ Invocation input contains an optional `deploymentId`, `trigger` (`test` or `http
 Use `function invocation list FUNCTION_UUID` and `function invocation view FUNCTION_UUID INVOCATION_UUID` to reconcile a result. Invocation inputs, responses and customer log text are not retained. `--json` includes the transient result when the initial invocation returns it. The default display prints metadata and HTTP status without response content. An uncertain, failed, running or unavailable invocation, or an HTTP response of 400 or higher, exits with code 8 after printing its receipt. Check customer effects before using a new key unless `retryable` explicitly says execution did not start.
 
 Function, deployment, secret and invocation lists accept `--limit 1..100` and `--before UUID`. Deployment lists return metadata without source, including with `--json`. `function deployment view` exposes source with `--json`; secret reads always return metadata.
+
+### Call reaction and hand commands
+
+`calls react CALL --connection-id CONNECTION --emoji '👍'` sends a reaction;
+`--clear` clears it. `calls hand CALL --connection-id CONNECTION --raised`
+raises the Number's hand; omit `--raised` to lower it. A server credential may
+name `--participant`; a client token acts as its own participant. The named
+connection must still be attached to the call.
+
+Reactions are transient and are never retried automatically. Hand state is
+shared by the Number's clients.
+
+### Call links
+
+```sh
+polymorfa calls link create --session support
+polymorfa calls link create --session support --video --json
+printf '%s' "$CALL_LINK" | polymorfa calls link preview --session support
+```
+
+`calls link create` creates a WhatsApp call link from a Linked Device Number
+and prints its URL. It does not place or join a call. The request is never
+retried; if the outcome is unknown, check before creating another link.
+Anyone with the link can use it in WhatsApp, so keep it private.
+
+`calls link preview` reads a link without joining the call and prints its
+creator, whether joining needs approval, and whether WhatsApp reports the
+Number as a link administrator. It reads the link, or its bare token, from
+standard input, so the token stays out of shell history and process listings.
+A full link sets voice or video; pass `--video` with a bare video-link token.
+
+Both commands require a server API key or project token, a Linked Device
+Number, and calling enabled for that Number. Client tokens are refused before
+a request is sent, and Cloud API-only Numbers are refused by the API.
+
+### Stored call records
+
+```sh
+polymorfa calls list --outcome missed --limit 25 --json
+polymorfa calls list --outcome missed --limit 25 --cursor CURSOR --json
+polymorfa calls view CALL_ID --json
+```
+
+`calls list` reads one page through the existing Calls records API. Reuse the
+same filters when following a cursor. These reads need `sessions:read` and a
+server credential. Project tokens only read calls originally owned by their
+project. Human output labels unmeasured duration as `unknown`.
+
+`calls view` reads one stored call. Its JSON output includes bounded event
+history, participant and connection lifetimes, and allowlisted diagnostics. It
+does not retrieve media or webhook deliveries.
+
+### Spending limits and funding priority
+
+With an organization key carrying `billing:read`, inspect current controls:
+
+```bash
+polymorfa billing limits list --project <project-uuid> --json
+polymorfa billing priority list --json
+```
+
+Changes require `billing:manage` and Pay-As-You-Go. Supply the observed revision:
+
+```bash
+polymorfa billing limits set <number-uuid> --scope number --credits 1000 --expected-revision 0
+polymorfa billing limits set <project-uuid> --scope project --unlimited --expected-revision 1
+polymorfa billing priority set <number-uuid> --scope number --priority 10 --expected-revision 0
+polymorfa billing priority reorder --scope number --project <project-uuid> --ids <first-uuid>,<second-uuid> --expected-revision 1
+```
+
+A reorder includes every active project, customer or real number in the selected
+project, highest first. A stale or incomplete order fails without partial
+changes. Monthly limits reset at 00:00 UTC on the first day; zero blocks new
+charges and null removes the limit. Existing paid service keeps its window.
+Project and client credentials cannot use these financial controls. Commands
+use the pinned SDK's authenticated raw transport; no unpublished SDK method is
+required. CLI publication and API deployment remain separate release gates.
+This source follows the financial-control contract at API commit
+`171a9683ff45d11a4b5d3917dc428ad2722b0d99`.
+
+Read or update one resource without loading the team directory:
+
+```bash
+polymorfa billing controls get <customer-uuid> --scope customer --json
+polymorfa billing controls set <customer-uuid> --scope customer --credits 1500 --priority 25 --expected-budget-revision 0 --expected-priority-revision 0
+polymorfa quicklink create --project <project-uuid> --limit-credits 250 --priority 30 --json
+```
+
+The combined save is atomic and requires both observed revisions. Project
+priority wins first. Numbers inherit customer priority; a higher number
+priority overrides it within the project. A customer's assigned numbers share
+its monthly cap. Creation controls apply to a real new
+number before pairing admission; testing and supplementary connections reject
+these fields. Omit them to keep the default unlimited cap and priority zero.
+
+Read one project's funding controls and save its combined customer and number
+order:
+
+```bash
+polymorfa billing priority list --project <project-uuid>
+polymorfa billing priority reorder --scope resource --project <project-uuid> --ids number:<number-uuid>,customer:<customer-uuid> --expected-revision 5
+```
+
+Include every active customer and real number, highest priority first. For
+thousands of resources, put the complete order in a JSON file:
+
+```json
+["number:<number-uuid>", "customer:<customer-uuid>"]
+```
+
+```bash
+polymorfa billing priority reorder --scope resource --project <project-uuid> --ids-file order.json --expected-revision 5
+```
+
+Use either `--ids` or `--ids-file`. Funding order never bypasses a spending cap.
+
+### WhatsApp Analytics
+
+Read message and call outcomes, response times, number activity and connection
+vitals with a credential carrying `sessions:read`. Enable Analytics in the
+Console to collect business data. Project credentials stay within their project.
+
+```bash
+polymorfa analytics get --project PROJECT_UUID --json
+polymorfa analytics get --project PROJECT_UUID --session-id NUMBER_UUID --since 2026-10-01T00:00:00Z --until 2026-10-03T00:00:00Z --json
+polymorfa analytics metrics --project PROJECT_UUID --window-hours 24 > analytics.prom
+polymorfa analytics metrics --project PROJECT_UUID --segments --format openmetrics
+```
+
+JSON reads default to the preceding 30 days. Metrics cover 1–168 completed UTC
+hours, defaulting to 24. They are overlapping-window gauges; do not apply
+`rate()` or `increase()`. Read and reply rates use completed 24-hour conversation
+windows. Null rates indicate no denominator or incomplete coverage. Phone
+activity spans and quiet gaps describe observed signals, not device power state.
+Disabled Analytics returns no business aggregates.
+
+These commands use the pinned SDK's `analytics.get` and `analytics.metrics`
+methods and shared response types. A CLI release containing these commands and
+an API deployment exposing Analytics are separate requirements.
+
+## Package release workflow
+
+CLI development and release PRs target `main`. Nightly packages use the `dev` npm tag after matching staging API acceptance; stable packages follow production acceptance. Each package pins an exact accepted SDK version. See [the release guide](RELEASING.md).
+
+### Audience segments and drip sequences (publication pending)
+
+These commands are prepared in source and await the matching SDK prerelease.
+The existing SDK dependency is unchanged. Server beta access and scopes still
+apply; source CI does not establish package or hosted availability.
+
+```sh
+polymorfa campaign segments list --limit 25
+polymorfa campaign segments get <segmentId>
+polymorfa campaign segments create --input segment.json
+polymorfa campaign segments update <segmentId> --input segment-update.json
+polymorfa campaign segments delete <segmentId> --revision <observedRevision>
+polymorfa campaign segments count <segmentId>
+polymorfa campaign segments count --input rules.json
+polymorfa campaign create --segment <segmentId> --project-id <projectId> --input campaign.json --drip --drip-enrollment continuous
+polymorfa campaign update <campaignId> --project-slug <slug> --drip-enrollment audience
+polymorfa campaign enroll <campaignId> --project-slug <slug> --phone +5511999990000
+polymorfa campaign analytics <campaignId> --project-slug <slug>
+polymorfa campaign view <campaignId> --project-slug <slug>
+```
+
+Segment creation input is `{ "name": "VIP", "rules": { "match": "all",
+"groups": [{ "match": "all", "conditions": [{ "field": "tag",
+"operator": "contains", "value": "vip" }] }] } }`. Update includes the observed
+`expectedRevision` and the name, rules or both. Count accepts a saved segment ID
+or a file containing only the rules object. Saved count reports the evaluated
+revision; launch evaluates again and freezes the snapshot. Counts distinguish
+matched, opted out, withheld consent and eligible profiles.
+
+Segments require a team API key. Reads and saved count require `campaigns:read`;
+mutations and unsaved count require `campaigns:manage`. Both audience betas are
+required for create/update/count. Read/delete remain available after withdrawal.
+A stale revision, a segment in use by a draft, a deleted-segment relaunch or a
+bounded evaluation timeout returns 409. Re-read and reconcile stale revisions;
+simplify rules before retrying a timeout. Permission/beta errors stay 403.
+
+Use `--drip-exit-on-reply` / `--no-drip-exit-on-reply` and
+`--drip-exit-on-link-click` / `--no-drip-exit-on-link-click` to set explicit
+flags. Omitted PATCH fields preserve stored settings. Close enrollment with
+only `--drip-enrollment audience`; use `--remove-drip` only on an unlaunched
+draft. Steps belong in the JSON input's `messagesArray`: delays up to 30 days,
+whole multiples of `delayUnit`, and later-step `sendWindow` with one to seven
+weekdays and one to four hour ranges. Link GETs from scanners/previews also
+trigger enabled exits; HEAD does not. Beta, linked-device/test sender, consent,
+opt-out and funding checks remain authoritative.
+
+Enrollment is idempotent per phone, including completed/exited contacts. An
+existing contact displays "Already enrolled"; an opted-out contact stays
+skipped. Add `--variables variables.json` for per-contact variables. View shows
+configured enrollment open/closed, current pause reason when present and live
+per-step stats. Analytics shows entered/waiting/sent/delivered/read/replied/
+exited/failed per step. `--json` retains the response data and metadata.
+
+Composed drips use `campaign create --project-id <projectId> --drip --input
+campaign.json` even without a segment. Platform accepts `messagesArray`; the
+Messaging create contract does not. Use `campaign update <campaignId>
+--project-id <projectId> --input changes.json` to replace composed steps. Use
+exactly one project selector. Platform create has no idempotency-key contract;
+`--idempotency-key` is supported only with Messaging create (`--project-slug`).
+
+### Campaign contact frequency caps (beta)
+
+```sh
+polymorfa campaign settings frequency-cap get
+polymorfa campaign settings frequency-cap set --max-per-24-hours 2 --max-per-7-days 5 --revision 0
+polymorfa campaign settings frequency-cap remove --revision 1
+polymorfa campaign create --project-slug launch --input campaign.json --frequency-cap-24-hours 1
+polymorfa campaign update CAMPAIGN_ID --project-slug launch --frequency-cap-24-hours 1
+polymorfa campaign update CAMPAIGN_ID --project-slug launch --remove-frequency-cap
+polymorfa campaign recipients list CAMPAIGN_ID --project-slug launch --status skipped --reason frequency_cap
+```
+
+Read the revision before setting or removing team limits. A stale write returns
+409; read again and reconcile before retrying. Set replaces both windows; an
+omitted window means no limit. Team settings require a team API key with
+`campaigns:read` or `campaigns:manage`. New limits require beta access and can
+return `403 feature_unavailable`; removal does not require beta access.
+Campaign flags replace the campaign cap and keep the team cap in force.
+Campaign analytics shows `Skipped by frequency cap`; recipient output includes
+`frequency_cap`. Changing limits never retries settled skips.
+
+This implementation keeps the published SDK pin unchanged. Release waits for a
+matching SDK prerelease and accepted API contract; source support does not imply
+package publication or beta availability.
