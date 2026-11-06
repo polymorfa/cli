@@ -62,6 +62,81 @@ paths, and links. `--json` prints a result array. Open launches the exact page
 in a browser; `--print` emits its URL instead. These commands use network
 access but do not use your Polymorfa credentials.
 
+## Set up coding agents
+
+Install the [Polymorfa agent kit](https://github.com/polymorfa/agent-kit) in
+coding agents detected on your machine:
+
+```shell
+polymorfa agent setup --dry-run
+polymorfa agent setup
+polymorfa agent setup --client claude --client codex --yes
+```
+
+Setup detects `claude`, `codex`, `gemini`, and `cursor` on PATH. A `~/.cursor`
+directory also detects Cursor. Repeat `--client` to select clients explicitly;
+an unavailable requested client fails. Without `--yes`, setup asks for confirmation
+immediately before the first installation. Instructions and already-installed
+clients need no confirmation. Non-interactive installation requires `--yes`.
+
+| Client      | Installation behavior                                                                                                                                                                          |
+| ----------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Claude Code | Adds `polymorfa/agent-kit` as the `polymorfa` marketplace, then installs `polymorfa@polymorfa`. The repository must contain its marketplace manifest.                                          |
+| Codex       | Checks local help for Git marketplace and plugin installation support, then adds the same marketplace and plugin through the native installer. Older versions receive repository instructions. |
+| Gemini CLI  | Installs the repository through `gemini extensions install`, passing `--consent` after setup confirmation.                                                                                     |
+| Cursor      | Prints instructions to install from the Cursor marketplace or repository.                                                                                                                      |
+
+`--dry-run` prints exact installation commands. It may run Codex help probes,
+but never runs installers or reads installation listings. Setup does not load
+Polymorfa profiles, read credentials, or edit client settings directly. Client
+installers manage their own configuration. Their output is withheld because it
+may contain private local data. Each client command has a 120-second deadline and a
+1 MiB UTF-8 output limit. Windows tree cleanup is attempted for up to five more
+seconds. Timeout, overflow and cleanup failure report failed. Each client gets a
+separate result; any failure
+makes the command exit with code 1. Manual instructions are reported separately
+and do not claim installation succeeded.
+
+Repeat runs use native plugin or extension listings to report `already installed`
+when the client can identify the kit. Existing marketplaces are retained only
+when their source matches agent-kit; a name conflict fails without replacing it.
+Installation adds skills, plugin manifests, and the public documentation MCP.
+It does not configure authenticated API access. Marketplace publication, native
+client acceptance, and CLI package publication remain separate steps.
+
+## Generate the CLI reference
+
+```shell
+npm run docs:reference
+npm run docs:reference:check
+```
+
+The generator builds the CLI, creates an oclif manifest from compiled commands,
+and writes `contracts/cli-reference.json`. Schema version 1 includes `cliVersion`
+and sorted public commands with space-separated IDs, summaries, descriptions,
+usage arrays, aliases, positional arguments, flags, examples, and command state.
+It excludes hidden commands, aliases, arguments, and flags. Arguments retain
+positional order; commands and flags are sorted by name. Missing optional scalar
+metadata is `null`, missing text is an empty string, and missing lists are empty.
+Examples contain `command` and `description`; plain oclif examples have an empty
+description. Fallback usage includes positional arguments and `[flags]`; flag
+details live in the separate `flags` array.
+
+The docs site can consume this file to build one `/cli` page per command. This
+repository exports the reference; it does not publish those pages. `npm run
+verify` rebuilds the CLI and fails when the committed reference is stale. Regenerate
+it whenever public command metadata or the package version changes. No timestamp
+or local path is included.
+
+## Browser build
+
+Build the CLI module for a browser, then check the emitted artifact:
+
+    npm run build:browser
+    npm run verify:browser
+
+The registry comes from the real command files. Commands needing the installed CLI remain in that inventory with an unsupported reason. Agent setup is refused before loading its implementation or reading local client configuration; the installer is excluded from the bundle. Verification checks the emitted dependency graph and runs a synthetic text send with no network access. Package and Docs publication remain separate steps.
+
 ## Authentication profiles
 
 Until the backend exposes a revocable CLI device-authorization flow, login
@@ -1014,6 +1089,9 @@ polymorfa calls settings set --session support --calls-enabled=false \
   --expected-revision 3
 polymorfa calls settings set --session support \
   --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
+polymorfa calls settings set --session support \
+  --simultaneous-calls=true --acknowledge-risk
+polymorfa calls settings set --session support --simultaneous-calls=false
 
 polymorfa calls retention get
 polymorfa calls retention set --policy compliance --expected-revision 0
@@ -1081,7 +1159,21 @@ never answers or declines on its own.
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
   call. On a Cloud API session, `--host-cloud-api-calls=true` has Polymorfa
   Calls answer incoming calls; with the default `false`, your Graph API
-  integration answers them. `calls settings set` sends only the flags you pass; the other
+  integration answers them. `--simultaneous-calls=true` lets a linked-device
+  number hold any number of calls at once (incoming, placed, and campaign
+  calls); Cloud API numbers ignore it. WhatsApp's own apps never hold two calls
+  at once. While it is on, and for 30 days after you turn it off, Ban Insurance
+  does not cover a ban of the number: a claim opens as `denied` with verdict
+  `simultaneous_calls`. Turning it on requires `--acknowledge-risk`; without
+  it the command exits with code 2 and sends nothing. Only a team API key can
+  turn it on. `--simultaneous-calls=false` needs no acknowledgment. After it
+  is off, `calls settings get` and `set` print `Ban Insurance exclusion ends`
+  with the server's time (`simultaneousCallsCoverageExcludedUntil` in
+  `--json`), until that time passes. Ban Insurance excludes a ban when
+  simultaneous calls were on during the 30 days before it; this timestamp is the
+  cutoff for a new ban from that period. Nothing is printed while the setting is on, and a missing or null
+  end does not mean the number is covered.
+  `calls settings set` sends only the flags you pass; the other
   settings keep their values. `calls settings get` and `set` print the
   settings `revision`, which increases on every change and is `0` while the
   session uses the defaults. Pass `--expected-revision <n>` to apply the
@@ -1590,7 +1682,9 @@ patches. Customer incident reports and retractions also require an idempotency k
 acknowledgement and enforcement appeals remain dashboard-only and are not
 available through server-key commands. Claim `amountCents`, `measuredCents`, and
 `capCents` are credit quantities with up to six decimal places, not cash minor
-units; text output labels them as credits. Use `--json` to retain explanations,
+units; text output labels them as credits. `claim view` prints whether
+simultaneous calls were on during the claim window when the claim records it;
+a claim with verdict `simultaneous_calls` is denied and pays nothing. Use `--json` to retain explanations,
 observed account state, collection metadata, action outcomes, cursors, and
 request metadata.
 
