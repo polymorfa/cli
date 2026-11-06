@@ -1808,7 +1808,8 @@ returned, follow it with `polymorfa operation wait` or
 `campaign test-send` sends one real message from a draft to a team-connected
 seed number. Its JSON input requires `sessionId` (the sending number's session
 ID) and `to` (the seed phone in E.164 format); `sampleRecipientId` and
-`variables` are optional. The command requires `--yes` and an explicit
+`variables` (an object of string, number or boolean values) are optional. The
+CLI rejects input that does not match before contacting the API. The command requires `--yes` and an explicit
 `--idempotency-key`. A timeout or `result_unknown` does not prove the message
 failed. Check the seed phone and reuse the same key to reconcile the attempt;
 do not send with a new key until you know the outcome. Test sends are limited

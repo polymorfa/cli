@@ -219,6 +219,42 @@ describe('Messaging campaign commands', () => {
     expect(server.requests[0]?.headers['idempotency-key']).toBe('test_1')
   })
 
+  test.each([
+    ['a non-E.164 seed phone', {to: 'not-a-phone'}],
+    ['a seed phone without a plus sign', {to: '15550000002'}],
+    ['non-object variables', {to: '+15550000002', variables: 42}],
+    ['an array of variables', {to: '+15550000002', variables: ['Ada']}],
+    [
+      'a nested variable value',
+      {to: '+15550000002', variables: {name: {first: 'Ada'}}},
+    ],
+    [
+      'a non-string sample recipient',
+      {to: '+15550000002', sampleRecipientId: 7},
+    ],
+  ])(
+    'rejects campaign test input with %s before sending',
+    async (_case, fields) => {
+      const input = await jsonInput('test-send.json', {
+        sessionId: '00000000-0000-4000-8000-000000000001',
+        ...fields,
+      })
+      server = await startHttpServer({body: {data: {}, success: true}})
+
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          `campaign test-send campaign_1 --project-slug project_1 --input ${input} --idempotency-key test_1 --yes --json`,
+        ),
+      )
+
+      expect(result.error).toBeDefined()
+      expect(
+        result.stdout + result.stderr + String(result.error?.message),
+      ).toMatch(/invalid_campaign_test_input|Campaign test input/)
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
   test('requires explicit send confirmation before contacting the API', async () => {
     const input = await jsonInput('test-send.json', {
       sessionId: '00000000-0000-4000-8000-000000000001',
