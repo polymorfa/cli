@@ -2,9 +2,9 @@
   "sourceAccepted": false,
   "published": false,
   "apiVersion": "2026-09-22",
-  "apiSource": "2e0a5054c31d8d1786e884c7216508fe4a3b86fd",
-  "sdkSource": "8fdf048a221579841bf3b4d0228b85e55903c3c9",
-  "sdkSnippetExport": "e28017689b2ad0acc0e9b3f76992d6b582fe0b4c",
+  "apiSource": "0983e9263de1f0887b249faf9d85207d543989e3",
+  "sdkSource": "4060034333f67f8b06e78b274f4172bef977d78b",
+  "sdkSnippetExport": "3319665ac1f43e2d7d8b1f52b62f05a36d0f775e",
   "physicalPackageSha256": "34b858821df0405c215306997a3e3cfdbea1cf404db90c09422be4075018cda4",
   "publishedDependencyUnchanged": true,
   "operations": ["set_approval_required", "admit", "deny"],
@@ -15,10 +15,10 @@
     "accepted API and SDK source",
     "matching staging acceptance before nightly",
     "matching production acceptance before stable",
-    "coordinator GO before push",
     "whole CLI compatibility with the candidate SDK",
     "native paired-host waiting-room moderation acceptance",
-    "matching published SDK version before dependency pin"
+    "matching published SDK version before dependency pin",
+    "CLI source PR and publication after full candidate SDK compatibility"
   ],
   "acceptance": {
     "publishedDependency": "typecheck, build, lint, reference checks and focused calls tests pass; full suite 1174 pass, 1 existing loopback TLS failure, 1 candidate-only skip",
