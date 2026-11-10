@@ -97,7 +97,10 @@ const sent = await actual.runCommand(
     'Hello from Polymorfa',
   ],
   {
-    env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_' + 'fixture'.repeat(6)},
+    env: {
+      POLYMORFA_CLIENT_TOKEN:
+        'pmfa_ct_Zml4dHVyZWZpeHR1cmVmaXh0dXJlZml4dHVyZWZpeHR1cmVmaXh0dXJl',
+    },
     fetch: async (input, init = {}) => {
       requests.push({
         path: new URL(String(input)).pathname,

@@ -15,14 +15,13 @@
     "accepted API and SDK source",
     "matching staging acceptance before nightly",
     "matching production acceptance before stable",
-    "whole CLI compatibility with the candidate SDK",
     "native paired-host waiting-room moderation acceptance",
     "matching published SDK version before dependency pin",
-    "CLI source PR and publication after full candidate SDK compatibility"
+    "CLI merge and publication after the matching SDK dependency is pinned"
   ],
   "acceptance": {
-    "publishedDependency": "typecheck, build, lint, reference checks and focused calls tests pass; full suite 1174 pass, 1 existing loopback TLS failure, 1 candidate-only skip",
-    "candidatePackage": "native guest moderation wire fixture passes with physical SDK package; full candidate CLI upgrade blocked by canonical-credential fixture migration and CampaignRecipientFailureReason type narrowing",
-    "dependencyPin": "unchanged until full candidate SDK compatibility is established"
+    "publishedDependency": "format, lint, typecheck, build, reference checks and full suite pass: 1175 tests, 1 candidate-only skip; old SDK refuses unsupported controls before connecting",
+    "candidatePackage": "typecheck, build and all 1176 tests pass with physical SDK archive, including native held-connection guest moderation; emitted browser module and production audit pass",
+    "dependencyPin": "published version unchanged until matching SDK publication and API environment acceptance; full candidate source compatibility is verified"
   }
 }
