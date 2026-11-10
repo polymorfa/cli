@@ -1,0 +1,27 @@
+{
+  "sourceAccepted": false,
+  "published": false,
+  "apiVersion": "2026-09-22",
+  "apiSource": "0983e9263de1f0887b249faf9d85207d543989e3",
+  "sdkSource": "e6df859b2560c67a87f947f8c4cf13e2361cfc95",
+  "sdkSnippetExport": "b9454930a2a821cccde2881efeb4430a0a96e676",
+  "physicalPackageSha256": "34b858821df0405c215306997a3e3cfdbea1cf404db90c09422be4075018cda4",
+  "publishedDependencyUnchanged": true,
+  "operations": ["set_approval_required", "admit", "deny"],
+  "authority": "same held live media connection; backend checks call owner and current provider admin",
+  "replay": "never automatic; a matching acknowledgement is required",
+  "evidence": "POLYMORFA_GUEST_SDK_REQUIRED=1 native CLI calls-sockets fixture with candidate package",
+  "releaseGates": [
+    "accepted API and SDK source",
+    "matching staging acceptance before nightly",
+    "matching production acceptance before stable",
+    "native paired-host waiting-room moderation acceptance",
+    "matching published SDK version before dependency pin",
+    "CLI merge and publication after the matching SDK dependency is pinned"
+  ],
+  "acceptance": {
+    "publishedDependency": "format, lint, typecheck, build, reference checks and full suite pass: 1175 tests, 1 candidate-only skip; old SDK refuses unsupported controls before connecting",
+    "candidatePackage": "typecheck, build and all 1176 tests pass with physical SDK archive, including native held-connection guest moderation; emitted browser module and production audit pass",
+    "dependencyPin": "published version unchanged until matching SDK publication and API environment acceptance; full candidate source compatibility is verified"
+  }
+}

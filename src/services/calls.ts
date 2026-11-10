@@ -1,6 +1,11 @@
 import {
   assertCallMediaMuteSupported,
   muteCallMedia,
+  assertWaitingRoomSupported,
+  moderateWaitingRoom,
+  waitingRoomCommands,
+  observeWaitingRoom,
+  type CallWaitingRoom,
 } from './call-media-controls.js'
 import {randomBytes} from 'node:crypto'
 
@@ -653,6 +658,12 @@ export function renderCallParticipant(participant: VoipParticipant): string {
     participant.username === undefined
       ? undefined
       : `Username\t${participant.username}`,
+    (participant as VoipParticipant & {guest?: boolean}).guest === true
+      ? 'Guest\tYes'
+      : undefined,
+    typeof (participant as VoipParticipant & {name?: string}).name === 'string'
+      ? `Name\t${JSON.stringify((participant as VoipParticipant & {name?: string}).name)}`
+      : undefined,
     `State\t${participant.state}`,
   ]
     .filter((value): value is string => value !== undefined)
@@ -898,6 +909,11 @@ export type CallActivity =
       readonly reason?: string
     }
   | {
+      readonly type: 'waiting_room'
+      readonly callId: string
+      readonly room: CallWaitingRoom
+    }
+  | {
       readonly type: 'ended'
       readonly callId: string
       readonly reason: CallEndReason
@@ -914,6 +930,9 @@ function followCall(
   call: Call,
   activity: (activity: CallActivity) => void,
 ): void {
+  observeWaitingRoom(call, (room) =>
+    activity({type: 'waiting_room', callId: call.id, room}),
+  )
   call.on('claim', (claim) =>
     activity({type: 'claim', callId: call.id, ...claim}),
   )
@@ -1041,6 +1060,8 @@ export async function watchCalls(
 }
 
 export interface CallMediaInput extends CallsClientInput {
+  /** Explicit JSONL controls sent on this connection only, once it connects. */
+  readonly controls?: AsyncIterable<Uint8Array> | undefined
   readonly muted?: boolean | undefined
   /** Answer this inbound call; without it, the next inbound call. */
   readonly callId?: string | undefined
@@ -1068,6 +1089,13 @@ export type CallMediaStatus =
     }
   | {readonly type: 'placed'; readonly callId: string}
   | {readonly type: 'input_ended'; readonly bytes: number}
+  | {
+      readonly type: 'waiting_room_control_result'
+      readonly sequence: number
+      readonly action: string
+      readonly ok: boolean
+      readonly code?: string
+    }
 
 export interface CallMediaSummary {
   readonly bytesReceived: number
@@ -1103,6 +1131,7 @@ export async function bridgeCallMedia(
     input.place === undefined ? undefined : validateCallTarget(input.place)
   if (input.callId !== undefined) validateCallId(input.callId)
   if (input.muted === true) assertCallMediaMuteSupported()
+  if (input.controls !== undefined) assertWaitingRoomSupported()
   const client = createCallsClient(input, 'Carrying call media')
 
   let bytesReceived = 0
@@ -1209,6 +1238,41 @@ export async function bridgeCallMedia(
           connectionId: call.connectionId,
           sampleRate: call.audio.sampleRate,
         })
+        if (input.controls !== undefined) {
+          const runControls = async (): Promise<void> => {
+            let sequence = 0
+            for await (const command of waitingRoomCommands(input.controls!)) {
+              if (finished || call.ended) return
+              sequence += 1
+              try {
+                await moderateWaitingRoom(call, command)
+                status({
+                  type: 'waiting_room_control_result',
+                  sequence,
+                  action: command.action,
+                  ok: true,
+                })
+              } catch (error) {
+                // An uncertain command stays uncertain. The next line is a new user command.
+                const code =
+                  error instanceof CallsError &&
+                  /^[a-z_]{1,80}$/.test(error.code)
+                    ? error.code
+                    : 'waiting_room_control_failed'
+                status({
+                  type: 'waiting_room_control_result',
+                  sequence,
+                  action: command.action,
+                  ok: false,
+                  code,
+                })
+              }
+            }
+          }
+          void runControls().catch((error: unknown) =>
+            finish(callsClientError(error)),
+          )
+        }
         if (input.input === undefined) return
         pacePcm({
           input: input.input,

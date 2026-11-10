@@ -35,7 +35,7 @@ test('runs the JSON analytics command against the project-confined public route'
       POLYMORFA_API_KEY: undefined,
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_PROJECT_TOKEN:
-        'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg',
       POLYMORFA_BASE_URL: server.baseUrl,
     },
     () =>
@@ -69,7 +69,7 @@ test('rejects an invalid range before making a request', async () => {
   const result = await withEnvironment(
     {
       POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
       POLYMORFA_PROJECT_TOKEN: undefined,
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_BASE_URL: server.baseUrl,
@@ -121,7 +121,7 @@ test('shows call vitals when messaging measurements are unavailable', async () =
   const result = await withEnvironment(
     {
       POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
       POLYMORFA_PROJECT_TOKEN: undefined,
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_BASE_URL: server.baseUrl,
@@ -137,7 +137,7 @@ test('shows call vitals when messaging measurements are unavailable', async () =
   const json = await withEnvironment(
     {
       POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
       POLYMORFA_PROJECT_TOKEN: undefined,
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_BASE_URL: server.baseUrl,
@@ -166,7 +166,7 @@ test('exports raw collector text through the project-confined SDK transport', as
       POLYMORFA_API_KEY: undefined,
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_PROJECT_TOKEN:
-        'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg',
       POLYMORFA_BASE_URL: server.baseUrl,
     },
     () =>
@@ -200,7 +200,7 @@ test('rejects an HTML response instead of printing it as collector data', async 
   const result = await withEnvironment(
     {
       POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
       POLYMORFA_PROJECT_TOKEN: undefined,
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_BASE_URL: server.baseUrl,

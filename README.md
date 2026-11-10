@@ -2834,3 +2834,19 @@ Campaign analytics shows `Skipped by frequency cap`; recipient output includes
 This implementation keeps the published SDK pin unchanged. Release waits for a
 matching SDK prerelease and accepted API contract; source support does not imply
 package publication or beta availability.
+
+## Guest participants and waiting rooms (unreleased)
+
+Call participant output preserves optional `guest` and `name` fields. A name is unverified display text; the public participant ID remains the identity used for controls. A phone number is optional.
+
+`calls media --control-input commands.jsonl` reads explicit host commands on the same media connection. Use a file or pipe separate from PCM input; `--control-input -` reads stdin when `--input` does not use stdin. Each nonblank line is one command:
+
+```json
+{"action":"set_approval_required","enabled":true}
+{"action":"admit","participantId":"739182640518203"}
+{"action":"deny","participantId":"739182640518204"}
+```
+
+The command reports waiting-room state and matching results to stderr, as JSON lines with `--json`. It never opens another connection to impersonate the host or retries an uncertain command. Check the current roster before deciding to send another action after `waiting_room_control_unknown`. Rendered names are quoted so control characters cannot become terminal instructions.
+
+This source requires a Calls SDK that implements waiting-room controls. The pinned published SDK does not yet provide them, so the flag fails before connecting in ordinary builds. Physical-package acceptance uses the exact candidate SDK recorded in `contracts/calls-guests.candidate.json`; it is not registry or deployed API acceptance. Do not publish this counterpart until the matching SDK and API have the required environment acceptance.

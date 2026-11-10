@@ -11,8 +11,8 @@ import {
 } from '../helpers/http-server.js'
 
 const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-const CLIENT_TOKEN = 'pmfa_ct_browser_token'
+  'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0'
+const CLIENT_TOKEN = 'pmfa_ct_YnJvd3Nlcl90b2tlbg'
 const TOKEN = 'AbCdEf0123456789_link-token'
 
 describe('call link commands', () => {

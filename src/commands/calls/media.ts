@@ -1,8 +1,12 @@
-import {assertCallMediaMuteSupported} from '../../services/call-media-controls.js'
+import {
+  assertCallMediaMuteSupported,
+  assertWaitingRoomSupported,
+} from '../../services/call-media-controls.js'
 import {createWriteStream, type ReadStream, type WriteStream} from 'node:fs'
 import {open, stat} from 'node:fs/promises'
 import {once} from 'node:events'
 import {resolve} from 'node:path'
+import type {Readable} from 'node:stream'
 
 import {Args, Flags} from '@oclif/core'
 import {PolymorfaConfigurationError} from '@polymorfa/sdk'
@@ -37,6 +41,10 @@ export default class CallsMedia extends BaseCommand {
   ]
 
   static override flags = {
+    'control-input': Flags.string({
+      description:
+        'Read waiting-room commands as JSON lines from a file or - for stdin, on this live connection. Requires a Calls SDK with waiting-room support.',
+    }),
     muted: Flags.boolean({
       exclusive: ['input'],
       description:
@@ -81,6 +89,27 @@ export default class CallsMedia extends BaseCommand {
   async run(): Promise<void> {
     const {args, flags} = await this.parse(CallsMedia)
     if (flags.muted) assertCallMediaMuteSupported()
+    if (flags['control-input'] !== undefined) assertWaitingRoomSupported()
+    if (
+      flags['control-input'] === '-' &&
+      (flags.input === '-' || process.stdin.isTTY)
+    ) {
+      throw new PolymorfaConfigurationError(
+        'Pipe JSON lines to --control-input - separately from PCM input.',
+        'control-input',
+      )
+    }
+    if (
+      flags['control-input'] &&
+      flags['control-input'] !== '-' &&
+      flags.output !== '-' &&
+      (await sameFile(flags['control-input'], flags.output))
+    ) {
+      throw new PolymorfaConfigurationError(
+        '--control-input and --output name the same file.',
+        'control-input',
+      )
+    }
     if (flags.output === '-' && process.stdout.isTTY) {
       throw new PolymorfaConfigurationError(
         'Received audio is binary. Redirect standard output or pass --output <file>.',
@@ -117,6 +146,18 @@ export default class CallsMedia extends BaseCommand {
         inputFile = (await open(inputPath, 'r')).createReadStream()
       } catch (error) {
         throw inputFailed(inputPath, error)
+      }
+    }
+    let controls: Readable | undefined
+    if (flags['control-input'] !== undefined) {
+      try {
+        controls =
+          flags['control-input'] === '-'
+            ? process.stdin
+            : (await open(flags['control-input'], 'r')).createReadStream()
+      } catch (error) {
+        inputFile?.destroy()
+        throw inputFailed(flags['control-input'], error)
       }
     }
     const json = this.outputMode(flags) === 'json'
@@ -158,6 +199,7 @@ export default class CallsMedia extends BaseCommand {
       halt.abort()
     }
     input?.on('error', onInputError)
+    controls?.on('error', onInputError)
 
     // Flush and close the output file once; its errors arrive asynchronously.
     let outputClosed = false
@@ -177,6 +219,7 @@ export default class CallsMedia extends BaseCommand {
           exclusive: flags.exclusive,
           muted: flags.muted,
           input,
+          controls,
           leaveOnEnd: flags['leave-on-eof'],
           output,
           participant: flags.participant,
@@ -202,6 +245,8 @@ export default class CallsMedia extends BaseCommand {
       // it (a microphone, tail -f), which would keep the process alive.
       if (input === process.stdin) process.stdin.destroy()
       input?.off('error', onInputError)
+      controls?.destroy()
+      controls?.off('error', onInputError)
       await closeOutput()
     }
     if (fileError !== undefined) throw outputFailed(flags.output, fileError)
@@ -222,6 +267,8 @@ function renderMediaStatus(
       return `Connected to call ${status.callId} as connection ${status.connectionId} at ${status.sampleRate} Hz.`
     case 'placed':
       return `Placed call ${status.callId}; waiting for an answer.`
+    case 'waiting_room_control_result':
+      return `Waiting-room command ${status.sequence} (${status.action}): ${status.ok ? 'confirmed' : (status.code ?? 'failed')}.`
     case 'input_ended':
       return `Sent all input audio (${status.bytes} bytes).`
     default:

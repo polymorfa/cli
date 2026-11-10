@@ -10,7 +10,7 @@ import type {ProfileConfig} from '../../src/config/profiles.js'
 import {runDoctor, type DoctorDependencies} from '../../src/services/doctor.js'
 
 const KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0'
 const config: ProfileConfig = {
   activeProfile: 'work',
   profiles: {
@@ -254,7 +254,7 @@ describe('doctor', () => {
 
   test('does not remotely validate client tokens', async () => {
     const report = await runDoctor(
-      deps({env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_x'}}),
+      deps({env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_eA'}}),
     )
     expect(status(report).credential).toBe('skip')
     expect(report.ok).toBe(false)
