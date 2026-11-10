@@ -27,7 +27,7 @@ import {
 import {withEnvironment} from '../helpers/http-server.js'
 
 const API_KEY = 'pmfa_socket_test_key_0123456789'
-const CLIENT_TOKEN = 'pmfa_ct_socket_test_token'
+const CLIENT_TOKEN = 'pmfa_ct_c29ja2V0X3Rlc3RfdG9rZW4'
 const TIMESTAMP = '2026-09-16T10:00:00.000Z'
 const guestSdk =
   typeof (Call.prototype as unknown as {admitParticipant?: unknown})

@@ -86,7 +86,7 @@ describe('stored chat history commands', () => {
     const result = await withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,
-        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_${'A'.repeat(94)}`,
+        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg`,
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
       },
@@ -140,7 +140,7 @@ describe('stored chat history commands', () => {
     const result = await withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,
-        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_YnJvd3Nlcg',
         POLYMORFA_BASE_URL: server.baseUrl,
       },
       () => runCommand('chat list --session number_1 --json'),
@@ -210,7 +210,7 @@ describe('stored chat history commands', () => {
     return withEnvironment(
       {
         POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
       },
