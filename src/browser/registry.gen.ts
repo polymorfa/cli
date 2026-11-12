@@ -184,6 +184,7 @@ export const COMMAND_LOADERS: Readonly<
   'campaign settings frequency-cap set': () =>
     import('../commands/campaign/settings/frequency-cap/set.js'),
   'campaign stop': () => import('../commands/campaign/stop.js'),
+  'campaign test-send': () => import('../commands/campaign/test-send.js'),
   'campaign update': () => import('../commands/campaign/update.js'),
   'campaign view': () => import('../commands/campaign/view.js'),
   'channel create': () => import('../commands/channel/create.js'),

@@ -22,6 +22,8 @@ import {
   type CampaignRecipientStatus,
   type CampaignRequeueResult,
   type CampaignStopOperation,
+  type CampaignTestSend,
+  type CampaignTestSendRequest,
   type CreateCampaignRequest,
   type InvalidRecipientRow,
   type ListCampaignRecipientsParams,
@@ -92,6 +94,22 @@ export async function launchCampaign(
     projectSlug,
     campaignId,
     scheduledAt === undefined ? {} : {scheduledAt},
+    options,
+  )
+  return result(response.data.data, response.metadata)
+}
+
+export async function testSendCampaign(
+  client: MessagingClient,
+  projectSlug: string,
+  campaignId: string,
+  input: unknown,
+  options: RequestOptions,
+): Promise<CampaignResult<CampaignTestSend>> {
+  const response = await client.campaigns.testSend(
+    projectSlug,
+    campaignId,
+    campaignTestSendInput(input),
     options,
   )
   return result(response.data.data, response.metadata)
@@ -284,6 +302,10 @@ export function renderCampaignRequeue(result: CampaignRequeueResult): string {
   return `Requeued ${result.requeued} ${result.requeued === 1 ? 'recipient' : 'recipients'}.`
 }
 
+export function renderCampaignTestSend(testSend: CampaignTestSend): string {
+  return `Sent one campaign test to ${testSend.to} from ${testSend.from.phone}. Test ID: ${testSend.id}.`
+}
+
 /**
  * Stop answers with a null operation ID when the campaign had no delivery run
  * to stop. Saying "accepted as operation null" would be untrue, so the two
@@ -382,6 +404,58 @@ function campaignInput(input: unknown): CreateCampaignRequest {
     )
   }
   return input as unknown as CreateCampaignRequest
+}
+
+const E164_PHONE = /^\+[1-9]\d{1,14}$/
+
+function isTestVariableValue(value: unknown): boolean {
+  return (
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'number' && Number.isFinite(value))
+  )
+}
+
+function campaignTestSendInput(input: unknown): CampaignTestSendRequest {
+  if (
+    !isRecord(input) ||
+    typeof input.sessionId !== 'string' ||
+    input.sessionId.trim().length === 0 ||
+    typeof input.to !== 'string' ||
+    input.to.trim().length === 0
+  ) {
+    throw new PolymorfaValidationError(
+      'Campaign test input must contain one JSON object with sessionId and to.',
+      {code: 'invalid_campaign_test_input'},
+    )
+  }
+  if (!E164_PHONE.test(input.to)) {
+    throw new PolymorfaValidationError(
+      'Campaign test input to must be an E.164 phone number, such as +15550000002.',
+      {code: 'invalid_campaign_test_input'},
+    )
+  }
+  if (
+    input.sampleRecipientId !== undefined &&
+    (typeof input.sampleRecipientId !== 'string' ||
+      input.sampleRecipientId.trim().length === 0)
+  ) {
+    throw new PolymorfaValidationError(
+      'Campaign test input sampleRecipientId must be a non-empty string.',
+      {code: 'invalid_campaign_test_input'},
+    )
+  }
+  if (
+    input.variables !== undefined &&
+    (!isRecord(input.variables) ||
+      !Object.values(input.variables).every(isTestVariableValue))
+  ) {
+    throw new PolymorfaValidationError(
+      'Campaign test input variables must be an object of string, number or boolean values.',
+      {code: 'invalid_campaign_test_input'},
+    )
+  }
+  return input as unknown as CampaignTestSendRequest
 }
 
 function result<T>(data: T, metadata: ResponseMetadata): CampaignResult<T> {

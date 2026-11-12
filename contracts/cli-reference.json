@@ -19748,6 +19748,182 @@
       "state": null
     },
     {
+      "id": "campaign test-send",
+      "summary": "Send one draft campaign test to a team-connected seed number.",
+      "description": "Send one draft campaign test to a team-connected seed number.",
+      "usage": ["polymorfa campaign test-send CAMPAIGN [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "campaign",
+          "description": "Draft campaign ID.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "idempotency-key",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Required deduplication key. Reuse this key after an uncertain result; never retry with a new key before checking the seed phone.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "input",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Read one JSON object with sessionId, to, and optional sampleRecipientId or variables from a file or stdin (-).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project-slug",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Project slug in the Messaging API path.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "yes",
+          "char": null,
+          "type": "boolean",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Confirm sending one real WhatsApp message to the seed number.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
       "id": "campaign update",
       "summary": "Update a campaign. Omitted drip fields preserve stored values; enrollment-only audience closes enrollment. Cap flags replace the campaign cap; omitted cap windows have no campaign limit.",
       "description": "Update a campaign. Omitted drip fields preserve stored values; enrollment-only audience closes enrollment. Cap flags replace the campaign cap; omitted cap windows have no campaign limit.",
