@@ -4,7 +4,8 @@ import {
   TEST_EVENT_FIXTURES,
   type TestEventFixture,
   type TestEventOverrides,
-  type TriggerTestEventRequest,
+  type TriggerTestEventResponse,
+  type TestEventFixtureInfo,
 } from '@polymorfa/sdk'
 import {BaseCommand} from '../base-command.js'
 
@@ -27,10 +28,10 @@ export default class Trigger extends BaseCommand {
   static override flags = {
     list: Flags.boolean({
       description: 'List fixtures and the overrides each accepts.',
-      exclusive: ['override', 'session', 'text', 'from', 'from-session'],
+      exclusive: ['override', 'session', 'text', 'from', 'from-number'],
     }),
     session: Flags.string({
-      description: 'Test number session name in the project.',
+      description: 'Test Number ID.',
     }),
     override: Flags.string({
       description:
@@ -43,31 +44,28 @@ export default class Trigger extends BaseCommand {
     from: Flags.string({
       description: 'Shortcut for --override from=<E.164 phone>.',
     }),
-    'from-session': Flags.string({
+    'from-number': Flags.string({
       description:
         'message.received only: send a simulated message from this other Test number instead of generating an event.',
     }),
   }
   static override examples = [
-    '<%= config.bin %> trigger --list --project <projectId>',
-    '<%= config.bin %> trigger message.received --session my-test-number --text "hi" --project <projectId>',
-    '<%= config.bin %> trigger message.ack --session my-test-number --override ackStatus=read --project <projectId>',
-    '<%= config.bin %> trigger template.status --session my-test-number --override templateStatus=REJECTED --override reason=INVALID_FORMAT --project <projectId>',
+    '<%= config.bin %> trigger --list',
+    '<%= config.bin %> trigger message.received --session my-test-number --text "hi"',
+    '<%= config.bin %> trigger message.ack --session my-test-number --override ackStatus=read',
+    '<%= config.bin %> trigger template.status --session my-test-number --override templateStatus=REJECTED --override reason=INVALID_FORMAT',
   ]
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(Trigger)
-    if (!flags.project)
-      throw new PolymorfaConfigurationError(
-        'Select a project with --project.',
-        'project',
-      )
     const client = await this.messagingClient(flags, {
       serverApiKeyOnly: 'Test event',
     })
 
     if (flags.list) {
-      const response = await client.testing.listEventFixtures(flags.project)
+      const response = await client.raw.request<{
+        fixtures: TestEventFixtureInfo[]
+      }>({method: 'GET', path: '/messaging/test-events/fixtures'})
       const human = response.data.fixtures
         .map(
           (fixture) =>
@@ -110,21 +108,28 @@ export default class Trigger extends BaseCommand {
         )
       overrides[key] = value
     }
-    const request: TriggerTestEventRequest = {
-      session: flags.session,
+    const request: {
+      event: TestEventFixture
+      overrides?: TestEventOverrides
+      fromNumber?: string
+    } = {
       event: args.event as TestEventFixture,
       ...(Object.keys(overrides).length > 0 ? {overrides} : {}),
-      ...(flags['from-session'] === undefined
+      ...(flags['from-number'] === undefined
         ? {}
-        : {fromSession: flags['from-session']}),
+        : {fromNumber: flags['from-number']}),
     }
-    const response = await client.testing.triggerEvent(flags.project, request)
+    const response = await client.raw.request<TriggerTestEventResponse>({
+      method: 'POST',
+      path: `/messaging/${encodeURIComponent(flags.session)}/test-events`,
+      body: request,
+    })
     const result = response.data
     const human =
       result.delivery === 'generated'
         ? `Triggered ${result.event} ${String(result.eventId)} on ${result.session} (source: test).\n` +
-          `A running \`polymorfa listen --project ${flags.project}\` prints it as: ${result.event} ${String(result.eventId)}`
-        : `Sent a simulated message to ${result.session} from ${String(flags['from-session'])}.\n` +
+          `A running \`polymorfa listen${flags.project ? ` --project ${flags.project}` : ''}\` prints it as: ${result.event} ${String(result.eventId)}`
+        : `Sent a simulated message to ${result.session} from ${String(flags['from-number'])}.\n` +
           `The ${result.event} event arrives as Test number activity (source: runtime).`
     this.writeValue({data: result, metadata: response.metadata}, human, flags)
   }

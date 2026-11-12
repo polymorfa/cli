@@ -53,18 +53,17 @@ test('triggers message.received with text and typed overrides', async () => {
   )
   expect(result.stdout).toContain(`message.received ${eventId}`)
   expect(requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-    `POST /messaging/testing/${projectId}/events`,
+    `POST /messaging/test-a/test-events`,
   ])
   expect(JSON.parse(requests[0]!.body)).toEqual({
-    session: 'test-a',
     event: 'message.received',
     overrides: {pushName: 'Ada', text: 'hi'},
   })
 })
 
-test('sends a simulated message with --from-session and prints JSON', async () => {
+test('sends a simulated message with --from-number and prints JSON', async () => {
   const {result, requests} = await run(
-    `trigger message.received --project ${projectId} --session test-a --from-session test-b --json`,
+    `trigger message.received --project ${projectId} --session test-a --from-number test-b --json`,
     [
       {
         status: 202,
@@ -83,42 +82,36 @@ test('sends a simulated message with --from-session and prints JSON', async () =
     data: {delivery: 'simulated', eventId: null},
   })
   expect(JSON.parse(requests[0]!.body)).toEqual({
-    session: 'test-a',
     event: 'message.received',
-    fromSession: 'test-b',
+    fromNumber: 'test-b',
   })
 })
 
 test('lists fixtures', async () => {
-  const {result, requests} = await run(
-    `trigger --list --project ${projectId}`,
-    [
-      {
-        body: {
-          fixtures: [
-            {
-              name: 'message.ack',
-              description: 'Delivery or read receipt for an outbound message',
-              overrides: ['from', 'ackStatus', 'messageId'],
-            },
-          ],
-        },
+  const {result, requests} = await run(`trigger --list`, [
+    {
+      body: {
+        fixtures: [
+          {
+            name: 'message.ack',
+            description: 'Delivery or read receipt for an outbound message',
+            overrides: ['from', 'ackStatus', 'messageId'],
+          },
+        ],
       },
-    ],
-  )
+    },
+  ])
   expect(result.error).toBeUndefined()
   expect(result.stdout).toContain('message.ack')
   expect(result.stdout).toContain('overrides: from, ackStatus, messageId')
-  expect(requests[0]!.url).toBe(
-    `/messaging/testing/${projectId}/events/fixtures`,
-  )
+  expect(requests[0]!.url).toBe(`/messaging/test-events/fixtures`)
 })
 
 test.each(['true', 'false'])(
   'triggers the listed restriction fixture with restrictionActive=%s',
   async (active) => {
     const fixture = 'session.restriction_updated'
-    const listed = await run(`trigger --list --project ${projectId}`, [
+    const listed = await run(`trigger --list`, [
       {
         body: {
           fixtures: [
@@ -151,7 +144,6 @@ test.each(['true', 'false'])(
     expect(result.error, result.stderr).toBeUndefined()
     expect(requests).toHaveLength(1)
     expect(JSON.parse(requests[0]!.body)).toEqual({
-      session: 'test-a',
       event: fixture,
       overrides: {restrictionActive: active === 'true'},
     })
