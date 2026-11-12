@@ -4,6 +4,7 @@ import {readJsonInput} from '../../api/request.js'
 import {BaseCommand} from '../../base-command.js'
 import {limitValue} from '../../services/billing-controls.js'
 import {createQuickLink} from '../../services/quicklinks.js'
+import {testingAccountTypes} from '../../services/testing-account-mode.js'
 
 export default class QuickLinkCreate extends BaseCommand {
   static override description =
@@ -33,6 +34,16 @@ export default class QuickLinkCreate extends BaseCommand {
       max: 1000000,
       description: 'Initial number funding priority.',
     }),
+    'account-type': Flags.string({
+      options: [...testingAccountTypes],
+      description: 'Create a Test number in this account mode.',
+    }),
+    'primary-platform': Flags.string({
+      options: ['android', 'ios'],
+      description:
+        'Test primary phone platform. Not accepted for Official API mode.',
+      dependsOn: ['account-type'],
+    }),
     input: Flags.string({
       description:
         'JSON request file or - for stdin. Use configuration for connection, phone, history and simulation.',
@@ -60,6 +71,42 @@ export default class QuickLinkCreate extends BaseCommand {
           'input',
         )
       body[key] = value
+    }
+    if (flags['account-type'] !== undefined) {
+      const object = (
+        value: unknown,
+        field: string,
+      ): Record<string, unknown> => {
+        if (value === undefined) return {}
+        if (!value || typeof value !== 'object' || Array.isArray(value))
+          throw new PolymorfaConfigurationError(
+            `${field} must be an object.`,
+            'input',
+          )
+        return {...(value as Record<string, unknown>)}
+      }
+      const configuration = object(body.configuration, 'configuration')
+      const testing = object(configuration.testing, 'configuration.testing')
+      const mode = object(
+        testing.configuration,
+        'configuration.testing.configuration',
+      )
+      for (const [key, value] of Object.entries({
+        accountType: flags['account-type'],
+        primaryPlatform: flags['primary-platform'],
+      })) {
+        if (value === undefined) continue
+        if (mode[key] !== undefined && mode[key] !== value)
+          throw new PolymorfaConfigurationError(
+            `Input ${key} conflicts with its flag.`,
+            'input',
+          )
+        mode[key] = value
+      }
+      body.configuration = {
+        ...configuration,
+        testing: {...testing, configuration: mode},
+      }
     }
     if (flags['limit-credits'] !== undefined || flags.priority !== undefined) {
       if (body.billingControls !== undefined)

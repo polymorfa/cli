@@ -2497,6 +2497,32 @@ The verification gate checks formatting, lint, strict TypeScript, tests,
 production build, npm package contents, and the production dependency audit on
 Node.js 22 in hosted CI.
 
+### Test-number account modes
+
+The Business commands follow API source `14153ad9d69ddd3bae972594e6b3dc3ddae8e8e4`.
+`contracts/business-account-modes.json` binds the actual API producer input.
+This source support does not establish hosted availability or a package release.
+A 409 from `testing account-mode` means the Test number is claimed in Inspector or another mode change is pending.
+The CLI validates this contract and uses the installed SDK's public transport;
+it does not assume that the registry SDK exports the new typed operation.
+
+```sh
+polymorfa quicklink create --project PROJECT_UUID --account-type business_app --primary-platform ios
+polymorfa testing account-mode TEST_SESSION --account-type meta_cloud --yes --json
+```
+
+The modes are `whatsapp_app`, `business_app`, `meta_cloud` and `meta_coexistence`.
+Phone modes accept `android` or `ios`. Omit `--primary-platform` for `meta_cloud`.
+Legacy `personal` and `business` mode names are rejected. A mode change unlinks
+companions; they must pair again. `--yes` confirms that effect. The operation
+requires a server credential and applies only to Test numbers. It never converts
+a real WhatsApp account. The API enforces Number, membership and session checks.
+
+QuickLink flags preserve other nested testing configuration. Conflicting input
+fields fail before a request. `contact business-profile` preserves the optional
+`encryption` value (`end_to_end`, `hybrid` or `not_end_to_end`) in JSON and plain
+output. An omitted field stays omitted.
+
 ### Guided session creation and configuration
 
 Create real or simulated sessions with `polymorfa quicklink create --project <id> --input request.json`.

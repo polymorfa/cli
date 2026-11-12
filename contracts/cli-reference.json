@@ -52455,6 +52455,23 @@
       "args": [],
       "flags": [
         {
+          "name": "account-type",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [
+            "whatsapp_app",
+            "business_app",
+            "meta_cloud",
+            "meta_coexistence"
+          ],
+          "description": "Create a Test number in this account mode.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
           "name": "add-connection",
           "char": null,
           "type": "option",
@@ -52549,6 +52566,18 @@
           "description": "Select project-owned or organization-owned resources.",
           "env": null,
           "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "primary-platform",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["android", "ios"],
+          "description": "Test primary phone platform. Not accepted for Official API mode.",
+          "env": null,
+          "helpGroup": null
         },
         {
           "name": "priority",
@@ -56386,6 +56415,175 @@
           "default": null,
           "options": [],
           "description": "Confirm one submission attempt to Meta.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "testing account-mode",
+      "summary": "Change a Test number account mode. A change unlinks every companion, which must pair again. Fails with a conflict if the number is claimed in Inspector or another change is pending.",
+      "description": "Change a Test number account mode. A change unlinks every companion, which must pair again. Fails with a conflict if the number is claimed in Inspector or another change is pending.",
+      "usage": ["polymorfa testing account-mode SESSION [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "session",
+          "description": "The Test number session ID.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "account-type",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [
+            "whatsapp_app",
+            "business_app",
+            "meta_cloud",
+            "meta_coexistence"
+          ],
+          "description": "Account mode to emulate.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "primary-platform",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["android", "ios"],
+          "description": "Phone platform. Omit for Official API mode.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "yes",
+          "char": null,
+          "type": "boolean",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Confirm unlinking all companions if the mode changes.",
           "env": null,
           "helpGroup": null
         }

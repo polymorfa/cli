@@ -163,6 +163,37 @@ describe('contact commands', () => {
     )
   })
 
+  for (const encryption of [
+    'end_to_end',
+    'hybrid',
+    'not_end_to_end',
+    undefined,
+  ] as const) {
+    test(`preserves optional contact encryption ${encryption ?? 'omitted'}`, async () => {
+      const profile = {
+        ...businessProfile(),
+        ...(encryption === undefined ? {} : {encryption}),
+      }
+      server = await startHttpServer({body: {success: true, data: profile}})
+      const result = await apiKeyEnvironment(() =>
+        runCommand(
+          'contact business-profile 750000000001 --session session_1 --json',
+        ),
+      )
+      expect(result.error, result.stderr).toBeUndefined()
+      expect(JSON.parse(result.stdout) as {data: unknown}).toMatchObject({
+        data: profile,
+      })
+      const plain = await apiKeyEnvironment(() =>
+        runCommand('contact business-profile 750000000001 --session session_1'),
+      )
+      expect(plain.error, plain.stderr).toBeUndefined()
+      if (encryption === undefined)
+        expect(plain.stdout).not.toContain('Encryption')
+      else expect(plain.stdout).toContain(`Encryption\t${encryption}`)
+    })
+  }
+
   test('lists exact blocklist hash and JIDs', async () => {
     server = await startHttpServer({
       body: {
