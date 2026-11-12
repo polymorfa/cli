@@ -44,7 +44,7 @@ describe('createRawClient', () => {
         credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
       }),
     ).toThrow(
-      'Client and project tokens cannot be used as organization server API keys.',
+      'Client and project tokens cannot be used as team server API keys.',
     )
   })
 
@@ -82,7 +82,7 @@ describe('createRawClient', () => {
     expect(client.quickLinks).toHaveProperty('create')
   })
 
-  test('creates the unified organization client and rejects the wrong surface', () => {
+  test('creates the unified team client and rejects the wrong surface', () => {
     const client = createPlatformClient({
       surface: 'platform',
       credential: {
@@ -93,7 +93,7 @@ describe('createRawClient', () => {
     })
 
     expect(client).toBeInstanceOf(Client)
-    expect(client.owner).toBe('organization')
+    expect(client.owner).toBe('team')
     expect(client.billing).toHaveProperty('retrieve')
     expect(client.billing).toHaveProperty('usage')
     expect(client.billing).toHaveProperty('listTransactions')
@@ -103,7 +103,7 @@ describe('createRawClient', () => {
     expect(client.sessions).toHaveProperty('update')
     expect(client.sessions).toHaveProperty('quoteTierChange')
     expect(client.sessions).toHaveProperty('retrieveTierChange')
-    expect(client.organizations).not.toHaveProperty('update')
+    expect(client.teams).not.toHaveProperty('update')
 
     expect(() =>
       createPlatformClient({

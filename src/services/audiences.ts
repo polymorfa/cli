@@ -27,7 +27,7 @@ export interface AudienceResult<T> {
 }
 
 export async function createAudience(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   body: CreateAudienceRequest,
   options: RequestOptions = {},
 ): Promise<AudienceResult<AudienceImportResult>> {
@@ -36,7 +36,7 @@ export async function createAudience(
 }
 
 export async function addAudienceMembers(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   listId: string,
   members: readonly CampaignRecipientInput[],
   options: RequestOptions = {},
@@ -46,7 +46,7 @@ export async function addAudienceMembers(
 }
 
 export async function listAudienceMembers(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   listId: string,
   params: ListAudienceMembersParams,
 ): Promise<AudienceResult<AudienceMembersEnvelope>> {
@@ -55,7 +55,7 @@ export async function listAudienceMembers(
 }
 
 export async function removeAudienceMember(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   listId: string,
   phone: string,
   options: RequestOptions = {},

@@ -30,7 +30,7 @@ user
   security-code <digits@lid>
 ```
 
-All commands require an organization/server API key, an active Linked Device
+All commands require a team/server API key, an active Linked Device
 session, and encoded identifiers. Project credentials, browser client tokens,
 Cloud API sessions, dashboard sessions, and staff identities are rejected. Call
 rejection requires `chats:manage`; LID resolution and security-code lookup

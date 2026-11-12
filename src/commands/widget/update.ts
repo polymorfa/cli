@@ -9,7 +9,7 @@ import {
 
 export default class WidgetUpdate extends BaseCommand {
   static override description =
-    'Update saved Connect widget settings for the organization or one project.'
+    'Update saved Connect widget settings for the team or one project.'
 
   static override flags = {
     'idempotency-key': Flags.string({

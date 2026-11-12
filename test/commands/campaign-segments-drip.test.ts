@@ -93,7 +93,7 @@ async function run(command: string) {
     () => runCommand(command),
   )
 }
-test('lists and reads organization segments with pagination', async () => {
+test('lists and reads team segments with pagination', async () => {
   server = await startHttpSequenceServer([
     {body: {data: [segment], page: {hasMore: true, nextCursor: 'next'}}},
     {body: {data: segment}},

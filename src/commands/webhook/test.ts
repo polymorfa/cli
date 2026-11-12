@@ -52,17 +52,17 @@ export default class WebhookTest extends BaseCommand {
 }
 
 function validateTestInput(
-  owner: 'organization' | 'project',
+  owner: 'team' | 'project',
   input: Record<string, unknown>,
 ): void {
   const allowed =
-    owner === 'organization'
+    owner === 'team'
       ? new Set(['eventType'])
       : new Set(['eventType', 'body', 'sessionId'])
   const unexpected = Object.keys(input).find((key) => !allowed.has(key))
   if (unexpected !== undefined) {
     throw new PolymorfaValidationError(
-      `${owner === 'organization' ? 'Team' : 'Project'} webhook tests do not accept ${unexpected}.`,
+      `${owner === 'team' ? 'Team' : 'Project'} webhook tests do not accept ${unexpected}.`,
       {code: 'invalid_parameter'},
     )
   }

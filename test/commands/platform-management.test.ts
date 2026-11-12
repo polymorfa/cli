@@ -75,7 +75,7 @@ describe('Platform management commands', () => {
         data: {
           sessionId: 'session_1',
           name: 'Support',
-          tenantId: 'org_1',
+          tenantId: 'team_1',
           type: 'linked_device',
           testMode: false,
           status: 'DISCONNECTED',
@@ -279,7 +279,7 @@ describe('Platform management commands', () => {
             keyId: 'key_1',
             label: 'Production',
             last4: '1234',
-            orgId: 'org_1',
+            teamId: 'team_1',
             scopes: 65_535,
             source: 'dashboard',
             start: 'pmfa_',
@@ -332,7 +332,7 @@ describe('Platform management commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
-  test('lists organization members through the organization-key resource', async () => {
+  test('lists team members through the team-key resource', async () => {
     server = await startHttpServer({
       body: {
         data: [
@@ -343,7 +343,7 @@ describe('Platform management commands', () => {
             invitedAt: null,
             joinedAt: 1,
             name: 'Owner',
-            orgId: 'org_1',
+            teamId: 'team_1',
             role: 'owner',
             status: 'active',
             userId: 'user_1',
@@ -619,7 +619,7 @@ describe('Platform management commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
-  test('represents absent organization-default widget settings as null', async () => {
+  test('represents absent team-default widget settings as null', async () => {
     server = await startHttpServer({
       body: {data: null},
       headers: {'request-id': 'req_widget_missing'},

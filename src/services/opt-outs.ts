@@ -21,14 +21,14 @@ export interface OptOutResult<T> {
 }
 
 export async function viewOptOutSettings(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
 ): Promise<OptOutResult<OptOutSettings>> {
   const response = await client.optOuts.getSettings()
   return result(response.data.data, response.metadata)
 }
 
 export async function updateOptOutSettings(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   body: UpdateOptOutSettingsRequest,
   options: RequestOptions = {},
 ): Promise<OptOutResult<OptOutSettings>> {

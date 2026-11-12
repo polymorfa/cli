@@ -3,7 +3,7 @@ import {listApiKeys, renderApiKeys} from '../../services/platform-management.js'
 
 export default class KeyList extends BaseCommand {
   static override description =
-    'List organization API-key metadata (never raw key material).'
+    'List team API-key metadata (never raw key material).'
 
   async run(): Promise<void> {
     const {flags} = await this.parse(KeyList)

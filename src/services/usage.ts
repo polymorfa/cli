@@ -62,7 +62,7 @@ export function createUsageResource(
   }
   const client = new Client({
     ...options,
-    credential: {type: 'organizationApiKey', value: environment.credential},
+    credential: {type: 'teamApiKey', value: environment.credential},
   })
   return environment.context.owner === 'project' && projectId
     ? client.project(projectId).usage

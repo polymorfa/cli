@@ -79,7 +79,7 @@ describe('event commands', () => {
       data: [event()],
       context: {
         owner: 'project',
-        principalType: 'organization_key',
+        principalType: 'team_key',
         projectId: '11111111-1111-4111-8111-111111111111',
       },
       request: {apiVersion: '2026-08-20', id: 'req_1', status: 200},
@@ -87,7 +87,7 @@ describe('event commands', () => {
     })
   })
 
-  test('views an organization event and explicitly requests its payload', async () => {
+  test('views a team event and explicitly requests its payload', async () => {
     sdk.responses.push({data: event(), metadata: metadata()})
     const output = vi
       .spyOn(process.stdout, 'write')
@@ -97,7 +97,7 @@ describe('event commands', () => {
       EventView.run([
         'evt_1',
         '--owner',
-        'organization',
+        'team',
         '--include-payload',
         '--json',
       ]),
@@ -112,7 +112,7 @@ describe('event commands', () => {
     expect(JSON.parse(String(output.mock.calls[0]?.[0]))).toMatchObject({
       schemaVersion: 1,
       data: {id: 'evt_1'},
-      context: {owner: 'organization', principalType: 'organization_key'},
+      context: {owner: 'team', principalType: 'team_key'},
       request: {id: 'req_1', status: 200},
     })
   })
@@ -135,7 +135,7 @@ describe('event commands', () => {
       .mockImplementation(() => true)
 
     await environment(() =>
-      EventView.run(['evt_1', '--owner', 'organization', '--include-payload']),
+      EventView.run(['evt_1', '--owner', 'team', '--include-payload']),
     )
 
     const text = output.mock.calls.map(([chunk]) => String(chunk)).join('')
@@ -150,7 +150,7 @@ describe('event commands', () => {
     const error = await environment(() =>
       EventList.run([
         '--owner',
-        'organization',
+        'team',
         '--cursor',
         'cursor_1',
         '--type',
@@ -221,7 +221,7 @@ describe('event commands', () => {
         '--webhook',
         'wh_1',
         '--owner',
-        'organization',
+        'team',
         '--json',
       ]),
     ).catch((caught: unknown) => caught)
@@ -267,7 +267,7 @@ function event() {
     environment: 'development',
     id: 'evt_1',
     metadataExpiresAt: '2026-10-08T00:00:00Z',
-    organizationId: 'org_1',
+    teamId: 'team_1',
     payload: null,
     payloadAvailability: 'not_retained',
     projectId: '11111111-1111-4111-8111-111111111111',

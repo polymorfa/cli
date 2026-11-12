@@ -328,16 +328,16 @@ function validateEventMetadata(
     'environment',
     'id',
     'metadataExpiresAt',
-    'organizationId',
+    'teamId',
     'payloadAvailability',
     'projectId',
     'replayableUntil',
     'source',
     'type',
   ])
-  for (const key of ['id', 'organizationId', 'projectId', 'type'] as const)
+  for (const key of ['id', 'teamId', 'projectId', 'type'] as const)
     requireString(value, key)
-  for (const key of ['id', 'organizationId', 'projectId'] as const) {
+  for (const key of ['id', 'teamId', 'projectId'] as const) {
     if (!UUID.test(String(value[key]))) {
       throw protocol('listener_event_invalid', `${key} must be a UUID.`)
     }

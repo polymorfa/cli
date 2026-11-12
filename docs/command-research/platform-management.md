@@ -1,6 +1,6 @@
 # Platform management command research
 
-- **Status:** Organization-key management commands reconciled with the unified
+- **Status:** Team-key management commands reconciled with the unified
   client; operation inspection is console-only
 - **Reviewed:** 2026-09-16
 - **SDK baseline:** `08452992a32a392de5fc3d0fa3954ba6addd7f32`
@@ -46,7 +46,7 @@ security-incident
   acknowledge <incident>
 
 operation
-  list|view|wait|watch|cancel --owner <project|organization>
+  list|view|wait|watch|cancel --owner <project|team>
 
 project-token
   list --project <project>
@@ -56,8 +56,8 @@ session
   delete <session...> [--project <project>] --yes
 ```
 
-The management commands use the public typed organization resources on the
-unified SDK `Client`. They require an organization server API key. Reads require
+The management commands use the public typed team resources on the
+unified SDK `Client`. They require a team server API key. Reads require
 `sessions:read`; key revocation and incident acknowledgement require
 `sessions:manage`; batch session stop/delete also require `sessions:manage`.
 Project tokens and Messaging browser client tokens are rejected before
@@ -85,14 +85,14 @@ without cursor semantics.
 `session-ban list --active` keeps one discovery command while selecting the
 SDK's distinct active-only operation. Incident acknowledgement is repeatable,
 has no confirmation gate, and sends no body. `acknowledgedBy` may be empty when
-an organization key performed the acknowledgement.
+a team key performed the acknowledgement.
 
 The original singular Platform operation view was removed. Operation
 inspection is console-only at API contract 1600403, and the pinned SDK has no
 operations resource, so the CLI ships no operation commands. The unpublished
 `--surface` selector was removed.
 Project-token listing requires an explicit project because the live
-organization-key handler rejects an absent project even though its OpenAPI
+team-key handler rejects an absent project even though its OpenAPI
 query field is optional. Only metadata is returned.
 
 Batch session commands use positional IDs because they are the primary action
@@ -110,7 +110,7 @@ without claiming stronger server behavior.
 
 ## Explicit gaps
 
-There is no organization-key member mutation, API-key creation or rotation,
+There is no team-key member mutation, API-key creation or rotation,
 project-token minting or revocation, raw bearer material, cross-project token
 aggregate, incident detail, management-list pagination, security-state
 aggregation, batch per-item result, or machine-credential operation inspection

@@ -172,7 +172,7 @@ describe('Audience and opt-out commands', () => {
     expect(result.stdout).not.toContain('Removed')
   })
 
-  test('reads the organization keyword settings', async () => {
+  test('reads the team keyword settings', async () => {
     server = await startHttpServer({body: {data: settings()}})
 
     const result = await apiKeyEnvironment(() =>

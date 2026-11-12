@@ -1,11 +1,11 @@
-export type ResourceOwner = 'project' | 'organization'
-export type PrincipalType = 'project_token' | 'organization_key' | 'cli_grant'
+export type ResourceOwner = 'project' | 'team'
+export type PrincipalType = 'project_token' | 'team_key' | 'cli_grant'
 
 export interface OutputContext {
   readonly owner: ResourceOwner
   readonly principalType: PrincipalType
   readonly profile?: string
-  readonly organizationId?: string | null
+  readonly teamId?: string | null
   readonly projectId?: string | null
 }
 

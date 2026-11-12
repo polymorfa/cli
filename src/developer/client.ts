@@ -59,7 +59,7 @@ export async function createDeveloperSession(
       : new Client({
           baseUrl: environment.baseUrl,
           credential: {
-            type: 'organizationApiKey',
+            type: 'teamApiKey',
             value: environment.credential,
           },
           ...(environment.apiVersion === undefined
@@ -70,7 +70,7 @@ export async function createDeveloperSession(
             : {timeoutMs: environment.timeoutMs}),
         })
   const client =
-    environment.context.owner === 'project' && root.owner === 'organization'
+    environment.context.owner === 'project' && root.owner === 'team'
       ? root.project(requiredProject(environment.context.projectId))
       : root
   return {

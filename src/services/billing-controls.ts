@@ -75,7 +75,7 @@ export function limitValue(
   return Number(value)
 }
 async function request<T>(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   method: 'GET' | 'PUT',
   path: string,
   schema: z.ZodType<T>,
@@ -98,10 +98,7 @@ async function request<T>(
     })
   return {data: parsed.data, metadata: response.metadata}
 }
-export function getLimits(
-  client: ClientInstance<'organization'>,
-  projectId?: string,
-) {
+export function getLimits(client: ClientInstance<'team'>, projectId?: string) {
   return request(
     client,
     'GET',
@@ -112,7 +109,7 @@ export function getLimits(
   )
 }
 export function setLimit(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   scope: 'project' | 'customer' | 'number',
   id: string,
   credits: number | null,
@@ -130,7 +127,7 @@ export function setLimit(
   )
 }
 export function getPriorities(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   projectId?: string,
 ) {
   return request(
@@ -143,7 +140,7 @@ export function getPriorities(
   )
 }
 export function setPriority(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   scope: 'project' | 'customer' | 'number',
   id: string,
   value: number,
@@ -161,7 +158,7 @@ export function setPriority(
   )
 }
 export function reorderPriorities(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   scope: 'project' | 'customer' | 'number' | 'resource',
   ids: string[],
   expectedRevision: number,
@@ -241,7 +238,7 @@ const resourceControls = z.object({
   priorityRevision: revision,
 })
 export function getResourceControls(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   scope: 'project' | 'customer' | 'number',
   id: string,
 ) {
@@ -253,7 +250,7 @@ export function getResourceControls(
   )
 }
 export function setResourceControls(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   scope: 'project' | 'customer' | 'number',
   id: string,
   input: {
