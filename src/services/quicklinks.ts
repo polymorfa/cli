@@ -1,3 +1,4 @@
+import {testingAccountModeInput} from './testing-account-mode.js'
 import {PolymorfaConfigurationError, type MessagingClient} from '@polymorfa/sdk'
 
 export async function createQuickLink(
@@ -56,6 +57,24 @@ export async function createQuickLink(
         'Billing controls require a real new number, credits and numeric priority.',
         'input',
       )
+  }
+  const configuration = body.configuration as
+    {testing?: {configuration?: unknown}} | undefined
+  const testing = configuration?.testing?.configuration
+  if (testing !== undefined) {
+    if (!testing || typeof testing !== 'object' || Array.isArray(testing))
+      throw new PolymorfaConfigurationError(
+        'Testing configuration must be an object.',
+        'input',
+      )
+    const mode = testing as {accountType?: unknown; primaryPlatform?: unknown}
+    testingAccountModeInput({
+      accountType:
+        mode.accountType === undefined ? 'whatsapp_app' : mode.accountType,
+      ...(mode.primaryPlatform === undefined
+        ? {}
+        : {primaryPlatform: mode.primaryPlatform}),
+    })
   }
   const response = await client.quickLinks.create({
     ...body,

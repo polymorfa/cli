@@ -21,7 +21,7 @@ export default class MessageSendText extends BaseCommand {
     }),
     'idempotency-key': Flags.string({
       description:
-        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).',
+        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).',
     }),
     mention: Flags.string({
       description:

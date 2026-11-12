@@ -1,0 +1,29 @@
+{
+  "repository": "polymorfa/polymorfa",
+  "sourceCommit": "d60f08042a5e3f36e53a7b378be7b7e710e80e9f",
+  "sourcePath": "apps/api/docs/openapi.json",
+  "sourceSha256": "9253f7fcf7b6e802411cc2f9b3b28bbf7c1e45e90c2ebee7fc461f5627ca9a32",
+  "polymorfaVersion": "2026-09-22",
+  "sdkSourceCommit": "d7977377f97b9fa12b8837ba02bc30c6fb512733",
+  "localCandidateSdkArtifactSha256": "fc2b0ba01891c38956055e1719c726e73630d8fa8f778f6a6f1a69018d54d651",
+  "published": false,
+  "productionDependencyPinUnchanged": "0.1.0-dev.20261004024706",
+  "scope": "Existing channel JSON and event view/stream retain optional newsletter metadata; no new commands. Event list stays metadata-only.",
+  "releaseGate": "Matching accepted and published SDK required before a real CLI dependency-pin update; local artifact testing is not registry publication.",
+  "qualification": {
+    "cliSource": "131b02f1813e383140b26ef31bd7e8726367ebb0",
+    "cliArtifactSha256": "027e0af085db135ee295aa42d92d0f7e9d87cee4cad00cdf7f28c7d626c366fa",
+    "sdkArtifactSha256": "fc2b0ba01891c38956055e1719c726e73630d8fa8f778f6a6f1a69018d54d651",
+    "checks": [
+      "channel list/update forwards zero",
+      "metadata-only event list",
+      "exact retained event bytes",
+      "three native SSE events to CLI NDJSON"
+    ],
+    "dependencyRebind": "Final SDK Rust README fix changes no TypeScript package bytes; the packed SHA-256 matches the artifact used by this physical CLI test.",
+    "fullCliTestsPassed": 1091,
+    "productionAuditVulnerabilities": 0,
+    "zod": "4.6.7",
+    "liveAcceptance": false
+  }
+}
