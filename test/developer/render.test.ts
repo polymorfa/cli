@@ -142,4 +142,15 @@ describe('developer detail renderers', () => {
     expect(terminalText(null)).toBe('-')
     expect(terminalText(false)).toBe('false')
   })
+
+  test('escapes directional controls while retaining ordinary RTL text and emoji', () => {
+    expect(
+      terminalText(
+        '\u061c\u200e\u200f\u202a\u202b\u202c\u202d\u202e\u2066\u2067\u2068\u2069',
+      ),
+    ).toBe(
+      '\\u061c\\u200e\\u200f\\u202a\\u202b\\u202c\\u202d\\u202e\\u2066\\u2067\\u2068\\u2069',
+    )
+    expect(terminalText('مرحبا café 👩‍💻')).toBe('مرحبا café 👩‍💻')
+  })
 })

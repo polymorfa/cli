@@ -8,6 +8,7 @@ import {
   type CallWaitingRoom,
 } from './call-media-controls.js'
 import {randomBytes} from 'node:crypto'
+import {terminalText} from '../developer/render.js'
 
 import {
   CallClaimedError,
@@ -662,7 +663,7 @@ export function renderCallParticipant(participant: VoipParticipant): string {
       ? 'Guest\tYes'
       : undefined,
     typeof (participant as VoipParticipant & {name?: string}).name === 'string'
-      ? `Name\t${JSON.stringify((participant as VoipParticipant & {name?: string}).name)}`
+      ? `Name\t${terminalText(JSON.stringify((participant as VoipParticipant & {name?: string}).name))}`
       : undefined,
     `State\t${participant.state}`,
   ]
