@@ -55373,6 +55373,456 @@
       "state": null
     },
     {
+      "id": "testing phone get",
+      "summary": "Show a Test number's simulated phone: whether it is online and which devices are linked.",
+      "description": "Show a Test number's simulated phone: whether it is online and which devices are linked.",
+      "usage": ["polymorfa testing phone get [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "session",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Test number session name in the project.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [
+        {
+          "command": "polymorfa testing phone get --session my-test-number --project <projectId>",
+          "description": ""
+        }
+      ],
+      "state": null
+    },
+    {
+      "id": "testing phone send",
+      "summary": "Send a text from a Test number's phone to another running Test number in the project.",
+      "description": "Send a text from a Test number's phone to another running Test number in the project.",
+      "usage": ["polymorfa testing phone send [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "session",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Test number session name in the project.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "text",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Message text.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "to",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Another Test number in the project, in E.164 format.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [
+        {
+          "command": "polymorfa testing phone send --session my-test-number --to +15550100002 --text \"hello\" --project <projectId>",
+          "description": ""
+        }
+      ],
+      "state": null
+    },
+    {
+      "id": "testing phone unlink",
+      "summary": "Unlink a device from a Test number's phone, as from Linked devices on a phone. Device 0 is the phone and cannot be unlinked.",
+      "description": "Unlink a device from a Test number's phone, as from Linked devices on a phone. Device 0 is the phone and cannot be unlinked.",
+      "usage": ["polymorfa testing phone unlink [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "device",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Linked device ID, as shown by testing phone get.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "session",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Test number session name in the project.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [
+        {
+          "command": "polymorfa testing phone unlink --session my-test-number --device 74 --project <projectId>",
+          "description": ""
+        }
+      ],
+      "state": null
+    },
+    {
       "id": "trigger",
       "summary": "Send a signed test event for a Test number to your webhooks, event history, and a running `polymorfa listen`. Real numbers are refused.",
       "description": "Send a signed test event for a Test number to your webhooks, event history, and a running `polymorfa listen`. Real numbers are refused.",
