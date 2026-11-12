@@ -20,8 +20,8 @@
     "CLI merge and publication after the matching SDK dependency is pinned"
   ],
   "acceptance": {
-    "publishedDependency": "verification pending after main merge and terminal-label repair; published SDK dependency unchanged",
-    "candidatePackage": "verification pending against the current physical SDK archive; no registry or environment acceptance claimed",
+    "publishedDependency": "ordinary npm run verify passes: 1245 tests passed, one candidate-only test skipped; format, lint, types, build, reference, browser and physical bundled-runtime checks pass; published SDK dependency unchanged",
+    "candidatePackage": "physical SDK archive cd7fed327c16ca3d7b7aeb96755291683f9f150890b9ab9a6673dab60c78c66c: 1246 tests passed with POLYMORFA_GUEST_SDK_REQUIRED=1, typecheck and browser verification passed; no registry or environment acceptance claimed",
     "dependencyPin": "published version remains unchanged until matching SDK publication and API environment acceptance"
   }
 }
