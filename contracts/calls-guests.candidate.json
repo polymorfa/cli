@@ -2,13 +2,13 @@
   "sourceAccepted": false,
   "published": false,
   "apiVersion": "2026-09-22",
-  "apiSource": "0983e9263de1f0887b249faf9d85207d543989e3",
-  "sdkSource": "e6df859b2560c67a87f947f8c4cf13e2361cfc95",
-  "sdkSnippetExport": "b9454930a2a821cccde2881efeb4430a0a96e676",
-  "physicalPackageSha256": "34b858821df0405c215306997a3e3cfdbea1cf404db90c09422be4075018cda4",
+  "apiSource": "c544725b57f198a9eebf70a6edf18383bad07073",
+  "sdkSource": "aaee221bdead14897922d56e9ccb144c1de55668",
+  "sdkSnippetExport": "08940b3c0625fc21a1a8abcfbe3663f22017e944",
+  "physicalPackageSha256": "cd7fed327c16ca3d7b7aeb96755291683f9f150890b9ab9a6673dab60c78c66c",
   "publishedDependencyUnchanged": true,
   "operations": ["set_approval_required", "admit", "deny"],
-  "authority": "same held live media connection; backend checks call owner and current provider admin",
+  "authority": "same held live media connection; each moderation command requires live signaling permission and exact team, Number, generation, participant and provider-admin authority",
   "replay": "never automatic; a matching acknowledgement is required",
   "evidence": "POLYMORFA_GUEST_SDK_REQUIRED=1 native CLI calls-sockets fixture with candidate package",
   "releaseGates": [
@@ -20,8 +20,8 @@
     "CLI merge and publication after the matching SDK dependency is pinned"
   ],
   "acceptance": {
-    "publishedDependency": "format, lint, typecheck, build, reference checks and full suite pass: 1175 tests, 1 candidate-only skip; old SDK refuses unsupported controls before connecting",
-    "candidatePackage": "typecheck, build and all 1176 tests pass with physical SDK archive, including native held-connection guest moderation; emitted browser module and production audit pass",
-    "dependencyPin": "published version unchanged until matching SDK publication and API environment acceptance; full candidate source compatibility is verified"
+    "publishedDependency": "verification pending after main merge and terminal-label repair; published SDK dependency unchanged",
+    "candidatePackage": "verification pending against the current physical SDK archive; no registry or environment acceptance claimed",
+    "dependencyPin": "published version remains unchanged until matching SDK publication and API environment acceptance"
   }
 }
