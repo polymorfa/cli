@@ -11,7 +11,8 @@ export default class ContactBlock extends BaseCommand {
     }),
   }
 
-  static override description = 'Block a contact.'
+  static override description =
+    'Block a contact by public ID. Official API beta supports phone/BSUID identities resolved by the API; parent BSUIDs cannot be targets. feature_unavailable is preserved.'
 
   static override flags = {
     'idempotency-key': Flags.string({

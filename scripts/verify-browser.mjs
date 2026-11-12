@@ -1,5 +1,6 @@
 // Build through the real producers and inspect/run the actual emitted module.
 import assert from 'node:assert/strict'
+import {Buffer} from 'node:buffer'
 import process from 'node:process'
 import {execFileSync} from 'node:child_process'
 import {readFileSync, rmSync} from 'node:fs'
@@ -97,7 +98,10 @@ const sent = await actual.runCommand(
     'Hello from Polymorfa',
   ],
   {
-    env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_' + 'fixture'.repeat(6)},
+    env: {
+      POLYMORFA_CLIENT_TOKEN:
+        'pmfa_ct_' + Buffer.from('fixture'.repeat(6)).toString('base64url'),
+    },
     fetch: async (input, init = {}) => {
       requests.push({
         path: new URL(String(input)).pathname,

@@ -61,6 +61,7 @@ describe('developer detail renderers', () => {
       'Format\tnative',
       'Event types\tmessage.received, session.connected',
       'Phone offline warning\toff',
+      'Batching (beta)\tnot reported',
       'Header names\tx-team',
       'Created\t2026-09-08T00:00:00Z',
       'Updated\t2026-09-08T01:00:00Z',
@@ -73,6 +74,7 @@ describe('developer detail renderers', () => {
       enabled: true,
       eventTypes: ['session.phone_offline'],
       format: 'native',
+      batching: {enabled: true, maxEvents: 50, windowMs: 500},
       headers: [],
       id: 'wh_1',
       owner: 'project',
@@ -82,6 +84,9 @@ describe('developer detail renderers', () => {
     }
     expect(renderWebhookDetail({...base, phoneOfflineStartDay: 8})).toContain(
       'Phone offline warning\tfrom day 8',
+    )
+    expect(renderWebhookDetail(base)).toContain(
+      'Batching (beta)\ton, up to 50 events, 500 ms',
     )
     expect(renderWebhookDetail(base)).toContain(
       'Phone offline warning\tnot reported',
