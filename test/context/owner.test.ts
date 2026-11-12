@@ -4,9 +4,9 @@ import {resolveOwnerContext} from '../../src/context/owner.js'
 
 describe('resolveOwnerContext', () => {
   test('requires explicit owner and exact project context', () => {
-    expect(() =>
-      resolveOwnerContext({principalType: 'organization_key'}),
-    ).toThrow('owner')
+    expect(() => resolveOwnerContext({principalType: 'team_key'})).toThrow(
+      'owner',
+    )
     expect(() =>
       resolveOwnerContext({owner: 'project', principalType: 'project_token'}),
     ).toThrow('project')
@@ -23,17 +23,17 @@ describe('resolveOwnerContext', () => {
     })
   })
 
-  test('rejects project context and project tokens for organization ownership', () => {
+  test('rejects project context and project tokens for team ownership', () => {
     expect(() =>
       resolveOwnerContext({
-        owner: 'organization',
+        owner: 'team',
         principalType: 'project_token',
       }),
     ).toThrow('project token')
     expect(() =>
       resolveOwnerContext({
-        owner: 'organization',
-        principalType: 'organization_key',
+        owner: 'team',
+        principalType: 'team_key',
         projectId: 'project_1',
       }),
     ).toThrow('project override')

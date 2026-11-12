@@ -135,7 +135,7 @@ describe('call consent commands', () => {
         body: {
           error: {
             code: 'permission_denied',
-            message: "The team's call policy needs an organization credential.",
+            message: "The team's call policy needs a team credential.",
           },
           success: false,
         },
@@ -155,7 +155,7 @@ describe('call consent commands', () => {
       error: {category: 'conflict', code: 'state_conflict'},
     })
     expect(exitCode(refused.error)).toBe(3)
-    expect(refused.stderr).toContain('organization credential')
+    expect(refused.stderr).toContain('team credential')
   }, 30_000)
 
   test('reports malformed SDK collection envelopes as server failures', async () => {

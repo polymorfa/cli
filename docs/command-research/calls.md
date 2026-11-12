@@ -125,11 +125,11 @@ internal SDK module.
   mode to satisfy the older validator. Other settings-only updates retain the
   typed SDK method. The dependency pin is unchanged, and the local type
   extensions remain until a matching SDK package is accepted.
-- `calls stats` and `calls export` accept an organization API key or an
+- `calls stats` and `calls export` accept a team API key or an
   exact-project token (`sessions:read`), resolved like the developer
   commands. `--project` (or a project token, which requires it) reads one
-  project; an organization key without `--project` reads the whole
-  organization. `--owner` still overrides the inferred owner.
+  project; a team key without `--project` reads the whole
+  team. `--owner` still overrides the inferred owner.
 - `calls retention` resolves a team API key or a project token
   (`resolveTeamSettingEnvironment`), from the environment or a profile, with
   no project context, and the API decides what each principal may do.

@@ -88,7 +88,7 @@ export function dripInput(
   return body
 }
 export async function campaignRequest<T>(
-  client: ClientInstance<'organization'> | MessagingClient,
+  client: ClientInstance<'team'> | MessagingClient,
   request: RawRequest,
 ) {
   const response = await client.raw.request<{data: T}>({

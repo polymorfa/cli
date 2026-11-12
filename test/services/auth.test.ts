@@ -190,7 +190,7 @@ describe('AuthService', () => {
         },
         work: {
           credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
-          organization: 'org_work',
+          team: 'team_work',
         },
       },
       version: 2,
@@ -207,7 +207,7 @@ describe('AuthService', () => {
         active: true,
         credentialKind: 'apiKey',
         name: 'work',
-        organization: 'org_work',
+        team: 'team_work',
       },
     ])
     expect(fixture.credentials.get).not.toHaveBeenCalled()

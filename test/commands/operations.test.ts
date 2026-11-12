@@ -99,7 +99,7 @@ describe('operation commands', () => {
     process.exitCode = undefined
   })
 
-  test('lists organization operations with filters', async () => {
+  test('lists team operations with filters', async () => {
     api.responses.push({
       data: [operation('running', 2)],
       page: {nextCursor: null},
@@ -108,7 +108,7 @@ describe('operation commands', () => {
     await environment(() =>
       OperationList.run([
         '--owner',
-        'organization',
+        'team',
         '--status',
         'running',
         '--resource-type',
@@ -165,7 +165,7 @@ describe('operation commands', () => {
       OperationWait.run([
         OPERATION,
         '--owner',
-        'organization',
+        'team',
         '--timeout',
         '120',
         '--json',
@@ -182,7 +182,7 @@ describe('operation commands', () => {
     api.responses.push({data: operation('failed', 3)})
     silence()
     await environment(() =>
-      OperationWait.run([OPERATION, '--owner', 'organization', '--json']),
+      OperationWait.run([OPERATION, '--owner', 'team', '--json']),
     )
     expect(process.exitCode).toBe(1)
   })
@@ -195,7 +195,7 @@ describe('operation commands', () => {
       OperationWait.run([
         OPERATION,
         '--owner',
-        'organization',
+        'team',
         '--timeout',
         '0',
         '--json',
@@ -212,9 +212,7 @@ describe('operation commands', () => {
       {data: operation('cancelled', 4)},
     )
     const output = silence()
-    await environment(() =>
-      OperationWatch.run([OPERATION, '--owner', 'organization']),
-    )
+    await environment(() => OperationWatch.run([OPERATION, '--owner', 'team']))
     const text = output.mock.calls.map(([chunk]) => String(chunk)).join('')
     expect(text).toContain('\trunning\t')
     expect(text).toContain('\tcancelling\t')
@@ -231,7 +229,7 @@ describe('operation commands', () => {
       OperationWait.run([
         OPERATION,
         '--owner',
-        'organization',
+        'team',
         '--timeout',
         '1',
         '--json',
@@ -250,7 +248,7 @@ describe('operation commands', () => {
       OperationWatch.run([
         OPERATION,
         '--owner',
-        'organization',
+        'team',
         '--timeout',
         '1',
         '--json',
@@ -274,7 +272,7 @@ describe('operation commands', () => {
       OperationCancel.run([
         OPERATION,
         '--owner',
-        'organization',
+        'team',
         '--yes',
         '--idempotency-key',
         'cancel_1',
@@ -295,7 +293,7 @@ describe('operation commands', () => {
   test('does not cancel without --yes in a noninteractive process', async () => {
     vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const error = await environment(() =>
-      OperationCancel.run([OPERATION, '--owner', 'organization', '--json']),
+      OperationCancel.run([OPERATION, '--owner', 'team', '--json']),
     ).catch((caught: unknown) => caught)
     expect(exitCode(error)).toBe(2)
     expect(api.calls).toHaveLength(0)
@@ -315,7 +313,7 @@ function operation(status: string, sequence: number) {
     error: null,
     id: OPERATION,
     kind: 'campaign',
-    organizationId: 'org_1',
+    teamId: 'team_1',
     progress: null,
     projectId: PROJECT,
     resource: {id: 'c1', type: 'campaign'},

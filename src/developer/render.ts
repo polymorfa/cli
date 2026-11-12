@@ -26,7 +26,7 @@ export function renderEventDetail(
     ['Type', event.type],
     ['Source', event.source],
     ['Environment', event.environment],
-    ['Project', event.projectId ?? 'organization'],
+    ['Project', event.projectId ?? 'team'],
     ['Created', event.createdAt],
     ['Replayable until', event.replayableUntil],
     ['Payload availability', event.payloadAvailability],

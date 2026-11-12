@@ -57,7 +57,7 @@ optout
 ```
 
 The CLI uses only `MessagingClient.campaigns`. Every campaign command requires an
-organization Messaging API key. Reads require `campaigns:read`; creation and
+team Messaging API key. Reads require `campaigns:read`; creation and
 lifecycle mutations require `campaigns:manage`. The CLI rejects browser client
 tokens before transport. It does not broaden the SDK to project tokens even
 though the live middleware has a separately bound project-token path.
@@ -176,7 +176,7 @@ The same revision declares `projectId` as a query parameter on the
 single-campaign Platform operations, and a later one declares the `409` that
 update answers after launch. No CLI command calls those operations, so no flag
 changed. The API schema permits an omitted `projectId` for project tokens;
-the SDK's organization-only campaign resource requires it. Its create method
+the SDK's team-only campaign resource requires it. Its create method
 also requires the typed `CreatePlatformCampaignRequest` with a name and project
 ID. CLI campaign commands still use the separate Messaging resource with an
 explicit project slug.

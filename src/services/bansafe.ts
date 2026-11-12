@@ -11,7 +11,7 @@ import {
   type BanSafeSignalDefinition,
   type BanSafeTelemetryDetail,
   type BanSafeTelemetrySnapshot,
-  type ClientInstance as OrganizationClient,
+  type ClientInstance as TeamClient,
   type CursorPageMetadata,
   type ListBanSafeClaimsParams,
   type ListBanSafeCollectionParams,
@@ -55,7 +55,7 @@ interface ResultMetadata {
 }
 
 export async function listHealth(
-  client: OrganizationClient,
+  client: TeamClient,
   params: ListBanSafeHealthParams,
 ): Promise<BanSafePageResult<BanSafeNumber>> {
   const response = await client.banSafe.listHealth(params)
@@ -63,7 +63,7 @@ export async function listHealth(
 }
 
 export async function getHealth(
-  client: OrganizationClient,
+  client: TeamClient,
   session: string,
 ): Promise<BanSafeResult<BanSafeNumberDetail>> {
   const response = await client.banSafe.getHealth(session)
@@ -71,7 +71,7 @@ export async function getHealth(
 }
 
 export async function listHealthHistory(
-  client: OrganizationClient,
+  client: TeamClient,
   session: string,
   params: ListBanSafeHealthHistoryParams,
 ): Promise<BanSafeResult<BanSafeHealthHistory>> {
@@ -80,14 +80,14 @@ export async function listHealthHistory(
 }
 
 export async function listSignals(
-  client: OrganizationClient,
+  client: TeamClient,
 ): Promise<BanSafeResult<readonly BanSafeSignalDefinition[]>> {
   const response = await client.banSafe.listSignals()
   return result(response.data.data, response.metadata)
 }
 
 export async function getTelemetry(
-  client: OrganizationClient,
+  client: TeamClient,
   session: string,
 ): Promise<BanSafeResult<BanSafeTelemetryDetail>> {
   const response = await client.banSafe.getTelemetry(session)
@@ -95,7 +95,7 @@ export async function getTelemetry(
 }
 
 export async function listTelemetryHistory(
-  client: OrganizationClient,
+  client: TeamClient,
   session: string,
   params: ListBanSafeTelemetryHistoryParams,
 ): Promise<BanSafePageResult<BanSafeTelemetrySnapshot>> {
@@ -104,7 +104,7 @@ export async function listTelemetryHistory(
 }
 
 export async function listCollection(
-  client: OrganizationClient,
+  client: TeamClient,
   params: ListBanSafeCollectionParams,
 ): Promise<BanSafePageResult<BanSafeCollectionSession>> {
   const response = await client.banSafe.listCollection(params)
@@ -112,7 +112,7 @@ export async function listCollection(
 }
 
 export async function listFindings(
-  client: OrganizationClient,
+  client: TeamClient,
   params: ListBanSafeFindingsParams,
 ): Promise<BanSafePageResult<BanSafeFinding>> {
   const response = await client.banSafe.listFindings(params)
@@ -120,7 +120,7 @@ export async function listFindings(
 }
 
 export async function listEnforcement(
-  client: OrganizationClient,
+  client: TeamClient,
   params: ListBanSafeEnforcementParams,
 ): Promise<BanSafePageResult<BanSafeEnforcementSummary>> {
   const response = await client.banSafe.listEnforcement(params)
@@ -128,7 +128,7 @@ export async function listEnforcement(
 }
 
 export async function listIncidents(
-  client: OrganizationClient,
+  client: TeamClient,
   params: ListBanSafeIncidentsParams,
 ): Promise<BanSafePageResult<BanSafeIncident>> {
   const response = await client.banSafe.listIncidents(params)
@@ -136,7 +136,7 @@ export async function listIncidents(
 }
 
 export async function listClaims(
-  client: OrganizationClient,
+  client: TeamClient,
   params: ListBanSafeClaimsParams,
 ): Promise<BanSafePageResult<BanSafeClaim>> {
   const response = await client.banSafe.listClaims(params)
@@ -144,7 +144,7 @@ export async function listClaims(
 }
 
 export async function getClaim(
-  client: OrganizationClient,
+  client: TeamClient,
   claimId: string,
 ): Promise<BanSafeResult<BanSafeClaim>> {
   const response = await client.banSafe.getClaim(claimId)
@@ -152,7 +152,7 @@ export async function getClaim(
 }
 
 export async function reportIncident(
-  client: OrganizationClient,
+  client: TeamClient,
   body: ReportBanSafeIncidentRequest,
   options: RequestOptions,
 ) {
@@ -161,7 +161,7 @@ export async function reportIncident(
 }
 
 export async function retractIncident(
-  client: OrganizationClient,
+  client: TeamClient,
   incidentId: string,
   options: RequestOptions,
 ) {
@@ -170,7 +170,7 @@ export async function retractIncident(
 }
 
 export async function getProjectSafeMode(
-  client: OrganizationClient,
+  client: TeamClient,
   projectId: string,
 ) {
   const response = await client.projects.getSafeMode(projectId)
@@ -178,7 +178,7 @@ export async function getProjectSafeMode(
 }
 
 export async function updateProjectSafeMode(
-  client: OrganizationClient,
+  client: TeamClient,
   projectId: string,
   input: unknown,
   options: RequestOptions,
@@ -191,16 +191,13 @@ export async function updateProjectSafeMode(
   return result(response.data.data, response.metadata)
 }
 
-export async function getSessionSafeMode(
-  client: OrganizationClient,
-  session: string,
-) {
+export async function getSessionSafeMode(client: TeamClient, session: string) {
   const response = await client.sessions.getSafeMode(session)
   return result(response.data.data, response.metadata)
 }
 
 export async function updateSessionSafeMode(
-  client: OrganizationClient,
+  client: TeamClient,
   session: string,
   input: unknown,
   options: RequestOptions,
@@ -213,16 +210,13 @@ export async function updateSessionSafeMode(
   return result(response.data.data, response.metadata)
 }
 
-export async function getWarmupPlan(
-  client: OrganizationClient,
-  projectId: string,
-) {
+export async function getWarmupPlan(client: TeamClient, projectId: string) {
   const response = await client.projects.getWarmupPlan(projectId)
   return result(response.data.data, response.metadata)
 }
 
 export async function getInsuranceEvidence(
-  client: OrganizationClient,
+  client: TeamClient,
   projectId: string,
 ) {
   const response = await client.projects.getInsuranceEvidence(projectId)
@@ -230,7 +224,7 @@ export async function getInsuranceEvidence(
 }
 
 export async function updateInsuranceEvidence(
-  client: OrganizationClient,
+  client: TeamClient,
   projectId: string,
   input: unknown,
   options: RequestOptions,
@@ -244,7 +238,7 @@ export async function updateInsuranceEvidence(
 }
 
 export async function updateWarmupPlan(
-  client: OrganizationClient,
+  client: TeamClient,
   projectId: string,
   input: unknown,
   options: RequestOptions,
@@ -258,7 +252,7 @@ export async function updateWarmupPlan(
 }
 
 export async function listHealthActions(
-  client: OrganizationClient,
+  client: TeamClient,
   params: ListBanSafeHealthActionsParams,
 ): Promise<BanSafePageResult<BanSafeHealthAction>> {
   const response = await client.banSafe.listHealthActions(params)
@@ -266,7 +260,7 @@ export async function listHealthActions(
 }
 
 export async function getHealthPolicy(
-  client: OrganizationClient,
+  client: TeamClient,
   projectId: string,
 ): Promise<BanSafeResult<ProjectHealthPolicy>> {
   const response = await client.projects.getHealthPolicy(projectId)
@@ -274,7 +268,7 @@ export async function getHealthPolicy(
 }
 
 export async function updateHealthPolicy(
-  client: OrganizationClient,
+  client: TeamClient,
   projectId: string,
   input: unknown,
   options: RequestOptions = {},

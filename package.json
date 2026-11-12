@@ -53,7 +53,7 @@
         "description": "Add, list, and remove audience members."
       },
       "audit-log": {
-        "description": "Inspect organization audit activity."
+        "description": "Inspect team audit activity."
       },
       "auth": {
         "description": "Manage authentication profiles and credentials."
@@ -167,7 +167,7 @@
         "description": "Resolve phone numbers and usernames to Polymorfa user IDs."
       },
       "key": {
-        "description": "Inspect and revoke organization API keys."
+        "description": "Inspect and revoke team API keys."
       },
       "label": {
         "description": "Manage Messaging labels and chat assignments."
@@ -182,7 +182,7 @@
         "description": "Inspect, download, and persist Messaging media."
       },
       "member": {
-        "description": "Inspect organization members."
+        "description": "Inspect team members."
       },
       "message": {
         "description": "Send messages and perform message actions."
@@ -191,7 +191,7 @@
         "description": "Send a message by content type."
       },
       "optout": {
-        "description": "Manage organization opt-out suppression."
+        "description": "Manage team opt-out suppression."
       },
       "optout:settings": {
         "description": "Inspect and replace STOP/START keyword capture."
@@ -233,13 +233,13 @@
         "description": "Create, inspect, and cancel persistent onboarding QuickLinks."
       },
       "security-incident": {
-        "description": "Inspect and acknowledge organization security incidents."
+        "description": "Inspect and acknowledge team security incidents."
       },
       "session": {
         "description": "Manage Platform sessions."
       },
       "session-ban": {
-        "description": "Inspect recorded organization session bans."
+        "description": "Inspect recorded team session bans."
       },
       "voice": {
         "description": "Voice Automation (beta): audio library and text-to-speech provider credentials."

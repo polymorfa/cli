@@ -195,7 +195,7 @@ describe('event stream', () => {
   test('requires a project owner', async () => {
     vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const error = await environment(() =>
-      EventStream.run(['--owner', 'organization', '--json']),
+      EventStream.run(['--owner', 'team', '--json']),
     ).catch((caught: unknown) => caught)
     expect(exitCode(error)).toBe(8)
     expect(sdk.params).toHaveLength(0)
@@ -223,7 +223,7 @@ function item(id: string, cursor: string, withBody = true) {
     sequence: 2,
     event: {
       id,
-      organizationId: 'org_1',
+      teamId: 'team_1',
       projectId: PROJECT,
       type: 'message.received',
       source: 'runtime',

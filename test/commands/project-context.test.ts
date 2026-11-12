@@ -41,7 +41,7 @@ describe('link and project commands', () => {
             _creationTime: 0,
             _id: APP,
             name: 'App',
-            orgId: 'org_1',
+            teamId: 'team_1',
             slug: 'app',
             stage: 'development',
           },
@@ -89,7 +89,7 @@ describe('link and project commands', () => {
   })
 
   test.each(['malformed', 'unreadable'])(
-    'organization commands ignore a %s project link',
+    'team commands ignore a %s project link',
     async (kind) => {
       const link = join(directory, 'polymorfa.json')
       if (kind === 'malformed') await writeFile(link, '{invalid json')
@@ -116,7 +116,7 @@ describe('link and project commands', () => {
     },
   )
 
-  test('organization developer commands ignore a malformed project link', async () => {
+  test('team developer commands ignore a malformed project link', async () => {
     await writeFile(join(directory, 'polymorfa.json'), '{invalid json')
     server = await startHttpServer({body: {data: []}})
 
@@ -128,7 +128,7 @@ describe('link and project commands', () => {
         POLYMORFA_CONFIG_DIR: join(directory, 'config'),
         POLYMORFA_PROJECT_TOKEN: undefined,
       },
-      () => runCommand('webhook list --owner organization --json --verbose'),
+      () => runCommand('webhook list --owner team --json --verbose'),
     )
 
     expect(result.error, result.stderr).toBeUndefined()

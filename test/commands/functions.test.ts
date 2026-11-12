@@ -391,7 +391,7 @@ describe('Function commands', () => {
     expect(result.stderr).toContain('reconcile')
     expect(server.requests).toHaveLength(1)
   })
-  test('uses project tokens without silently treating them as organization credentials', async () => {
+  test('uses project tokens without silently treating them as team credentials', async () => {
     server = await startHttpServer({
       body: {data: {items: [], nextCursor: null}},
     })

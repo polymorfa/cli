@@ -161,7 +161,7 @@ describe('calls stats', () => {
     expect(result.stdout).not.toContain('Calls by hour')
   })
 
-  test('reads the whole organization without --project and prints the heatmap', async () => {
+  test('reads the whole team without --project and prints the heatmap', async () => {
     server = await startHttpSequenceServer([
       {
         body: {
@@ -199,7 +199,7 @@ describe('calls stats', () => {
     expect(JSON.parse(result.stdout)).toEqual({
       schemaVersion: 1,
       data: stats(),
-      context: {owner: 'organization', principalType: 'organization_key'},
+      context: {owner: 'team', principalType: 'team_key'},
       request: {apiVersion: null, id: 'req_1', status: 200},
     })
   })

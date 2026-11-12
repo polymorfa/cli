@@ -229,7 +229,7 @@ export function renderValue(
 }
 ```
 
-Define `BaseCommand` with inherited flags `--json`, `--quiet`, `--no-color`, `--profile`, `--project`, `--api-version`, `--timeout`, and `--verbose`. Make `--json` and `--quiet` mutually exclusive. Organization-owned requests use the organization bound to the selected key; do not expose a cosmetic organization override. Add `outputMode(flags)` and `writeValue(value, human)` helpers that write only to stdout.
+Define `BaseCommand` with inherited flags `--json`, `--quiet`, `--no-color`, `--profile`, `--project`, `--api-version`, `--timeout`, and `--verbose`. Make `--json` and `--quiet` mutually exclusive. Team-owned requests use the team bound to the selected key; do not expose a cosmetic team override. Add `outputMode(flags)` and `writeValue(value, human)` helpers that write only to stdout.
 
 Change `version` to extend `BaseCommand`, parse its flags, and render `{cli, sdk}` in JSON or the existing literal in human mode.
 
@@ -433,7 +433,7 @@ export function createRawClient(environment: ResolvedEnvironment): RawClient {
   if (environment.surface === 'platform') {
     return new Client({
       credential: {
-        type: 'organizationApiKey',
+        type: 'teamApiKey',
         value: environment.credential.value,
       },
       ...shared,
