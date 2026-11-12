@@ -28,6 +28,10 @@ export default class CampaignLaunch extends BaseCommand {
     'scheduled-at': Flags.string({
       description: 'Launch time as epoch milliseconds or an ISO 8601 instant.',
     }),
+    'skip-missing-variables': Flags.boolean({
+      description:
+        'Skip recipients missing a template variable with no value or fallback. Without this flag launch fails.',
+    }),
   }
 
   async run(): Promise<void> {
@@ -38,6 +42,7 @@ export default class CampaignLaunch extends BaseCommand {
       flags['project-slug'],
       args.campaign,
       scheduledAt,
+      flags['skip-missing-variables'],
       {idempotencyKey: idempotencyKey(flags['idempotency-key'])},
     )
     this.writeValue(
