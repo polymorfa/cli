@@ -7,7 +7,7 @@ import {
 
 export default class TestingAccountMode extends BaseCommand {
   static override description =
-    'Change a Test number account mode. A change unlinks every companion, which must pair again.'
+    'Change a Test number account mode. A change unlinks every companion, which must pair again. Fails with a conflict if the number is claimed in Inspector or another change is pending.'
   static override args = {
     session: Args.string({
       required: true,

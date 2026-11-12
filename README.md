@@ -2415,9 +2415,10 @@ Node.js 22 in hosted CI.
 
 ### Test-number account modes
 
-The Business commands follow API source `f391fb49bbffddb45459525091fe8851182fc298`.
+The Business commands follow API source `14153ad9d69ddd3bae972594e6b3dc3ddae8e8e4`.
 `contracts/business-account-modes.json` binds the actual API producer input.
 This source support does not establish hosted availability or a package release.
+A 409 from `testing account-mode` means the Test number is claimed in Inspector or another mode change is pending.
 The CLI validates this contract and uses the installed SDK's public transport;
 it does not assume that the registry SDK exports the new typed operation.
 

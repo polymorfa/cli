@@ -1,4 +1,5 @@
 import {
+  PolymorfaConflictError,
   PolymorfaServerError,
   PolymorfaValidationError,
   type MessagingClient,
@@ -68,12 +69,30 @@ export async function setTestingAccountMode(
       {code: 'invalid_session'},
     )
   const body = testingAccountModeInput(input)
-  const response = await client.raw.request<unknown>({
-    ...options,
-    method: 'PUT',
-    path: `/messaging/${encodeURIComponent(session)}/phone/account-mode`,
-    body,
-  })
+  const response = await client.raw
+    .request<unknown>({
+      ...options,
+      method: 'PUT',
+      path: `/messaging/${encodeURIComponent(session)}/phone/account-mode`,
+      body,
+    })
+    .catch((error: unknown) => {
+      if (!(error instanceof PolymorfaConflictError)) throw error
+      throw new PolymorfaConflictError(
+        `The Test number is claimed in Inspector, or another mode change is pending. Unclaim it in Inspector or retry. The API said: ${error.message}`,
+        {
+          cause: error,
+          details: error.details,
+          ...(error.code === undefined ? {} : {code: error.code}),
+          ...(error.status === undefined ? {} : {status: error.status}),
+          ...(error.requestId === undefined
+            ? {}
+            : {requestId: error.requestId}),
+          ...(error.docUrl === undefined ? {} : {docUrl: error.docUrl}),
+          ...(error.metadata === undefined ? {} : {metadata: error.metadata}),
+        },
+      )
+    })
   const result = resultSchema.safeParse(response.data)
   if (response.metadata.status !== 200 || !result.success)
     throw new PolymorfaServerError(

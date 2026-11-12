@@ -55270,8 +55270,8 @@
     },
     {
       "id": "testing account-mode",
-      "summary": "Change a Test number account mode. A change unlinks every companion, which must pair again.",
-      "description": "Change a Test number account mode. A change unlinks every companion, which must pair again.",
+      "summary": "Change a Test number account mode. A change unlinks every companion, which must pair again. Fails with a conflict if the number is claimed in Inspector or another change is pending.",
+      "description": "Change a Test number account mode. A change unlinks every companion, which must pair again. Fails with a conflict if the number is claimed in Inspector or another change is pending.",
       "usage": ["polymorfa testing account-mode SESSION [flags]"],
       "aliases": [],
       "hidden": false,

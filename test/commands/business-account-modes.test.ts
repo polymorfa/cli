@@ -173,3 +173,30 @@ test('creates a Test QuickLink with mode-specific flags', async () => {
     await server.close()
   }
 })
+test('explains a 409 claimed or pending conflict and exits non-zero', async () => {
+  const server = await startHttpSequenceServer([
+    {
+      status: 409,
+      body: {
+        error: {
+          type: 'conflict_error',
+          code: 'state_conflict',
+          message: 'The request conflicts with the resource state.',
+        },
+      },
+    },
+  ])
+  try {
+    await environment(server.baseUrl, async () => {
+      const result = await runCommand(
+        'testing account-mode demo --account-type business_app --yes',
+      )
+      expect(result.error).toBeDefined()
+      expect(`${result.stderr}${result.error?.message}`).toContain(
+        'claimed in Inspector',
+      )
+    })
+  } finally {
+    await server.close()
+  }
+})
