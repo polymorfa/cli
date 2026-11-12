@@ -9,7 +9,7 @@ import {
 
 export default class SessionView extends BaseCommand {
   static override description =
-    'Read one session by its ID. Requires an organization API key with sessions:read.'
+    'Read one session by its ID. Requires an team key with sessions:read.'
   static override args = {
     session: Args.string({description: 'Session ID.', required: true}),
   }

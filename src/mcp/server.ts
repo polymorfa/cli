@@ -92,7 +92,7 @@ export function createMcpServer(
         readOnlyHint: true,
       },
       description:
-        'List stored session summaries in one project. Requires a CLI organization API key with sessions:read.',
+        'List stored session summaries in one project. Requires a CLI team key with sessions:read.',
       inputSchema: z.object({
         projectId: z.string().regex(LISTENER_PROJECT_ID_PATTERN),
       }),
@@ -105,7 +105,7 @@ export function createMcpServer(
         return {
           content: [
             {
-              text: 'Could not list project sessions with the selected CLI organization API key.',
+              text: 'Could not list project sessions with the selected CLI team key.',
               type: 'text' as const,
             },
           ],

@@ -46,6 +46,9 @@
     "commands": "./dist/commands",
     "topicSeparator": " ",
     "topics": {
+      "account": {
+        "description": "Sign in with browser approval and inspect allowed account resources."
+      },
       "audience": {
         "description": "Manage campaign audiences and their members."
       },
@@ -167,7 +170,7 @@
         "description": "Resolve phone numbers and usernames to Polymorfa user IDs."
       },
       "key": {
-        "description": "Inspect and revoke organization API keys."
+        "description": "Inspect and revoke team keys."
       },
       "label": {
         "description": "Manage Messaging labels and chat assignments."

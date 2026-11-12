@@ -136,7 +136,7 @@ collections, orders, compliance, observation policies, webhooks, client tokens,
 project templates, project-scoped campaigns, and all 33 signed event payload
 schemas plus Platform
 organizations, projects, sessions, billing, campaigns, audiences, opt-outs,
-media, organization API keys, members, audit logs, session bans, security
+media, team keys, members, audit logs, session bans, security
 incidents, project-token metadata, saved QuickLink (widget) settings, and batch
 session stop/delete. Curated commands do not use the SDK's raw escape
 hatch to paper over a missing public contract. The explicit `api` command is
@@ -585,7 +585,7 @@ group
 ```
 
 Number pairing uses a persistent hosted QuickLink. `quicklink create` accepts a
-JSON request with an organization API key and returns the link URL,
+JSON request with an team key and returns the link URL,
 `quicklink view` reads its status, and `quicklink cancel` invalidates a link that
 has not connected. View and cancel also accept an exact-project token. Saved
 QuickLink settings are managed with `widget view` and `widget update`; the CLI
@@ -814,7 +814,7 @@ bounded concurrency, and machine-readable partial-failure artifacts.
 
 The `flow` top-level command name remains reserved but is not shipped against
 this SDK baseline. The separate Platform template and Flow routes require
-dashboard JWTs and reject organization keys. The CLI must not collect, persist,
+dashboard JWTs and reject team keys. The CLI must not collect, persist,
 or replay dashboard session JWTs to bypass that boundary, and neither MCP tools
 nor skills may expose those routes. Platform template management and Flow
 commands can enter the implementation plan only after the Platform API provides
@@ -1079,8 +1079,8 @@ slices:
   commands, with accepted-work receipts and direct requeue;
 - explicit owner-scoped event list/view/replay, webhook CRUD/test/secret
   rotation, delivery and attempt inspection, and retry commands;
-- persistent QuickLink create with organization keys, view/cancel with
-  organization keys or exact-project tokens, and no direct session QR fallback;
+- persistent QuickLink create with team keys, view/cancel with
+  team keys or exact-project tokens, and no direct session QR fallback;
 - the bounded SSE listener with JSONL and human sinks, fail-closed gap handling,
   cumulative acknowledgement, checkpointed reconnects, exact-byte local
   signing, and redirect-safe forwarding;

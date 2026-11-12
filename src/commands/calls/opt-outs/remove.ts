@@ -15,7 +15,7 @@ export default class CallsOptOutsRemove extends BaseCommand {
   }
 
   static override description =
-    'Remove one entry from the team’s do-not-call list. The person can be called again at once. Requires --yes and an organization API key; an unknown ID fails with exit code 4.'
+    'Remove one entry from the team’s do-not-call list. The person can be called again at once. Requires --yes and an team key; an unknown ID fails with exit code 4.'
 
   static override examples = [
     '<%= config.bin %> calls opt-outs remove 0b9f6a52-8f0e-4a44-9d51-3c1f9d6f2a10 --yes',

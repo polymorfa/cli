@@ -69,7 +69,7 @@ package metadata.
 ## Credential rules
 
 - `calls policy` and `calls opt-outs` resolve Platform credentials, so they
-  require an organization API key. The API answers a project token or client
+  require an team key. The API answers a project token or client
   token with `403 permission_denied`, which exits with code 3.
 - `calls permission get` and `calls check` require a server API key. The CLI
   refuses a Messaging client token before sending a request, because the API
