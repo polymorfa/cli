@@ -13,15 +13,15 @@ export default class GroupDescription extends BaseCommand {
     'Replace a group description. Pass an empty value to clear it.'
 
   static override examples = [
-    '<%= config.bin %> group description 750000000009 --session session_123 --value "Weekly launch coordination"',
+    '<%= config.bin %> group description 750000000009 --connection connection_123 --value "Weekly launch coordination"',
   ]
 
   static override flags = {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this change.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     value: Flags.string({
@@ -34,7 +34,7 @@ export default class GroupDescription extends BaseCommand {
     const {args, flags} = await this.parse(GroupDescription)
     const result = await setGroupText(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
-      flags.session,
+      flags.connection,
       args.group,
       'description',
       flags.value,

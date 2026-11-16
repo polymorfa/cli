@@ -33,11 +33,7 @@ export default class TestingHistoryFixtureCreate extends BaseCommand {
       )
     const response = await (
       await this.messagingClient(flags, {serverApiKeyOnly: 'Testing history'})
-    ).raw.request<{fixtureId: string}>({
-      method: 'POST',
-      path: `/messaging/projects/${encodeURIComponent(flags.project)}/test-history-fixtures`,
-      body: input,
-    })
+    ).testing.createHistoryFixture(flags.project, {messages: input.messages})
     this.writeValue(
       {data: response.data, metadata: response.metadata},
       response.data.fixtureId,

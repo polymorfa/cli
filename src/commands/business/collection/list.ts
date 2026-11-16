@@ -32,8 +32,8 @@ export default class BusinessCollectionList extends BaseCommand {
       description: 'Polymorfa business user ID.',
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     width: Flags.integer({
@@ -47,7 +47,7 @@ export default class BusinessCollectionList extends BaseCommand {
     const {flags} = await this.parse(BusinessCollectionList)
     const result = await listBusinessCollections(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       {
         id: flags.id,
         ...(flags.after === undefined ? {} : {after: flags.after}),

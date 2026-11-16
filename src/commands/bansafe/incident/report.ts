@@ -12,14 +12,17 @@ export default class BanSafeIncidentReport extends BaseCommand {
     }),
     note: Flags.string({description: 'Optional incident context.'}),
     'occurred-at': Flags.string({description: 'Observed ISO 8601 instant.'}),
-    session: Flags.string({description: 'Session ID or name.', required: true}),
+    connection: Flags.string({
+      description: 'Connection ID or name.',
+      required: true,
+    }),
   }
   async run(): Promise<void> {
     const {flags} = await this.parse(BanSafeIncidentReport)
     const result = await reportIncident(
       await this.platformClient(flags),
       {
-        session: flags.session,
+        connection: flags.connection,
         ...(flags.note === undefined ? {} : {note: flags.note}),
         ...(flags['occurred-at'] === undefined
           ? {}

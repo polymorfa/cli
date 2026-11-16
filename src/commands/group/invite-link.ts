@@ -11,8 +11,8 @@ export default class GroupInviteLink extends BaseCommand {
   static override description = 'Print the current invite link for a group.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -21,7 +21,7 @@ export default class GroupInviteLink extends BaseCommand {
     const {args, flags} = await this.parse(GroupInviteLink)
     const result = await getGroupInviteLink(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
-      flags.session,
+      flags.connection,
       args.group,
     )
     this.writeValue(result, result.data.url, flags)

@@ -12,8 +12,8 @@ export default class ChannelUnfollow extends BaseCommand {
 
   static override flags = {
     'idempotency-key': Flags.string({description: 'Safely identify retries.'}),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -22,7 +22,7 @@ export default class ChannelUnfollow extends BaseCommand {
     const {args, flags} = await this.parse(ChannelUnfollow)
     const result = await unfollowChannel(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
-      flags.session,
+      flags.connection,
       args.channel,
       flags['idempotency-key'] === undefined
         ? {}

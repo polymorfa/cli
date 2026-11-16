@@ -746,7 +746,7 @@ export async function listProjects(
 ): Promise<readonly ProjectWithStats[]> {
   const client = new Client({
     baseUrl: input.baseUrl,
-    credential: {type: 'organizationApiKey', value: input.credential},
+    credential: {type: 'teamApiKey', value: input.credential},
     ...(input.apiVersion === undefined ? {} : {apiVersion: input.apiVersion}),
     ...(input.timeoutMs === undefined ? {} : {timeoutMs: input.timeoutMs}),
   })

@@ -6,13 +6,13 @@ import {
 import {FlowsCommand} from '../../../flows/command.js'
 export default class FlowEndpointSet extends FlowsCommand {
   static override description =
-    "Create or replace a Flow's data endpoint on one Number (beta). Requires sessions:manage. forward and function need a Polymorfa-managed key; direct needs your own key. A forward signing secret is printed once. Makes one attempt."
+    "Create or replace a Flow's data endpoint on one Connection (beta). Requires connections:manage. forward and function need a Polymorfa-managed key; direct needs your own key. A forward signing secret is printed once. Makes one attempt."
   static override args = {
     flow: Args.string({description: 'Flow draft UUID.', required: true}),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Number name or ID in the same project.',
+    connection: Flags.string({
+      description: 'Connection name or ID in the same project.',
       required: true,
     }),
     mode: Flags.string({
@@ -40,7 +40,7 @@ export default class FlowEndpointSet extends FlowsCommand {
   async run(): Promise<void> {
     const {args, flags} = await this.parse(FlowEndpointSet)
     const common = {
-      sessionId: flags.session,
+      connectionId: flags.connection,
       ...(flags.disabled ? {enabled: false} : {}),
       ...(flags['expected-revision'] === undefined
         ? {}

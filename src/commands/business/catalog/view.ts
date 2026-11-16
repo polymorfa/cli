@@ -27,8 +27,8 @@ export default class BusinessCatalogView extends BaseCommand {
       max: 100,
       min: 1,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     width: Flags.integer({
@@ -42,7 +42,7 @@ export default class BusinessCatalogView extends BaseCommand {
     const {flags} = await this.parse(BusinessCatalogView)
     const result = await viewBusinessCatalog(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       {
         id: flags.id,
         ...(flags.after === undefined ? {} : {after: flags.after}),

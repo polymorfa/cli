@@ -25,8 +25,8 @@ export default class BusinessProductReplace extends BaseCommand {
         'Read the complete JSON replacement from a file or standard input (-).',
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -35,7 +35,7 @@ export default class BusinessProductReplace extends BaseCommand {
     const {args, flags} = await this.parse(BusinessProductReplace)
     const result = await replaceBusinessProduct(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       args.product,
       await readJsonInput(flags.input),
       flags['idempotency-key'] === undefined

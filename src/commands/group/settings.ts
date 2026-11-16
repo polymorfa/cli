@@ -12,7 +12,7 @@ export default class GroupSettings extends BaseCommand {
     'Change who can edit group info, send messages, and add members, and whether joining needs admin approval.'
 
   static override examples = [
-    '<%= config.bin %> group settings 750000000009 --session session_123 --messaging admins --join-approval on',
+    '<%= config.bin %> group settings 750000000009 --connection connection_123 --messaging admins --join-approval on',
   ]
 
   static override flags = {
@@ -32,8 +32,8 @@ export default class GroupSettings extends BaseCommand {
       description: 'Who can send messages.',
       options: ['admins', 'all'],
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -42,7 +42,7 @@ export default class GroupSettings extends BaseCommand {
     const {args, flags} = await this.parse(GroupSettings)
     const result = await updateGroupSettings(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
-      flags.session,
+      flags.connection,
       args.group,
       {
         infoEditing: flags['info-editing'] as 'admins' | 'all' | undefined,

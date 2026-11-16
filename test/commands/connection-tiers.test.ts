@@ -36,7 +36,7 @@ function tierChange(
   }
 }
 
-describe('session tier commands', () => {
+describe('connection tier commands', () => {
   let server: TestHttpServer | undefined
 
   afterEach(async () => {
@@ -55,19 +55,19 @@ describe('session tier commands', () => {
       },
     ],
     [
-      '--tier standard --split --stay official_api --new-number-name support-linked',
+      '--tier standard --split --stay official_api --new-connection-name support-linked',
       {
         tierOverride: 'standard',
         hybridResolution: {
           action: 'split',
-          existingNumberTransport: 'official_api',
-          newNumberName: 'support-linked',
+          existingConnectionTransport: 'official_api',
+          newConnectionName: 'support-linked',
         },
       },
     ],
     [
       `--tier pro --merge-with ${ABSORBED}`,
-      {tierOverride: 'pro', hybridMerge: {absorbNumberId: ABSORBED}},
+      {tierOverride: 'pro', hybridMerge: {absorbConnectionId: ABSORBED}},
     ],
     [
       `--tier free --keep official_api --project ${PROJECT}`,
@@ -80,12 +80,12 @@ describe('session tier commands', () => {
   ])('quote %s sends the exact request body', async (flags, body) => {
     server = await startHttpSequenceServer([{body: {data: tierChange()}}])
     const result = await platform(() =>
-      runCommand(`session tier quote ${SURVIVOR} ${flags} --json`),
+      runCommand(`connection tier quote ${SURVIVOR} ${flags} --json`),
     )
     expect(result.stderr).toBe('')
     expect(result.error).toBeUndefined()
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      `POST /platform/sessions/${SURVIVOR}/tier-quotes`,
+      `POST /platform/connections/${SURVIVOR}/tier-quotes`,
     ])
     expect(JSON.parse(server.requests[0]!.body)).toEqual(body)
     expect(JSON.parse(result.stdout)).toMatchObject({data: {id: QUOTE}})
@@ -103,21 +103,21 @@ describe('session tier commands', () => {
     ['--tier standard --split', '--split needs --stay'],
     ['--tier standard --split --stay official_api', '--split needs --stay'],
     [
-      '--tier standard --split --stay official_api --new-number-name -bad',
-      '--new-number-name must be 1-64 characters',
+      '--tier standard --split --stay official_api --new-connection-name -bad',
+      '--new-connection-name must be 1-64 characters',
     ],
     ['--tier standard --stay official_api', 'used only with --split'],
     [
-      '--tier standard --keep linked_devices --new-number-name x',
+      '--tier standard --keep linked_devices --new-connection-name x',
       'used only with --split',
     ],
     [`--tier standard --merge-with ${ABSORBED}`, 'needs --tier pro'],
-    ['--tier pro --merge-with support', 'Number UUID'],
+    ['--tier pro --merge-with support', 'Connection UUID'],
     ['--tier standard --keep both', 'Expected --keep=both to be one of'],
   ])('quote %s fails before sending', async (flags, message) => {
     server = await startHttpSequenceServer([{body: {data: tierChange()}}])
     const result = await platform(() =>
-      runCommand(`session tier quote ${SURVIVOR} ${flags}`),
+      runCommand(`connection tier quote ${SURVIVOR} ${flags}`),
     )
     expect(exitCode(result.error)).toBe(2)
     expect(result.stderr).toContain(message)
@@ -130,9 +130,9 @@ describe('session tier commands', () => {
         body: {
           data: tierChange({
             action: 'split',
-            existingNumberTransport: 'official_api',
-            newNumberName: 'support-linked',
-            survivingNumberId: SURVIVOR,
+            existingConnectionTransport: 'official_api',
+            newConnectionName: 'support-linked',
+            survivingConnectionId: SURVIVOR,
             effectiveAtMs: 1_800_000_000_000,
           }),
         },
@@ -140,16 +140,16 @@ describe('session tier commands', () => {
     ])
     const result = await platform(() =>
       runCommand(
-        `session tier quote support --tier standard --split --stay official_api --new-number-name support-linked`,
+        `connection tier quote support --tier standard --split --stay official_api --new-connection-name support-linked`,
       ),
     )
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain(
-      `Hybrid Link: split: official_api stays on ${SURVIVOR}; the other connection moves to new Number "support-linked"`,
+      `Hybrid Link: split: official_api stays on ${SURVIVOR}; the other method moves to new Connection "support-linked"`,
     )
     expect(result.stdout).toContain('Hybrid Link status: not confirmed')
     expect(result.stdout).toContain(
-      `polymorfa session tier confirm support --quote ${QUOTE} --yes`,
+      `polymorfa connection tier confirm support --quote ${QUOTE} --yes`,
     )
   })
 
@@ -157,20 +157,20 @@ describe('session tier commands', () => {
     server = await startHttpSequenceServer([
       conflict(
         'hybrid_choice_required',
-        'choose which Hybrid Link connection to keep, or split the Number, before leaving Pro',
+        'choose which Hybrid Link connection to keep, or split the Connection, before leaving Pro',
       ),
     ])
     const human = await platform(() =>
-      runCommand(`session tier quote support --tier standard`),
+      runCommand(`connection tier quote support --tier standard`),
     )
     expect(exitCode(human.error)).toBe(4)
     expect(human.stderr).toContain(
-      'Choose --keep linked_devices|official_api, or --split --stay linked_devices|official_api --new-number-name NAME, and quote again.',
+      'Choose --keep linked_devices|official_api, or --split --stay linked_devices|official_api --new-connection-name NAME, and quote again.',
     )
     expect(human.stderr).toContain('Request ID: req_hybrid')
 
     const json = await platform(() =>
-      runCommand(`session tier quote support --tier inherit --json`),
+      runCommand(`connection tier quote support --tier inherit --json`),
     )
     expect(exitCode(json.error)).toBe(4)
     expect(JSON.parse(json.stderr)).toMatchObject({
@@ -192,7 +192,7 @@ describe('session tier commands', () => {
     ])
     const result = await platform(() =>
       runCommand(
-        `session tier quote ${SURVIVOR} --tier pro --merge-with ${ABSORBED} --json`,
+        `connection tier quote ${SURVIVOR} --tier pro --merge-with ${ABSORBED} --json`,
       ),
     )
     expect(exitCode(result.error)).toBe(4)
@@ -212,7 +212,7 @@ describe('session tier commands', () => {
             {
               action: 'keep',
               keepTransport: 'linked_devices',
-              survivingNumberId: SURVIVOR,
+              survivingConnectionId: SURVIVOR,
               status: 'scheduled',
               failureReason: null,
               metaDisconnectRequired: false,
@@ -224,7 +224,7 @@ describe('session tier commands', () => {
       },
     ])
     const refused = await platform(() =>
-      runCommand(`session tier confirm support --quote ${QUOTE}`),
+      runCommand(`connection tier confirm support --quote ${QUOTE}`),
     )
     expect(exitCode(refused.error)).toBe(2)
     expect(refused.stderr).toContain('Missing required flag yes')
@@ -232,12 +232,12 @@ describe('session tier commands', () => {
 
     const confirmed = await platform(() =>
       runCommand(
-        `session tier confirm support --quote ${QUOTE} --yes --idempotency-key confirm-1`,
+        `connection tier confirm support --quote ${QUOTE} --yes --idempotency-key confirm-1`,
       ),
     )
     expect(confirmed.error).toBeUndefined()
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      'PATCH /platform/sessions/support',
+      'PATCH /platform/connections/support',
     ])
     expect(JSON.parse(server.requests[0]!.body)).toEqual({quoteId: QUOTE})
     expect(server.requests[0]!.headers['idempotency-key']).toBe('confirm-1')
@@ -246,21 +246,21 @@ describe('session tier commands', () => {
     )
     expect(confirmed.stdout).toContain('Hybrid Link status: scheduled')
     expect(confirmed.stdout).toContain(
-      `polymorfa session tier status support ${QUOTE}`,
+      `polymorfa connection tier status support ${QUOTE}`,
     )
   })
 
-  test('status shows a completed split, the new Number and the disconnect instruction', async () => {
+  test('status shows a completed split, the new Connection and the disconnect instruction', async () => {
     server = await startHttpSequenceServer([
       {
         body: {
           data: tierChange(
             {
               action: 'split',
-              existingNumberTransport: 'linked_devices',
-              newNumberName: 'support-cloud',
-              survivingNumberId: SURVIVOR,
-              newNumberId: CREATED,
+              existingConnectionTransport: 'linked_devices',
+              newConnectionName: 'support-cloud',
+              survivingConnectionId: SURVIVOR,
+              newConnectionId: CREATED,
               status: 'completed',
               failureReason: null,
               metaDisconnectRequired: true,
@@ -272,11 +272,11 @@ describe('session tier commands', () => {
       },
     ])
     const result = await platform(() =>
-      runCommand(`session tier status support ${QUOTE}`),
+      runCommand(`connection tier status support ${QUOTE}`),
     )
     expect(result.error).toBeUndefined()
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      `GET /platform/sessions/support/tier-quotes/${QUOTE}`,
+      `GET /platform/connections/support/tier-quotes/${QUOTE}`,
     ])
     expect(result.stdout).toContain(`Tier change ${QUOTE}: applied`)
     expect(result.stdout).toContain(`(${CREATED})`)
@@ -293,7 +293,7 @@ describe('session tier commands', () => {
     }
     server = await startHttpSequenceServer([{body: {data: rejected}}])
     const human = await platform(() =>
-      runCommand(`session tier status support ${QUOTE}`),
+      runCommand(`connection tier status support ${QUOTE}`),
     )
     expect(human.error).toBeUndefined()
     expect(human.stdout).toContain(
@@ -308,8 +308,8 @@ describe('session tier commands', () => {
     const failed = tierChange(
       {
         action: 'merge',
-        absorbNumberId: ABSORBED,
-        survivingNumberId: SURVIVOR,
+        absorbConnectionId: ABSORBED,
+        survivingConnectionId: SURVIVOR,
         status: 'failed',
         failureReason: 'hybrid_transition.runtime_unconfirmed',
         metaDisconnectRequired: false,
@@ -319,14 +319,14 @@ describe('session tier commands', () => {
     )
     server = await startHttpSequenceServer([{body: {data: failed}}])
     const human = await platform(() =>
-      runCommand(`session tier status support ${QUOTE}`),
+      runCommand(`connection tier status support ${QUOTE}`),
     )
     expect(human.stdout).toContain(`merge ${ABSORBED} into ${SURVIVOR}`)
     expect(human.stdout).toContain(
       'Hybrid Link status: failed (hybrid_transition.runtime_unconfirmed)',
     )
     const json = await platform(() =>
-      runCommand(`session tier status support ${QUOTE} --json`),
+      runCommand(`connection tier status support ${QUOTE} --json`),
     )
     expect(JSON.parse(json.stdout)).toMatchObject({data: failed})
   })
@@ -334,7 +334,7 @@ describe('session tier commands', () => {
   test('lists merge candidates for an explicit project', async () => {
     const candidates = [
       {
-        numbers: [
+        connections: [
           {
             id: SURVIVOR,
             name: 'support',
@@ -353,7 +353,7 @@ describe('session tier commands', () => {
         eligible: true,
       },
       {
-        numbers: [
+        connections: [
           {
             id: CREATED,
             name: 'sales',
@@ -375,33 +375,35 @@ describe('session tier commands', () => {
     ]
     server = await startHttpSequenceServer([{body: {data: candidates}}])
     const missing = await platform(() =>
-      runCommand('session hybrid-merge-candidates'),
+      runCommand('connection hybrid-merge-candidates'),
     )
     expect(exitCode(missing.error)).toBe(2)
     expect(missing.stderr).toContain('Provide --project')
     expect(server.requests).toHaveLength(0)
 
     const human = await platform(() =>
-      runCommand(`session hybrid-merge-candidates --project ${PROJECT}`),
+      runCommand(`connection hybrid-merge-candidates --project ${PROJECT}`),
     )
     expect(human.error).toBeUndefined()
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
       `GET /platform/projects/${PROJECT}/hybrid-merge-candidates`,
     ])
     expect(human.stdout).toContain(
-      `${SURVIVOR} (support, linked_devices, connected, must be kept)\t${ABSORBED} (support-cloud, official_api, connected, can be absorbed)\teligible\tmerge with: session tier quote ${SURVIVOR} --tier pro --merge-with ${ABSORBED}`,
+      `${SURVIVOR} (support, linked_devices, connected, must be kept)\t${ABSORBED} (support-cloud, official_api, connected, can be absorbed)\teligible\tmerge with: connection tier quote ${SURVIVOR} --tier pro --merge-with ${ABSORBED}`,
     )
     expect(human.stdout).toContain(
-      'ineligible: pairing_in_progress (a Number is still pairing)',
+      'ineligible: pairing_in_progress (a Connection is still pairing)',
     )
 
     const json = await platform(() =>
-      runCommand(`session hybrid-merge-candidates --project ${PROJECT} --json`),
+      runCommand(
+        `connection hybrid-merge-candidates --project ${PROJECT} --json`,
+      ),
     )
     expect(JSON.parse(json.stdout)).toMatchObject({data: candidates})
   })
 
-  test('explains a merge that would absorb a hosted-storage Number', async () => {
+  test('explains a merge that would absorb a hosted-storage Connection', async () => {
     server = await startHttpSequenceServer([
       conflict(
         'hybrid_transition_ineligible',
@@ -410,12 +412,12 @@ describe('session tier commands', () => {
     ])
     const result = await platform(() =>
       runCommand(
-        `session tier quote ${SURVIVOR} --tier pro --merge-with ${ABSORBED}`,
+        `connection tier quote ${SURVIVOR} --tier pro --merge-with ${ABSORBED}`,
       ),
     )
     expect(exitCode(result.error)).toBe(4)
     expect(result.stderr).toContain(
-      'A Number with hosted message storage must be kept: quote the merge on it and pass the other Number to --merge-with.',
+      'A Connection with hosted message storage must be kept: quote the merge on it and pass the other Connection to --merge-with.',
     )
   })
 
@@ -438,7 +440,9 @@ describe('session tier commands', () => {
       },
     ])
     const result = await platform(() =>
-      runCommand(`session hybrid-merge-candidates --project ${PROJECT} --json`),
+      runCommand(
+        `connection hybrid-merge-candidates --project ${PROJECT} --json`,
+      ),
     )
     expect(exitCode(result.error)).toBe(3)
     expect(JSON.parse(result.stderr)).toMatchObject({
@@ -451,8 +455,7 @@ describe('session tier commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_PROJECT_TOKEN: undefined,

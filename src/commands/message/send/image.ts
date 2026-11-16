@@ -16,8 +16,8 @@ export default class MessageSendImage extends BaseCommand {
   static override description = 'Send an image from a local file or URL.'
 
   static override examples = [
-    '<%= config.bin %> message send image --session session_123 --to +15551234567 --file ./photo.jpg',
-    '<%= config.bin %> message send image --session session_123 --to +15551234567 --url https://example.com/photo.jpg',
+    '<%= config.bin %> message send image --connection connection_123 --to +15551234567 --file ./photo.jpg',
+    '<%= config.bin %> message send image --connection connection_123 --to +15551234567 --url https://example.com/photo.jpg',
   ]
 
   static override flags = {
@@ -31,7 +31,7 @@ export default class MessageSendImage extends BaseCommand {
     const request = await mediaSendRequest('image', flags)
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       sendIdempotencyOptions(flags['idempotency-key']),
     )

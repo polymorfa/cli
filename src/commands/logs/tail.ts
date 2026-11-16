@@ -46,12 +46,12 @@ export default class LogsTail extends BaseCommand {
 
   async run(): Promise<void> {
     const {flags} = await this.parse(LogsTail)
-    const session = await this.developerSession({
+    const connection = await this.developerConnection({
       ...flags,
       owner: flags.owner ?? 'project',
     })
-    const projectId = session.context.projectId
-    if (session.context.owner !== 'project' || !projectId) {
+    const projectId = connection.context.projectId
+    if (connection.context.owner !== 'project' || !projectId) {
       throw new CliConditionError(
         'action_required',
         'Request logs belong to a project. Pass --project or use a project token.',
@@ -79,7 +79,7 @@ export default class LogsTail extends BaseCommand {
           `Following request logs for project ${projectId}. Press Ctrl-C to stop.\n`,
         )
       }
-      for await (const log of tailRequestLogs(session.client, projectId, {
+      for await (const log of tailRequestLogs(connection.client, projectId, {
         ...requestLogFilters(flags),
         backfill: flags.backfill,
         intervalMs: flags['poll-interval'] * 1000,

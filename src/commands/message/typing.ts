@@ -8,7 +8,7 @@ const states = ['typing', 'recording', 'paused'] as const
 
 export default class MessageTyping extends BaseCommand {
   static override description =
-    'Set typing for a chat. Official Numbers require --id and --state typing; the inbound message is marked read.'
+    'Set typing for a chat. Official Connections require --id and --state typing; the inbound message is marked read.'
 
   static override flags = {
     chat: Flags.string({
@@ -17,14 +17,14 @@ export default class MessageTyping extends BaseCommand {
     }),
     id: Flags.string({
       description:
-        'Inbound message ID. Required on Official Numbers; marks the message read and shows typing for up to 25 seconds.',
+        'Inbound message ID. Required on Official Connections; marks the message read and shows typing for up to 25 seconds.',
     }),
     'idempotency-key': Flags.string({
       description:
         'Request identifier. The API does not deduplicate typing updates by this header.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     state: Flags.option({
@@ -38,7 +38,7 @@ export default class MessageTyping extends BaseCommand {
     const {flags} = await this.parse(MessageTyping)
     const result = await setMessageTyping(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       {
         conversation: conversationReference(flags.chat),
         state: flags.state,

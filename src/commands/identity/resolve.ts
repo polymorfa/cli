@@ -4,7 +4,7 @@ import {BaseCommand} from '../../base-command.js'
 import {
   renderResolvedIdentity,
   resolveIdentity,
-} from '../../services/session-identities.js'
+} from '../../services/connection-identities.js'
 
 const IDENTITY_FLAGS = ['phone-number', 'id', 'username']
 
@@ -21,8 +21,8 @@ export default class IdentityResolve extends BaseCommand {
       description: 'Phone digits with an optional leading plus sign.',
       exclusive: IDENTITY_FLAGS.filter((name) => name !== 'phone-number'),
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     username: Flags.string({
@@ -41,7 +41,7 @@ export default class IdentityResolve extends BaseCommand {
       await this.messagingClient(flags, {
         serverApiKeyOnly: 'identity resolution',
       }),
-      flags.session,
+      flags.connection,
       {
         ...(flags.id === undefined ? {} : {id: flags.id}),
         ...(flags['phone-number'] === undefined

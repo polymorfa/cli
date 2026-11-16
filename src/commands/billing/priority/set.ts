@@ -2,15 +2,18 @@ import {Args, Flags} from '@oclif/core'
 import {BaseCommand} from '../../../base-command.js'
 import {setPriority} from '../../../services/billing-controls.js'
 export default class PrioritySet extends BaseCommand {
-  static override summary = 'Set a project or number funding priority.'
+  static override summary = 'Set a project or Connection funding priority.'
   static override description =
     'Requires Pay-As-You-Go and an organization key with billing:manage. Changes future renewal protection and recovery; paid windows keep their expiry.'
   static override args = {
-    id: Args.string({required: true, description: 'Project or number UUID.'}),
+    id: Args.string({
+      required: true,
+      description: 'Project or Connection UUID.',
+    }),
   }
   static override flags = {
     scope: Flags.string({
-      options: ['project', 'customer', 'number'],
+      options: ['project', 'customer', 'connection'],
       required: true,
     }),
     priority: Flags.integer({required: true, min: 0, max: 1000000}),
@@ -20,7 +23,7 @@ export default class PrioritySet extends BaseCommand {
     const {args, flags} = await this.parse(PrioritySet)
     const result = await setPriority(
       await this.platformClient(flags),
-      flags.scope as 'project' | 'customer' | 'number',
+      flags.scope as 'project' | 'customer' | 'connection',
       args.id,
       flags.priority,
       flags['expected-revision'],

@@ -15,8 +15,8 @@ export default class MessageSendButtons extends BaseCommand {
     'Send an interactive message with reply, URL, call, or copy-code buttons.'
 
   static override examples = [
-    '<%= config.bin %> message send buttons --session session_123 --to +15551234567 --body "Confirm your order?" --button reply:yes=Yes --button reply:no=No',
-    '<%= config.bin %> message send buttons --session session_123 --to +15551234567 --body "Track it" --button "url:Open tracking=https://example.com/t/123"',
+    '<%= config.bin %> message send buttons --connection connection_123 --to +15551234567 --body "Confirm your order?" --button reply:yes=Yes --button reply:no=No',
+    '<%= config.bin %> message send buttons --connection connection_123 --to +15551234567 --body "Track it" --button "url:Open tracking=https://example.com/t/123"',
   ]
 
   static override flags = {
@@ -47,7 +47,7 @@ export default class MessageSendButtons extends BaseCommand {
     }
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       sendIdempotencyOptions(flags['idempotency-key']),
     )

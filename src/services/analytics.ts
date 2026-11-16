@@ -16,10 +16,10 @@ export interface AnalyticsSettings {
 export function analyticsQuery(input: {
   since?: string
   until?: string
-  sessionId?: string
+  connectionId?: string
 }): AnalyticsParams {
   optionalTimeRange(input.since, input.until)
-  const query: {start?: number; end?: number; sessionId?: string} = {}
+  const query: {start?: number; end?: number; connectionId?: string} = {}
   if (input.since !== undefined) query.start = Date.parse(input.since)
   if (input.until !== undefined) query.end = Date.parse(input.until)
   if (
@@ -30,16 +30,16 @@ export function analyticsQuery(input: {
     throw new PolymorfaValidationError('Choose a range of up to 366 days.', {
       code: 'invalid_analytics_range',
     })
-  if (input.sessionId !== undefined) {
+  if (input.connectionId !== undefined) {
     if (
       !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-        input.sessionId,
+        input.connectionId,
       )
     )
-      throw new PolymorfaValidationError('--session-id must be a UUID.', {
+      throw new PolymorfaValidationError('--connection-id must be a UUID.', {
         code: 'invalid_analytics_filter',
       })
-    query.sessionId = input.sessionId
+    query.connectionId = input.connectionId
   }
   return query
 }
@@ -53,7 +53,7 @@ export async function getAnalytics(
     !data ||
     typeof data.enabled !== 'boolean' ||
     !data.requestVitals ||
-    !Array.isArray(data.numbers) ||
+    !Array.isArray(data.connections) ||
     !Array.isArray(data.series) ||
     !Array.isArray(data.callSeries) ||
     (data.enabled &&
@@ -109,13 +109,13 @@ export function renderAnalytics(data: WhatsAppAnalytics) {
 }
 
 export function analyticsMetricsQuery(input: {
-  sessionId?: string | undefined
+  connectionId?: string | undefined
   windowHours?: number | undefined
   segments?: boolean | undefined
   format?: string | undefined
 }): AnalyticsMetricsParams {
   const query = analyticsQuery(
-    input.sessionId === undefined ? {} : {sessionId: input.sessionId},
+    input.connectionId === undefined ? {} : {connectionId: input.connectionId},
   )
   if (
     input.windowHours !== undefined &&

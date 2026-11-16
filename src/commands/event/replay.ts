@@ -29,18 +29,18 @@ export default class EventReplay extends BaseCommand {
       prompt: `Replay event ${args.event} to webhook ${flags.webhook}?`,
       yes: flags.yes,
     })
-    const session = await this.developerSession(flags)
+    const connection = await this.developerConnection(flags)
     const key = idempotencyKey(flags['idempotency-key'])
-    const response = await session.client.events.replay(
+    const response = await connection.client.events.replay(
       args.event,
       {webhookId: flags.webhook},
-      {...session.requestOptions, idempotencyKey: key},
+      {...connection.requestOptions, idempotencyKey: key},
     )
     const receipt = record(response.data, 'Event replay')
     const deliveryId = stringField(receipt, 'deliveryId')
     this.writeValue(
       developerMutation({
-        context: session.context,
+        context: connection.context,
         metadata: response.metadata,
         receipt,
         resource: {id: deliveryId, type: 'webhook_delivery'},

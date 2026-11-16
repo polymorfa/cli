@@ -10,10 +10,15 @@ export abstract class FunctionsCommand extends BaseCommand {
         'Functions are project-owned; --owner organization is not supported.',
         'owner',
       )
-    const session = await this.developerSession({...flags, owner: 'project'})
+    const connection = await this.developerConnection({
+      ...flags,
+      owner: 'project',
+    })
     return {
-      client: session.client,
-      projectId: requireFunctionProject(session.context.projectId ?? undefined),
+      client: connection.client,
+      projectId: requireFunctionProject(
+        connection.context.projectId ?? undefined,
+      ),
     }
   }
 }

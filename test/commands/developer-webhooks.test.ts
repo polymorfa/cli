@@ -376,7 +376,7 @@ describe('developer webhook commands', () => {
     await writeFile(
       input,
       JSON.stringify({
-        eventTypes: ['session.phone_offline'],
+        eventTypes: ['connection.phone_offline'],
         url: 'https://example.test/hook',
       }),
     )
@@ -399,7 +399,7 @@ describe('developer webhook commands', () => {
       ]),
     )
     expect(findCall('webhooks.create').args[0]).toEqual({
-      eventTypes: ['session.phone_offline'],
+      eventTypes: ['connection.phone_offline'],
       phoneOfflineStartDay: 8,
       url: 'https://example.test/hook',
     })
@@ -426,7 +426,7 @@ describe('developer webhook commands', () => {
   })
 
   test('turns warnings off by removing the event from the saved event types', async () => {
-    state.savedEventTypes = ['message.received', 'session.phone_offline']
+    state.savedEventTypes = ['message.received', 'connection.phone_offline']
     stdout()
     await developerEnvironment(() =>
       WebhookUpdate.run([
@@ -448,7 +448,7 @@ describe('developer webhook commands', () => {
   })
 
   test('refuses off when it would leave no events', async () => {
-    state.savedEventTypes = ['session.phone_offline']
+    state.savedEventTypes = ['connection.phone_offline']
     const stderr = vi
       .spyOn(process.stderr, 'write')
       .mockImplementation(() => true)
@@ -550,7 +550,7 @@ describe('developer webhook commands', () => {
           contentType: 'application/json',
           data: 'e30=',
         },
-        sessionId: 'session_1',
+        connectionId: 'session_1',
       }),
     )
     vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
@@ -574,7 +574,7 @@ describe('developer webhook commands', () => {
     )
   })
 
-  test('requires a project session ID with a supplied test body', async () => {
+  test('requires a project connection ID with a supplied test body', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'polymorfa-command-'))
     directories.push(directory)
     const input = join(directory, 'test.json')
@@ -606,7 +606,7 @@ describe('developer webhook commands', () => {
       false,
     )
 
-    await writeFile(input, JSON.stringify({body, sessionId: 'session_1'}))
+    await writeFile(input, JSON.stringify({body, connectionId: 'session_1'}))
     stdout()
     await developerEnvironment(() =>
       WebhookTest.run([
@@ -625,7 +625,7 @@ describe('developer webhook commands', () => {
     expect(findCall('webhooks.test').args[1]).toEqual({
       body,
       eventType: 'message.received',
-      sessionId: 'session_1',
+      connectionId: 'session_1',
     })
   })
 
@@ -881,8 +881,7 @@ function findCall(method: string) {
 function developerEnvironment<T>(run: () => Promise<T>): Promise<T> {
   return withEnvironment(
     {
-      POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       POLYMORFA_BASE_URL: 'https://api.example.test',
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_PROJECT_TOKEN: undefined,

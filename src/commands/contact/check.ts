@@ -9,12 +9,12 @@ export default class ContactCheck extends BaseCommand {
 
   static override flags = {
     phone: Flags.string({
-      description: 'Phone number to check; repeat for multiple numbers.',
+      description: 'Phone number to check; repeat for multiple phone numbers.',
       multiple: true,
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -23,7 +23,7 @@ export default class ContactCheck extends BaseCommand {
     const {flags} = await this.parse(ContactCheck)
     const result = await checkContacts(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Contact'}),
-      flags.session,
+      flags.connection,
       flags.phone,
     )
     this.writeValue(result, renderContactChecks(result.data), flags)

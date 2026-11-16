@@ -18,8 +18,7 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 
-const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 
 describe('doctor command exit status', () => {
   let server: TestHttpServer

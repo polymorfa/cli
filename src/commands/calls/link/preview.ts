@@ -11,16 +11,16 @@ import {
 
 export default class CallsLinkPreview extends BaseCommand {
   static override description =
-    'Read a WhatsApp call link through a Linked Device Number without joining the call. Pipe the link, or its token, on standard input so it stays out of shell history and process listings. A full link sets voice or video; pass --video with a bare video-link token. Requires a server API key or project token.'
+    'Read a WhatsApp call link through a Linked Device Connection without joining the call. Pipe the link, or its token, on standard input so it stays out of shell history and process listings. A full link sets voice or video; pass --video with a bare video-link token. Requires a server API key or project token.'
 
   static override examples = [
-    'printf \'%s\' "$CALL_LINK" | <%= config.bin %> calls link preview --session support',
-    'printf \'%s\' "$TOKEN" | <%= config.bin %> calls link preview --session support --video --json',
+    'printf \'%s\' "$CALL_LINK" | <%= config.bin %> calls link preview --connection support',
+    'printf \'%s\' "$TOKEN" | <%= config.bin %> calls link preview --connection support --video --json',
   ]
 
   static override flags = {
-    session: Flags.string({
-      description: 'Linked Device session that reads the link.',
+    connection: Flags.string({
+      description: 'Linked Device connection that reads the link.',
       required: true,
     }),
     video: Flags.boolean({
@@ -42,7 +42,7 @@ export default class CallsLinkPreview extends BaseCommand {
     this.registerSecret(link.token)
     const result = await previewCallLink(client, {
       link,
-      session: flags.session,
+      connection: flags.connection,
       ...(flags.video ? {video: true} : {}),
     })
     this.writeValue(result, renderPreviewedCallLink(result.data), flags)

@@ -8,8 +8,7 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 
-const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 
 describe('group mutation commands', () => {
   let server: TestHttpServer | undefined
@@ -33,7 +32,7 @@ describe('group mutation commands', () => {
     })
 
     const result = await run(
-      'group create --session session_1 --name "Launch team" --participant 750000000001 --participant 750000000001 --participant 750000000002 --idempotency-key grp_1',
+      'group create --connection session_1 --name "Launch team" --participant 750000000001 --participant 750000000001 --participant 750000000002 --idempotency-key grp_1',
     )
 
     expect(result.error).toBeUndefined()
@@ -53,7 +52,7 @@ describe('group mutation commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await run(
-      'group create --session session_1 --name Team --participant +15551234567 --json',
+      'group create --connection session_1 --name Team --participant +15551234567 --json',
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -69,7 +68,7 @@ describe('group mutation commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await run(
-      `group participants ${action} 750000000009 --session session_1 --participant 750000000001 --json`,
+      `group participants ${action} 750000000009 --connection session_1 --participant 750000000001 --json`,
     )
 
     expect(result.error).toBeUndefined()
@@ -84,13 +83,13 @@ describe('group mutation commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const refused = await run(
-      'group participants remove 750000000009 --session session_1 --participant 750000000001 --json',
+      'group participants remove 750000000009 --connection session_1 --participant 750000000001 --json',
     )
     expect(exitCode(refused.error)).toBe(2)
     expect(server.requests).toHaveLength(0)
 
     const result = await run(
-      'group participants remove 750000000009 --session session_1 --participant 750000000001 --yes --json',
+      'group participants remove 750000000009 --connection session_1 --participant 750000000001 --yes --json',
     )
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
@@ -102,10 +101,10 @@ describe('group mutation commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const subject = await run(
-      'group subject 750000000009 --session session_1 --value "New name" --json',
+      'group subject 750000000009 --connection session_1 --value "New name" --json',
     )
     const description = await run(
-      'group description 750000000009 --session session_1 --value "" --json',
+      'group description 750000000009 --connection session_1 --value "" --json',
     )
 
     expect(subject.error).toBeUndefined()
@@ -134,7 +133,7 @@ describe('group mutation commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await run(
-      'group settings 750000000009 --session session_1 --info-editing all --messaging admins --member-add admins --join-approval on --json',
+      'group settings 750000000009 --connection session_1 --info-editing all --messaging admins --member-add admins --join-approval on --json',
     )
 
     expect(result.error).toBeUndefined()
@@ -172,7 +171,7 @@ describe('group mutation commands', () => {
     ])
 
     const result = await run(
-      'group settings 750000000009 --session session_1 --info-editing admins --messaging admins',
+      'group settings 750000000009 --connection session_1 --info-editing admins --messaging admins',
     )
 
     expect(result.error).toBeDefined()
@@ -183,7 +182,7 @@ describe('group mutation commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await run(
-      'group settings 750000000009 --session session_1 --json',
+      'group settings 750000000009 --connection session_1 --json',
     )
 
     expect(exitCode(result.error)).toBe(2)

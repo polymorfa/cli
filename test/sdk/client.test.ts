@@ -20,8 +20,7 @@ describe('createRawClient', () => {
       surface: 'platform',
       credential: {
         type: 'apiKey',
-        value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
     })
 
@@ -31,7 +30,7 @@ describe('createRawClient', () => {
   test('returns the public Messaging raw client', () => {
     const client = createRawClient({
       surface: 'messaging',
-      credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
+      credential: {type: 'clientToken', value: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy'},
     })
 
     expect(client).toBeInstanceOf(RawClient)
@@ -41,27 +40,27 @@ describe('createRawClient', () => {
     expect(() =>
       createRawClient({
         surface: 'platform',
-        credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
+        credential: {
+          type: 'clientToken',
+          value: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
+        },
       }),
-    ).toThrow(
-      'Client and project tokens cannot be used as organization server API keys.',
-    )
+    ).toThrow('Client and project tokens cannot be used as team keys.')
   })
 
-  test('creates a typed Messaging client with session and operation resources', () => {
+  test('creates a typed Messaging client with connection and operation resources', () => {
     const client = createMessagingClient({
       surface: 'messaging',
       credential: {
         type: 'apiKey',
-        value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       timeoutMs: 1234,
     })
 
     expect(client).toBeInstanceOf(MessagingClient)
-    expect(client.sessions).toHaveProperty('qr')
-    expect(client.sessions).toHaveProperty('requestPairingCode')
+    expect(client.connections).toHaveProperty('qr')
+    expect(client.connections).toHaveProperty('requestPairingCode')
     expect(client.quickLinks).toHaveProperty('create')
     expect(client.quickLinks).toHaveProperty('retrieve')
     expect(client.quickLinks).toHaveProperty('cancel')
@@ -72,8 +71,7 @@ describe('createRawClient', () => {
     const client = createMessagingClient({
       credential: {
         type: 'projectToken',
-        value:
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
       surface: 'messaging',
     })
@@ -87,31 +85,29 @@ describe('createRawClient', () => {
       surface: 'platform',
       credential: {
         type: 'apiKey',
-        value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       },
     })
 
     expect(client).toBeInstanceOf(Client)
-    expect(client.owner).toBe('organization')
+    expect(client.owner).toBe('team')
     expect(client.billing).toHaveProperty('retrieve')
     expect(client.billing).toHaveProperty('usage')
     expect(client.billing).toHaveProperty('listTransactions')
     expect(client.billing).toHaveProperty('listPricing')
     expect(client.billing).not.toHaveProperty('updateReminderSettings')
-    expect(client.sessions).toHaveProperty('retrieve')
-    expect(client.sessions).toHaveProperty('update')
-    expect(client.sessions).toHaveProperty('quoteTierChange')
-    expect(client.sessions).toHaveProperty('retrieveTierChange')
-    expect(client.organizations).not.toHaveProperty('update')
+    expect(client.connections).toHaveProperty('retrieve')
+    expect(client.connections).toHaveProperty('update')
+    expect(client.connections).toHaveProperty('quoteTierChange')
+    expect(client.connections).toHaveProperty('retrieveTierChange')
+    expect(client.teams).not.toHaveProperty('update')
 
     expect(() =>
       createPlatformClient({
         surface: 'messaging',
         credential: {
           type: 'apiKey',
-          value:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         },
       }),
     ).toThrow('requires the Platform API surface')
@@ -127,8 +123,7 @@ describe('createRawClient', () => {
         baseUrl: server.baseUrl,
         credential: {
           type: 'apiKey',
-          value:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          value: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         },
         surface: 'platform',
       }).project('11111111-1111-4111-8111-111111111111')
@@ -143,7 +138,7 @@ describe('createRawClient', () => {
         url: '/platform/projects/11111111-1111-4111-8111-111111111111/events?limit=25',
       })
       expect(server.requests[0]?.headers.authorization).toBe(
-        'Bearer pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'Bearer pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       )
     } finally {
       await server.close()
@@ -157,17 +152,17 @@ describe('typed webhook events', () => {
       event: 'command.result',
       id: 'evt_123',
       payload: {
-        command: 'session.start',
+        command: 'connection.start',
         requestId: 'req_123',
         success: true,
       },
-      session: 'session_123',
+      connection: 'connection_123',
       timestamp: '2026-08-19T18:00:00.000Z',
     }
 
     expect(isEvent(event, 'command.result')).toBe(true)
     if (isEvent(event, 'command.result')) {
-      expect(event.payload.command).toBe('session.start')
+      expect(event.payload.command).toBe('connection.start')
       expect(event.payload.success).toBe(true)
     }
     expect(isEvent(event, 'message.received')).toBe(false)

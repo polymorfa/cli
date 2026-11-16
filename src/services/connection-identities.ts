@@ -9,7 +9,7 @@ import {
   type UserSecurityCode,
 } from '@polymorfa/sdk'
 
-export interface SessionIdentityResult<T> {
+export interface ConnectionIdentityResult<T> {
   readonly data: T
   readonly metadata: {
     readonly apiVersion?: string
@@ -21,11 +21,11 @@ export interface SessionIdentityResult<T> {
 
 export async function rejectCall(
   client: MessagingClient,
-  session: string,
+  connection: string,
   callId: string,
   from: string,
   options: RequestOptions = {},
-): Promise<SessionIdentityResult<RejectCallResponse>> {
+): Promise<ConnectionIdentityResult<RejectCallResponse>> {
   if (callId.length === 0) {
     throw new PolymorfaConfigurationError('Call ID cannot be empty.', 'call')
   }
@@ -43,7 +43,7 @@ export async function rejectCall(
   }
 
   const response = await client.calls.reject(
-    session,
+    connection,
     callId,
     {from: from.trim()},
     options,
@@ -53,16 +53,16 @@ export async function rejectCall(
 
 export async function resolveIdentity(
   client: MessagingClient,
-  session: string,
+  connection: string,
   input: {
     readonly id?: string
     readonly phoneNumber?: string
     readonly username?: string
     readonly usernameKey?: string
   },
-): Promise<SessionIdentityResult<ResolveIdentityResult>> {
+): Promise<ConnectionIdentityResult<ResolveIdentityResult>> {
   const response = await client.identities.resolve(
-    session,
+    connection,
     identityParams(input),
   )
   return result(response.data.data, response.metadata)
@@ -70,11 +70,11 @@ export async function resolveIdentity(
 
 export async function viewUserSecurityCode(
   client: MessagingClient,
-  session: string,
+  connection: string,
   userId: string,
-): Promise<SessionIdentityResult<UserSecurityCode>> {
+): Promise<ConnectionIdentityResult<UserSecurityCode>> {
   validateUserId(userId, 'User ID')
-  const response = await client.users.getSecurityCode(session, userId)
+  const response = await client.users.getSecurityCode(connection, userId)
   return result(response.data.data, response.metadata)
 }
 
@@ -183,7 +183,7 @@ function row(label: string, value: string | undefined): string | undefined {
 function result<T>(
   data: T,
   metadata: ResponseMetadata,
-): SessionIdentityResult<T> {
+): ConnectionIdentityResult<T> {
   return {
     data,
     metadata: {

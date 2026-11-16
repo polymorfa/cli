@@ -4,7 +4,7 @@ import {BaseCommand} from '../../../base-command.js'
 
 export default class CloudCatalogProducts extends BaseCommand {
   static override description =
-    'List products in a catalog linked to an Official API WABA (beta). Requires sessions:read and Graph access.'
+    'List products in a catalog linked to an Official API WABA (beta). Requires connections:read and Graph access.'
 
   static override flags = {
     waba: Flags.string({

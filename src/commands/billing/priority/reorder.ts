@@ -6,16 +6,16 @@ import {reorderPriorities} from '../../../services/billing-controls.js'
 export default class PriorityReorder extends BaseCommand {
   static override summary = 'Save a complete funding order atomically.'
   static override description =
-    'Requires Pay-As-You-Go and an organization key with billing:manage. Pass every active project, customer or real number for its scope. Resource scope mixes all customers and numbers in --project, highest first. Incomplete or stale orders fail without partial changes.'
+    'Requires Pay-As-You-Go and an organization key with billing:manage. Pass every active project, customer or real connection for its scope. Resource scope mixes all customers and connections in --project, highest first. Incomplete or stale orders fail without partial changes.'
   static override flags = {
     scope: Flags.string({
-      options: ['project', 'customer', 'number', 'resource'],
+      options: ['project', 'customer', 'connection', 'resource'],
       required: true,
     }),
     ids: Flags.string({
       exclusive: ['ids-file'],
       description:
-        'UUIDs, highest first. For resource scope use customer:UUID or number:UUID.',
+        'UUIDs, highest first. For resource scope use customer:UUID or connection:UUID.',
     }),
     'ids-file': Flags.string({
       exclusive: ['ids'],
@@ -41,7 +41,7 @@ export default class PriorityReorder extends BaseCommand {
       )
     const result = await reorderPriorities(
       await this.platformClient(flags),
-      flags.scope as 'project' | 'customer' | 'number' | 'resource',
+      flags.scope as 'project' | 'customer' | 'connection' | 'resource',
       ids,
       flags['expected-revision'],
       flags.project,

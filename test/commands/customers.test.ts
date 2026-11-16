@@ -35,7 +35,7 @@ describe('Customer commands', () => {
             enabled: true,
             enabledAt: 1_725_000_000_000,
             enabledBy: 'user_1',
-            migratedNumberCount: 2,
+            migratedConnectionCount: 2,
           },
         },
       },
@@ -69,13 +69,13 @@ describe('Customer commands', () => {
 
     const result = await environment(() =>
       runCommand(
-        'customer list --project project/1 --cursor cursor/1 --limit 20 --search Ada --status active --default false --has-numbers true --needs-attention false --json',
+        'customer list --project project/1 --cursor cursor/1 --limit 20 --search Ada --status active --default false --has-connections true --needs-attention false --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/platform/customers?projectId=project%2F1&cursor=cursor%2F1&limit=20&search=Ada&status=active&isDefault=false&hasNumbers=true&needsAttention=false',
+      '/platform/customers?projectId=project%2F1&cursor=cursor%2F1&limit=20&search=Ada&status=active&isDefault=false&hasConnections=true&needsAttention=false',
     )
     expect(JSON.parse(result.stdout)).toEqual({
       data: {
@@ -83,7 +83,7 @@ describe('Customer commands', () => {
           {
             activePairingLinkState: 'active',
             archivedAt: null,
-            connectedNumberCount: 1,
+            connectedConnectionCount: 1,
             createdAt: 1_725_000_000_000,
             externalCustomerId: 'crm/1',
             id: 'customer/1',
@@ -91,7 +91,7 @@ describe('Customer commands', () => {
             lastActivityAt: 1_725_000_000_000,
             name: 'Ada',
             needsAttention: false,
-            numberCount: 1,
+            connectionCount: 1,
             orgId: 'org_1',
             projectId: 'project/1',
             status: 'active',
@@ -173,15 +173,17 @@ describe('Customer commands', () => {
     ).toEqual(['archive_1', 'restore_1'])
   })
 
-  test('lists Customer Numbers, events, and pairing links', async () => {
+  test('lists Customer Connections, events, and pairing links', async () => {
     server = await startHttpSequenceServer([
       {body: {data: [number()]}},
       {body: {data: [event()]}},
       {body: {data: [pairingLink()]}},
     ])
 
-    const numbers = await environment(() =>
-      runCommand('customer number list customer/1 --project project/1 --json'),
+    const connections = await environment(() =>
+      runCommand(
+        'customer connection list customer/1 --project project/1 --json',
+      ),
     )
     const events = await environment(() =>
       runCommand(
@@ -194,17 +196,17 @@ describe('Customer commands', () => {
       ),
     )
 
-    expect(numbers.error).toBeUndefined()
+    expect(connections.error).toBeUndefined()
     expect(events.error).toBeUndefined()
     expect(links.error).toBeUndefined()
     expect(server.requests.map(({url}) => url)).toEqual([
-      '/platform/customers/customer%2F1/numbers?projectId=project%2F1',
+      '/platform/customers/customer%2F1/connections?projectId=project%2F1',
       '/platform/customers/customer%2F1/events?projectId=project%2F1&limit=25',
       '/platform/customers/customer%2F1/pairing-links?projectId=project%2F1',
     ])
   })
 
-  test('creates and revokes a pairing link, then transfers a Number', async () => {
+  test('creates and revokes a pairing link, then transfers a Connection', async () => {
     server = await startHttpSequenceServer([
       {body: {data: {...pairingLink(), url: 'https://pair.example/link'}}},
       {body: {data: {...pairingLink(), status: 'revoked'}}},
@@ -223,7 +225,7 @@ describe('Customer commands', () => {
     )
     const transferred = await environment(() =>
       runCommand(
-        'customer number transfer customer/1 session/1 --from customer/source --project project/1 --yes --idempotency-key transfer_1 --json',
+        'customer connection transfer customer/1 connection/1 --from customer/source --project project/1 --yes --idempotency-key transfer_1 --json',
       ),
     )
 
@@ -233,7 +235,7 @@ describe('Customer commands', () => {
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
       'POST /platform/customers/customer%2F1/pairing-links',
       'DELETE /platform/customers/customer%2F1/pairing-links/link%2F1?projectId=project%2F1',
-      'POST /platform/customers/customer%2F1/numbers/session%2F1/transfer',
+      'POST /platform/customers/customer%2F1/connections/connection%2F1/transfer',
     ])
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       expectedPhone: '+15551234567',
@@ -302,8 +304,7 @@ describe('Customer commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -331,10 +332,10 @@ function customerSummary() {
   return {
     ...customer(),
     activePairingLinkState: 'active',
-    connectedNumberCount: 1,
+    connectedConnectionCount: 1,
     lastActivityAt: 1_725_000_000_000,
     needsAttention: false,
-    numberCount: 1,
+    connectionCount: 1,
   }
 }
 
@@ -346,7 +347,7 @@ function number() {
     id: 'number_1',
     name: 'Support',
     phoneMasked: '+1•••4567',
-    sessionId: 'session/1',
+    connectionId: 'connection/1',
     status: 'connected',
   }
 }
@@ -359,7 +360,7 @@ function event() {
     metadata: {fields: ['name']},
     occurredAt: 1_725_000_000_000,
     pairingLinkId: null,
-    sessionId: null,
+    connectionId: null,
     toStatus: 'active',
   }
 }
@@ -384,7 +385,7 @@ function pairingLink() {
     methods: ['qr', 'phone'],
     openedAt: null,
     orgId: 'org_1',
-    pendingSessionId: null,
+    pendingConnectionId: null,
     phoneMismatchCount: 0,
     projectId: 'project/1',
     reservedAt: null,

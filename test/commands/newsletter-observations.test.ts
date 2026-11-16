@@ -33,6 +33,13 @@ const fixture = JSON.parse(
     'utf8',
   ),
 ) as {readonly events: readonly FixtureEnvelope[]}
+// Keep historical retained bytes unchanged. The current stream fixture changes
+// only the API-owned account envelope; native newsletter payloads stay exact.
+const currentEvents = fixture.events.map(({session, ...event}) => ({
+  ...event,
+  connection: session,
+}))
+type CurrentEnvelope = (typeof currentEvents)[number]
 const channel = JSON.parse(
   readFileSync(
     new URL(
@@ -43,7 +50,11 @@ const channel = JSON.parse(
   ),
 ) as Record<string, unknown>
 const PROJECT = '11111111-1111-4111-8111-111111111111'
-const metadata = (index: number, includePayload: boolean) => ({
+const metadata = (
+  index: number,
+  includePayload: boolean,
+  events: readonly (FixtureEnvelope | CurrentEnvelope)[] = fixture.events,
+) => ({
   id: fixture.events[index]!.id,
   organizationId: 'org_1',
   projectId: PROJECT,
@@ -56,9 +67,7 @@ const metadata = (index: number, includePayload: boolean) => ({
     ? {
         encoding: 'base64',
         contentType: 'application/json',
-        data: Buffer.from(JSON.stringify(fixture.events[index])).toString(
-          'base64',
-        ),
+        data: Buffer.from(JSON.stringify(events[index])).toString('base64'),
       }
     : null,
   replayableUntil: null,
@@ -73,8 +82,7 @@ describe('newsletter observation consumers', () => {
   const environment = <T>(run: () => Promise<T>) =>
     withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server!.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_PROJECT_TOKEN: undefined,
@@ -87,7 +95,7 @@ describe('newsletter observation consumers', () => {
       server = await startHttpServer({body: {success: true, data: [channel]}})
       const result = await environment(() =>
         runCommand(
-          `channel message ${command} ${fixture.events[0]!.payload.id} --session number_1 --json`,
+          `channel message ${command} ${fixture.events[0]!.payload.id} --connection number_1 --json`,
         ),
       )
       expect(result.error).toBeUndefined()
@@ -123,7 +131,7 @@ describe('newsletter observation consumers', () => {
     )
     expect(server.requests[1]?.url).toContain('includePayload=true')
   })
-  test('preserves native live, milestone and legacy payloads through real SDK SSE into NDJSON', async () => {
+  test('preserves native newsletter payloads in the current Connection envelope through SDK SSE into NDJSON', async () => {
     const ready = {
       v: 1,
       type: 'ready',
@@ -131,10 +139,10 @@ describe('newsletter observation consumers', () => {
       sequence: 1,
       heartbeatIntervalMs: 15000,
     }
-    const frames = fixture.events
+    const frames = currentEvents
       .map(
         (_: unknown, index: number) =>
-          `id: c${index}\nevent: event\ndata: ${JSON.stringify({v: 1, type: 'event', streamId: 's', sequence: index + 2, sentAt: fixture.events[index]!.timestamp, cursor: `c${index}`, event: metadata(index, true)})}\n\n`,
+          `id: c${index}\nevent: event\ndata: ${JSON.stringify({v: 1, type: 'event', streamId: 's', sequence: index + 2, sentAt: fixture.events[index]!.timestamp, cursor: `c${index}`, event: metadata(index, true, currentEvents)})}\n\n`,
       )
       .join('')
     server = await startHttpSequenceServer([
@@ -153,9 +161,9 @@ describe('newsletter observation consumers', () => {
     const lines = result.stdout
       .trim()
       .split('\n')
-      .map((line) => JSON.parse(line) as {webhook: FixtureEnvelope})
+      .map((line) => JSON.parse(line) as {webhook: CurrentEnvelope})
     expect(lines).toHaveLength(3)
-    expect(lines.map((line) => line.webhook)).toEqual(fixture.events)
+    expect(lines.map((line) => line.webhook)).toEqual(currentEvents)
     expect(lines[0]?.webhook.payload.messages?.[0]?.forwards).toBe(0)
     expect(lines[0]?.webhook.payload.messages?.[0]?.reactionCounts).toEqual({})
     expect(lines[0]?.webhook.payload.messages?.[1]).toEqual({position: 124})

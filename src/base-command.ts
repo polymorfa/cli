@@ -20,8 +20,8 @@ import {errorEnvelope, type OutputContext} from './output/contracts.js'
 import {renderValue, type OutputMode} from './output/render.js'
 import {createMessagingClient, createPlatformClient} from './sdk/client.js'
 import {
-  createDeveloperSession,
-  type DeveloperSession,
+  createDeveloperConnection,
+  type DeveloperConnection,
 } from './developer/client.js'
 
 export interface GlobalFlags {
@@ -89,16 +89,16 @@ export abstract class BaseCommand extends Command {
     return 'human'
   }
 
-  protected async developerSession(
+  protected async developerConnection(
     flags: GlobalFlags,
-  ): Promise<DeveloperSession> {
-    const session = await createDeveloperSession(
+  ): Promise<DeveloperConnection> {
+    const connection = await createDeveloperConnection(
       flags,
       (secret) => this.registerSecret(secret),
       () => this.linkedProject(flags),
     )
-    this.errorContext = session.context
-    return session
+    this.errorContext = connection.context
+    return connection
   }
 
   /**
@@ -243,7 +243,7 @@ export abstract class BaseCommand extends Command {
 
   protected async platformClient(
     flags: GlobalFlags,
-  ): Promise<ClientInstance<'organization'>> {
+  ): Promise<ClientInstance<'team'>> {
     return createPlatformClient(await this.platformEnvironment(flags))
   }
 

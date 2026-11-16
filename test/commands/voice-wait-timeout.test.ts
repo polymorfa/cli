@@ -7,8 +7,7 @@ import {expect, test} from 'vitest'
 
 import {temporaryDirectory} from '../support/fs.js'
 
-const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const ASSET_ID = '6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10'
 const PROJECT = '018f0000-0000-7000-8000-000000000002'
 

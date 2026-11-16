@@ -8,7 +8,7 @@ import {
 
 export default class CustomerEnable extends BaseCommand {
   static override description =
-    'Enable Customers and assign existing Numbers to the default Customer.'
+    'Enable Customers and assign existing Connections to the default Customer.'
 
   static override flags = {
     'idempotency-key': Flags.string({
@@ -26,7 +26,7 @@ export default class CustomerEnable extends BaseCommand {
     )
     this.writeValue(
       result,
-      `Enabled Customers and assigned ${result.data.migratedNumberCount} existing Numbers.`,
+      `Enabled Customers and assigned ${result.data.migratedConnectionCount} existing Connections.`,
       flags,
     )
   }

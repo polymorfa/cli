@@ -4,11 +4,11 @@ import {cloudResult} from '../../../services/cloud.js'
 
 export default class CloudTemplateList extends BaseCommand {
   static override description =
-    'List the refreshed Meta template catalog for an Official API Number (beta). Requires messages:write.'
+    'List the refreshed Meta template catalog for an Official API Connection (beta). Requires messages:write.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
   }
@@ -18,7 +18,7 @@ export default class CloudTemplateList extends BaseCommand {
     const client = await this.messagingClient(flags, {
       serverCredentialOnly: 'Official API',
     })
-    const response = await client.cloudTemplates.list(flags.session)
+    const response = await client.cloudTemplates.list(flags.connection)
     const result = cloudResult(response)
     this.writeValue(result, JSON.stringify(result.data, null, 2), flags)
   }

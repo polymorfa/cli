@@ -11,7 +11,7 @@ import {
 
 export default class CallsList extends BaseCommand {
   static override description =
-    'List one page of stored call records, newest first. Requires sessions:read and a server credential. Project tokens read only their original owning project. Reuse the same filters with --cursor.'
+    'List one page of stored call records, newest first. Requires connections:read and a server credential. Project tokens read only their original owning project. Reuse the same filters with --cursor.'
   static override examples = [
     '<%= config.bin %> calls list --outcome missed --limit 25',
     '<%= config.bin %> calls list --project PROJECT_ID --json',

@@ -30,10 +30,10 @@ import {
   type CallInboundRoute,
   type MessagingCredential,
   type ResponseMetadata,
-  type SessionCallSettings,
-  type SessionCallSettingsResponse,
+  type ConnectionCallSettings,
+  type ConnectionCallSettingsResponse,
   type SuccessResponse,
-  type UpdateSessionCallSettingsRequest,
+  type UpdateConnectionCallSettingsRequest,
   type VoipAcceptCallResult,
   type VoipParticipant,
   type VoipPlaceCallResult,
@@ -120,19 +120,22 @@ export function validateParticipant(
   return participant
 }
 
-function requireServerSession(
+function requireServerConnection(
   credential: CallsCredential,
-  session: string | undefined,
+  connection: string | undefined,
   action: string,
 ): string | undefined {
-  const trimmed = session?.trim()
+  const trimmed = connection?.trim()
   if (trimmed !== undefined && trimmed.length === 0) {
-    throw new PolymorfaConfigurationError('Session cannot be empty.', 'session')
+    throw new PolymorfaConfigurationError(
+      'Connection cannot be empty.',
+      'connection',
+    )
   }
   if (credential.type !== 'clientToken' && trimmed === undefined) {
     throw new PolymorfaConfigurationError(
-      `${action} with a server API key requires --session. Client tokens use the session they are bound to.`,
-      'session',
+      `${action} with a server API key requires --connection. Client tokens use the connection they are bound to.`,
+      'connection',
     )
   }
   return trimmed
@@ -143,7 +146,7 @@ function requireServerSession(
 export interface PlaceCallInput {
   readonly exclusive?: boolean | undefined
   readonly participant?: string | undefined
-  readonly session?: string | undefined
+  readonly connection?: string | undefined
   readonly to?: string | readonly string[] | undefined
   readonly groupId?: string | undefined
   readonly video?: boolean | undefined
@@ -178,14 +181,14 @@ export async function placeCall(
       'A group call needs 2 to 31 distinct participants.',
     )
   }
-  const session = requireServerSession(
+  const connection = requireServerConnection(
     credential,
-    input.session,
+    input.connection,
     'Placing a call',
   )
   const participant = validateParticipant(credential, input.participant)
   const options = {
-    ...(session === undefined ? {} : {session}),
+    ...(connection === undefined ? {} : {connection}),
     ...(input.video === undefined ? {} : {video: input.video}),
     ...(input.exclusive === undefined ? {} : {exclusive: input.exclusive}),
     ...(participant === undefined ? {} : {participant}),
@@ -299,7 +302,7 @@ export async function ringCallParticipant(
  * (polymorfa/polymorfa#559). The pinned SDK predates them; delete these
  * extensions and use the SDK types directly once the pin includes them.
  */
-export type CallSettings = SessionCallSettings & {
+export type CallSettings = ConnectionCallSettings & {
   readonly simultaneousCalls?: boolean
   /**
    * Preparatory, response-only: while simultaneous calls are off, the server's
@@ -311,21 +314,21 @@ export type CallSettings = SessionCallSettings & {
   readonly simultaneousCallsCoverageExcludedUntil?: string | null
 }
 
-type CallSettingsUpdateBody = UpdateSessionCallSettingsRequest & {
+type CallSettingsUpdateBody = UpdateConnectionCallSettingsRequest & {
   readonly acknowledgeRisk?: boolean
   readonly simultaneousCalls?: boolean
 }
 
 /** Shown before simultaneous calls turn on, and when the risk is unconfirmed. */
 export const SIMULTANEOUS_CALLS_RISK =
-  'Simultaneous calls let this number hold any number of calls at once. WhatsApp’s own apps never hold two calls at once, so this is unusual for a WhatsApp account. While it is on, and for 30 days after you turn it off, Ban Insurance does not cover a ban of this number.'
+  'Simultaneous calls let this Connection hold any number of calls at once. WhatsApp’s own apps never hold two calls at once, so this is unusual for a WhatsApp account. While it is on, and for 30 days after you turn it off, Ban Insurance does not cover a ban of this number.'
 
 export async function viewCallSettings(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<CallsResult<CallSettings>> {
   const response = await client.voip.retrieveCallSettings(
-    validateSession(session),
+    validateConnection(connection),
   )
   return result(response.data.data, response.metadata)
 }
@@ -351,10 +354,10 @@ export interface CallSettingsChanges {
  */
 export async function updateCallSettings(
   client: MessagingClient,
-  session: string,
+  connection: string,
   changes: CallSettingsChanges,
 ): Promise<CallsResult<CallSettings>> {
-  const name = validateSession(session)
+  const name = validateConnection(connection)
   const {expectedRevision, acknowledgeRisk, ...settings} = changes
   if (acknowledgeRisk === true && changes.simultaneousCalls !== true) {
     throw new PolymorfaConfigurationError(
@@ -412,20 +415,20 @@ export async function updateCallSettings(
   const response =
     body.simultaneousCalls === undefined
       ? await client.voip.updateCallSettings(name, body)
-      : await client.raw.request<SessionCallSettingsResponse>({
+      : await client.raw.request<ConnectionCallSettingsResponse>({
           method: 'PUT',
-          path: `/platform/sessions/${encodeURIComponent(name)}/call-settings`,
+          path: `/platform/connections/${encodeURIComponent(name)}/call-settings`,
           body,
         })
   return result(response.data.data, response.metadata)
 }
 
-export function validateSession(session: string): string {
-  const trimmed = session.trim()
+export function validateConnection(connection: string): string {
+  const trimmed = connection.trim()
   if (trimmed.length === 0 || trimmed.length > 128) {
     throw new PolymorfaConfigurationError(
-      'Session must contain 1 to 128 characters.',
-      'session',
+      'Connection must contain 1 to 128 characters.',
+      'connection',
     )
   }
   return trimmed
@@ -553,8 +556,8 @@ const retentionConflict =
 
 const retentionForbidden = {
   change:
-    'Call retention is a team setting; use a team API key with the sessions:read and sessions:manage scopes to change it (the command reads the setting before it changes it).',
-  read: 'Call retention is a team setting; use a team API key or project token with the sessions:read scope to read it.',
+    'Call retention is a team setting; use a team API key with the connections:read and connections:manage scopes to change it (the command reads the setting before it changes it).',
+  read: 'Call retention is a team setting; use a team API key or project token with the connections:read scope to read it.',
 } as const
 
 /** Replace the API's generic 403 and 409 text with what the user can do. */
@@ -630,7 +633,7 @@ const conflictMessages: Readonly<Record<string, string>> = {
 export function renderPlacedCall(call: VoipPlaceCallResult): string {
   return [
     `Call\t${call.callId}`,
-    `Session\t${call.session}`,
+    `Connection\t${call.connection}`,
     `Video\t${yesNo(call.video)}`,
     'The call is ringing. Watch it with polymorfa calls watch.',
   ].join('\n')
@@ -676,13 +679,13 @@ function coverageExclusionEnd(
 }
 
 export function renderCallSettings(
-  session: string,
+  connection: string,
   settings: CallSettings,
   now: number = Date.now(),
 ): string {
   const exclusionEnd = coverageExclusionEnd(settings, now)
   return [
-    `Session\t${session}`,
+    `Connection\t${connection}`,
     `Calls\t${settings.callsEnabled === false ? 'off' : 'on'}`,
     `Conference mode\t${settings.conferenceMode === false ? 'off' : 'on'}`,
     `Incoming calls\t${settings.inboundRoute === 'sip_trunk' ? 'clients and SIP trunk' : 'clients'}`,
@@ -693,7 +696,7 @@ export function renderCallSettings(
         ]
       : []),
     `Cloud API calls answered by\t${settings.hostCloudApiCalls === true ? 'Polymorfa Calls' : 'your Graph API integration'}`,
-    `Simultaneous calls\t${settings.simultaneousCalls === true ? 'on (Ban Insurance does not cover this number)' : 'off'}`,
+    `Simultaneous calls\t${settings.simultaneousCalls === true ? 'on (Ban Insurance does not cover this Connection)' : 'off'}`,
     ...(exclusionEnd === null
       ? []
       : [`Ban Insurance exclusion ends\t${exclusionEnd}`]),
@@ -738,7 +741,7 @@ export interface CallsClientInput {
   readonly baseUrl?: string | undefined
   readonly credential: CallsCredential
   readonly participant?: string | undefined
-  readonly session?: string | undefined
+  readonly connection?: string | undefined
   /** Injected for runtimes without a global WebSocket, and for tests. */
   readonly WebSocket?: typeof globalThis.WebSocket | undefined
 }
@@ -782,11 +785,15 @@ function createCallsClient(
   input: CallsClientInput,
   action: string,
 ): CallsClient {
-  const session = requireServerSession(input.credential, input.session, action)
-  if (input.credential.type === 'clientToken' && session !== undefined) {
+  const connection = requireServerConnection(
+    input.credential,
+    input.connection,
+    action,
+  )
+  if (input.credential.type === 'clientToken' && connection !== undefined) {
     throw new PolymorfaConfigurationError(
-      `${action} with a client token uses the session the token is bound to; omit --session.`,
-      'session',
+      `${action} with a client token uses the connection the token is bound to; omit --connection.`,
+      'connection',
     )
   }
   const participant = validateParticipant(input.credential, input.participant)
@@ -799,8 +806,8 @@ function createCallsClient(
   }
   return new CallsClient({
     token: input.credential.value,
-    // Client tokens are bound to one session and never send it.
-    session: session ?? '',
+    // Client tokens are bound to one connection and never send it.
+    connection: connection ?? '',
     baseUrl: assertCallsBaseUrl(input.baseUrl ?? DEFAULT_BASE_URL),
     WebSocket: WebSocketImpl,
     ...(participant === undefined ? {} : {participant}),
@@ -839,14 +846,14 @@ export function callsClientError(
   }
   if (error instanceof CallsAuthError) {
     return new PolymorfaAuthenticationError(
-      `The credential does not authorize this session${refusal === undefined ? '' : ` (${refusal})`}. Check the credential, its client rules, and the session.`,
+      `The credential does not authorize this connection${refusal === undefined ? '' : ` (${refusal})`}. Check the credential, its client rules, and the connection.`,
       {code: refusal ?? error.code, cause: error},
     )
   }
   if (error instanceof CallsError) {
     if (error.code === 'invalid_request') {
       return new PolymorfaValidationError(
-        'The API refused the calls connection. Check the session and participant.',
+        'The API refused the calls connection. Check the connection and participant.',
         {code: error.code, cause: error},
       )
     }
@@ -950,7 +957,7 @@ export interface WatchCallsSummary {
 }
 
 /**
- * Follow a session's calls with the Calls client. The client authenticates,
+ * Follow a connection's calls with the Calls client. The client authenticates,
  * reconnects with backoff, and never answers or declines on its own. This
  * resolves on the abort signal or `count` and rejects on a terminal refusal.
  */

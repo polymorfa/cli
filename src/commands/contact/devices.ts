@@ -14,8 +14,8 @@ export default class ContactDevices extends BaseCommand {
   static override description = 'List a contact’s linked devices.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -24,7 +24,7 @@ export default class ContactDevices extends BaseCommand {
     const {args, flags} = await this.parse(ContactDevices)
     const result = await listContactDevices(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Contact'}),
-      flags.session,
+      flags.connection,
       args.contact,
     )
     this.writeValue(

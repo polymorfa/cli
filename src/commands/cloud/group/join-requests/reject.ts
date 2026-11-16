@@ -12,8 +12,8 @@ export default class CloudGroupJoinRequestsReject extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     request: Flags.string({
@@ -32,7 +32,7 @@ export default class CloudGroupJoinRequestsReject extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.officialGroups.rejectJoinRequests(
-      flags.session,
+      flags.connection,
       args.group,
       flags.request,
       requestKey(flags['idempotency-key']),

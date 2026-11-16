@@ -20,8 +20,8 @@ export default class MessageSendContact extends BaseCommand {
     'Send a contact card built from flags or read from a vCard file.'
 
   static override examples = [
-    '<%= config.bin %> message send contact --session session_123 --to +15551234567 --name "Ada Lovelace" --phone +15557654321',
-    '<%= config.bin %> message send contact --session session_123 --to +15551234567 --vcard ./ada.vcf',
+    '<%= config.bin %> message send contact --connection connection_123 --to +15551234567 --name "Ada Lovelace" --phone +15557654321',
+    '<%= config.bin %> message send contact --connection connection_123 --to +15551234567 --vcard ./ada.vcf',
   ]
 
   static override flags = {
@@ -35,7 +35,8 @@ export default class MessageSendContact extends BaseCommand {
       exclusive: ['vcard'],
     }),
     phone: Flags.string({
-      description: 'Contact E.164 phone number. Repeat for several numbers.',
+      description:
+        'Contact E.164 phone number. Repeat for several phone numbers.',
       exclusive: ['vcard'],
       multiple: true,
     }),
@@ -69,7 +70,7 @@ export default class MessageSendContact extends BaseCommand {
     }
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       sendIdempotencyOptions(flags['idempotency-key']),
     )

@@ -6,7 +6,7 @@ import {readJsonInput} from '../../../api/request.js'
 
 export default class FlowKeyRegister extends BaseCommand {
   static override description =
-    'Replace the public key used by every dynamic Flow on this Meta phone number. Requires sessions:manage; retain the matching private key on your endpoint.'
+    'Replace the public key used by every dynamic Flow on this Meta phone number. Requires connections:manage; retain the matching private key on your endpoint.'
   static override flags = {
     'phone-number-id': Flags.string({
       description: 'Meta phone number ID.',

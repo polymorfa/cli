@@ -3,25 +3,25 @@ import {PolymorfaConfigurationError} from '@polymorfa/sdk'
 import {PROJECT_UUID} from '../config/project-link.js'
 import {resolveCommandEnvironment} from '../context/environment.js'
 import {createPlatformClient} from '../sdk/client.js'
-import {listManagedSessions} from '../services/platform-management.js'
+import {listManagedConnections} from '../services/platform-management.js'
 
-export interface McpSessionSummary {
-  readonly sessionId: string
+export interface McpConnectionSummary {
+  readonly connectionId: string
   readonly name: string
   readonly status: string
   readonly testMode: boolean
 }
 
-export interface McpSessionList {
-  readonly sessions: readonly McpSessionSummary[]
+export interface McpConnectionList {
+  readonly connections: readonly McpConnectionSummary[]
   readonly status: number
   readonly requestId?: string
 }
 
-/** Read one project's session metadata without exposing phone or credentials. */
-export async function listMcpSessions(
+/** Read one project's connection metadata without exposing phone or credentials. */
+export async function listMcpConnections(
   projectId: string,
-): Promise<McpSessionList> {
+): Promise<McpConnectionList> {
   if (!PROJECT_UUID.test(projectId)) {
     throw new PolymorfaConfigurationError(
       'A project UUID is required.',
@@ -34,7 +34,7 @@ export async function listMcpSessions(
       process.env.POLYMORFA_CLIENT_TOKEN?.trim())
   ) {
     throw new PolymorfaConfigurationError(
-      'Select only one organization API key for MCP session discovery.',
+      'Select only one organization API key for MCP connection discovery.',
       'credential',
     )
   }
@@ -42,17 +42,19 @@ export async function listMcpSessions(
     env: process.env,
     surface: 'platform',
   })
-  const response = await listManagedSessions(
+  const response = await listManagedConnections(
     createPlatformClient(environment),
     projectId,
   )
   return {
-    sessions: response.data.map(({sessionId, name, status, testMode}) => ({
-      sessionId,
-      name,
-      status,
-      testMode,
-    })),
+    connections: response.data.map(
+      ({connectionId, name, status, testMode}) => ({
+        connectionId,
+        name,
+        status,
+        testMode,
+      }),
+    ),
     status: response.metadata.status,
     ...(response.metadata.requestId === undefined
       ? {}

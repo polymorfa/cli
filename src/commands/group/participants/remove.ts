@@ -16,7 +16,7 @@ export default class GroupParticipantsRemove extends BaseCommand {
   static override description = 'Remove participants from a group.'
 
   static override examples = [
-    '<%= config.bin %> group participants remove 750000000009 --session session_123 --participant 750000000001 --yes',
+    '<%= config.bin %> group participants remove 750000000009 --connection connection_123 --participant 750000000001 --yes',
   ]
 
   static override flags = {
@@ -28,8 +28,8 @@ export default class GroupParticipantsRemove extends BaseCommand {
       multiple: true,
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -46,7 +46,7 @@ export default class GroupParticipantsRemove extends BaseCommand {
     })
     const result = await changeGroupParticipants(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
-      flags.session,
+      flags.connection,
       args.group,
       'remove',
       participants,

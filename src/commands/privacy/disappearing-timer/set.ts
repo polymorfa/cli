@@ -19,8 +19,8 @@ export default class PrivacyDisappearingTimerSet extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this timer update.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -29,7 +29,7 @@ export default class PrivacyDisappearingTimerSet extends BaseCommand {
     const {flags} = await this.parse(PrivacyDisappearingTimerSet)
     const result = await setDefaultDisappearingTimer(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Privacy'}),
-      flags.session,
+      flags.connection,
       flags.duration as PrivacyTimerDuration,
       flags['idempotency-key'] === undefined
         ? {}

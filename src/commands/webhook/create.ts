@@ -47,10 +47,10 @@ export default class WebhookCreate extends BaseCommand {
         this.error((error as Error).message, {exit: 2})
       }
     }
-    const session = await this.developerSession(flags)
+    const connection = await this.developerConnection(flags)
     const input = merged as unknown as CreateProjectWebhookInput
-    const response = await session.client.webhooks.create(input, {
-      ...session.requestOptions,
+    const response = await connection.client.webhooks.create(input, {
+      ...connection.requestOptions,
       idempotencyKey: idempotencyKey(flags['idempotency-key']),
     })
     const receipt = record(response.data, 'Webhook creation receipt')
@@ -66,7 +66,7 @@ export default class WebhookCreate extends BaseCommand {
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
       const output = developerMutation({
-        context: session.context,
+        context: connection.context,
         metadata: response.metadata,
         receipt,
         resource: {id: stringField(webhook, 'id'), type: 'webhook'},
@@ -91,7 +91,7 @@ export default class WebhookCreate extends BaseCommand {
       )
     }
     const output = developerMutation({
-      context: session.context,
+      context: connection.context,
       metadata: response.metadata,
       receipt,
       resource: {id: stringField(webhook, 'id'), type: 'webhook'},

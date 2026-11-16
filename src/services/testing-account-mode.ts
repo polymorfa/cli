@@ -36,7 +36,7 @@ export type TestingAccountModeInput = z.infer<typeof modeFields>
 
 const resultSchema = z
   .object({
-    session: z.string(),
+    connection: z.string(),
     accountType: z.enum(testingAccountTypes),
     primaryPlatform: z.enum(['android', 'ios']).nullable(),
     changed: z.boolean(),
@@ -59,27 +59,27 @@ export function testingAccountModeInput(
 /** Uses the installed SDK's public transport; the CLI owns this typed contract. */
 export async function setTestingAccountMode(
   client: MessagingClient,
-  session: string,
+  connection: string,
   input: unknown,
   options: RequestOptions = {},
 ) {
-  if (!session || session.length > 256)
+  if (!connection || connection.length > 256)
     throw new PolymorfaValidationError(
-      'Provide a session ID of 1 to 256 characters.',
-      {code: 'invalid_session'},
+      'Provide a connection ID of 1 to 256 characters.',
+      {code: 'invalid_connection'},
     )
   const body = testingAccountModeInput(input)
   const response = await client.raw
     .request<unknown>({
       ...options,
       method: 'PUT',
-      path: `/messaging/${encodeURIComponent(session)}/phone/account-mode`,
+      path: `/messaging/${encodeURIComponent(connection)}/phone/account-mode`,
       body,
     })
     .catch((error: unknown) => {
       if (!(error instanceof PolymorfaConflictError)) throw error
       throw new PolymorfaConflictError(
-        `The Test number is claimed in Inspector, or another mode change is pending. Unclaim it in Inspector or retry. The API said: ${error.message}`,
+        `The Test Connection is claimed in Inspector, or another mode change is pending. Unclaim it in Inspector or retry. The API said: ${error.message}`,
         {
           cause: error,
           details: error.details,

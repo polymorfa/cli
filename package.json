@@ -95,7 +95,7 @@
         "description": "Manage the business profile cover photo."
       },
       "call": {
-        "description": "Reject incoming calls through the Linked Device session route."
+        "description": "Reject incoming calls through the Linked Device connection route."
       },
       "calls": {
         "description": "Place and manage calls, check consent, carry audio, and report on past calls."
@@ -107,7 +107,7 @@
         "description": "Manage the team do-not-call list."
       },
       "calls:permission": {
-        "description": "Inspect and request call permission on Cloud API numbers."
+        "description": "Inspect and request call permission on Cloud API connections."
       },
       "calls:policy": {
         "description": "Inspect and replace the team call policy."
@@ -116,7 +116,7 @@
         "description": "Inspect and change how long Polymorfa keeps your team's call data."
       },
       "calls:settings": {
-        "description": "Inspect and replace session call settings."
+        "description": "Inspect and replace connection call settings."
       },
       "campaign": {
         "description": "Inspect and manage Messaging campaigns."
@@ -134,22 +134,22 @@
         "description": "Inspect and act on channel messages."
       },
       "chat": {
-        "description": "Read stored chats on enrolled HMS Numbers (beta)."
+        "description": "Read stored chats on enrolled HMS Connections (beta)."
       },
       "chat:message": {
-        "description": "Read stored messages on enrolled HMS Numbers (beta)."
+        "description": "Read stored messages on enrolled HMS Connections (beta)."
       },
       "contact": {
         "description": "Inspect contacts and manage the contact blocklist."
       },
       "customer": {
-        "description": "Manage project Customers, pairing links, and assigned Numbers."
+        "description": "Manage project Customers, pairing links, and assigned Connections."
       },
       "customer:event": {
         "description": "Inspect Customer lifecycle events."
       },
-      "customer:number": {
-        "description": "Inspect and transfer Customer Numbers."
+      "customer:connection": {
+        "description": "Inspect and transfer Customer Connections."
       },
       "customer:pairing-link": {
         "description": "Create, inspect, and revoke Customer pairing links."
@@ -164,7 +164,7 @@
         "description": "List and change group participants and admins."
       },
       "identity": {
-        "description": "Resolve phone numbers and usernames to Polymorfa user IDs."
+        "description": "Resolve phone connections and usernames to Polymorfa user IDs."
       },
       "key": {
         "description": "Inspect and revoke organization API keys."
@@ -235,11 +235,11 @@
       "security-incident": {
         "description": "Inspect and acknowledge organization security incidents."
       },
-      "session": {
-        "description": "Manage Platform sessions."
+      "connection": {
+        "description": "Manage Platform connections."
       },
-      "session-ban": {
-        "description": "Inspect recorded organization session bans."
+      "connection-ban": {
+        "description": "Inspect recorded organization connection bans."
       },
       "voice": {
         "description": "Voice Automation (beta): audio library and text-to-speech provider credentials."
@@ -250,17 +250,17 @@
       "voice:credential": {
         "description": "Store, check, and delete your text-to-speech provider keys (beta)."
       },
-      "session:configuration": {
-        "description": "Inspect and update inherited session configuration."
+      "connection:configuration": {
+        "description": "Inspect and update inherited connection configuration."
       },
-      "session:tier": {
+      "connection:tier": {
         "description": "Quote, confirm, and follow Number tier changes, including Hybrid Link choices."
       },
       "sip-trunk": {
         "description": "Connect a PBX to WhatsApp calls with SIP trunks."
       },
       "testing": {
-        "description": "Manage simulated session fixtures."
+        "description": "Manage simulated connection fixtures."
       },
       "testing:history-fixture": {
         "description": "Upload project-scoped test history."

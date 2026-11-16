@@ -33,7 +33,7 @@ describe('profile commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('profile view --session session/main --json'),
+      runCommand('profile view --connection connection/main --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -41,7 +41,7 @@ describe('profile commands', () => {
       data: declaredProfile(),
       metadata: {attempts: 1, requestId: 'req_profile', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/profile')
+    expect(server.requests[0]?.url).toBe('/messaging/connection%2Fmain/profile')
   })
 
   test('renders the live runner profile shape without assuming declared fields', async () => {
@@ -61,7 +61,7 @@ describe('profile commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('profile view --session session_1'),
+      runCommand('profile view --connection session_1'),
     )
 
     expect(result.error).toBeUndefined()
@@ -83,9 +83,9 @@ describe('profile commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
-      () => runCommand('profile view --session session_1 --json'),
+      () => runCommand('profile view --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -97,7 +97,7 @@ describe('profile commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('profile name set --session session_1 --name "" --json'),
+      runCommand('profile name set --connection session_1 --name "" --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -112,7 +112,7 @@ describe('profile commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'profile name set --session session_1 --name Polymorfa --idempotency-key name_1 --json',
+        'profile name set --connection session_1 --name Polymorfa --idempotency-key name_1 --json',
       ),
     )
 
@@ -136,7 +136,7 @@ describe('profile commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'profile status set --session session_1 --status Available --json',
+        'profile status set --connection session_1 --status Available --json',
       ),
     )
 
@@ -155,7 +155,7 @@ describe('profile commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'profile picture set --session session_1 --url https://example.test/profile.jpg --json',
+        'profile picture set --connection session_1 --url https://example.test/profile.jpg --json',
       ),
     )
 
@@ -176,7 +176,7 @@ describe('profile commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        `profile picture set --session session/main --file ${input} --idempotency-key picture_1 --json`,
+        `profile picture set --connection connection/main --file ${input} --idempotency-key picture_1 --json`,
       ),
     )
 
@@ -184,7 +184,7 @@ describe('profile commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({base64: '/9j/2Q=='}),
       method: 'PUT',
-      url: '/messaging/session%2Fmain/profile/picture',
+      url: '/messaging/connection%2Fmain/profile/picture',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('picture_1')
   })
@@ -193,7 +193,7 @@ describe('profile commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('profile picture set --session session_1 --json'),
+      runCommand('profile picture set --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -208,7 +208,7 @@ describe('profile commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        `profile picture set --session session_1 --file ${input} --url https://example.test/profile.jpg --json`,
+        `profile picture set --connection session_1 --file ${input} --url https://example.test/profile.jpg --json`,
       ),
     )
 
@@ -224,7 +224,7 @@ describe('profile commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand(`profile picture set --session session_1 --file ${input}`),
+      runCommand(`profile picture set --connection session_1 --file ${input}`),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -236,7 +236,7 @@ describe('profile commands', () => {
 
   test('requires explicit confirmation before deleting the profile picture', async () => {
     const result = await runCommand(
-      'profile picture delete --session session_1 --json',
+      'profile picture delete --connection session_1 --json',
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -250,7 +250,7 @@ describe('profile commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'profile picture delete --session session_1 --yes --idempotency-key picture_delete_1 --json',
+        'profile picture delete --connection session_1 --yes --idempotency-key picture_delete_1 --json',
       ),
     )
 
@@ -273,8 +273,7 @@ describe('profile commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
