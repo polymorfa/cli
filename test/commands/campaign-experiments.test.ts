@@ -286,6 +286,7 @@ const BASE_CAMPAIGN_LINES = [
   'ID\tcampaign_1',
   'Name\tOctober offer',
   'Status\trunning',
+  'Template\t',
   'Recipients\t1000',
   'Sent\t160',
   'Delivered\t150',
