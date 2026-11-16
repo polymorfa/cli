@@ -1,4 +1,8 @@
 import {
+  renderCampaignBetas,
+  renderExperimentAnalytics,
+} from './campaign-experiments.js'
+import {
   renderDripConfiguration,
   renderDripStats,
 } from './campaign-segments-drip.js'
@@ -86,12 +90,16 @@ export async function launchCampaign(
   projectSlug: string,
   campaignId: string,
   scheduledAt: number | undefined,
+  skipMissingVariables: boolean,
   options: RequestOptions = {},
 ): Promise<CampaignResult<CampaignOperation>> {
   const response = await client.campaigns.launch(
     projectSlug,
     campaignId,
-    scheduledAt === undefined ? {} : {scheduledAt},
+    {
+      ...(scheduledAt === undefined ? {} : {scheduledAt}),
+      ...(skipMissingVariables ? {skipMissingVariables: true} : {}),
+    },
     options,
   )
   return result(response.data.data, response.metadata)
@@ -144,7 +152,9 @@ export async function listCampaignRecipients(
   client: MessagingClient,
   projectSlug: string,
   campaignId: string,
-  params: ListCampaignRecipientsParams & {readonly reason?: string},
+  params: Omit<ListCampaignRecipientsParams, 'reason'> & {
+    readonly reason?: string
+  },
 ): Promise<CampaignResult<CampaignRecipientPageResult>> {
   const response = await client.raw.request<{
     data: readonly CampaignRecipient[]
@@ -233,6 +243,11 @@ export function renderCampaign(campaign: Campaign): string {
     `ID\t${campaign.id}`,
     `Name\t${campaign.name}`,
     `Status\t${campaign.status}`,
+    `Template\t${campaign.templateId ?? ''}`,
+    ...(campaign.variableMapping === undefined ||
+    campaign.variableMapping === null
+      ? []
+      : [`Variable mapping\t${JSON.stringify(campaign.variableMapping)}`]),
     `Recipients\t${campaign.recipientCount}`,
     `Sent\t${campaign.sentCount}`,
     `Delivered\t${campaign.deliveredCount}`,
@@ -242,6 +257,7 @@ export function renderCampaign(campaign: Campaign): string {
     `Scheduled\t${formatCampaignTime(campaign.scheduledAt)}`,
     ...renderFollowUpConfiguration(campaign),
     ...renderDripConfiguration(campaign),
+    ...renderCampaignBetas(campaign),
   ].join('\n')
 }
 
@@ -259,6 +275,7 @@ export function renderCampaignAnalytics(analytics: CampaignAnalytics): string {
     ...renderFollowUpAnalytics(analytics),
     ...renderDripStats(analytics),
     ...renderFrequencyCapAnalytics(analytics),
+    ...renderExperimentAnalytics(analytics),
   ].join('\n')
 }
 
