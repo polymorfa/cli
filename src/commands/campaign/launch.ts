@@ -19,7 +19,7 @@ export default class CampaignLaunch extends BaseCommand {
   static override flags = {
     'idempotency-key': Flags.string({
       description:
-        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).',
+        'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).',
     }),
     'project-slug': Flags.string({
       description: 'Project slug in the Messaging API path.',
@@ -27,6 +27,10 @@ export default class CampaignLaunch extends BaseCommand {
     }),
     'scheduled-at': Flags.string({
       description: 'Launch time as epoch milliseconds or an ISO 8601 instant.',
+    }),
+    'skip-missing-variables': Flags.boolean({
+      description:
+        'Skip recipients missing a template variable with no value or fallback. Without this flag launch fails.',
     }),
   }
 
@@ -38,6 +42,7 @@ export default class CampaignLaunch extends BaseCommand {
       flags['project-slug'],
       args.campaign,
       scheduledAt,
+      flags['skip-missing-variables'],
       {idempotencyKey: idempotencyKey(flags['idempotency-key'])},
     )
     this.writeValue(

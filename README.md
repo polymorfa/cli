@@ -469,20 +469,23 @@ polymorfa message send text \
   --body 'Your order shipped.' --idempotency-key order-123-shipped
 ```
 
-For 24 hours after the first request, the API prevents the same key and request
+For 1 hour after the first request, the API prevents the same key and request
 from running the write again:
 
-- A recorded success returns `409 idempotency_completed` with
-  `Idempotent-Replayed: true`. The CLI reports an error; the response does not
-  contain the original message or response body.
-- A recorded server error returns its status and error code with
-  `Idempotent-Replayed: true`. The write may have happened.
+- Keep the first response. Exact replay depends on the API contract and available
+  replay data. A replayed response carries `Idempotent-Replayed: true`.
+- A recorded error does not prove the write had no effect. Reconcile message
+  events or webhooks before deciding whether a new write is safe. Do not change
+  keys merely to bypass an uncertain outcome.
 - A request still running returns `409 idempotency_in_progress` with
   `Retry-After`. An unrecorded outcome returns
   `409 idempotency_outcome_unknown` and blocks another attempt with that key.
-- Reusing a key for a changed request returns `409 idempotency_conflict`.
+- If the recorded response cannot be read right now, the API returns
+  `503 idempotency_replay_unavailable` with `Retry-After`. Retry with the same
+  key; the write does not run again.
+- Reusing a key for a changed request returns `422 idempotency_conflict`.
 
-Keep the first response when you receive it. If the outcome is uncertain, check
+If the outcome is uncertain, check
 message events or webhooks before deciding whether to use a new key. A new key
 does not resolve the uncertainty and can send a duplicate. See the
 [Messaging retry contract](https://docs.polymorfa.com/guides/communicate/overview#retry-sends-safely).
@@ -623,9 +626,9 @@ object with `name`, `language`, `category`, and `components` from `--input`, or
 from stdin when it is `-`. Template names and provider IDs remain strings.
 Edits read `{ "components": [...] }` and return acceptance, not approval to send.
 Deletion requires `--yes`. Create, edit and delete send one request and never
-retry. Create and delete accept `--idempotency-key`; reuse the same key after an
-unknown outcome and the API answers `idempotency_completed` instead of writing
-again. List the catalog before resubmitting. The template routes need an active
+retry. Create and delete accept `--idempotency-key`; reuse the same key after a
+lost response so the retained receipt prevents another execution. Replay data
+may be unavailable; keep the first response and reconcile uncertain outcomes. List the catalog before resubmitting. The template routes need an active
 Official API connection, including on a Hybrid Number; a Number with only a
 Linked Devices connection is rejected.
 
@@ -1805,6 +1808,24 @@ Check the campaign with `polymorfa campaign view`. When an operation ID is
 returned, follow it with `polymorfa operation wait` or
 `polymorfa operation watch`; see [Operations](#operations).
 
+To create a template campaign, set `templateId` in `campaign.json`. Add
+`variableMapping` when template variables use different recipient field names
+or need a fallback:
+
+```json
+{
+  "name": "September launch",
+  "templateId": "template_123",
+  "variableMapping": {
+    "firstName": {"source": "name", "fallback": "friend"}
+  }
+}
+```
+
+Launch refuses recipients whose variables have no value or fallback. Pass
+`--skip-missing-variables` to skip those recipients instead; their result has
+`lastError` `missing_variable`. The flag is never enabled by default.
+
 `campaign test-send` sends one real message from a draft to a team-connected
 seed number. Its JSON input requires `sessionId` (the sending number's session
 ID) and `to` (the seed phone in E.164 format); `sampleRecipientId` and
@@ -1825,9 +1846,9 @@ instants. List returns one complete newest-first array with no cursor. Requeue
 is synchronous and reports only the number moved.
 
 Create, launch, pause, resume and stop accept `--idempotency-key` to deduplicate
-the same request for 24 hours. A successful request repeated with the same key
-returns `409 idempotency_completed`, not the original response. Changed input
-returns `409 idempotency_conflict`; an in-progress or uncertain result must be
+the same request for 1 hour in the response-replay contract. Retain the first
+response; unavailable replay data does not release the execution fence. Changed input returns
+`422 idempotency_conflict`; an in-progress or uncertain result must be
 resolved before trying a new key. The SDK generates a fresh key for create and
 launch when the flag is omitted. Supply an explicit key from the first attempt
 to reuse it across CLI invocations with the same input, credential and API
@@ -1866,6 +1887,69 @@ update command; change or remove a draft's follow-up with `polymorfa api`.
 text. `campaign analytics` adds follow-up outcomes after the first-message
 counts, and `campaign recipients list` adds a follow-up status column when a
 recipient has one. `--json` returns the API response unchanged.
+
+### A/B tests and weighted message variation (beta)
+
+Both betas require team enrollment and live feature access. A team without
+access gets `403 feature_unavailable`. For Messaging campaign creation, use
+`campaign create --project-slug` with these fields in the `--input` object.
+
+- **A/B test:** `variants` holds two to four messages, each with a `key`, a
+  `label`, an integer `weight` from 1 to 99 (the weights add up to 100) and a
+  `blueprint`.
+  `variantStrategy` sets `winnerCriterion` (`delivery`, `read` or `reply`),
+  `holdoutPercent` (0 to 30), an optional `testSlicePercent` (5 to 50,
+  default 20), `autoPromote: true` and `testWindowMinutes` (15 to 1,440). An
+  A/B test cannot use `templateId`.
+- **Weighted message variation:** `messageVariations` holds two to five
+  alternatives, each with a `key`, an integer `weight` from 1 to 99 (the
+  weights add up to 100) and a `blueprint`. Each recipient receives one
+  alternative and keeps it across retries. Every alternative must use the same
+  `{{variable}}` placeholders. Alternatives send only from linked-device
+  numbers and cannot be combined with `templateId`, composed messages or an
+  A/B test.
+
+```json
+{
+  "name": "October offer",
+  "variants": [
+    {
+      "key": "a",
+      "label": "Short",
+      "weight": 50,
+      "blueprint": {"version": 2, "source": "Hi {{first_name | there}}!"}
+    },
+    {
+      "key": "b",
+      "label": "Long",
+      "weight": 50,
+      "blueprint": {
+        "version": 2,
+        "source": "Hello {{first_name | there}}, your offer is ready."
+      }
+    }
+  ],
+  "variantStrategy": {
+    "winnerCriterion": "read",
+    "holdoutPercent": 5,
+    "autoPromote": true,
+    "testWindowMinutes": 120
+  }
+}
+```
+
+At launch, recipients are split into an optional holdout, a test group that
+receives the variants and a reserve that waits for the winner. When the test
+window ends, the winner is sent to the reserve. If no variant is clearly ahead,
+the outcome is inconclusive and the campaign pauses with the reserve unsent.
+
+`campaign view` shows the variant count and outcome of an A/B test, and the
+number of weighted alternatives. `campaign analytics` adds the criterion, the
+outcome (the winner, inconclusive with its reason, or no winner yet), the
+holdout and reserve counts, and a row per variant with the criterion rate,
+sent, assigned, delivered, read and replied counts. The winner row is marked
+`(winner)`. `--json` returns the API's `variants`, `variantStrategy`,
+`experimentOutcome`, `messageVariations` and `experiment` fields unchanged.
 
 ### Campaign recipients
 
@@ -2221,12 +2305,12 @@ polymorfa listen --project PROJECT_ID --forward-to http://127.0.0.1:3000/webhook
 Trigger events in another:
 
 ```shell
-polymorfa trigger --list --project PROJECT_ID
-polymorfa trigger message.received --project PROJECT_ID --session my-test-number --text "hi"
-polymorfa trigger message.received --project PROJECT_ID --session my-test-number \
+polymorfa trigger --list
+polymorfa trigger message.received --session my-test-number --text "hi"
+polymorfa trigger message.received --session my-test-number \
   --override mediaType=image --override caption=look
-polymorfa trigger message.ack --project PROJECT_ID --session my-test-number --override ackStatus=read
-polymorfa trigger message.failed --project PROJECT_ID --session my-test-number
+polymorfa trigger message.ack --session my-test-number --override ackStatus=read
+polymorfa trigger message.failed --session my-test-number
 polymorfa trigger call.received --project PROJECT_ID --session my-test-number --override video=true
 polymorfa trigger session.restriction_updated --project PROJECT_ID --session my-test-number \
   --override restrictionActive=false
@@ -2245,7 +2329,7 @@ and `template.status`. `--override key=value`
 sets one payload field and can be repeated; `--text` and `--from` are
 shortcuts. `video` and `restrictionActive` accept only `true` or `false`;
 `durationSeconds` accepts a whole number. Set `restrictionActive=false` to
-test the end of a restriction. `--from-session OTHER_TEST_NUMBER` sends a real simulated text from
+test the end of a restriction. `--from-number OTHER_TEST_NUMBER` sends a real simulated text from
 another Test number in the project instead, producing an ordinary
 `message.received` event you can reply to. Use `--json` for one JSON document.
 
@@ -2427,6 +2511,32 @@ npm run verify
 The verification gate checks formatting, lint, strict TypeScript, tests,
 production build, npm package contents, and the production dependency audit on
 Node.js 22 in hosted CI.
+
+### Test-number account modes
+
+The Business commands follow API source `14153ad9d69ddd3bae972594e6b3dc3ddae8e8e4`.
+`contracts/business-account-modes.json` binds the actual API producer input.
+This source support does not establish hosted availability or a package release.
+A 409 from `testing account-mode` means the Test number is claimed in Inspector or another mode change is pending.
+The CLI validates this contract and uses the installed SDK's public transport;
+it does not assume that the registry SDK exports the new typed operation.
+
+```sh
+polymorfa quicklink create --project PROJECT_UUID --account-type business_app --primary-platform ios
+polymorfa testing account-mode TEST_SESSION --account-type meta_cloud --yes --json
+```
+
+The modes are `whatsapp_app`, `business_app`, `meta_cloud` and `meta_coexistence`.
+Phone modes accept `android` or `ios`. Omit `--primary-platform` for `meta_cloud`.
+Legacy `personal` and `business` mode names are rejected. A mode change unlinks
+companions; they must pair again. `--yes` confirms that effect. The operation
+requires a server credential and applies only to Test numbers. It never converts
+a real WhatsApp account. The API enforces Number, membership and session checks.
+
+QuickLink flags preserve other nested testing configuration. Conflicting input
+fields fail before a request. `contact business-profile` preserves the optional
+`encryption` value (`end_to_end`, `hybrid` or `not_end_to_end`) in JSON and plain
+output. An omitted field stays omitted.
 
 ### Guided session creation and configuration
 
@@ -2761,6 +2871,46 @@ These commands use the pinned SDK's `analytics.get` and `analytics.metrics`
 methods and shared response types. A CLI release containing these commands and
 an API deployment exposing Analytics are separate requirements.
 
+### Audience profiles (beta)
+
+Use a team API key with `campaigns:read` for reads or `campaigns:manage` for
+changes. Project and client tokens cannot access team profiles. Profile writes
+and import creation require beta enrollment; reads, cancellation and deletion
+remain available after withdrawal. These commands are source additions pending
+the matching SDK prerelease and API acceptance.
+
+```sh
+polymorfa campaign profiles list --limit 50
+polymorfa campaign profiles list --cursor CURSOR
+polymorfa campaign profiles get +14155550123
+polymorfa campaign profiles upsert +14155550123 --input profile.json
+polymorfa campaign profiles consent +14155550123 --limit 25
+polymorfa campaign profiles import --csv contacts.csv --replay-key contacts-1
+polymorfa campaign profiles imports get JOB_ID
+polymorfa campaign profiles imports cancel JOB_ID
+polymorfa campaign profiles delete +14155550123 --expected-revision 2
+```
+
+`profile.json` must contain `tags` and `attributes`. Include the latest
+`expectedRevision` when replacing an existing profile. Optional `provenance`
+and `consent` match the API body; assertions never override opt-outs. A stale
+revision returns 409. Deletion preserves opt-outs and existing campaign recipients.
+
+Imports accept at most 10 MiB and 10,000 rows. CSV must contain valid UTF-8;
+malformed byte sequences are refused before upload. Valid UTF-8, including an
+initial BOM and the original line endings, is sent without text normalization. Use `--mapping mapping.json`
+for explicit CSV columns, for example
+`{"phone":"Phone","tags":"Tags","attributes":"Attributes"}`. Omitted mapping
+uses the API's standard column names. Poll the job until `completed` or
+`cancelled`. Cancellation leaves committed edits intact. Replay keys must be
+reused only with the same CSV, mapping and credential.
+
+`--tag` and `--phone-prefix` require API support not yet available (API #567).
+They fail locally without sending a request; this CLI does not offer profile
+filtering. Listing supports `--cursor` and `--limit`. `--json` preserves
+API envelopes and pagination. The CLI keeps its existing SDK pin and uses a
+local typed adapter until a matching SDK prerelease is published.
+
 ## Package release workflow
 
 CLI development and release PRs target `main`. Nightly packages use the `dev` npm tag after matching staging API acceptance; stable packages follow production acceptance. Each package pins an exact accepted SDK version. See [the release guide](RELEASING.md).
@@ -2849,3 +2999,21 @@ Campaign analytics shows `Skipped by frequency cap`; recipient output includes
 This implementation keeps the published SDK pin unchanged. Release waits for a
 matching SDK prerelease and accepted API contract; source support does not imply
 package publication or beta availability.
+
+## Channel update metadata
+
+Use the existing event stream to read `newsletter.update` observations as JSON lines:
+
+```sh
+polymorfa event stream --owner project --project "$PROJECT_ID" --type newsletter.update --json
+```
+
+`live_update` messages contain reported counts and positions, with optional message
+references. Missing counts are not zero. Preserve every typed or untyped view
+value and unknown milestone type. Position-only observations do not provide
+message action authority. The payload contains no message body.
+
+`channel message list --json` and `channel message updates --json` preserve a
+reported `forwards` value, including zero. Event lists remain metadata-only;
+`event view --include-payload --json` returns exact retained bytes only when the
+API authorizes them. These commands do not request additional retention.

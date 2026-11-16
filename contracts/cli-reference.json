@@ -16733,7 +16733,7 @@
     {
       "id": "campaign create",
       "summary": "Create a campaign from one JSON object. Optional beta fields include followUp: one receipt-timed follow-up ({delaySeconds, expirySeconds, message: {type: \"text\", text} or {type: \"template\", templateId}}); teams that are not enrolled receive 403 feature_unavailable.",
-      "description": "Create a campaign from one JSON object. Optional beta fields include followUp: one receipt-timed follow-up ({delaySeconds, expirySeconds, message: {type: \"text\", text} or {type: \"template\", templateId}}); teams that are not enrolled receive 403 feature_unavailable.",
+      "description": "Create a campaign from one JSON object. Optional beta fields include followUp: one receipt-timed follow-up ({delaySeconds, expirySeconds, message: {type: \"text\", text} or {type: \"template\", templateId}}); teams that are not enrolled receive 403 feature_unavailable.\n\nFor Messaging campaigns (--project-slug), A/B tests and weighted message variation are betas that require team enrollment and live feature access; a team without access gets 403 feature_unavailable:\n\n- A/B test: \"variants\" (two to four, each with key, label, integer weight from 1 to 99 and blueprint; weights add up to 100) and \"variantStrategy\" (winnerCriterion delivery, read or reply; holdoutPercent; optional testSlicePercent; autoPromote true; testWindowMinutes). View the results with polymorfa campaign analytics.\n- Weighted message variation: \"messageVariations\", two to five alternatives (key, integer weight from 1 to 99, blueprint; weights add up to 100). Each recipient receives one alternative. Linked-device numbers only.\n\nAn A/B test cannot use templateId. messageVariations cannot be combined with templateId, composed messages or an A/B test.",
       "usage": ["polymorfa campaign create [flags]"],
       "aliases": [],
       "hidden": false,
@@ -16831,7 +16831,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -17207,7 +17207,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -17304,6 +17304,18 @@
           "default": null,
           "options": [],
           "description": "Launch time as epoch milliseconds or an ISO 8601 instant.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "skip-missing-variables",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Skip recipients missing a template variable with no value or fallback. Without this flag launch fails.",
           "env": null,
           "helpGroup": null
         },
@@ -17504,7 +17516,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Deduplicate this request for 24 hours. A completed key returns 409 idempotency_completed.",
+          "description": "Deduplicate this request for 1 hour. Keep the first response; unavailable replay data does not permit another execution.",
           "env": null,
           "helpGroup": null
         },
@@ -17579,6 +17591,1148 @@
           "description": "Project slug in the Messaging API path.",
           "env": null,
           "helpGroup": null
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign profiles consent",
+      "summary": "List one page of supplied campaign consent assertions. Assertions do not clear opt-outs. Requires campaigns:read.",
+      "description": "List one page of supplied campaign consent assertions. Assertions do not clear opt-outs. Requires campaigns:read.",
+      "usage": ["polymorfa campaign profiles consent PHONE [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "phone",
+          "description": "E.164 phone including +.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "cursor",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Continue from this cursor.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "limit",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Assertions per page (default 25).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign profiles delete",
+      "summary": "Delete a profile at its latest revision. Removes profile data and audience memberships; preserves opt-outs and campaign recipients. Requires campaigns:manage.",
+      "description": "Delete a profile at its latest revision. Removes profile data and audience memberships; preserves opt-outs and campaign recipients. Requires campaigns:manage.",
+      "usage": ["polymorfa campaign profiles delete PHONE [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "phone",
+          "description": "E.164 phone including +.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "expected-revision",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Latest profile revision. Stale revisions return 409.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign profiles get",
+      "summary": "Get a team audience profile by E.164 phone. Requires campaigns:read.",
+      "description": "Get a team audience profile by E.164 phone. Requires campaigns:read.",
+      "usage": ["polymorfa campaign profiles get PHONE [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "phone",
+          "description": "E.164 phone including +.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign profiles import",
+      "summary": "Queue a profile CSV import (at most 10 MiB and 10,000 data rows). Requires campaigns:manage and beta enrollment. Reuse the replay key only with identical CSV, mapping and credential; poll imports get for progress.",
+      "description": "Queue a profile CSV import (at most 10 MiB and 10,000 data rows). Requires campaigns:manage and beta enrollment. Reuse the replay key only with identical CSV, mapping and credential; poll imports get for progress.",
+      "usage": ["polymorfa campaign profiles import [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "csv",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "UTF-8 CSV file or stdin (-).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "mapping",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "JSON file mapping profile fields to CSV header names.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "replay-key",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Stable import identity, 1-128 letters, digits, dots, underscores, colons or hyphens.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign profiles imports cancel",
+      "summary": "Cancel remaining import rows. Completed edits remain. Requires campaigns:manage; available after beta withdrawal.",
+      "description": "Cancel remaining import rows. Completed edits remain. Requires campaigns:manage; available after beta withdrawal.",
+      "usage": ["polymorfa campaign profiles imports cancel JOB [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "job",
+          "description": "Import job ID.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign profiles imports get",
+      "summary": "Read an aggregate profile import report. Requires campaigns:read.",
+      "description": "Read an aggregate profile import report. Requires campaigns:read.",
+      "usage": ["polymorfa campaign profiles imports get JOB [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "job",
+          "description": "Import job ID.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign profiles list",
+      "summary": "List one page of team audience profiles. Requires a team key with campaigns:read. Tag and phone prefix filters are unavailable.",
+      "description": "List one page of team audience profiles. Requires a team key with campaigns:read. Tag and phone prefix filters are unavailable.",
+      "usage": ["polymorfa campaign profiles list [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "cursor",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Continue from this cursor.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "limit",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Profiles per page (default 25).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "phone-prefix",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Unavailable: requires API support not yet available (API #567).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "tag",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Unavailable: requires API support not yet available (API #567).",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "campaign profiles upsert",
+      "summary": "Create or replace a profile from JSON. tags and attributes are required; use expectedRevision from the latest read to replace an existing profile. Requires campaigns:manage and audience profiles beta enrollment.",
+      "description": "Create or replace a profile from JSON. tags and attributes are required; use expectedRevision from the latest read to replace an existing profile. Requires campaigns:manage and audience profiles beta enrollment.",
+      "usage": ["polymorfa campaign profiles upsert PHONE [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "phone",
+          "description": "E.164 phone including +.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "input",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "JSON file or stdin (-): tags, attributes, optional expectedRevision, provenance and consent.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
         },
         {
           "name": "quiet",
@@ -18230,7 +19384,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Deduplicate this request for 24 hours. A completed key returns 409 idempotency_completed.",
+          "description": "Deduplicate this request for 1 hour. Keep the first response; unavailable replay data does not permit another execution.",
           "env": null,
           "helpGroup": null
         },
@@ -19619,7 +20773,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Deduplicate this request for 24 hours. A completed key returns 409 idempotency_completed.",
+          "description": "Deduplicate this request for 1 hour. Keep the first response; unavailable replay data does not permit another execution.",
           "env": null,
           "helpGroup": null
         },
@@ -21459,7 +22613,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Key that makes retries of this write safe for 24 hours. Generated when omitted.",
+          "description": "Key that makes retries of this write safe for 1 hour. Generated when omitted.",
           "env": null,
           "helpGroup": null
         },
@@ -26174,7 +27328,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Key that fences a manual retry: reuse it after an unknown outcome and the API returns idempotency_completed instead of writing again.",
+          "description": "Reuse this key after a lost response to preserve the execution fence. Keep the first response and reconcile an unknown outcome before another write.",
           "env": null,
           "helpGroup": null
         },
@@ -26338,7 +27492,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Key that fences a manual retry: reuse it after an unknown outcome and the API returns idempotency_completed instead of writing again.",
+          "description": "Reuse this key after a lost response to preserve the execution fence. Keep the first response and reconcile an unknown outcome before another write.",
           "env": null,
           "helpGroup": null
         },
@@ -42616,7 +43770,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -42821,7 +43975,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -43318,7 +44472,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -43499,7 +44653,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -43797,7 +44951,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -44023,7 +45177,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -44321,7 +45475,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -44595,7 +45749,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -44881,7 +46035,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -45127,7 +46281,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -45349,7 +46503,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key to check a previous attempt (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key to check a previous attempt (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -45551,7 +46705,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key to check a previous attempt (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key to check a previous attempt (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -45792,7 +46946,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -46050,7 +47204,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -46300,7 +47454,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -46529,7 +47683,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (24-hour retention).",
+          "description": "Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).",
           "env": null,
           "helpGroup": null
         },
@@ -51477,6 +52631,23 @@
       "args": [],
       "flags": [
         {
+          "name": "account-type",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [
+            "whatsapp_app",
+            "business_app",
+            "meta_cloud",
+            "meta_coexistence"
+          ],
+          "description": "Create a Test number in this account mode.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
           "name": "add-connection",
           "char": null,
           "type": "option",
@@ -51571,6 +52742,18 @@
           "description": "Select project-owned or organization-owned resources.",
           "env": null,
           "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "primary-platform",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["android", "ios"],
+          "description": "Test primary phone platform. Not accepted for Official API mode.",
+          "env": null,
+          "helpGroup": null
         },
         {
           "name": "priority",
@@ -55416,6 +56599,175 @@
       "state": null
     },
     {
+      "id": "testing account-mode",
+      "summary": "Change a Test number account mode. A change unlinks every companion, which must pair again. Fails with a conflict if the number is claimed in Inspector or another change is pending.",
+      "description": "Change a Test number account mode. A change unlinks every companion, which must pair again. Fails with a conflict if the number is claimed in Inspector or another change is pending.",
+      "usage": ["polymorfa testing account-mode SESSION [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {
+          "name": "session",
+          "description": "The Test number session ID.",
+          "required": true,
+          "options": []
+        }
+      ],
+      "flags": [
+        {
+          "name": "account-type",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [
+            "whatsapp_app",
+            "business_app",
+            "meta_cloud",
+            "meta_coexistence"
+          ],
+          "description": "Account mode to emulate.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "api-version",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Override the API version for this request.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON document.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "no-color",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Disable color output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "owner",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["project", "organization"],
+          "description": "Select project-owned or organization-owned resources.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "primary-platform",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": ["android", "ios"],
+          "description": "Phone platform. Omit for Official API mode.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a named authentication profile.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "project",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Use a project other than the active context.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "quiet",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Suppress successful output.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Fail the request after this many milliseconds.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "verbose",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Explain context and workflow decisions.",
+          "env": null,
+          "helpGroup": "GLOBAL"
+        },
+        {
+          "name": "yes",
+          "char": null,
+          "type": "boolean",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Confirm unlinking all companions if the mode changes.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
       "id": "testing history-fixture create",
       "summary": "Upload a project-scoped simulated history fixture for a test QuickLink.",
       "description": "Upload a project-scoped simulated history fixture for a test QuickLink.",
@@ -55599,7 +56951,7 @@
           "helpGroup": null
         },
         {
-          "name": "from-session",
+          "name": "from-number",
           "char": null,
           "type": "option",
           "required": false,
@@ -55714,7 +57066,7 @@
           "multiple": false,
           "default": null,
           "options": [],
-          "description": "Test number session name in the project.",
+          "description": "Test Number ID.",
           "env": null,
           "helpGroup": null
         },
@@ -55756,20 +57108,17 @@
         }
       ],
       "examples": [
+        {"command": "polymorfa trigger --list", "description": ""},
         {
-          "command": "polymorfa trigger --list --project <projectId>",
+          "command": "polymorfa trigger message.received --session my-test-number --text \"hi\"",
           "description": ""
         },
         {
-          "command": "polymorfa trigger message.received --session my-test-number --text \"hi\" --project <projectId>",
+          "command": "polymorfa trigger message.ack --session my-test-number --override ackStatus=read",
           "description": ""
         },
         {
-          "command": "polymorfa trigger message.ack --session my-test-number --override ackStatus=read --project <projectId>",
-          "description": ""
-        },
-        {
-          "command": "polymorfa trigger template.status --session my-test-number --override templateStatus=REJECTED --override reason=INVALID_FORMAT --project <projectId>",
+          "command": "polymorfa trigger template.status --session my-test-number --override templateStatus=REJECTED --override reason=INVALID_FORMAT",
           "description": ""
         }
       ],
