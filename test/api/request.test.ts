@@ -38,3 +38,29 @@ describe('readTextInput', () => {
     )
   })
 })
+
+describe('strict UTF-8 input', () => {
+  test('refuses malformed stdin bytes rather than replacing them', async () => {
+    const input = Readable.from([Buffer.from([0xff])])
+    await expect(
+      readTextInput('-', input, {strictUtf8: true}),
+    ).rejects.toMatchObject({
+      code: 'invalid_utf8_input',
+      message: 'API input must contain valid UTF-8.',
+    })
+  })
+  test('preserves a BOM, CRLF and UTF-8 split across stdin chunks', async () => {
+    const input = Readable.from([
+      Buffer.from([0xef, 0xbb, 0xbf, 0xc3]),
+      Buffer.from([0xa9, 0x0d, 0x0a]),
+    ])
+    await expect(readTextInput('-', input, {strictUtf8: true})).resolves.toBe(
+      '\uFEFFé\r\n',
+    )
+  })
+  test('keeps existing replacement decoding for callers without the strict option', async () => {
+    await expect(
+      readTextInput('-', Readable.from([Buffer.from([0xff])])),
+    ).resolves.toBe('\uFFFD')
+  })
+})

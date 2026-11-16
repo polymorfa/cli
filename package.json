@@ -6,7 +6,7 @@
     "@modelcontextprotocol/server": "2.3.1",
     "@napi-rs/keyring": "1.3.0",
     "@oclif/core": "^4.13.5",
-    "@polymorfa/sdk": "0.1.0-dev.20261004024706",
+    "@polymorfa/sdk": "0.1.0-dev.20261010020302",
     "jq-wasm": "3.0.0-jq-1.8.2",
     "zod": "4.6.7"
   },
@@ -325,6 +325,12 @@
       "analytics": {
         "description": "Read WhatsApp number activity and operational vitals."
       },
+      "campaign:profiles": {
+        "description": "Manage customer-supplied team audience profiles (beta)."
+      },
+      "campaign:profiles:imports": {
+        "description": "Read and cancel audience profile CSV imports."
+      },
       "agent": {
         "description": "Set up coding agents with the Polymorfa agent kit."
       }
@@ -351,7 +357,7 @@
     "prepare": "npm run build",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node --test scripts/cli-reference.test.mjs && node scripts/cli-reference.mjs --check && npm run verify:browser && npm pack --dry-run --ignore-scripts && npm run verify:bundled-runtime && npm run audit:prod",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node --test scripts/cli-reference.test.mjs scripts/sync-business-account-modes.test.mjs && node scripts/cli-reference.mjs --check && npm run verify:browser && npm pack --dry-run --ignore-scripts && npm run verify:bundled-runtime && npm run audit:prod",
     "docs:reference": "npm run build && node scripts/cli-reference.mjs",
     "docs:reference:check": "npm run build && node scripts/cli-reference.mjs --check",
     "verify:browser": "node scripts/verify-browser.mjs",

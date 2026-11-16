@@ -1,14 +1,16 @@
 ## Trigger with the CLI
 
-Use a server API key with `sandbox:write` and a project with Test numbers access. Listing fixtures needs `sandbox:read`.
+Use a team key or project token (including a Test key) with `sandbox:write` and a project with Test numbers access. Listing fixtures needs `sandbox:read`.
 
 ```sh
-polymorfa trigger --list --project PROJECT_ID
-polymorfa trigger message.received --project PROJECT_ID --session my-test-number --text "hi"
-polymorfa trigger session.restriction_updated --project PROJECT_ID --session my-test-number \
+polymorfa trigger --list
+polymorfa trigger message.received --session my-test-number --text "hi"
+polymorfa trigger session.restriction_updated --session my-test-number \
   --override restrictionActive=false
 ```
 
 The command prints the event type and ID returned by the API. The event also appears in event history and reaches subscribed webhooks with `source: "test"`. A real number is refused without sending an event.
 
-To send a simulated message from another Test number in the same project, use `--from-session OTHER_TEST_NUMBER` with `message.received`. That sends a message you can reply to; the named fixtures above only generate events.
+To send a simulated message from another Test number in the same project, use `--from-number OTHER_TEST_NUMBER` with `message.received`. That sends a message you can reply to; the named fixtures above only generate events.
+
+The Number ID in `--session` determines the project. Fixture listing is a static catalog and needs no project selector. The trigger sends `fromNumber` as an optional Number ID; body `session` is not sent. Real Numbers return `404 resource_not_found`.
