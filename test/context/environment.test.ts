@@ -17,7 +17,7 @@ describe('resolveEnvironment', () => {
         env: {
           POLYMORFA_BASE_URL: 'http://127.0.0.1:4567',
           POLYMORFA_PROJECT_TOKEN:
-            'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
         },
         apiVersion: '2026-09-01',
         project: PROJECT,
@@ -27,7 +27,7 @@ describe('resolveEnvironment', () => {
       apiVersion: '2026-09-01',
       baseUrl: 'http://127.0.0.1:4567',
       credential:
-        'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
       principalType: 'project_token',
       projectId: PROJECT,
       timeoutMs: 4321,
@@ -39,7 +39,7 @@ describe('resolveEnvironment', () => {
       resolveListenerEnvironment({
         env: {
           POLYMORFA_API_KEY:
-            'pmfa_DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+            'pmfa_BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQnGnS_',
           POLYMORFA_PROJECT_TOKEN: 'pmfa_pt',
         },
         project: 'project_1',
@@ -68,7 +68,7 @@ describe('resolveEnvironment', () => {
         {env: {}, profile: 'project'},
         {load: () => Promise.resolve(profile), save: () => Promise.resolve()},
         fakeCredentials(
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
         ),
       ),
     ).resolves.toMatchObject({
@@ -79,7 +79,7 @@ describe('resolveEnvironment', () => {
         projectId: PROJECT,
       },
       credential:
-        'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
     })
   })
 
@@ -96,13 +96,13 @@ describe('resolveEnvironment', () => {
         },
         fakeProfiles(),
         fakeCredentials(
-          'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+          'pmfa_AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLucXtu',
         ),
       ),
     ).resolves.toMatchObject({
       context: {owner: 'team', profile: 'work'},
       credential:
-        'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+        'pmfa_AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLucXtu',
     })
   })
 
@@ -131,12 +131,12 @@ describe('resolveEnvironment', () => {
         },
         {load: () => Promise.resolve(profile), save: () => Promise.resolve()},
         fakeCredentials(
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
         ),
       ),
     ).resolves.toMatchObject({
       credential:
-        'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
       profile: 'project',
       projectId: '11111111-1111-4111-8111-111111111111',
     })
@@ -144,7 +144,7 @@ describe('resolveEnvironment', () => {
 
   test('prefers an environment API key over the active listener profile', async () => {
     const credentials = fakeCredentials(
-      'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+      'pmfa_AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLucXtu',
     )
 
     await expect(
@@ -152,7 +152,7 @@ describe('resolveEnvironment', () => {
         {
           env: {
             POLYMORFA_API_KEY:
-              'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+              'pmfa_AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwOWinjW',
           },
           project: '11111111-1111-4111-8111-111111111111',
         },
@@ -161,7 +161,7 @@ describe('resolveEnvironment', () => {
       ),
     ).resolves.toMatchObject({
       credential:
-        'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+        'pmfa_AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwOWinjW',
       principalType: 'team_key',
     })
     expect(credentials.get).not.toHaveBeenCalled()
@@ -175,7 +175,7 @@ describe('resolveEnvironment', () => {
         {
           env: {
             POLYMORFA_API_KEY:
-              'pmfa_DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+              'pmfa_BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQnGnS_',
           },
           project: 'checkout',
         },
@@ -196,7 +196,7 @@ describe('resolveEnvironment', () => {
         {
           env: {
             POLYMORFA_API_KEY:
-              'pmfa_DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+              'pmfa_BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQnGnS_',
           },
           owner: 'project',
           project: 'checkout',
@@ -225,7 +225,7 @@ describe('resolveEnvironment', () => {
         {
           env: {
             POLYMORFA_API_KEY:
-              'pmfa_DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD',
+              'pmfa_BAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQnGnS_',
           },
           project: 'checkout',
         },
@@ -255,7 +255,7 @@ describe('resolveEnvironment', () => {
       resolveDeveloperEnvironment({
         env: {
           POLYMORFA_PROJECT_TOKEN:
-            'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
         },
         project: PROJECT,
       }),
@@ -267,7 +267,7 @@ describe('resolveEnvironment', () => {
       resolveEnvironment({
         env: {
           POLYMORFA_API_KEY:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
           POLYMORFA_BASE_URL: 'http://127.0.0.1:4567',
           UNRELATED_SECRET: 'do-not-copy',
         },
@@ -279,7 +279,7 @@ describe('resolveEnvironment', () => {
       credential: {
         type: 'apiKey',
         value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       },
       baseUrl: 'http://127.0.0.1:4567',
       timeoutMs: 5000,
@@ -289,7 +289,7 @@ describe('resolveEnvironment', () => {
   test('rejects a client token for the Platform surface', () => {
     expect(() =>
       resolveEnvironment({
-        env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser'},
+        env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browserA'},
         surface: 'platform',
       }),
     ).toThrow('Platform API requests require POLYMORFA_API_KEY.')
@@ -298,12 +298,12 @@ describe('resolveEnvironment', () => {
   test('resolves a client token for the Messaging surface', () => {
     expect(
       resolveEnvironment({
-        env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser'},
+        env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browserA'},
         surface: 'messaging',
       }),
     ).toEqual({
       surface: 'messaging',
-      credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
+      credential: {type: 'clientToken', value: 'pmfa_ct_browserA'},
     })
   })
 
@@ -312,7 +312,7 @@ describe('resolveEnvironment', () => {
       resolveEnvironment({
         env: {
           POLYMORFA_API_KEY:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
         },
         surface: 'messaging',
       }),
@@ -321,7 +321,7 @@ describe('resolveEnvironment', () => {
       credential: {
         type: 'apiKey',
         value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       },
     })
   })
@@ -331,8 +331,8 @@ describe('resolveEnvironment', () => {
       resolveEnvironment({
         env: {
           POLYMORFA_API_KEY:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
-          POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser',
+            'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
+          POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browserA',
         },
         surface: 'messaging',
       }),
@@ -464,7 +464,7 @@ describe('resolveEnvironment', () => {
 
   test('prefers an environment credential over the active profile', async () => {
     const credentials = fakeCredentials(
-      'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+      'pmfa_AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLucXtu',
     )
 
     await expect(
@@ -472,7 +472,7 @@ describe('resolveEnvironment', () => {
         {
           env: {
             POLYMORFA_API_KEY:
-              'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+              'pmfa_AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwOWinjW',
           },
           surface: 'platform',
         },
@@ -483,7 +483,7 @@ describe('resolveEnvironment', () => {
       credential: {
         type: 'apiKey',
         value:
-          'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+          'pmfa_AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwOWinjW',
       },
       source: 'environment',
     })
@@ -496,14 +496,14 @@ describe('resolveEnvironment', () => {
         {env: {}, surface: 'platform'},
         fakeProfiles(),
         fakeCredentials(
-          'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+          'pmfa_AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLucXtu',
         ),
       ),
     ).resolves.toMatchObject({
       credential: {
         type: 'apiKey',
         value:
-          'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+          'pmfa_AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLucXtu',
       },
       profile: 'work',
       source: 'profile',
@@ -516,21 +516,21 @@ describe('resolveEnvironment', () => {
         {
           env: {
             POLYMORFA_API_KEY:
-              'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+              'pmfa_AwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwOWinjW',
           },
           profile: 'work',
           surface: 'messaging',
         },
         fakeProfiles(),
         fakeCredentials(
-          'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+          'pmfa_AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLucXtu',
         ),
       ),
     ).resolves.toMatchObject({
       credential: {
         type: 'apiKey',
         value:
-          'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB',
+          'pmfa_AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLucXtu',
       },
       profile: 'work',
       source: 'profile',
@@ -540,7 +540,7 @@ describe('resolveEnvironment', () => {
 
 describe('resolveDeveloperEnvironment owner inference', () => {
   const key =
-    'pmfa_BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB'
+    'pmfa_AgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgLucXtu'
 
   test('reads the whole team despite a saved project profile', async () => {
     const config: ProfileConfig = {
@@ -608,7 +608,7 @@ describe('resolveDeveloperEnvironment owner inference', () => {
         {
           env: {
             POLYMORFA_PROJECT_TOKEN:
-              'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+              'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
           },
           inferOwner: true,
         },
@@ -675,7 +675,7 @@ function fakeCredentials(value: string): CredentialStore {
   }
 }
 
-const PROJECT_TOKEN = `pmfa_pt_${'A'.repeat(94)}`
+const PROJECT_TOKEN = `pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ`
 function projectProfiles() {
   const config: ProfileConfig = {
     version: 2,

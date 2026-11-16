@@ -5,7 +5,7 @@ import {
   withEnvironment,
 } from '../helpers/http-server.js'
 
-const key = `pmfa_${'A'.repeat(72)}`
+const key = `pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m`
 function environment(
   baseUrl: string,
   run: () => Promise<unknown>,

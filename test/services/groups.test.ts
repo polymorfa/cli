@@ -107,7 +107,7 @@ function client(baseUrl: string) {
     credential: {
       type: 'apiKey',
       value:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
     },
     surface: 'messaging',
   })

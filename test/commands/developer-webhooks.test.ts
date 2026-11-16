@@ -877,7 +877,7 @@ function developerEnvironment<T>(run: () => Promise<T>): Promise<T> {
   return withEnvironment(
     {
       POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       POLYMORFA_BASE_URL: 'https://api.example.test',
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_PROJECT_TOKEN: undefined,

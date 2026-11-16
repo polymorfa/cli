@@ -10,7 +10,7 @@ import type {ProfileConfig} from '../../src/config/profiles.js'
 import {runDoctor, type DoctorDependencies} from '../../src/services/doctor.js'
 
 const KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m'
 const config: ProfileConfig = {
   activeProfile: 'work',
   profiles: {

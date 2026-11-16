@@ -45,7 +45,7 @@ const channel = JSON.parse(
 const PROJECT = '11111111-1111-4111-8111-111111111111'
 const metadata = (index: number, includePayload: boolean) => ({
   id: fixture.events[index]!.id,
-  organizationId: 'org_1',
+  teamId: 'team_1',
   projectId: PROJECT,
   type: 'newsletter.update',
   source: 'runtime',
@@ -74,7 +74,7 @@ describe('newsletter observation consumers', () => {
     withEnvironment(
       {
         POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
         POLYMORFA_BASE_URL: server!.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_PROJECT_TOKEN: undefined,

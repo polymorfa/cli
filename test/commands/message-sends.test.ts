@@ -12,7 +12,7 @@ import {
 } from '../helpers/http-server.js'
 
 const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m'
 
 describe('typed message send commands', () => {
   let server: TestHttpServer | undefined
