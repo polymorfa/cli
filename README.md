@@ -39,6 +39,16 @@ Both methods install the CLI's dependencies, including the TypeScript SDK
 `@polymorfa/sdk`, from the public npm registry. The CLI pins one exact SDK
 prerelease in `package.json`.
 
+The Connections migration candidate is source-only. Its registry SDK pin
+predates the new contract, so candidate CI first installs dependencies with
+`npm ci --ignore-scripts`. It checks out the exact SDK revision in
+`contracts/connections.json`, installs that checkout's dependencies, and runs
+`npm run ci:sdk-source -- --sdk-root /path/to/checked-sdk` before verification.
+The helper refuses changed source, a different revision or mismatched API
+snapshots. Its receipt describes a local source build. It does not establish
+registry installation or authorize publication; release still needs an accepted,
+published SDK.
+
 The version output includes both runtime components:
 
 ```text
