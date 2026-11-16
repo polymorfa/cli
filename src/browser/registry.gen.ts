@@ -472,6 +472,9 @@ export const COMMAND_LOADERS: Readonly<
   'testing account-mode': () => import('../commands/testing/account-mode.js'),
   'testing history-fixture create': () =>
     import('../commands/testing/history-fixture/create.js'),
+  'testing phone get': () => import('../commands/testing/phone/get.js'),
+  'testing phone send': () => import('../commands/testing/phone/send.js'),
+  'testing phone unlink': () => import('../commands/testing/phone/unlink.js'),
   trigger: () => import('../commands/trigger.js'),
   'usage gates': () => import('../commands/usage/gates.js'),
   'usage records': () => import('../commands/usage/records.js'),
