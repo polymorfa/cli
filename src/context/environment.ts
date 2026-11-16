@@ -45,7 +45,7 @@ export interface ListenerEnvironment {
   readonly apiVersion?: string
   readonly baseUrl: string
   readonly credential: string
-  readonly principalType: 'organization_key' | 'project_token'
+  readonly principalType: 'team_key' | 'project_token'
   readonly profile?: string
   readonly projectId: string
   readonly timeoutMs?: number
@@ -75,7 +75,7 @@ export interface ResolveDeveloperEnvironmentInput {
   /**
    * Choose the owner when neither --owner nor the profile names one: a
    * project context (--project, or a project token) reads one project, and
-   * an organization key otherwise reads the whole organization. For commands
+   * a team key otherwise reads the whole team. For commands
    * whose results span projects rather than belong to one owner.
    */
   readonly inferOwner?: boolean | undefined
@@ -182,9 +182,7 @@ export async function resolveDeveloperEnvironment(
     )
   }
   const principalType =
-    profile.credential.kind === 'projectToken'
-      ? 'project_token'
-      : 'organization_key'
+    profile.credential.kind === 'projectToken' ? 'project_token' : 'team_key'
   const explicitProject = nonEmpty(input.project)
   const owner =
     input.owner ??
@@ -329,7 +327,7 @@ export async function resolveListenerEnvironment(
       nonEmpty(input.env.POLYMORFA_BASE_URL) ?? 'https://api.polymorfa.com'
     const projectId = await canonicalProjectId(
       project,
-      'organization_key',
+      'team_key',
       {
         ...(input.apiVersion === undefined
           ? {}
@@ -344,7 +342,7 @@ export async function resolveListenerEnvironment(
       ...(input.apiVersion === undefined ? {} : {apiVersion: input.apiVersion}),
       baseUrl,
       credential: apiKey,
-      principalType: 'organization_key',
+      principalType: 'team_key',
       projectId: requiredProjectId(projectId),
       ...(input.timeoutMs === undefined ? {} : {timeoutMs: input.timeoutMs}),
     }
@@ -390,9 +388,7 @@ export async function resolveListenerEnvironment(
     )
   }
   const principalType =
-    profile.credential.kind === 'projectToken'
-      ? 'project_token'
-      : 'organization_key'
+    profile.credential.kind === 'projectToken' ? 'project_token' : 'team_key'
   const baseUrl =
     nonEmpty(input.env.POLYMORFA_BASE_URL) ??
     profile.baseUrl ??
@@ -464,8 +460,8 @@ export async function resolveCommandEnvironment(
   ) {
     throw new PolymorfaConfigurationError(
       input.surface === 'platform'
-        ? `Profile ${selected} contains a project token; this Platform command requires an organization API key.`
-        : `Profile ${selected} contains a project token; this Messaging command requires an organization API key or a Messaging client token.`,
+        ? `Profile ${selected} contains a project token; this Platform command requires a team API key.`
+        : `Profile ${selected} contains a project token; this Messaging command requires a team API key or a Messaging client token.`,
       'credential',
     )
   }
@@ -519,7 +515,7 @@ export interface TeamSettingEnvironment {
   readonly apiVersion?: string
   readonly baseUrl: string
   readonly credential: string
-  readonly principalType: 'organization_key' | 'project_token'
+  readonly principalType: 'team_key' | 'project_token'
   readonly timeoutMs?: number
 }
 
@@ -592,9 +588,7 @@ export async function resolveTeamSettingEnvironment(
     baseUrl: baseUrl ?? profile.baseUrl ?? 'https://api.polymorfa.com',
     credential,
     principalType:
-      profile.credential.kind === 'projectToken'
-        ? 'project_token'
-        : 'organization_key',
+      profile.credential.kind === 'projectToken' ? 'project_token' : 'team_key',
     ...optional,
   }
 }
@@ -673,7 +667,7 @@ function durableEnvironmentCredential(
   env: Readonly<Record<string, string | undefined>>,
 ):
   | {
-      readonly principalType: 'organization_key' | 'project_token'
+      readonly principalType: 'team_key' | 'project_token'
       readonly value: string
     }
   | undefined {
@@ -697,7 +691,7 @@ function durableEnvironmentCredential(
   }
   return apiKey === undefined
     ? undefined
-    : {principalType: 'organization_key', value: apiKey}
+    : {principalType: 'team_key', value: apiKey}
 }
 
 const PROJECT_UUID =
@@ -705,7 +699,7 @@ const PROJECT_UUID =
 
 export async function canonicalProjectId(
   project: string | undefined,
-  principalType: 'organization_key' | 'project_token',
+  principalType: 'team_key' | 'project_token',
   connection: Parameters<ProjectLookup>[0],
   lookup: ProjectLookup,
 ): Promise<string | undefined> {
@@ -721,13 +715,13 @@ export async function canonicalProjectId(
   )
   if (matches.length === 0) {
     throw new PolymorfaConfigurationError(
-      `Project slug ${project} was not found in the organization.`,
+      `Project slug ${project} was not found in the team.`,
       'project',
     )
   }
   if (matches.length > 1) {
     throw new PolymorfaConfigurationError(
-      `Project slug ${project} is ambiguous in the organization.`,
+      `Project slug ${project} is ambiguous in the team.`,
       'project',
     )
   }
@@ -746,7 +740,7 @@ export async function listProjects(
 ): Promise<readonly ProjectWithStats[]> {
   const client = new Client({
     baseUrl: input.baseUrl,
-    credential: {type: 'organizationApiKey', value: input.credential},
+    credential: {type: 'teamApiKey', value: input.credential},
     ...(input.apiVersion === undefined ? {} : {apiVersion: input.apiVersion}),
     ...(input.timeoutMs === undefined ? {} : {timeoutMs: input.timeoutMs}),
   })
@@ -755,12 +749,10 @@ export async function listProjects(
 }
 
 function inferredOwner(
-  principalType: 'organization_key' | 'project_token',
+  principalType: 'team_key' | 'project_token',
   hasProject: boolean,
-): 'organization' | 'project' {
-  return principalType === 'project_token' || hasProject
-    ? 'project'
-    : 'organization'
+): 'team' | 'project' {
+  return principalType === 'project_token' || hasProject ? 'project' : 'team'
 }
 
 function requiredProjectId(projectId: string | undefined): string {

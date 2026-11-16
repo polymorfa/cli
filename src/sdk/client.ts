@@ -87,7 +87,7 @@ export function createCallRetentionClient(
       type:
         environment.principalType === 'project_token'
           ? 'projectToken'
-          : 'organizationApiKey',
+          : 'teamApiKey',
       value: environment.credential,
     },
     ...(environment.apiVersion === undefined
@@ -106,7 +106,7 @@ export function createCallRetentionClient(
 
 export function createPlatformClient(
   environment: ResolvedEnvironment,
-): ClientInstance<'organization'> {
+): ClientInstance<'team'> {
   if (environment.surface !== 'platform') {
     throw new PolymorfaConfigurationError(
       'A typed Platform client requires the Platform API surface.',
@@ -116,7 +116,7 @@ export function createPlatformClient(
 
   return new Client({
     credential: {
-      type: 'organizationApiKey',
+      type: 'teamApiKey',
       value: environment.credential.value,
     },
     ...sharedOptions(environment),

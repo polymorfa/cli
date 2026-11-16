@@ -10,7 +10,7 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 const KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m'
 const PROJECT = '018f0000-0000-7000-8000-000000000001',
   FN = '018f0000-0000-7000-8000-000000000002',
   DEPLOY = '018f0000-0000-7000-8000-000000000003',
@@ -391,11 +391,12 @@ describe('Function commands', () => {
     expect(result.stderr).toContain('reconcile')
     expect(server.requests).toHaveLength(1)
   })
-  test('uses project tokens without silently treating them as organization credentials', async () => {
+  test('uses project tokens without silently treating them as team credentials', async () => {
     server = await startHttpServer({
       body: {data: {items: [], nextCursor: null}},
     })
-    const token = 'pmfa_pt_' + 'A'.repeat(94)
+    const token =
+      'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ'
     const result = await withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,

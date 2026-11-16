@@ -9,7 +9,7 @@ import {
 } from '../helpers/http-server.js'
 const project = '11111111-1111-4111-8111-111111111111'
 const env = (url: string) => ({
-  POLYMORFA_API_KEY: `pmfa_${'A'.repeat(72)}`,
+  POLYMORFA_API_KEY: `pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m`,
   POLYMORFA_BASE_URL: url,
   POLYMORFA_CLIENT_TOKEN: undefined,
   POLYMORFA_PROJECT_TOKEN: undefined,
@@ -59,7 +59,7 @@ test('routing policy uses linked project and resolves an explicit slug', async (
             _creationTime: 0,
             _id: project,
             name: 'App',
-            orgId: 'org_1',
+            teamId: 'team_1',
             slug: 'app',
             stage: 'development',
           },
@@ -195,7 +195,7 @@ test('QuickLink creation accepts a project slug from the input file', async () =
             _creationTime: 0,
             _id: project,
             name: 'App',
-            orgId: 'org_1',
+            teamId: 'team_1',
             slug: 'app',
             stage: 'development',
           },

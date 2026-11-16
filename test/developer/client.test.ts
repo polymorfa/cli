@@ -5,34 +5,30 @@ import {createDeveloperSession} from '../../src/developer/client.js'
 import {withEnvironment} from '../helpers/http-server.js'
 
 describe('createDeveloperSession', () => {
-  test('ignores a broken project link for organization-owned resources', async () => {
+  test('ignores a broken project link for team-owned resources', async () => {
     const loadLinkedProject = vi.fn(() =>
       Promise.reject(new Error('Broken project link')),
     )
     const session = await withEnvironment(
       {
         POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_PROJECT_TOKEN: undefined,
       },
       () =>
-        createDeveloperSession(
-          {owner: 'organization'},
-          undefined,
-          loadLinkedProject,
-        ),
+        createDeveloperSession({owner: 'team'}, undefined, loadLinkedProject),
     )
 
-    expect(session.context.owner).toBe('organization')
+    expect(session.context.owner).toBe('team')
     expect(loadLinkedProject).not.toHaveBeenCalled()
   })
 
-  test('creates an immutable project view from an organization key', async () => {
+  test('creates an immutable project view from a team key', async () => {
     const session = await withEnvironment(
       {
         POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_PROJECT_TOKEN: undefined,
       },
@@ -48,7 +44,7 @@ describe('createDeveloperSession', () => {
     expect(session.client.projectId).toBe(PROJECT)
     expect(session.context).toMatchObject({
       owner: 'project',
-      principalType: 'organization_key',
+      principalType: 'team_key',
       projectId: PROJECT,
     })
   })
@@ -59,7 +55,7 @@ describe('createDeveloperSession', () => {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_PROJECT_TOKEN:
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
       },
       () =>
         createDeveloperSession({

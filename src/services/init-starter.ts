@@ -98,7 +98,7 @@ if (!apiKey) {
   process.exitCode = 1
 } else {
   const client = new Client({
-    credential: {type: 'organizationApiKey', value: apiKey},
+    credential: {type: 'teamApiKey', value: apiKey},
   })
   const response = await client.projects.list()
   for (const project of response.data.data) {

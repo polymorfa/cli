@@ -21,7 +21,7 @@ describe('createRawClient', () => {
       credential: {
         type: 'apiKey',
         value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       },
     })
 
@@ -31,7 +31,7 @@ describe('createRawClient', () => {
   test('returns the public Messaging raw client', () => {
     const client = createRawClient({
       surface: 'messaging',
-      credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
+      credential: {type: 'clientToken', value: 'pmfa_ct_browserA'},
     })
 
     expect(client).toBeInstanceOf(RawClient)
@@ -41,11 +41,9 @@ describe('createRawClient', () => {
     expect(() =>
       createRawClient({
         surface: 'platform',
-        credential: {type: 'clientToken', value: 'pmfa_ct_browser'},
+        credential: {type: 'clientToken', value: 'pmfa_ct_browserA'},
       }),
-    ).toThrow(
-      'Client and project tokens cannot be used as organization server API keys.',
-    )
+    ).toThrow('Client and project tokens cannot be used as team keys.')
   })
 
   test('creates a typed Messaging client with session and operation resources', () => {
@@ -54,7 +52,7 @@ describe('createRawClient', () => {
       credential: {
         type: 'apiKey',
         value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       },
       timeoutMs: 1234,
     })
@@ -73,7 +71,7 @@ describe('createRawClient', () => {
       credential: {
         type: 'projectToken',
         value:
-          'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
       },
       surface: 'messaging',
     })
@@ -82,18 +80,18 @@ describe('createRawClient', () => {
     expect(client.quickLinks).toHaveProperty('create')
   })
 
-  test('creates the unified organization client and rejects the wrong surface', () => {
+  test('creates the unified team client and rejects the wrong surface', () => {
     const client = createPlatformClient({
       surface: 'platform',
       credential: {
         type: 'apiKey',
         value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       },
     })
 
     expect(client).toBeInstanceOf(Client)
-    expect(client.owner).toBe('organization')
+    expect(client.owner).toBe('team')
     expect(client.billing).toHaveProperty('retrieve')
     expect(client.billing).toHaveProperty('usage')
     expect(client.billing).toHaveProperty('listTransactions')
@@ -103,7 +101,7 @@ describe('createRawClient', () => {
     expect(client.sessions).toHaveProperty('update')
     expect(client.sessions).toHaveProperty('quoteTierChange')
     expect(client.sessions).toHaveProperty('retrieveTierChange')
-    expect(client.organizations).not.toHaveProperty('update')
+    expect(client.teams).not.toHaveProperty('update')
 
     expect(() =>
       createPlatformClient({
@@ -111,7 +109,7 @@ describe('createRawClient', () => {
         credential: {
           type: 'apiKey',
           value:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
         },
       }),
     ).toThrow('requires the Platform API surface')
@@ -128,7 +126,7 @@ describe('createRawClient', () => {
         credential: {
           type: 'apiKey',
           value:
-            'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+            'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
         },
         surface: 'platform',
       }).project('11111111-1111-4111-8111-111111111111')
@@ -143,7 +141,7 @@ describe('createRawClient', () => {
         url: '/platform/projects/11111111-1111-4111-8111-111111111111/events?limit=25',
       })
       expect(server.requests[0]?.headers.authorization).toBe(
-        'Bearer pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'Bearer pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       )
     } finally {
       await server.close()

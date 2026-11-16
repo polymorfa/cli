@@ -1,7 +1,7 @@
 import {
   PolymorfaConfigurationError,
   PolymorfaNotFoundError,
-  validateOrganizationApiKey,
+  validateTeamApiKey,
 } from '@polymorfa/sdk'
 
 import {
@@ -26,8 +26,8 @@ export interface ProfileSummary {
   readonly baseUrl?: string
   readonly credentialKind: 'apiKey' | 'projectToken'
   readonly name: string
-  readonly owner?: 'organization' | 'project'
-  readonly organization?: string
+  readonly owner?: 'team' | 'project'
+  readonly team?: string
   readonly project?: string
 }
 
@@ -56,7 +56,7 @@ export class AuthService {
     readonly profile: string
   }): Promise<ProfileSummary> {
     assertProfileName(input.profile)
-    const apiKey = validateOrganizationApiKey(input.apiKey.trim())
+    const apiKey = validateTeamApiKey(input.apiKey.trim())
     const config = await this.profiles.load()
     const previous = config.profiles[input.profile]
     const previousAccount = previous?.credential.account
@@ -72,9 +72,7 @@ export class AuthService {
         ? {}
         : {apiVersion: previous.apiVersion}),
       ...(previous?.baseUrl === undefined ? {} : {baseUrl: previous.baseUrl}),
-      ...(previous?.organization === undefined
-        ? {}
-        : {organization: previous.organization}),
+      ...(previous?.team === undefined ? {} : {team: previous.team}),
       credential: {account, kind: 'apiKey'},
     }
     const next: ProfileConfig = {
@@ -131,9 +129,7 @@ export class AuthService {
         ? {}
         : {apiVersion: previous.apiVersion}),
       ...(previous?.baseUrl === undefined ? {} : {baseUrl: previous.baseUrl}),
-      ...(previous?.organization === undefined
-        ? {}
-        : {organization: previous.organization}),
+      ...(previous?.team === undefined ? {} : {team: previous.team}),
       credential: {account, kind: 'projectToken'},
       owner: 'project',
       project,
@@ -206,7 +202,7 @@ export class AuthService {
         if (metadata.credential.kind === 'projectToken') {
           validateProjectToken(credential)
         } else {
-          validateOrganizationApiKey(credential)
+          validateTeamApiKey(credential)
         }
         credentialFormatValid = true
       } catch {
@@ -271,9 +267,7 @@ function summary(
       ? {}
       : {apiVersion: profile.apiVersion}),
     ...(profile.baseUrl === undefined ? {} : {baseUrl: profile.baseUrl}),
-    ...(profile.organization === undefined
-      ? {}
-      : {organization: profile.organization}),
+    ...(profile.team === undefined ? {} : {team: profile.team}),
     ...(profile.owner === undefined ? {} : {owner: profile.owner}),
     ...(profile.project === undefined ? {} : {project: profile.project}),
   }

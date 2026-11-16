@@ -21,8 +21,8 @@ export interface ProfileMetadata {
   readonly apiVersion?: string
   readonly baseUrl?: string
   readonly credential: CredentialReference
-  readonly owner?: 'organization' | 'project'
-  readonly organization?: string
+  readonly owner?: 'team' | 'project'
+  readonly team?: string
   readonly project?: string
 }
 
@@ -138,7 +138,7 @@ function isProfile(value: unknown, version: 1 | 2): value is ProfileMetadata {
     'baseUrl',
     'credential',
     'owner',
-    'organization',
+    'team',
     'project',
   ])
   if (Object.keys(value).some((key) => !profileKeys.has(key))) return false
@@ -159,7 +159,7 @@ function isProfile(value: unknown, version: 1 | 2): value is ProfileMetadata {
 
   if (
     value.owner !== undefined &&
-    value.owner !== 'organization' &&
+    value.owner !== 'team' &&
     value.owner !== 'project'
   ) {
     return false
@@ -172,10 +172,9 @@ function isProfile(value: unknown, version: 1 | 2): value is ProfileMetadata {
   ) {
     return false
   }
-  if (value.owner === 'organization' && value.project !== undefined)
-    return false
+  if (value.owner === 'team' && value.project !== undefined) return false
 
-  return ['apiVersion', 'baseUrl', 'organization', 'project'].every(
+  return ['apiVersion', 'baseUrl', 'team', 'project'].every(
     (key) => value[key] === undefined || typeof value[key] === 'string',
   )
 }

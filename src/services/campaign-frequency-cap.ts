@@ -74,14 +74,14 @@ export function frequencyCapInput(
     } satisfies CampaignFrequencyCap,
   }
 }
-export async function getFrequencyCap(client: ClientInstance<'organization'>) {
+export async function getFrequencyCap(client: ClientInstance<'team'>) {
   const response = await client.raw.request<{
     data: CampaignFrequencyCapSettings
   }>({method: 'GET', path: '/platform/campaign-settings/frequency-cap'})
   return {data: response.data.data, metadata: response.metadata}
 }
 export async function updateFrequencyCap(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   body: UpdateCampaignFrequencyCapInput,
 ) {
   const response = await client.raw.request<{

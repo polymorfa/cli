@@ -42,7 +42,7 @@ export default class AnalyticsMetrics extends BaseCommand {
     })
     const session = await this.developerSession({
       ...flags,
-      owner: flags.owner ?? (flags.project ? 'project' : 'organization'),
+      owner: flags.owner ?? (flags.project ? 'project' : 'team'),
     })
     const result = await getAnalyticsMetrics(session.client, query)
     this.writeValue(result, result.data.trimEnd(), flags)

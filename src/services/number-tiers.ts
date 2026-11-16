@@ -98,7 +98,7 @@ function hybridResolution(input: TierQuoteInput): HybridResolution | undefined {
 }
 
 export async function quoteTierChange(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   sessionId: string,
   body: NumberTierQuoteRequest,
 ): Promise<PlatformResult<NumberTierChange>> {
@@ -107,7 +107,7 @@ export async function quoteTierChange(
 }
 
 export async function confirmTierChange(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   sessionId: string,
   quoteId: string,
   projectId?: string,
@@ -122,7 +122,7 @@ export async function confirmTierChange(
 }
 
 export async function retrieveTierChange(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   sessionId: string,
   quoteId: string,
 ): Promise<PlatformResult<NumberTierChange>> {
@@ -131,7 +131,7 @@ export async function retrieveTierChange(
 }
 
 export async function listHybridMergeCandidates(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   projectId: string,
 ): Promise<PlatformResult<readonly HybridMergeCandidate[]>> {
   const response = await client.projects.listHybridMergeCandidates(projectId)

@@ -7,7 +7,7 @@ import {
 } from '../../services/platform-management.js'
 
 export default class SessionBanList extends BaseCommand {
-  static override description = 'List recorded organization session bans.'
+  static override description = 'List recorded team session bans.'
 
   static override flags = {
     active: Flags.boolean({description: 'Return only active bans.'}),

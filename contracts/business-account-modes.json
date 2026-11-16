@@ -1,11 +1,11 @@
 {
   "repository": "polymorfa/polymorfa",
-  "commit": "14153ad9d69ddd3bae972594e6b3dc3ddae8e8e4",
+  "commit": "a3db53e74c6e24507ca01e2ff6ecba19358422c7",
   "releaseStatus": "source-only",
   "sources": {
     "messaging": {
       "sourcePath": "apps/api/docs/openapi.json",
-      "sourceSha256": "44a2cc304483d7cd4e12974b8f31df92a3b7880d21152aa70af0a50948b40cb1",
+      "sourceSha256": "0c66f1ee93923cf57425ac29c01a84c5c140b703ace2160e1b899ee6dad0b071",
       "paths": {
         "/messaging/{session}/contacts/{contactId}/business-profile": {
           "get": {
@@ -808,7 +808,7 @@
                       "whatsapp_group_suspended",
                       "whatsapp_group_has_no_participants",
                       "bansafe_suspended",
-                      "bansafe_org_suspended",
+                      "bansafe_team_suspended",
                       "bansafe_cold_blocked",
                       "bansafe_cold_held",
                       "bansafe_throttled",
@@ -831,7 +831,7 @@
                   "request_log_url": {
                     "type": "string",
                     "format": "uri",
-                    "description": "Console page that shows this request. Returned only to organization and project credentials whose request was logged."
+                    "description": "Console page that shows this request. Returned only to team and project credentials whose request was logged."
                   }
                 },
                 "required": ["type", "code", "message", "param", "request_id"]

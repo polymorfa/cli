@@ -10,7 +10,7 @@ describe('AuthService', () => {
 
     const result = await fixture.service.login({
       apiKey:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       profile: 'work',
     })
 
@@ -21,7 +21,7 @@ describe('AuthService', () => {
     })
     expect(fixture.credentials.set).toHaveBeenCalledWith(
       'profile:work:apiKey',
-      'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
     )
     expect(fixture.saved()).toEqual({
       activeProfile: 'work',
@@ -33,7 +33,7 @@ describe('AuthService', () => {
       version: 2,
     })
     expect(JSON.stringify(fixture.saved())).not.toContain(
-      'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
     )
   })
 
@@ -43,7 +43,7 @@ describe('AuthService', () => {
     await expect(
       fixture.service.login({
         apiKey:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
         profile: '../work',
       }),
     ).rejects.toThrow('Profile names may contain')
@@ -55,13 +55,13 @@ describe('AuthService', () => {
 
     await expect(
       fixture.service.login({apiKey: 'secret', profile: 'work'}),
-    ).rejects.toThrow('must use the canonical pmfa_ v1 format')
+    ).rejects.toThrow('must use the canonical pmfa_ opaque format')
     expect(fixture.credentials.set).not.toHaveBeenCalled()
   })
 
   test('stores an exact-project token only with explicit project ownership', async () => {
     const fixture = createFixture()
-    const token = `pmfa_pt_${'A'.repeat(94)}`
+    const token = `pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ`
 
     await expect(
       fixture.service.loginProjectToken({
@@ -89,12 +89,12 @@ describe('AuthService', () => {
       profile: 'project',
       project: 'project_1',
       projectToken:
-        '  pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA  ',
+        '  pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ  ',
     })
 
     expect(fixture.credentials.set).toHaveBeenCalledWith(
       'profile:project:projectToken',
-      'pmfa_pt_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ',
     )
     await expect(
       fixture.service.loginProjectToken({
@@ -102,7 +102,7 @@ describe('AuthService', () => {
         project: 'project_1',
         projectToken: 'pmfa_pt_',
       }),
-    ).rejects.toThrow('canonical pmfa_pt_ v1 format')
+    ).rejects.toThrow('opaque format')
   })
 
   test('removes the previous project-token keyring entry after switching a profile to an API key', async () => {
@@ -120,12 +120,12 @@ describe('AuthService', () => {
       version: 2,
     })
     vi.mocked(fixture.credentials.get).mockResolvedValue(
-      `pmfa_pt_${'A'.repeat(94)}`,
+      `pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ`,
     )
 
     await fixture.service.login({
       apiKey:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       profile: 'work',
     })
 
@@ -157,7 +157,7 @@ describe('AuthService', () => {
       },
       version: 2,
     })
-    const oldToken = `pmfa_pt_${'A'.repeat(94)}`
+    const oldToken = `pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ`
     vi.mocked(fixture.credentials.get).mockResolvedValue(oldToken)
     vi.mocked(fixture.repository.save).mockRejectedValue(
       new Error('profile save failed'),
@@ -166,7 +166,7 @@ describe('AuthService', () => {
     await expect(
       fixture.service.login({
         apiKey:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
         profile: 'work',
       }),
     ).rejects.toThrow('profile save failed')
@@ -190,7 +190,7 @@ describe('AuthService', () => {
         },
         work: {
           credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
-          organization: 'org_work',
+          team: 'team_work',
         },
       },
       version: 2,
@@ -207,7 +207,7 @@ describe('AuthService', () => {
         active: true,
         credentialKind: 'apiKey',
         name: 'work',
-        organization: 'org_work',
+        team: 'team_work',
       },
     ])
     expect(fixture.credentials.get).not.toHaveBeenCalled()
@@ -216,7 +216,7 @@ describe('AuthService', () => {
   test('switches the active profile and reports secure credential availability', async () => {
     const fixture = createFixture(profileConfig())
     vi.mocked(fixture.credentials.get).mockResolvedValue(
-      'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
     )
 
     await expect(fixture.service.use('work')).resolves.toMatchObject({
@@ -250,7 +250,7 @@ describe('AuthService', () => {
       version: 2,
     })
     vi.mocked(fixture.credentials.get).mockResolvedValue(
-      `pmfa_pt_${'A'.repeat(94)}`,
+      `pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ`,
     )
 
     await expect(fixture.service.status('project')).resolves.toMatchObject({

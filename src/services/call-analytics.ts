@@ -80,7 +80,7 @@ type Query = Readonly<Record<string, string | number>>
 
 export class CallAnalyticsApi {
   private readonly calls:
-    PlatformCallsResource<'organization'> | PlatformCallsResource<'project'>
+    PlatformCallsResource<'team'> | PlatformCallsResource<'project'>
 
   constructor(
     environment: DeveloperEnvironment,
@@ -107,7 +107,7 @@ export class CallAnalyticsApi {
     } else {
       const root = new Client({
         ...options,
-        credential: {type: 'organizationApiKey', value: environment.credential},
+        credential: {type: 'teamApiKey', value: environment.credential},
       })
       this.calls =
         environment.context.owner === 'project' && environment.context.projectId
@@ -209,7 +209,7 @@ export function callFilterQuery(input: CallFilterInput): Query {
   }
 }
 
-/** The project filter for the resolved context; none for the organization. */
+/** The project filter for the resolved context; none for the team. */
 export function projectQuery(context: OutputContext): Query {
   return context.owner === 'project' && context.projectId
     ? {projectId: context.projectId}

@@ -195,7 +195,7 @@ describe('event stream', () => {
   test('requires a project owner', async () => {
     vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const error = await environment(() =>
-      EventStream.run(['--owner', 'organization', '--json']),
+      EventStream.run(['--owner', 'team', '--json']),
     ).catch((caught: unknown) => caught)
     expect(exitCode(error)).toBe(8)
     expect(sdk.params).toHaveLength(0)
@@ -223,7 +223,7 @@ function item(id: string, cursor: string, withBody = true) {
     sequence: 2,
     event: {
       id,
-      organizationId: 'org_1',
+      teamId: 'team_1',
       projectId: PROJECT,
       type: 'message.received',
       source: 'runtime',
@@ -252,7 +252,7 @@ function environment<T>(run: () => Promise<T>): Promise<T> {
   return withEnvironment(
     {
       POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       POLYMORFA_BASE_URL: 'https://api.example.test',
       POLYMORFA_CLIENT_TOKEN: undefined,
       POLYMORFA_PROJECT_TOKEN: undefined,

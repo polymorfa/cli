@@ -102,7 +102,7 @@ describe('ListenerFrameDecoder', () => {
           'cursor_1',
         ),
       ),
-    ).toThrow('organizationId')
+    ).toThrow('teamId')
 
     const bodyDecoder = startedDecoder()
     expect(() =>
@@ -210,7 +210,7 @@ function eventMetadata() {
     environment: 'development',
     id: EVENT,
     metadataExpiresAt: '2026-10-08T00:00:00Z',
-    organizationId: ORGANIZATION,
+    teamId: TEAM,
     payloadAvailability: 'available',
     projectId: PROJECT,
     replayableUntil: null,
@@ -251,5 +251,5 @@ function ready() {
 
 const STREAM = '22222222-2222-4222-8222-222222222222'
 const PROJECT = '11111111-1111-4111-8111-111111111111'
-const ORGANIZATION = '33333333-3333-4333-8333-333333333333'
+const TEAM = '33333333-3333-4333-8333-333333333333'
 const EVENT = '44444444-4444-4444-8444-444444444444'

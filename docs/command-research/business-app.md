@@ -61,7 +61,7 @@ business
     view
 ```
 
-These 25 operations require an organization/server API key and an active Linked
+These 25 operations require a team/server API key and an active Linked
 Device session. They do not support project credentials, browser client tokens,
 or Cloud API sessions. Reads retain the exact `profile:read` or `business:read`
 scope boundaries; mutations retain `profile:write`. The CLI fails client tokens

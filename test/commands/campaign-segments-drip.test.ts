@@ -86,14 +86,14 @@ async function run(command: string) {
   return withEnvironment(
     {
       POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       POLYMORFA_BASE_URL: server.baseUrl,
       POLYMORFA_CLIENT_TOKEN: undefined,
     },
     () => runCommand(command),
   )
 }
-test('lists and reads organization segments with pagination', async () => {
+test('lists and reads team segments with pagination', async () => {
   server = await startHttpSequenceServer([
     {body: {data: [segment], page: {hasMore: true, nextCursor: 'next'}}},
     {body: {data: segment}},

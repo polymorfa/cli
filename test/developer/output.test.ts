@@ -4,8 +4,8 @@ import {developerMutation} from '../../src/developer/output.js'
 
 const base = {
   context: {
-    owner: 'organization' as const,
-    principalType: 'organization_key' as const,
+    owner: 'team' as const,
+    principalType: 'team_key' as const,
   },
   metadata: {attempts: 1, headers: {}, status: 200},
   resource: null,

@@ -4,7 +4,7 @@ import {
   type AuditLog,
   type ClientInstance,
   type ListAuditLogsParams,
-  type OrganizationMember,
+  type TeamMember,
   PolymorfaValidationError,
   type ProjectToken,
   type RequestOptions,
@@ -19,11 +19,11 @@ import {
   type PlatformSession,
   type SessionCapabilities,
   type UpdateQuickLinkSettingsInput,
-  type OrganizationQuickLinkSettings,
+  type TeamQuickLinkSettings,
   type ProjectQuickLinkSettings,
 } from '@polymorfa/sdk'
 
-type WidgetSettings = OrganizationQuickLinkSettings | ProjectQuickLinkSettings
+type WidgetSettings = TeamQuickLinkSettings | ProjectQuickLinkSettings
 
 export interface PlatformResult<T> {
   readonly data: T
@@ -36,14 +36,14 @@ export interface PlatformResult<T> {
 }
 
 export async function listApiKeys(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
 ): Promise<PlatformResult<readonly ApiKey[]>> {
   const response = await client.apiKeys.list()
   return result(response.data.data, response.metadata)
 }
 
 export async function revokeApiKey(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   keyId: string,
   options: RequestOptions = {},
 ): Promise<PlatformResult<ApiKeyDeactivation>> {
@@ -52,14 +52,14 @@ export async function revokeApiKey(
 }
 
 export async function listMembers(
-  client: ClientInstance<'organization'>,
-): Promise<PlatformResult<readonly OrganizationMember[]>> {
+  client: ClientInstance<'team'>,
+): Promise<PlatformResult<readonly TeamMember[]>> {
   const response = await client.members.list()
   return result(response.data.data, response.metadata)
 }
 
 export async function listAuditLogs(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   params: ListAuditLogsParams = {},
 ): Promise<PlatformResult<readonly AuditLog[]>> {
   const response = await client.auditLogs.list(params)
@@ -67,7 +67,7 @@ export async function listAuditLogs(
 }
 
 export async function listSessionBans(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   activeOnly: boolean,
 ): Promise<PlatformResult<readonly SessionBan[]>> {
   const response = activeOnly
@@ -77,14 +77,14 @@ export async function listSessionBans(
 }
 
 export async function listSecurityIncidents(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
 ): Promise<PlatformResult<readonly SecurityIncident[]>> {
   const response = await client.securityIncidents.list()
   return result(response.data.data, response.metadata)
 }
 
 export async function acknowledgeSecurityIncident(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   incidentId: string,
   options: RequestOptions = {},
 ): Promise<PlatformResult<SecurityIncidentAcknowledgement>> {
@@ -96,7 +96,7 @@ export async function acknowledgeSecurityIncident(
 }
 
 export async function listProjectTokens(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   projectId: string,
 ): Promise<PlatformResult<readonly ProjectToken[]>> {
   const response = await client.projectTokens.list(projectId)
@@ -104,7 +104,7 @@ export async function listProjectTokens(
 }
 
 export async function listManagedSessions(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   projectId?: string,
 ): Promise<PlatformResult<readonly PlatformSession[]>> {
   const response = await client.sessions.list(
@@ -114,7 +114,7 @@ export async function listManagedSessions(
 }
 
 export async function viewManagedSession(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   sessionId: string,
 ): Promise<PlatformResult<Session>> {
   const response = await client.sessions.retrieve(sessionId)
@@ -177,7 +177,7 @@ function newChatCapLine(session: Session): string[] {
 }
 
 export async function stopSessions(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   sessionIds: readonly string[],
   projectId?: string,
   options: RequestOptions = {},
@@ -191,7 +191,7 @@ export async function stopSessions(
 
 /** WhatsApp features and limits WhatsApp enabled for a number (beta). */
 export async function getSessionCapabilities(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   session: string,
 ): Promise<PlatformResult<SessionCapabilities>> {
   const response = await client.sessions.getCapabilities(session)
@@ -222,7 +222,7 @@ export function renderSessionCapabilities(
 }
 
 export async function deleteSessions(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   sessionIds: readonly string[],
   projectId?: string,
   options: RequestOptions = {},
@@ -248,8 +248,8 @@ export function renderApiKeys(keys: readonly ApiKey[]): string {
     .join('\n')
 }
 
-export function renderMembers(members: readonly OrganizationMember[]): string {
-  if (members.length === 0) return 'No organization members found.'
+export function renderMembers(members: readonly TeamMember[]): string {
+  if (members.length === 0) return 'No team members found.'
   return members
     .map((member) =>
       [member.email, member.name ?? '', member.role, member.status].join('\t'),
@@ -318,7 +318,7 @@ export function renderProjectTokens(tokens: readonly ProjectToken[]): string {
 }
 
 export async function viewWidgetSettings(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   projectId?: string,
 ): Promise<PlatformResult<WidgetSettings | null>> {
   const response = await (
@@ -328,7 +328,7 @@ export async function viewWidgetSettings(
 }
 
 export async function updateWidgetSettings(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   input: unknown,
   projectId?: string,
   options: RequestOptions = {},
@@ -345,13 +345,13 @@ export function renderWidgetSettings(
 ): string {
   if (settings === null) {
     return requestedProjectId === undefined
-      ? 'No saved organization-default widget settings found.'
+      ? 'No saved team-default widget settings found.'
       : `No saved widget settings found for project ${requestedProjectId}.`
   }
 
   return [
     `ID\t${settings.id}`,
-    `Scope\t${settings.projectId ?? 'organization defaults'}`,
+    `Scope\t${settings.projectId ?? 'team defaults'}`,
     `Enabled\t${settings.enabled}`,
     `Methods\t${settings.methods?.join(', ') ?? 'default'}`,
     `Theme\t${settings.theme}`,

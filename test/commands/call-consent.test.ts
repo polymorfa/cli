@@ -12,8 +12,8 @@ import {
 } from '../helpers/http-server.js'
 
 const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-const CLIENT_TOKEN = 'pmfa_ct_browser_token'
+  'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m'
+const CLIENT_TOKEN = 'pmfa_ct_browser_tokenAA'
 const OPT_OUT_ID = '0b9f6a52-8f0e-4a44-9d51-3c1f9d6f2a10'
 const NEXT_CURSOR = '1c9f6a52-8f0e-4a44-9d51-3c1f9d6f2a11'
 
@@ -135,7 +135,7 @@ describe('call consent commands', () => {
         body: {
           error: {
             code: 'permission_denied',
-            message: "The team's call policy needs an organization credential.",
+            message: "The team's call policy needs a team credential.",
           },
           success: false,
         },
@@ -155,7 +155,7 @@ describe('call consent commands', () => {
       error: {category: 'conflict', code: 'state_conflict'},
     })
     expect(exitCode(refused.error)).toBe(3)
-    expect(refused.stderr).toContain('organization credential')
+    expect(refused.stderr).toContain('team credential')
   }, 30_000)
 
   test('reports malformed SDK collection envelopes as server failures', async () => {

@@ -172,7 +172,7 @@ describe('Audience and opt-out commands', () => {
     expect(result.stdout).not.toContain('Removed')
   })
 
-  test('reads the organization keyword settings', async () => {
+  test('reads the team keyword settings', async () => {
     server = await startHttpServer({body: {data: settings()}})
 
     const result = await apiKeyEnvironment(() =>
@@ -225,7 +225,7 @@ describe('Audience and opt-out commands', () => {
     return withEnvironment(
       {
         POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

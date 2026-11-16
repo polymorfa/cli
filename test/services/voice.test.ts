@@ -146,7 +146,7 @@ describe('voice transfers', () => {
       credential: {
         type: 'apiKey' as const,
         value:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
       },
       surface: 'platform' as const,
       ...(timeoutMs === undefined ? {} : {timeoutMs}),

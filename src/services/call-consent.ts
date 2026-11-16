@@ -20,7 +20,7 @@ import {conversationReference} from './conversation.js'
 import {validateCallTarget} from './calls.js'
 import {assertCursorAdvanced} from '../developer/support.js'
 
-type PlatformClient = ClientInstance<'organization'>
+type PlatformClient = ClientInstance<'team'>
 
 export interface CallConsentResult<T> {
   readonly data: T

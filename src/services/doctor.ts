@@ -256,7 +256,7 @@ async function listProjectsPing(input: {
 }): Promise<unknown> {
   return new Client({
     baseUrl: input.baseUrl,
-    credential: {type: 'organizationApiKey', value: input.credential},
+    credential: {type: 'teamApiKey', value: input.credential},
     maxNetworkRetries: 0,
     ...(input.timeoutMs === undefined ? {} : {timeoutMs: input.timeoutMs}),
   }).projects.list()

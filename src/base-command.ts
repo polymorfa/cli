@@ -55,9 +55,9 @@ export abstract class BaseCommand extends Command {
       helpGroup: 'GLOBAL',
     }),
     owner: Flags.string({
-      description: 'Select project-owned or organization-owned resources.',
+      description: 'Select project-owned or team-owned resources.',
       helpGroup: 'GLOBAL',
-      options: ['project', 'organization'],
+      options: ['project', 'team'],
     }),
     profile: Flags.string({
       description: 'Use a named authentication profile.',
@@ -102,10 +102,10 @@ export abstract class BaseCommand extends Command {
   }
 
   /**
-   * Resolve an organization API key or exact-project token without building a
+   * Resolve a team API key or exact-project token without building a
    * typed client, for commands that span projects. With `inferOwner`, --project
-   * or a project token reads one project and an organization key otherwise
-   * reads the whole organization.
+   * or a project token reads one project and a team key otherwise
+   * reads the whole team.
    */
   protected async developerEnvironment(
     flags: GlobalFlags,
@@ -243,7 +243,7 @@ export abstract class BaseCommand extends Command {
 
   protected async platformClient(
     flags: GlobalFlags,
-  ): Promise<ClientInstance<'organization'>> {
+  ): Promise<ClientInstance<'team'>> {
     return createPlatformClient(await this.platformEnvironment(flags))
   }
 
