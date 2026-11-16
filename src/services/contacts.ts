@@ -1,5 +1,6 @@
 import {
   type BusinessProfile,
+  PolymorfaServerError,
   type CheckContactResult,
   type Contact,
   type ContactBlocklist,
@@ -74,13 +75,31 @@ export async function listContactDevices(
   return result(response.data.data, response.metadata)
 }
 
+export type BusinessProfileView = BusinessProfile & {
+  readonly encryption?: 'end_to_end' | 'hybrid' | 'not_end_to_end'
+}
+
 export async function viewContactBusinessProfile(
   client: MessagingClient,
   session: string,
   contact: string,
-): Promise<ContactResult<BusinessProfile>> {
+): Promise<ContactResult<BusinessProfileView>> {
   const response = await client.contacts.businessProfile(session, contact)
-  return result(response.data.data, response.metadata)
+  const profile = response.data.data as BusinessProfile & {encryption?: unknown}
+  if (
+    'encryption' in profile &&
+    (typeof profile.encryption !== 'string' ||
+      !['end_to_end', 'hybrid', 'not_end_to_end'].includes(profile.encryption))
+  )
+    throw new PolymorfaServerError(
+      'The API returned an invalid business-profile encryption value.',
+      {
+        code: 'invalid_response',
+        metadata: response.metadata,
+        status: response.metadata.status,
+      },
+    )
+  return result(profile as BusinessProfileView, response.metadata)
 }
 
 export async function viewContactBlocklist(
@@ -168,10 +187,11 @@ export function renderContactInfo(info: ContactUserInfo): string {
     .join('\n')
 }
 
-export function renderBusinessProfile(profile: BusinessProfile): string {
+export function renderBusinessProfile(profile: BusinessProfileView): string {
   return [
     row('ID', profile.id),
     row('BSUID', profile.bsuid),
+    row('Encryption', profile.encryption),
     row('Description', profile.description),
     row('Address', profile.address),
     row('Email', profile.email),

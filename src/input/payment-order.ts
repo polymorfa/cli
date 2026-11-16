@@ -12,7 +12,7 @@ import {idempotencyKey} from './idempotency.js'
 export const paymentOrderFlags = {
   'idempotency-key': Flags.string({
     description:
-      'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key to check a previous attempt (24-hour retention).',
+      'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key to check a previous attempt (1-hour retention).',
   }),
   session: Flags.string({
     description: 'Messaging session ID of an Official API Number.',
