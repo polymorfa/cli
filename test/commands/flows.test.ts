@@ -25,7 +25,9 @@ describe('project Flow commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_PROJECT_TOKEN:
-          kind === 'project' ? `pmfa_pt_${'A'.repeat(94)}` : undefined,
+          kind === 'project'
+            ? `pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg`
+            : undefined,
         POLYMORFA_CLIENT_TOKEN:
           kind === 'client' ? `pmfa_ct_${'A'.repeat(94)}` : undefined,
         POLYMORFA_BASE_URL: server!.baseUrl,

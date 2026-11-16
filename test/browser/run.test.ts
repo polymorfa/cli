@@ -14,10 +14,10 @@ import {EventEmitter as BrowserEmitter} from '../../src/browser/stubs/events.js'
 import {process as browserProcess} from '../../src/browser/stubs/process.js'
 import * as browserPath from '../../src/browser/stubs/path.js'
 
-// A client token fixture: the SDK checks only the prefix of client tokens.
-const CLIENT_TOKEN = `pmfa_ct_${'fixture'.repeat(6)}`
+// A synthetic client token with canonical unpadded base64url. Not a real token.
+const CLIENT_TOKEN = `pmfa_ct_Zml4dHVyZWZpeHR1cmVmaXh0dXJlZml4dHVyZWZpeHR1cmVmaXh0dXJl`
 // A well-formed team key fixture for Platform commands. Not a real key.
-const API_KEY = `pmfa_${'A'.repeat(72)}`
+const API_KEY = `pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0`
 const PROJECT = '11111111-1111-4111-8111-111111111111'
 
 /**

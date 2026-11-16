@@ -10,7 +10,7 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 const KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0'
 const PROJECT = '018f0000-0000-7000-8000-000000000001',
   FN = '018f0000-0000-7000-8000-000000000002',
   DEPLOY = '018f0000-0000-7000-8000-000000000003',
@@ -395,7 +395,8 @@ describe('Function commands', () => {
     server = await startHttpServer({
       body: {data: {items: [], nextCursor: null}},
     })
-    const token = 'pmfa_pt_' + 'A'.repeat(94)
+    const token =
+      'pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg'
     const result = await withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,

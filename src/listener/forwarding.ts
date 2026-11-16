@@ -322,7 +322,9 @@ function send(
         path: `${destination.url.pathname}${destination.url.search}`,
         port: destination.url.port || undefined,
         rejectUnauthorized: !(input.skipVerify && destination.loopback),
-        servername: hostname(destination.url),
+        servername: isIP(hostname(destination.url))
+          ? ''
+          : hostname(destination.url),
         signal: input.signal,
         timeout: 10_000,
       },

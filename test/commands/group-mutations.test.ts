@@ -9,7 +9,7 @@ import {
 } from '../helpers/http-server.js'
 
 const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0'
 
 describe('group mutation commands', () => {
   let server: TestHttpServer | undefined

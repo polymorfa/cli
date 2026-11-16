@@ -9,7 +9,7 @@ import {
 } from '../helpers/http-server.js'
 
 const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0'
 
 describe('api gh-style options', () => {
   let server: TestHttpServer | undefined

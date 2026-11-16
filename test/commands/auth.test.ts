@@ -55,7 +55,7 @@ describe('auth commands', () => {
   test('logs in from stdin, lists profiles, and switches active profile', async () => {
     await withConfig(async () => {
       const login = await withStdin(
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n',
+        'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0\n',
         async () =>
           runCommand('auth login --with-api-key --profile work --json'),
       )
@@ -79,7 +79,7 @@ describe('auth commands', () => {
   test('reports keyring availability and logs out only the selected profile', async () => {
     await withConfig(async () => {
       await withStdin(
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n',
+        'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0\n',
         async () =>
           runCommand('auth login --with-api-key --profile work --json'),
       )
@@ -105,7 +105,7 @@ describe('auth commands', () => {
     await withEnvironment(
       {
         POLYMORFA_API_KEY:
-          'pmfa_CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC',
+          'pmfa_Q0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0NDQ0OpuP5E',
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
       async () => {
@@ -124,7 +124,7 @@ describe('auth commands', () => {
 
   test('stores a project-token profile with exact project ownership', async () => {
     await withConfig(async () => {
-      const token = `pmfa_pt_${'A'.repeat(94)}\n`
+      const token = `pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg\n`
       const login = await withStdin(token, async () =>
         runCommand(
           'auth login --with-project-token --profile project --project project_1 --json',
@@ -156,7 +156,7 @@ describe('auth commands', () => {
   })
 
   test('reports an environment project token without exposing it', async () => {
-    const token = `pmfa_pt_${'A'.repeat(94)}`
+    const token = `pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg`
     await withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,

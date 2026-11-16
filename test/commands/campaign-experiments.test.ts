@@ -8,7 +8,7 @@ import {
 } from '../helpers/http-server.js'
 
 const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+  'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0'
 
 describe('campaign A/B test and weighted variation output (beta)', () => {
   let server: TestHttpServer | undefined
@@ -286,6 +286,7 @@ const BASE_CAMPAIGN_LINES = [
   'ID\tcampaign_1',
   'Name\tOctober offer',
   'Status\trunning',
+  'Template\t',
   'Recipients\t1000',
   'Sent\t160',
   'Delivered\t150',

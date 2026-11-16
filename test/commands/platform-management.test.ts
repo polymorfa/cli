@@ -137,7 +137,7 @@ describe('Platform management commands', () => {
     const result = await withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,
-        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_${'A'.repeat(94)}`,
+        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg`,
         POLYMORFA_BASE_URL: server.baseUrl,
       },
       () => runCommand('session list --json'),
@@ -739,7 +739,7 @@ describe('Platform management commands', () => {
     return withEnvironment(
       {
         POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

@@ -12614,6 +12614,18 @@
           "helpGroup": "GLOBAL"
         },
         {
+          "name": "control-input",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Read waiting-room commands as JSON lines from a file or - for stdin, on this live connection. Requires a Calls SDK with waiting-room support.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
           "name": "exclusive",
           "char": null,
           "type": "boolean",
