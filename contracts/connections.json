@@ -15,9 +15,9 @@
   },
   "sdk": {
     "repository": "polymorfa/sdks",
-    "sourceCommit": "fe83375c38218dc15dc76a5ab7ebf82da94f12cf",
-    "documentationExportCommit": "39f91fb6b221e8ebfcda98eded5b1a17e022305a",
-    "localArtifactSha256": "2772c5c199d0a57bcddd2712ace7711f949629bac0ebd07bfecac95c1e840d3b",
+    "sourceCommit": "ef2a629d74e46648cdd613b8126ab63f8e5ee15d",
+    "documentationExportCommit": "046fae62a1e0a8004e0e8dc48848d1555c78e4c3",
+    "localArtifactSha256": "0e2c52d9896320904d79ebe17eeb6b56456f1222e85f69800ae0ce1bdab84a8c",
     "publishedVersion": null
   },
   "dependencyPin": "0.1.0-dev.20261010020302",
