@@ -1,6 +1,6 @@
 {
   "repository": "polymorfa/polymorfa",
-  "sourceCommit": "d3e21ffbb26360ff620164f0f72ca2058dc2e018",
+  "sourceCommit": "15db8b1c9d88e2ceccb58c851e731feabb659a39",
   "releaseStatus": "source-only",
   "polymorfaVersion": "2026-09-22",
   "contracts": {
@@ -15,8 +15,8 @@
   },
   "sdk": {
     "repository": "polymorfa/sdks",
-    "sourceCommit": "aa778674c3382b101d1562c7a2a39d131a6a46e4",
-    "documentationExportCommit": "aa778674c3382b101d1562c7a2a39d131a6a46e4",
+    "sourceCommit": "d3affdf45db6cb1a1e88aad2716a32915277081f",
+    "documentationExportCommit": "d3affdf45db6cb1a1e88aad2716a32915277081f",
     "localArtifactSha256": "4098733320613c3056a2b2f6cec3a22ded1bef9248db63ebd0046cc0d8e05137",
     "publishedVersion": null
   },
