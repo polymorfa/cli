@@ -180,7 +180,7 @@ try {
   const starterManifest = JSON.parse(
     readFileSync(join(starter, 'package.json'), 'utf8'),
   )
-  npm(['install', '--ignore-scripts'], starter)
+  npm(['install', '--ignore-scripts', '--include=dev'], starter)
   assert.equal(
     JSON.parse(
       readFileSync(
