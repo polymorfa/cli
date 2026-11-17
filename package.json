@@ -164,7 +164,7 @@
         "description": "List and change group participants and admins."
       },
       "identity": {
-        "description": "Resolve phone connections and usernames to Polymorfa user IDs."
+        "description": "Resolve phone numbers and usernames to Polymorfa user IDs."
       },
       "key": {
         "description": "Inspect and revoke organization API keys."
@@ -254,7 +254,7 @@
         "description": "Inspect and update inherited connection configuration."
       },
       "connection:tier": {
-        "description": "Quote, confirm, and follow Number tier changes, including Hybrid Link choices."
+        "description": "Quote, confirm, and follow Connection tier changes, including Hybrid Link choices."
       },
       "sip-trunk": {
         "description": "Connect a PBX to WhatsApp calls with SIP trunks."
@@ -296,7 +296,7 @@
         "description": "Invoke Functions once and inspect metadata receipts."
       },
       "cloud": {
-        "description": "Official API Number operations (beta). Team enrollment and scopes apply."
+        "description": "Official API Connection operations (beta). Team enrollment and scopes apply."
       },
       "cloud:template": {
         "description": "Manage Meta templates, separate from Polymorfa project drafts."
@@ -317,13 +317,13 @@
         "description": "Read Meta product catalogs visible to a WhatsApp Business Account."
       },
       "cloud:group": {
-        "description": "Manage WhatsApp groups on an Official API Number (beta). Requires an Official Business Account."
+        "description": "Manage WhatsApp groups on an Official API Connection (beta). Requires an Official Business Account."
       },
       "cloud:group:join-requests": {
         "description": "Review join requests for Official groups that require approval."
       },
       "analytics": {
-        "description": "Read WhatsApp number activity and operational vitals."
+        "description": "Read WhatsApp Connection activity and operational vitals."
       },
       "campaign:profiles": {
         "description": "Manage customer-supplied team audience profiles (beta)."

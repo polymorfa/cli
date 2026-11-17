@@ -338,14 +338,14 @@ describe('connection tier commands', () => {
           {
             id: SURVIVOR,
             name: 'support',
-            transport: 'linked_devices',
+            method: 'linked_device',
             status: 'connected',
             canBeAbsorbed: false,
           },
           {
             id: ABSORBED,
             name: 'support-cloud',
-            transport: 'official_api',
+            method: 'cloud_api',
             status: 'connected',
             canBeAbsorbed: true,
           },
@@ -357,14 +357,14 @@ describe('connection tier commands', () => {
           {
             id: CREATED,
             name: 'sales',
-            transport: 'linked_devices',
+            method: 'linked_device',
             status: 'disconnected',
             canBeAbsorbed: true,
           },
           {
             id: '01994234-0000-7000-8000-00000000000d',
             name: 'sales-cloud',
-            transport: 'official_api',
+            method: 'cloud_api',
             status: 'connected',
             canBeAbsorbed: true,
           },
@@ -389,7 +389,7 @@ describe('connection tier commands', () => {
       `GET /platform/projects/${PROJECT}/hybrid-merge-candidates`,
     ])
     expect(human.stdout).toContain(
-      `${SURVIVOR} (support, linked_devices, connected, must be kept)\t${ABSORBED} (support-cloud, official_api, connected, can be absorbed)\teligible\tmerge with: connection tier quote ${SURVIVOR} --tier pro --merge-with ${ABSORBED}`,
+      `${SURVIVOR} (support, linked_device, connected, must be kept)\t${ABSORBED} (support-cloud, cloud_api, connected, can be absorbed)\teligible\tmerge with: connection tier quote ${SURVIVOR} --tier pro --merge-with ${ABSORBED}`,
     )
     expect(human.stdout).toContain(
       'ineligible: pairing_in_progress (a Connection is still pairing)',

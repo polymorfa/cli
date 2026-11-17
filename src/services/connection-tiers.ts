@@ -215,7 +215,7 @@ export function renderMergeCandidates(
       return [
         ...candidate.connections.map(
           (connection) =>
-            `${connection.id} (${connection.name}, ${connection.transport}, ${connection.status}, ${connection.canBeAbsorbed ? 'can be absorbed' : 'must be kept'})`,
+            `${connection.id} (${connection.name}, ${connection.method}, ${connection.status}, ${connection.canBeAbsorbed ? 'can be absorbed' : 'must be kept'})`,
         ),
         verdict,
         ...(candidate.eligible && keep.length === 1

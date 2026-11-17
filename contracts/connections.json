@@ -1,6 +1,6 @@
 {
   "repository": "polymorfa/polymorfa",
-  "sourceCommit": "8354399b827d9127210b9759cd055586e967449e",
+  "sourceCommit": "a7cab53684b989b1ce68882989d31e2277841bdc",
   "releaseStatus": "source-only",
   "polymorfaVersion": "2026-09-22",
   "contracts": {
@@ -10,14 +10,14 @@
     },
     "platform": {
       "sourcePath": "apps/api/docs/openapi.management.json",
-      "sha256": "2cd45b6a4a919b2c4f93c7438a9439046f82ffc3a1767ccd2dfd5da15450c6f9"
+      "sha256": "e09ed3e8aa24e4f56fc64223ea3e54a9d603cdc533173ac0920a9d14f61be559"
     }
   },
   "sdk": {
     "repository": "polymorfa/sdks",
-    "sourceCommit": "ef2a629d74e46648cdd613b8126ab63f8e5ee15d",
-    "documentationExportCommit": "046fae62a1e0a8004e0e8dc48848d1555c78e4c3",
-    "localArtifactSha256": "0e2c52d9896320904d79ebe17eeb6b56456f1222e85f69800ae0ce1bdab84a8c",
+    "sourceCommit": "fea8a591514b18a386d66347b71baff88d8604ba",
+    "documentationExportCommit": "fea8a591514b18a386d66347b71baff88d8604ba",
+    "localArtifactSha256": "4098733320613c3056a2b2f6cec3a22ded1bef9248db63ebd0046cc0d8e05137",
     "publishedVersion": null
   },
   "dependencyPin": "0.1.0-dev.20261010020302",
