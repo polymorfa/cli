@@ -56956,7 +56956,7 @@
     {
       "id": "usage gates",
       "summary": "List usage gates and their limits.",
-      "description": "List your usage gates with their mode, limit, usage this month and how often an action went over the limit in the last 30 days. In record mode a gate never refuses an action; in enforce mode an action over the limit fails with gate_limit_reached. Pass --connection to include limits that apply per number. Gate state covers the whole team, so this needs a team API key; project API keys are refused. A limit that cannot be checked fails the action with 503 in either mode.",
+      "description": "List your usage gates with their mode, limit, usage this month and how often an action went over the limit in the last 30 days. In record mode a gate never refuses an action; in enforce mode an action over the limit fails with gate_limit_reached. Pass --connection to include limits that apply per Connection. Gate state covers the whole team, so this needs a team API key; project API keys are refused. A limit that cannot be checked fails the action with 503 in either mode.",
       "usage": ["polymorfa usage gates [flags]"],
       "aliases": [],
       "hidden": false,
