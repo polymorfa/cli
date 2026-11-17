@@ -98,7 +98,8 @@ if (!apiKey) {
   process.exitCode = 1
 } else {
   const client = new Client({
-    credential: {type: 'teamApiKey', value: apiKey},
+    // This published SDK version calls team API keys organizationApiKey.
+    credential: {type: 'organizationApiKey', value: apiKey},
   })
   const response = await client.projects.list()
   for (const project of response.data.data) {

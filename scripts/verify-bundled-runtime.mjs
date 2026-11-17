@@ -3,6 +3,7 @@ import {execFileSync} from 'node:child_process'
 import {log} from 'node:console'
 import {
   existsSync,
+  mkdirSync,
   mkdtempSync,
   readFileSync,
   realpathSync,
@@ -13,7 +14,7 @@ import {createRequire} from 'node:module'
 import {tmpdir} from 'node:os'
 import {basename, dirname, isAbsolute, join, relative, sep} from 'node:path'
 import process from 'node:process'
-import {fileURLToPath, URL} from 'node:url'
+import {fileURLToPath, pathToFileURL, URL} from 'node:url'
 
 const root = fileURLToPath(new URL('../', import.meta.url))
 const manifest = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'))
@@ -52,7 +53,7 @@ try {
   writeFileSync(emptyGlobalConfig, '', {mode: 0o600})
 
   /** Run npm with isolated configuration and cache, without inherited credentials. */
-  function npm(args, cwd) {
+  function npm(args, cwd, env = childEnvironment) {
     return execFileSync(
       process.execPath,
       [
@@ -65,7 +66,7 @@ try {
       ],
       {
         cwd,
-        env: childEnvironment,
+        env,
         encoding: 'utf8',
         maxBuffer: 64 * 1024 * 1024,
       },
@@ -166,6 +167,63 @@ try {
     },
   )
   assert.ok(version.includes(manifest.version))
+
+  // The starter installs its own published SDK, independently of the CLI's
+  // source-SDK overlay. Exercise the generated README's actual commands.
+  const starter = join(temporary, 'starter')
+  mkdirSync(starter)
+  execFileSync(process.execPath, [join(installedCli, 'bin/run.js'), 'init'], {
+    cwd: starter,
+    env: childEnvironment,
+    encoding: 'utf8',
+  })
+  const starterManifest = JSON.parse(
+    readFileSync(join(starter, 'package.json'), 'utf8'),
+  )
+  npm(['install', '--ignore-scripts'], starter)
+  assert.equal(
+    JSON.parse(
+      readFileSync(
+        join(starter, 'node_modules/@polymorfa/sdk/package.json'),
+        'utf8',
+      ),
+    ).version,
+    starterManifest.dependencies['@polymorfa/sdk'],
+  )
+  npm(['run', 'typecheck'], starter)
+
+  const requestReceipt = join(starter, 'request.json')
+  const fixtureKey = `pmfa_${'A'.repeat(72)}`
+  const fixture = join(starter, 'fixture.mjs')
+  writeFileSync(
+    fixture,
+    `import assert from 'node:assert/strict'
+import {writeFileSync} from 'node:fs'
+globalThis.fetch = async (input, init) => {
+  const request = new Request(input, init)
+  assert.equal(request.method, 'GET')
+  assert.equal(new URL(request.url).pathname, '/platform/projects')
+  assert.equal(request.headers.get('authorization'), ${JSON.stringify(`Bearer ${fixtureKey}`)})
+  writeFileSync(${JSON.stringify(requestReceipt)}, JSON.stringify({method: request.method, path: new URL(request.url).pathname}))
+  return Response.json({data: [{_id: 'starter-project', slug: 'starter-fixture'}]})
+}
+`,
+  )
+  const started = npm(['run', 'start'], starter, {
+    ...childEnvironment,
+    NODE_OPTIONS: [
+      childEnvironment.NODE_OPTIONS,
+      `--import=${pathToFileURL(fixture).href}`,
+    ]
+      .filter(Boolean)
+      .join(' '),
+    POLYMORFA_API_KEY: fixtureKey,
+  })
+  assert.ok(started.includes('starter-project starter-fixture'))
+  assert.deepEqual(JSON.parse(readFileSync(requestReceipt, 'utf8')), {
+    method: 'GET',
+    path: '/platform/projects',
+  })
   npm(['audit', '--omit=dev'], temporary)
   log(
     JSON.stringify({
@@ -174,6 +232,9 @@ try {
       patchedMatcherVersion: matcher.metadata.version,
       installedCliVersion: installed.version,
       sdkVersion: installedSdk.metadata.version,
+      starterSdkVersion: starterManifest.dependencies['@polymorfa/sdk'],
+      starterTypecheck: 'passed',
+      starterFixtureRequest: 'passed',
       consumerAudit: 'passed',
     }),
   )
