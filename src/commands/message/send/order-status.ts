@@ -41,7 +41,7 @@ export default class MessageSendOrderStatus extends BaseCommand {
     'Update a Brazil order sent with "message send order" (beta). Send a payment status only after your payment provider confirms it; captured shows the order as paid. Makes one attempt.'
 
   static override examples = [
-    '<%= config.bin %> message send order-status --session session_123 --to +5511987654321 --reference-id order-1522 --body "Payment received" --order-status processing --payment-status captured',
+    '<%= config.bin %> message send order-status --connection connection_123 --to +5511987654321 --reference-id order-1522 --body "Payment received" --order-status processing --payment-status captured',
   ]
 
   static override flags = {
@@ -116,7 +116,7 @@ export default class MessageSendOrderStatus extends BaseCommand {
     }
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       paymentOrderRequestOptions(flags['idempotency-key']),
     )

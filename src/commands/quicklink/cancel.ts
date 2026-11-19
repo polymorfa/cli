@@ -9,7 +9,7 @@ export default class QuickLinkCancel extends BaseCommand {
   }
 
   static override description =
-    'Cancel pending QuickLink setup. Supplementary links preserve the existing Number.'
+    'Cancel pending QuickLink setup. Supplementary links preserve the existing Connection.'
 
   static override flags = {
     yes: Flags.boolean({description: 'Confirm QuickLink cancellation.'}),

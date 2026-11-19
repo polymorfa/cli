@@ -18,8 +18,8 @@ export default class BusinessProductAppeal extends BaseCommand {
       description: 'Safely identify retries of this product appeal.',
     }),
     reason: Flags.string({description: 'Appeal reason.', required: true}),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -28,7 +28,7 @@ export default class BusinessProductAppeal extends BaseCommand {
     const {args, flags} = await this.parse(BusinessProductAppeal)
     const result = await appealBusinessProduct(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       args.product,
       flags.reason,
       flags['idempotency-key'] === undefined

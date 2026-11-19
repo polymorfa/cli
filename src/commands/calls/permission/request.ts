@@ -12,10 +12,10 @@ export default class CallsPermissionRequest extends BaseCommand {
   }
 
   static override description =
-    'Send a message that asks a person for permission to call them from a Cloud API number. WhatsApp shows --body above its allow and decline buttons, and the reply arrives as a call.permission_changed event. WhatsApp limits how often a number can ask the same person; when the limit is reached the command fails with call_permission_request_limited (exit code 5) and prints the Retry-After wait when WhatsApp gives one. A person who already granted permanent permission fails with call_permission_granted, and linked-device numbers with unsupported_for_connection (exit code 4).'
+    'Send a message that asks a person for permission to call them from a Cloud API Connection. WhatsApp shows --body above its allow and decline buttons, and the reply arrives as a call.permission_changed event. WhatsApp limits how often a number can ask the same person; when the limit is reached the command fails with call_permission_request_limited (exit code 5) and prints the Retry-After wait when WhatsApp gives one. A person who already granted permanent permission fails with call_permission_granted, and linked-device connections with unsupported_for_connection (exit code 4).'
 
   static override examples = [
-    '<%= config.bin %> calls permission request +14155550123 --session support --body "We would like to call you about your order."',
+    '<%= config.bin %> calls permission request +14155550123 --connection support --body "We would like to call you about your order."',
   ]
 
   static override flags = {
@@ -26,8 +26,8 @@ export default class CallsPermissionRequest extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this send operation.',
     }),
-    session: Flags.string({
-      description: 'Cloud API session (number) that asks.',
+    connection: Flags.string({
+      description: 'Cloud API connection that asks.',
       required: true,
     }),
   }
@@ -38,7 +38,7 @@ export default class CallsPermissionRequest extends BaseCommand {
     const {args, flags} = await this.parse(CallsPermissionRequest)
     const result = await requestCallPermission(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       args.to,
       flags.body,
       flags['idempotency-key'] === undefined

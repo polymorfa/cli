@@ -10,14 +10,14 @@ export default class WebhookList extends BaseCommand {
 
   async run(): Promise<void> {
     const {flags} = await this.parse(WebhookList)
-    const session = await this.developerSession(flags)
+    const connection = await this.developerConnection(flags)
     const result = await listResources(paginationInput(flags), (page) =>
-      session.client.webhooks.list(page, session.requestOptions),
+      connection.client.webhooks.list(page, connection.requestOptions),
     )
     const output = developerRead(
       result.items,
       result.metadata,
-      session.context,
+      connection.context,
       result.page,
     )
     this.writeValue(output, `${result.items.length} webhook(s).`, flags)

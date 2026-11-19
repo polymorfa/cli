@@ -10,8 +10,8 @@ export default class ProfilePictureDelete extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this picture deletion.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -24,7 +24,7 @@ export default class ProfilePictureDelete extends BaseCommand {
     const {flags} = await this.parse(ProfilePictureDelete)
     const result = await deleteProfilePicture(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Profile'}),
-      flags.session,
+      flags.connection,
       flags['idempotency-key'] === undefined
         ? {}
         : {idempotencyKey: flags['idempotency-key']},

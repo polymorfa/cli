@@ -8,7 +8,7 @@ export default class GroupCreate extends BaseCommand {
   static override description = 'Create a group with initial participants.'
 
   static override examples = [
-    '<%= config.bin %> group create --session session_123 --name "Launch team" --participant 750000000001 --participant 750000000002',
+    '<%= config.bin %> group create --connection connection_123 --name "Launch team" --participant 750000000001 --participant 750000000002',
   ]
 
   static override flags = {
@@ -21,8 +21,8 @@ export default class GroupCreate extends BaseCommand {
       multiple: true,
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -31,7 +31,7 @@ export default class GroupCreate extends BaseCommand {
     const {flags} = await this.parse(GroupCreate)
     const result = await createGroup(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
-      flags.session,
+      flags.connection,
       flags.name,
       flags.participant,
       idempotencyOptions(flags['idempotency-key']),

@@ -12,7 +12,7 @@ export default class ControlsSet extends BaseCommand {
   static override flags = {
     scope: Flags.string({
       required: true,
-      options: ['project', 'customer', 'number'],
+      options: ['project', 'customer', 'connection'],
     }),
     credits: Flags.string(),
     unlimited: Flags.boolean({exclusive: ['credits']}),
@@ -24,7 +24,7 @@ export default class ControlsSet extends BaseCommand {
     const {args, flags} = await this.parse(ControlsSet)
     const result = await setResourceControls(
       await this.platformClient(flags),
-      flags.scope as 'project' | 'customer' | 'number',
+      flags.scope as 'project' | 'customer' | 'connection',
       args.id,
       {
         limitCredits: limitValue(flags.credits, flags.unlimited),

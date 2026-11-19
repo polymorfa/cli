@@ -216,7 +216,7 @@ export function renderSipTrunk(trunk: SipTrunk): string {
     lines.push(
       `Inbound username\t${trunk.inbound.username}`,
       `Realm\t${trunk.inbound.realm}`,
-      `Calling session\t${trunk.inbound.session ?? 'not set (calls refused)'}`,
+      `Calling connection\t${trunk.inbound.connection ?? 'not set (calls refused)'}`,
       `Allowed addresses\t${trunk.inbound.allowedAddresses.join(', ')}`,
       `Allowed destinations\t${
         trunk.inbound.allowedDestinations.length === 0

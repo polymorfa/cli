@@ -28,7 +28,7 @@ describe('business commands', () => {
     server = await startHttpServer({body: {data: {}, success: true}})
 
     const result = await clientTokenEnvironment(() =>
-      runCommand('business profile view --session session_1 --json'),
+      runCommand('business profile view --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -45,7 +45,7 @@ describe('business commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('business profile view --session session/main --json'),
+      runCommand('business profile view --connection connection/main --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -58,7 +58,7 @@ describe('business commands', () => {
       },
     })
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/business/profile',
+      '/messaging/connection%2Fmain/business/profile',
     )
   })
 
@@ -84,7 +84,7 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        `business profile update --session session_1 --input ${input} --idempotency-key profile_1 --json`,
+        `business profile update --connection session_1 --input ${input} --idempotency-key profile_1 --json`,
       ),
     )
 
@@ -111,12 +111,12 @@ describe('business commands', () => {
 
     const setResult = await apiKeyEnvironment(() =>
       runCommand(
-        `business profile cover set --session session/main --file ${picture} --idempotency-key cover_set --json`,
+        `business profile cover set --connection connection/main --file ${picture} --idempotency-key cover_set --json`,
       ),
     )
     const deleteResult = await apiKeyEnvironment(() =>
       runCommand(
-        'business profile cover delete cover/1 --session session/main --yes --idempotency-key cover_delete --json',
+        'business profile cover delete cover/1 --connection connection/main --yes --idempotency-key cover_delete --json',
       ),
     )
 
@@ -125,12 +125,12 @@ describe('business commands', () => {
       base64: '/9j/2Q==',
     })
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/business/profile/cover-photo',
+      '/messaging/connection%2Fmain/business/profile/cover-photo',
     )
     expect(deleteResult.error).toBeUndefined()
     expect(server.requests[1]).toMatchObject({
       method: 'DELETE',
-      url: '/messaging/session%2Fmain/business/profile/cover-photo/cover%2F1',
+      url: '/messaging/connection%2Fmain/business/profile/cover-photo/cover%2F1',
     })
   })
 
@@ -141,7 +141,7 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'business catalog view --session session_1 --id 750000000001 --after cursor_1 --limit 25 --width 320 --height 240 --json',
+        'business catalog view --connection session_1 --id 750000000001 --after cursor_1 --limit 25 --width 320 --height 240 --json',
       ),
     )
 
@@ -159,12 +159,12 @@ describe('business commands', () => {
 
     const createResult = await apiKeyEnvironment(() =>
       runCommand(
-        'business catalog create --session session_1 --idempotency-key catalog_create --json',
+        'business catalog create --connection session_1 --idempotency-key catalog_create --json',
       ),
     )
     const cartResult = await apiKeyEnvironment(() =>
       runCommand(
-        'business catalog cart set --session session_1 --enabled false --idempotency-key cart_off --json',
+        'business catalog cart set --connection session_1 --enabled false --idempotency-key cart_off --json',
       ),
     )
 
@@ -186,13 +186,13 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'business product view product/1 --session session/main --id 750000000001 --json',
+        'business product view product/1 --connection connection/main --id 750000000001 --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/business/products/product%2F1?id=750000000001',
+      '/messaging/connection%2Fmain/business/products/product%2F1?id=750000000001',
     )
   })
 
@@ -202,7 +202,7 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        `business product create --session session_1 --input ${input} --idempotency-key product_create --json`,
+        `business product create --connection session_1 --input ${input} --idempotency-key product_create --json`,
       ),
     )
 
@@ -233,7 +233,7 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        `business product create --session session_1 --input ${input} --json`,
+        `business product create --connection session_1 --input ${input} --json`,
       ),
     )
 
@@ -253,7 +253,7 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        `business product replace product_1 --session session_1 --input ${input} --json`,
+        `business product replace product_1 --connection session_1 --input ${input} --json`,
       ),
     )
 
@@ -273,12 +273,12 @@ describe('business commands', () => {
 
     const replaceResult = await apiKeyEnvironment(() =>
       runCommand(
-        `business product replace product/1 --session session_1 --input ${input} --idempotency-key product_replace --json`,
+        `business product replace product/1 --connection session_1 --input ${input} --idempotency-key product_replace --json`,
       ),
     )
     const deleteResult = await apiKeyEnvironment(() =>
       runCommand(
-        'business product delete product/1 --session session_1 --yes --idempotency-key product_delete --json',
+        'business product delete product/1 --connection session_1 --yes --idempotency-key product_delete --json',
       ),
     )
 
@@ -302,12 +302,12 @@ describe('business commands', () => {
 
     const visibilityResult = await apiKeyEnvironment(() =>
       runCommand(
-        'business product visibility set product_1 --session session_1 --hidden true --idempotency-key hidden_1 --json',
+        'business product visibility set product_1 --connection session_1 --hidden true --idempotency-key hidden_1 --json',
       ),
     )
     const appealResult = await apiKeyEnvironment(() =>
       runCommand(
-        'business product appeal product_1 --session session_1 --reason "Please review" --idempotency-key appeal_1 --json',
+        'business product appeal product_1 --connection session_1 --reason "Please review" --idempotency-key appeal_1 --json',
       ),
     )
 
@@ -332,7 +332,7 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'business collection list --session session_1 --id 750000000001 --after next_1 --collection-limit 10 --item-limit 40 --width 128 --height 96 --json',
+        'business collection list --connection session_1 --id 750000000001 --after next_1 --collection-limit 10 --item-limit 40 --width 128 --height 96 --json',
       ),
     )
 
@@ -347,7 +347,7 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'business collection view collection/1 --session session_1 --id 750000000001 --after product_cursor --limit 20 --width 256 --height 256 --json',
+        'business collection view collection/1 --connection session_1 --id 750000000001 --after product_cursor --limit 20 --width 256 --height 256 --json',
       ),
     )
 
@@ -375,12 +375,12 @@ describe('business commands', () => {
 
     const createResult = await apiKeyEnvironment(() =>
       runCommand(
-        'business collection create --session session_1 --name Featured --product product_1 --product product_2 --idempotency-key collection_create --json',
+        'business collection create --connection session_1 --name Featured --product product_1 --product product_2 --idempotency-key collection_create --json',
       ),
     )
     const updateResult = await apiKeyEnvironment(() =>
       runCommand(
-        'business collection update collection_1 --session session_1 --name Updated --add-product product_3 --remove-product product_1 --idempotency-key collection_update --json',
+        'business collection update collection_1 --connection session_1 --name Updated --add-product product_3 --remove-product product_1 --idempotency-key collection_update --json',
       ),
     )
 
@@ -410,7 +410,7 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'business collection update collection_1 --session session_1 --add-product product_1 --remove-product product_1 --json',
+        'business collection update collection_1 --connection session_1 --add-product product_1 --remove-product product_1 --json',
       ),
     )
 
@@ -431,17 +431,17 @@ describe('business commands', () => {
 
     const deleteResult = await apiKeyEnvironment(() =>
       runCommand(
-        'business collection delete collection/1 --session session_1 --yes --idempotency-key collection_delete --json',
+        'business collection delete collection/1 --connection session_1 --yes --idempotency-key collection_delete --json',
       ),
     )
     const reorderResult = await apiKeyEnvironment(() =>
       runCommand(
-        `business collection reorder --session session_1 --input ${input} --idempotency-key collection_reorder --json`,
+        `business collection reorder --connection session_1 --input ${input} --idempotency-key collection_reorder --json`,
       ),
     )
     const appealResult = await apiKeyEnvironment(() =>
       runCommand(
-        'business collection appeal collection/1 --session session_1 --reason "Please review" --idempotency-key collection_appeal --json',
+        'business collection appeal collection/1 --connection session_1 --reason "Please review" --idempotency-key collection_appeal --json',
       ),
     )
 
@@ -469,7 +469,7 @@ describe('business commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'business order view order/1 --session session/main --token event_token --idempotency-key order_lookup --json',
+        'business order view order/1 --connection connection/main --token event_token --idempotency-key order_lookup --json',
       ),
     )
 
@@ -477,7 +477,7 @@ describe('business commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({token: 'event_token'}),
       method: 'POST',
-      url: '/messaging/session%2Fmain/business/orders/order%2F1/lookup',
+      url: '/messaging/connection%2Fmain/business/orders/order%2F1/lookup',
     })
   })
 
@@ -489,11 +489,11 @@ describe('business commands', () => {
     ])
 
     const viewResult = await apiKeyEnvironment(() =>
-      runCommand('business compliance view --session session_1 --json'),
+      runCommand('business compliance view --connection session_1 --json'),
     )
     const replaceResult = await apiKeyEnvironment(() =>
       runCommand(
-        `business compliance replace --session session_1 --input ${input} --idempotency-key compliance_replace --json`,
+        `business compliance replace --connection session_1 --input ${input} --idempotency-key compliance_replace --json`,
       ),
     )
 
@@ -523,7 +523,7 @@ describe('business commands', () => {
       })
 
       const result = await apiKeyEnvironment(() =>
-        runCommand(`business ${command} --session session_1 --json`),
+        runCommand(`business ${command} --connection session_1 --json`),
       )
 
       expect(result.error).toBeUndefined()
@@ -544,8 +544,7 @@ describe('business commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -559,7 +558,7 @@ describe('business commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
       run,
     )

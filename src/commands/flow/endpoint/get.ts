@@ -2,13 +2,13 @@ import {Args, Flags} from '@oclif/core'
 import {FlowsCommand} from '../../../flows/command.js'
 export default class FlowEndpointGet extends FlowsCommand {
   static override description =
-    "Read a Flow's data endpoint on one Number and the Number's encryption custody (beta). Requires sessions:read."
+    "Read a Flow's data endpoint on one Connection and the Connection's encryption custody (beta). Requires connections:read."
   static override args = {
     flow: Args.string({description: 'Flow draft UUID.', required: true}),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Number name or ID in the same project.',
+    connection: Flags.string({
+      description: 'Connection name or ID in the same project.',
       required: true,
     }),
   }
@@ -16,7 +16,7 @@ export default class FlowEndpointGet extends FlowsCommand {
     const {args, flags} = await this.parse(FlowEndpointGet)
     const resource = await this.flows(flags)
     const result = await resource.endpoint(args.flow, {
-      sessionId: flags.session,
+      connectionId: flags.connection,
     })
     this.writeValue(result, JSON.stringify(result.data, null, 2), flags)
   }

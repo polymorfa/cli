@@ -16,8 +16,8 @@ export default class MessageSendVideo extends BaseCommand {
   static override description = 'Send a video from a local file or URL.'
 
   static override examples = [
-    '<%= config.bin %> message send video --session session_123 --to +15551234567 --file ./clip.mp4',
-    '<%= config.bin %> message send video --session session_123 --to +15551234567 --url https://example.com/clip.mp4',
+    '<%= config.bin %> message send video --connection connection_123 --to +15551234567 --file ./clip.mp4',
+    '<%= config.bin %> message send video --connection connection_123 --to +15551234567 --url https://example.com/clip.mp4',
   ]
 
   static override flags = {
@@ -31,7 +31,7 @@ export default class MessageSendVideo extends BaseCommand {
     const request = await mediaSendRequest('video', flags)
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       sendIdempotencyOptions(flags['idempotency-key']),
     )

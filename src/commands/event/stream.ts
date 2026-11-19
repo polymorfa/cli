@@ -38,8 +38,8 @@ export default class EventStream extends BaseCommand {
 
   async run(): Promise<void> {
     const {flags} = await this.parse(EventStream)
-    const session = await this.developerSession(flags)
-    if (session.context.owner !== 'project') {
+    const connection = await this.developerConnection(flags)
+    if (connection.context.owner !== 'project') {
       throw new CliConditionError(
         'action_required',
         'Event streams belong to a project. Pass --owner project and --project.',
@@ -66,7 +66,7 @@ export default class EventStream extends BaseCommand {
     let delivered = 0
     let lastCursor: string | undefined = flags.from
     try {
-      const stream = session.client.events.stream({
+      const stream = connection.client.events.stream({
         ...(flags.type === undefined ? {} : {types: flags.type}),
         ...(flags.from === undefined ? {} : {since: flags.from}),
         signal: controller.signal,

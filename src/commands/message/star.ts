@@ -20,8 +20,8 @@ export default class MessageStar extends BaseCommand {
       description: 'Safely identify retries of this star update.',
     }),
     remove: Flags.boolean({description: 'Remove the existing star.'}),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -30,7 +30,7 @@ export default class MessageStar extends BaseCommand {
     const {args, flags} = await this.parse(MessageStar)
     const result = await setMessageStar(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       {
         conversation: conversationReference(flags.chat),
         id: args.message,

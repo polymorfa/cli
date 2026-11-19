@@ -15,11 +15,11 @@ export default class ChatMessageList extends BaseCommand {
   }
 
   static override description =
-    'List stored messages in a chat for an enrolled HMS Number (beta). Requires messages:read.'
+    'List stored messages in a chat for an enrolled HMS Connection (beta). Requires messages:read.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     limit: Flags.integer({
@@ -52,7 +52,7 @@ export default class ChatMessageList extends BaseCommand {
     const {args, flags} = await this.parse(ChatMessageList)
     const result = await listHistoryMessages(
       await this.historyMessagingClient(flags),
-      flags.session,
+      flags.connection,
       args.conversation,
       {
         ...(flags.limit === undefined ? {} : {limit: flags.limit}),

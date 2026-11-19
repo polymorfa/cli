@@ -4,7 +4,7 @@ import {BaseCommand} from '../../base-command.js'
 import {
   rejectCall,
   renderCallRejection,
-} from '../../services/session-identities.js'
+} from '../../services/connection-identities.js'
 
 export default class CallReject extends BaseCommand {
   static override args = {
@@ -12,9 +12,9 @@ export default class CallReject extends BaseCommand {
   }
 
   static override description =
-    'Reject an incoming call through the Linked Device session route, identified by session, call ID, and caller ID. Requires a server API key. To decline a call on the unified Calls API, use calls reject.'
+    'Reject an incoming call through the Linked Device connection route, identified by connection, call ID, and caller ID. Requires a server API key. To decline a call on the unified Calls API, use calls reject.'
 
-  static override summary = 'Reject an incoming call by session and caller.'
+  static override summary = 'Reject an incoming call by connection and caller.'
 
   static override flags = {
     from: Flags.string({
@@ -24,8 +24,8 @@ export default class CallReject extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this call rejection.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -34,7 +34,7 @@ export default class CallReject extends BaseCommand {
     const {args, flags} = await this.parse(CallReject)
     const result = await rejectCall(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Call'}),
-      flags.session,
+      flags.connection,
       args.call,
       flags.from,
       flags['idempotency-key'] === undefined

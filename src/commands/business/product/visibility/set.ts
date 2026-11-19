@@ -22,8 +22,8 @@ export default class BusinessProductVisibilitySet extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this visibility update.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -33,7 +33,7 @@ export default class BusinessProductVisibilitySet extends BaseCommand {
     const hidden = flags.hidden === 'true'
     const result = await setBusinessProductVisibility(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       args.product,
       hidden,
       flags['idempotency-key'] === undefined

@@ -20,8 +20,8 @@ export default class BusinessCollectionDelete extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this collection deletion.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -34,7 +34,7 @@ export default class BusinessCollectionDelete extends BaseCommand {
     const {args, flags} = await this.parse(BusinessCollectionDelete)
     const result = await deleteBusinessCollection(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       args.collection,
       flags['idempotency-key'] === undefined
         ? {}

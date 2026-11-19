@@ -10,8 +10,8 @@ export default class PrivacySet extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this privacy update.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     setting: Flags.string({
@@ -28,7 +28,7 @@ export default class PrivacySet extends BaseCommand {
     const {flags} = await this.parse(PrivacySet)
     const result = await setPrivacy(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Privacy'}),
-      flags.session,
+      flags.connection,
       flags.setting,
       flags.value,
       flags['idempotency-key'] === undefined

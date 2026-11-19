@@ -22,11 +22,11 @@ import {
 export default class CallsExport extends BaseCommand {
   static override description = `Export call detail records as CSV or newline-delimited JSON, newest first.
 
-Each record has callId, projectId, sessionId, direction, upstream, outcome, state, hasVideo, peerRef, startedAt, connectedAt, endedAt, durationSeconds, and endReason. peerRef is a team-specific pseudonym of the other party, never a phone number.
+Each record has callId, projectId, connectionId, direction, upstream, outcome, state, hasVideo, peerRef, startedAt, connectedAt, endedAt, durationSeconds, and endReason. peerRef is a team-specific pseudonym of the other party, never a phone number.
 
 The command requests every page until no records remain and writes one CSV header. Records go to standard output, or to --output. Progress and the next cursor go to standard error, as JSON lines with --json. --max-pages stops early; resume with --cursor and the same filters. When a page fails, the command reports the cursor that resumes from that page and exits non-zero.
 
-Pass --project to read one project. Without it, an organization API key reads every project in the organization. A project token reads only its own project and requires --project. Credentials need the sessions:read scope.`
+Pass --project to read one project. Without it, an organization API key reads every project in the organization. A project token reads only its own project and requires --project. Credentials need the connections:read scope.`
 
   static override examples = [
     '<%= config.bin %> calls export --since 2026-09-01T00:00:00Z --output calls.csv',

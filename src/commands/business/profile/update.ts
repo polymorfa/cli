@@ -19,8 +19,8 @@ export default class BusinessProfileUpdate extends BaseCommand {
         'Read the complete JSON profile update from a file or standard input (-).',
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -29,7 +29,7 @@ export default class BusinessProfileUpdate extends BaseCommand {
     const {flags} = await this.parse(BusinessProfileUpdate)
     const result = await updateOwnBusinessProfile(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       await readJsonInput(flags.input),
       flags['idempotency-key'] === undefined
         ? {}

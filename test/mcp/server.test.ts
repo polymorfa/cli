@@ -11,7 +11,7 @@ describe('MCP stdio server', () => {
 
   afterEach(async () => close?.())
 
-  test('negotiates listener controls and project-scoped session discovery', async () => {
+  test('negotiates listener controls and project-scoped connection discovery', async () => {
     const input = new PassThrough()
     const output = new PassThrough()
     const transport = new StdioServerTransport(input, output)
@@ -19,7 +19,7 @@ describe('MCP stdio server', () => {
       async () => new Promise<never>(() => {}),
     )
     const handle = serveMcp(manager, '0.1.0-test', transport, () =>
-      Promise.resolve({sessions: [], status: 200}),
+      Promise.resolve({connections: [], status: 200}),
     )
     close = () => handle.close()
 
@@ -58,7 +58,7 @@ describe('MCP stdio server', () => {
       'polymorfa_listen_start',
       'polymorfa_listen_status',
       'polymorfa_listen_stop',
-      'polymorfa_session_list',
+      'polymorfa_connection_list',
     ])
     const start = (
       messages[1] as {
@@ -76,7 +76,7 @@ describe('MCP stdio server', () => {
     expect(pattern.test('11111111-1111-4111-8111-111111111111')).toBe(true)
     expect(pattern.test('project_123')).toBe(false)
     expect(pattern.test('11111111-1111-4111-8111-11111111111G')).toBe(false)
-    const sessions = (
+    const connections = (
       messages[1] as {
         result: {
           tools: Array<{
@@ -86,16 +86,16 @@ describe('MCP stdio server', () => {
           }>
         }
       }
-    ).result.tools.find(({name}) => name === 'polymorfa_session_list')
-    expect(sessions?.annotations?.readOnlyHint).toBe(true)
+    ).result.tools.find(({name}) => name === 'polymorfa_connection_list')
+    expect(connections?.annotations?.readOnlyHint).toBe(true)
     expect(
       new RegExp(
-        sessions?.inputSchema.properties.projectId?.pattern ?? '',
+        connections?.inputSchema.properties.projectId?.pattern ?? '',
       ).test('project_123'),
     ).toBe(false)
   })
 
-  test('returns only curated session fields and hides failures', async () => {
+  test('returns only curated connection fields and hides failures', async () => {
     const input = new PassThrough()
     const output = new PassThrough()
     const transport = new StdioServerTransport(input, output)
@@ -110,9 +110,9 @@ describe('MCP stdio server', () => {
         return Promise.reject(new Error('Bearer pmfa_secret_value'))
       }
       return Promise.resolve({
-        sessions: [
+        connections: [
           {
-            sessionId: 'session_1',
+            connectionId: 'session_1',
             name: 'Support',
             status: 'CONNECTED',
             testMode: false,
@@ -145,7 +145,7 @@ describe('MCP stdio server', () => {
         id: 2,
         jsonrpc: '2.0',
         method: 'tools/call',
-        params: {name: 'polymorfa_session_list', arguments: {projectId}},
+        params: {name: 'polymorfa_connection_list', arguments: {projectId}},
       })}\n`,
     )
     await waitFor(messages, 2)
@@ -153,7 +153,7 @@ describe('MCP stdio server', () => {
       id: 2,
       result: {
         structuredContent: {
-          sessions: [{sessionId: 'session_1', status: 'CONNECTED'}],
+          connections: [{connectionId: 'session_1', status: 'CONNECTED'}],
           status: 200,
         },
       },
@@ -165,7 +165,7 @@ describe('MCP stdio server', () => {
         id: 3,
         jsonrpc: '2.0',
         method: 'tools/call',
-        params: {name: 'polymorfa_session_list', arguments: {projectId}},
+        params: {name: 'polymorfa_connection_list', arguments: {projectId}},
       })}\n`,
     )
     await waitFor(messages, 3)

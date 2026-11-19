@@ -8,14 +8,14 @@ import {
 export default class AnalyticsMetrics extends BaseCommand {
   static override summary = 'Export collector-compatible analytics metrics.'
   static override description =
-    'Write Prometheus or OpenMetrics gauges to stdout. Requires sessions:read and Analytics enabled in the Console. Counts cover completed UTC hours and are not monotonic counters. Project credentials read only their project. Disabled Analytics returns only enablement and window metadata. Use --json for a text body and response metadata envelope.'
+    'Write Prometheus or OpenMetrics gauges to stdout. Requires connections:read and Analytics enabled in the Console. Counts cover completed UTC hours and are not monotonic counters. Project credentials read only their project. Disabled Analytics returns only enablement and window metadata. Use --json for a text body and response metadata envelope.'
   static override examples = [
     '<%= config.bin %> analytics metrics --project PROJECT_ID > analytics.prom',
     '<%= config.bin %> analytics metrics --window-hours 24 --segments --format openmetrics',
   ]
   static override flags = {
-    'session-id': Flags.string({
-      description: 'Limit to one number record UUID.',
+    'connection-id': Flags.string({
+      description: 'Limit to one Connection UUID.',
     }),
     'window-hours': Flags.integer({
       description: 'Completed UTC hours to measure.',
@@ -35,16 +35,16 @@ export default class AnalyticsMetrics extends BaseCommand {
   async run(): Promise<void> {
     const {flags} = await this.parse(AnalyticsMetrics)
     const query = analyticsMetricsQuery({
-      sessionId: flags['session-id'],
+      connectionId: flags['connection-id'],
       windowHours: flags['window-hours'],
       segments: flags.segments,
       format: flags.format,
     })
-    const session = await this.developerSession({
+    const connection = await this.developerConnection({
       ...flags,
       owner: flags.owner ?? (flags.project ? 'project' : 'organization'),
     })
-    const result = await getAnalyticsMetrics(session.client, query)
+    const result = await getAnalyticsMetrics(connection.client, query)
     this.writeValue(result, result.data.trimEnd(), flags)
   }
 }

@@ -19,8 +19,8 @@ export default class BusinessOrderView extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this POST lookup.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     token: Flags.string({
@@ -33,7 +33,7 @@ export default class BusinessOrderView extends BaseCommand {
     const {args, flags} = await this.parse(BusinessOrderView)
     const result = await viewBusinessOrder(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       args.order,
       flags.token,
       flags['idempotency-key'] === undefined

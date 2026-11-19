@@ -3,33 +3,34 @@ import {Args, Flags} from '@oclif/core'
 import {BaseCommand} from '../../../base-command.js'
 import {
   getProjectSafeMode,
-  getSessionSafeMode,
+  getConnectionSafeMode,
   renderSafeMode,
 } from '../../../services/bansafe.js'
 
 export default class BanSafeSafeModeView extends BaseCommand {
   static override args = {
-    session: Args.string({description: 'Session ID or name.'}),
+    connection: Args.string({description: 'Connection ID or name.'}),
   }
-  static override description = 'View project or effective session Safe Mode.'
+  static override description =
+    'View project or effective connection Safe Mode.'
   static override flags = {
     project: Flags.string({
-      description: 'Project ID; required when session is omitted.',
+      description: 'Project ID; required when connection is omitted.',
     }),
   }
   async run(): Promise<void> {
     const {args, flags} = await this.parse(BanSafeSafeModeView)
-    if (args.session === undefined && flags.project === undefined)
-      this.error('Provide a session argument or --project.', {exit: 2})
+    if (args.connection === undefined && flags.project === undefined)
+      this.error('Provide a connection argument or --project.', {exit: 2})
     const result =
-      args.session === undefined
+      args.connection === undefined
         ? await getProjectSafeMode(
             await this.platformClient(flags),
             flags.project as string,
           )
-        : await getSessionSafeMode(
+        : await getConnectionSafeMode(
             await this.platformClient(flags),
-            args.session,
+            args.connection,
           )
     this.writeValue(result, renderSafeMode(result.data), flags)
   }

@@ -8,10 +8,13 @@ import {
 
 export default class BanSafeTelemetryHistory extends BaseCommand {
   static override args = {
-    session: Args.string({description: 'Session ID or name.', required: true}),
+    connection: Args.string({
+      description: 'Connection ID or name.',
+      required: true,
+    }),
   }
   static override description =
-    'List bounded BanSafe telemetry snapshots for one session.'
+    'List bounded BanSafe telemetry snapshots for one connection.'
 
   static override flags = {
     cursor: Flags.string({description: 'Continue from an opaque page cursor.'}),
@@ -32,7 +35,7 @@ export default class BanSafeTelemetryHistory extends BaseCommand {
     const {args, flags} = await this.parse(BanSafeTelemetryHistory)
     const result = await listTelemetryHistory(
       await this.platformClient(flags),
-      args.session,
+      args.connection,
       {
         ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),
         ...(flags.limit === undefined ? {} : {limit: flags.limit}),

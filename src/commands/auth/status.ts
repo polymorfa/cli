@@ -4,7 +4,7 @@ import {validateProjectToken} from '../../config/credentials.js'
 import {
   PolymorfaConfigurationError,
   validateMessagingCredential,
-  validateOrganizationApiKey,
+  validateTeamApiKey,
 } from '@polymorfa/sdk'
 
 export default class AuthStatus extends BaseCommand {
@@ -61,7 +61,7 @@ function environmentStatus(
     )
   }
 
-  if (apiKey !== undefined) validateOrganizationApiKey(apiKey)
+  if (apiKey !== undefined) validateTeamApiKey(apiKey)
   if (clientToken !== undefined) {
     validateMessagingCredential({type: 'clientToken', value: clientToken})
   }

@@ -10,8 +10,8 @@ export default class ProfileStatusSet extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this status update.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     status: Flags.string({
@@ -24,7 +24,7 @@ export default class ProfileStatusSet extends BaseCommand {
     const {flags} = await this.parse(ProfileStatusSet)
     const result = await setProfileStatus(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Profile'}),
-      flags.session,
+      flags.connection,
       flags.status,
       flags['idempotency-key'] === undefined
         ? {}

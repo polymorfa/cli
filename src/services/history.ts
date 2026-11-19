@@ -28,30 +28,30 @@ interface HistoryResult<T> {
 
 export async function listHistoryChats(
   client: MessagingClient,
-  session: string,
+  connection: string,
   params: ListHistoryChatsParams,
 ): Promise<HistoryResult<HistoryPage<HistoryChat>>> {
-  const response = await client.chats.list(session, params)
+  const response = await client.chats.list(connection, params)
   return result(response.data, response.metadata)
 }
 
 export async function viewHistoryChat(
   client: MessagingClient,
-  session: string,
+  connection: string,
   conversation: string,
 ): Promise<HistoryResult<HistoryChat>> {
-  const response = await client.chats.retrieve(session, conversation)
+  const response = await client.chats.retrieve(connection, conversation)
   return result(response.data.data, response.metadata)
 }
 
 export async function listHistoryMessages(
   client: MessagingClient,
-  session: string,
+  connection: string,
   conversation: string,
   params: ListHistoryMessagesParams,
 ): Promise<HistoryResult<HistoryPage<HistoryMessage>>> {
   const response = await client.chats.listMessages(
-    session,
+    connection,
     conversation,
     params,
   )
@@ -60,12 +60,12 @@ export async function listHistoryMessages(
 
 export async function viewHistoryMessage(
   client: MessagingClient,
-  session: string,
+  connection: string,
   conversation: string,
   messageId: string,
 ): Promise<HistoryResult<HistoryMessage>> {
   const response = await client.chats.retrieveMessage(
-    session,
+    connection,
     conversation,
     messageId,
   )
@@ -75,7 +75,7 @@ export async function viewHistoryMessage(
 /** Download a stored Official API message copy through the enrolled history API. */
 export async function downloadHistoryMessageMedia(
   client: MessagingClient,
-  session: string,
+  connection: string,
   conversation: string,
   messageId: string,
   options: {
@@ -103,7 +103,7 @@ export async function downloadHistoryMessageMedia(
   }
 
   const download = await client.chats.downloadMessageMediaStream(
-    session,
+    connection,
     conversation,
     messageId,
   )

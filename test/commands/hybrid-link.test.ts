@@ -9,7 +9,7 @@ import {
 } from '../helpers/http-server.js'
 const project = '11111111-1111-4111-8111-111111111111'
 const env = (url: string) => ({
-  POLYMORFA_API_KEY: `pmfa_${'A'.repeat(72)}`,
+  POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
   POLYMORFA_BASE_URL: url,
   POLYMORFA_CLIENT_TOKEN: undefined,
   POLYMORFA_PROJECT_TOKEN: undefined,
@@ -32,7 +32,7 @@ test('state output shows both connection readiness and enablement', async () => 
   ])
   try {
     await withEnvironment(env(server.baseUrl), async () => {
-      const result = await runCommand('hybrid-link state --session existing')
+      const result = await runCommand('hybrid-link state --connection existing')
       expect(result.error, result.stderr).toBeUndefined()
       expect(result.stdout).toContain('pair-4\tactive')
       expect(result.stdout).toContain('linked_devices: connected (enabled)')
@@ -151,7 +151,7 @@ test('flag-only QuickLink creation uses the linked project', async () => {
         success: true,
         data: {
           id: 'ql-1',
-          session: 'existing',
+          connection: 'existing',
           url: 'https://example.test/ql-1',
           expiresAt: null,
         },
@@ -168,16 +168,16 @@ test('flag-only QuickLink creation uses the linked project', async () => {
     process.chdir(directory)
     await withEnvironment(env(server.baseUrl), async () => {
       const result = await runCommand(
-        'quicklink create --purpose add_connection --session existing --add-connection official_api --json',
+        'quicklink create --purpose add_method --connection existing --add-method official_api --json',
       )
       expect(result.error, result.stderr).toBeUndefined()
     })
     expect(server.requests).toHaveLength(1)
     expect(JSON.parse(server.requests[0]!.body)).toMatchObject({
       projectId: project,
-      purpose: 'add_connection',
-      session: 'existing',
-      addConnection: 'official_api',
+      purpose: 'add_method',
+      connection: 'existing',
+      addMethod: 'official_api',
     })
   } finally {
     process.chdir(previousDirectory)
@@ -207,7 +207,7 @@ test('QuickLink creation accepts a project slug from the input file', async () =
         success: true,
         data: {
           id: 'ql-1',
-          session: 'existing',
+          connection: 'existing',
           url: 'https://example.test/ql-1',
           expiresAt: null,
         },
@@ -247,8 +247,8 @@ test('availability output names existing connections and resumable QuickLink', a
         success: true,
         data: {
           allowed: false,
-          addConnection: null,
-          connections: [
+          addMethod: null,
+          methods: [
             {kind: 'linked_devices', status: 'connected', enabled: true},
             {kind: 'official_api', status: 'pending', enabled: false},
           ],
@@ -260,10 +260,10 @@ test('availability output names existing connections and resumable QuickLink', a
   try {
     await withEnvironment(env(server.baseUrl), async () => {
       const result = await runCommand(
-        `quicklink availability --project ${project} --session existing`,
+        `quicklink availability --project ${project} --connection existing`,
       )
       expect(result.error, result.stderr).toBeUndefined()
-      expect(result.stdout).toContain('No added connection is available.')
+      expect(result.stdout).toContain('No added method is available.')
       expect(result.stdout).toContain('linked_devices: connected (enabled)')
       expect(result.stdout).toContain('official_api: pending (disabled)')
       expect(result.stdout).toContain('Resume QuickLink: ql_pending')
@@ -272,14 +272,14 @@ test('availability output names existing connections and resumable QuickLink', a
     await server.close()
   }
 })
-test('supplementary QuickLink flags preserve the Number and availability scope', async () => {
+test('supplementary QuickLink flags preserve the Connection and availability scope', async () => {
   const server = await startHttpSequenceServer([
     {
       body: {
         success: true,
         data: {
           id: 'ql_1',
-          session: 'existing',
+          connection: 'existing',
           url: 'https://example.test/quicklink/1',
           expiresAt: null,
         },
@@ -290,8 +290,8 @@ test('supplementary QuickLink flags preserve the Number and availability scope',
         success: true,
         data: {
           allowed: false,
-          addConnection: null,
-          connections: [],
+          addMethod: null,
+          methods: [],
           resumeQuickLinkId: null,
         },
       },
@@ -302,26 +302,26 @@ test('supplementary QuickLink flags preserve the Number and availability scope',
       expect(
         (
           await runCommand(
-            `quicklink create --project ${project} --purpose add_connection --session existing --add-connection linked_devices --json`,
+            `quicklink create --project ${project} --purpose add_method --connection existing --add-method linked_devices --json`,
           )
         ).error,
       ).toBeUndefined()
       expect(
         (
           await runCommand(
-            `quicklink availability --project ${project} --session existing --json`,
+            `quicklink availability --project ${project} --connection existing --json`,
           )
         ).error,
       ).toBeUndefined()
     })
     expect(JSON.parse(server.requests[0]!.body)).toEqual({
       projectId: project,
-      purpose: 'add_connection',
-      session: 'existing',
-      addConnection: 'linked_devices',
+      purpose: 'add_method',
+      connection: 'existing',
+      addMethod: 'linked_devices',
     })
     expect(server.requests[1]!.url).toBe(
-      `/messaging/quicklinks/availability?projectId=${project}&session=existing`,
+      `/messaging/quicklinks/availability?projectId=${project}&connection=existing`,
     )
   } finally {
     await server.close()
@@ -333,7 +333,7 @@ test('policy and pause writes retain exact revision guards', async () => {
       body: {
         success: true,
         data: {
-          scope: 'session',
+          scope: 'connection',
           revision: 'new',
           prefer: 'official_api',
           allowedTransports: ['official_api'],
@@ -345,11 +345,11 @@ test('policy and pause writes retain exact revision guards', async () => {
   try {
     await withEnvironment(env(server.baseUrl), async () => {
       const policy = await runCommand(
-        `routing-policy set --scope session --project ${project} --session existing --expected-revision default --prefer official_api --allow official_api --json`,
+        `routing-policy set --scope connection --project ${project} --connection existing --expected-revision default --prefer official_api --allow official_api --json`,
       )
       expect(policy.error, policy.stderr).toBeUndefined()
       const pause = await runCommand(
-        'hybrid-link pause --session existing --expected-revision revision-1 --json',
+        'hybrid-link pause --connection existing --expected-revision revision-1 --json',
       )
       expect(pause.error, pause.stderr).toBeUndefined()
     })
@@ -393,13 +393,13 @@ test('unknown outcome is printed with its operation ID and never resends', async
   try {
     await withEnvironment(env(server.baseUrl), async () => {
       const send = await runCommand(
-        'message send text --session existing --to +14155550123 --body hello --transport official_api --json',
+        'message send text --connection existing --to +14155550123 --body hello --transport official_api --json',
       )
       expect(send.error).toBeDefined()
       expect(send.stdout + send.stderr).toContain('op-1')
       expect(send.stdout + send.stderr).toContain('do not resend')
       const status = await runCommand(
-        'message operation-status op-1 --session existing',
+        'message operation-status op-1 --connection existing',
       )
       expect(status.error, status.stderr).toBeUndefined()
       expect(status.stdout).toContain('do not resend')
@@ -429,7 +429,7 @@ test('proven pre-send rejection is terminal and does not advise polling', async 
   try {
     await withEnvironment(env(server.baseUrl), async () => {
       const result = await runCommand(
-        'message operation-status op-rejected --session existing',
+        'message operation-status op-rejected --connection existing',
       )
       expect(result.error, result.stderr).toBeUndefined()
       expect(result.stdout).toContain('Rejected before provider send')

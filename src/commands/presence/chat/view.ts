@@ -18,8 +18,8 @@ export default class PresenceChatView extends BaseCommand {
     'View retained, policy-governed presence observations for a chat.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -28,7 +28,7 @@ export default class PresenceChatView extends BaseCommand {
     const {args, flags} = await this.parse(PresenceChatView)
     const result = await viewChatPresence(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       args.chat,
     )
     this.writeValue(result, renderChatPresence(result.data), flags)

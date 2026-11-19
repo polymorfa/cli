@@ -13,13 +13,13 @@ export default class WebhookDeliveryView extends BaseCommand {
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(WebhookDeliveryView)
-    const session = await this.developerSession(flags)
-    const response = await session.client.webhookDeliveries.retrieve(
+    const connection = await this.developerConnection(flags)
+    const response = await connection.client.webhookDeliveries.retrieve(
       args.delivery,
-      session.requestOptions,
+      connection.requestOptions,
     )
     this.writeValue(
-      developerResponse(response, session.context),
+      developerResponse(response, connection.context),
       renderDeliveryDetail(response.data),
       flags,
     )

@@ -15,8 +15,7 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 
-const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const PROJECT = '018f0000-0000-7000-8000-000000000002'
 const TRUNK_ID = '6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10'
 
@@ -36,7 +35,7 @@ const trunk = {
   inbound: {
     username: 'pmfa_abc',
     realm: 'sip.example.test',
-    session: null,
+    connection: null,
     allowedAddresses: ['203.0.113.10/32'],
     allowedDestinations: [],
   },
@@ -95,7 +94,9 @@ describe('sip-trunk commands', () => {
     )
     expect(viewed.stdout).toContain('Password stored\tyes')
     expect(viewed.stdout).toContain('From user\tcaller identity (automatic)')
-    expect(viewed.stdout).toContain('Calling session\tnot set (calls refused)')
+    expect(viewed.stdout).toContain(
+      'Calling connection\tnot set (calls refused)',
+    )
     expect(viewed.stdout).toContain('Allowed destinations\tany')
     expect(viewed.stdout).toContain('Revision\t3')
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([

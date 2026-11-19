@@ -40,7 +40,7 @@ export function createMessagingClient(
 }
 
 /**
- * Session call settings live on the Platform API, but the SDK exposes them on
+ * Connection call settings live on the Platform API, but the SDK exposes them on
  * the Messaging client's Calls resource. Build that client from a resolved
  * Platform environment so the Platform credential rules (server API keys
  * only) still apply.
@@ -50,7 +50,7 @@ export function createCallSettingsClient(
 ): MessagingClient {
   if (environment.surface !== 'platform') {
     throw new PolymorfaConfigurationError(
-      'Session call settings require the Platform API surface.',
+      'Connection call settings require the Platform API surface.',
       'surface',
     )
   }
@@ -87,7 +87,7 @@ export function createCallRetentionClient(
       type:
         environment.principalType === 'project_token'
           ? 'projectToken'
-          : 'organizationApiKey',
+          : 'teamApiKey',
       value: environment.credential,
     },
     ...(environment.apiVersion === undefined
@@ -106,7 +106,7 @@ export function createCallRetentionClient(
 
 export function createPlatformClient(
   environment: ResolvedEnvironment,
-): ClientInstance<'organization'> {
+): ClientInstance<'team'> {
   if (environment.surface !== 'platform') {
     throw new PolymorfaConfigurationError(
       'A typed Platform client requires the Platform API surface.',
@@ -116,7 +116,7 @@ export function createPlatformClient(
 
   return new Client({
     credential: {
-      type: 'organizationApiKey',
+      type: 'teamApiKey',
       value: environment.credential.value,
     },
     ...sharedOptions(environment),

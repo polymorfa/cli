@@ -38,14 +38,14 @@ export default class WebhookSecretRotate extends BaseCommand {
       json: flags.json === true,
       ...(flags['secret-out'] === undefined ? {} : {path: flags['secret-out']}),
     })
-    const session = await this.developerSession(flags)
-    const response = await session.client.webhooks.rotateSecret(
+    const connection = await this.developerConnection(flags)
+    const response = await connection.client.webhooks.rotateSecret(
       args.webhook,
       flags.overlap === undefined
         ? {}
         : {overlapSeconds: parseBoundedDurationSeconds(flags.overlap, 86_400)},
       {
-        ...session.requestOptions,
+        ...connection.requestOptions,
         idempotencyKey: idempotencyKey(flags['idempotency-key']),
       },
     )
@@ -62,7 +62,7 @@ export default class WebhookSecretRotate extends BaseCommand {
     } catch (error) {
       const reason = error instanceof Error ? error.message : String(error)
       const output = developerMutation({
-        context: session.context,
+        context: connection.context,
         metadata: response.metadata,
         receipt,
         resource: {id: webhookId, type: 'webhook'},
@@ -87,7 +87,7 @@ export default class WebhookSecretRotate extends BaseCommand {
       )
     }
     const output = developerMutation({
-      context: session.context,
+      context: connection.context,
       metadata: response.metadata,
       receipt,
       resource: {id: webhookId, type: 'webhook'},

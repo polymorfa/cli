@@ -7,7 +7,7 @@ import {
 } from '../helpers/http-server.js'
 
 const projectId = '11111111-1111-4111-8111-111111111111'
-const apiKey = `pmfa_${'A'.repeat(72)}`
+const apiKey = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const eventId = '0199f1c2-7a4e-7c55-9d1e-3f0b8a2c6d10'
 
 async function run(
@@ -33,13 +33,13 @@ async function run(
 
 test('triggers message.received with text and typed overrides', async () => {
   const {result, requests} = await run(
-    `trigger message.received --project ${projectId} --session test-a --text hi --override pushName=Ada`,
+    `trigger message.received --project ${projectId} --connection test-a --text hi --override pushName=Ada`,
     [
       {
         status: 202,
         body: {
           event: 'message.received',
-          session: 'test-a',
+          connection: 'test-a',
           delivery: 'generated',
           eventId,
           source: 'test',
@@ -61,15 +61,15 @@ test('triggers message.received with text and typed overrides', async () => {
   })
 })
 
-test('sends a simulated message with --from-number and prints JSON', async () => {
+test('sends a simulated message with --from-connection and prints JSON', async () => {
   const {result, requests} = await run(
-    `trigger message.received --project ${projectId} --session test-a --from-number test-b --json`,
+    `trigger message.received --project ${projectId} --connection test-a --from-connection test-b --json`,
     [
       {
         status: 202,
         body: {
           event: 'message.received',
-          session: 'test-a',
+          connection: 'test-a',
           delivery: 'simulated',
           eventId: null,
           source: 'runtime',
@@ -83,7 +83,7 @@ test('sends a simulated message with --from-number and prints JSON', async () =>
   })
   expect(JSON.parse(requests[0]!.body)).toEqual({
     event: 'message.received',
-    fromNumber: 'test-b',
+    fromConnection: 'test-b',
   })
 })
 
@@ -110,7 +110,7 @@ test('lists fixtures', async () => {
 test.each(['true', 'false'])(
   'triggers the listed restriction fixture with restrictionActive=%s',
   async (active) => {
-    const fixture = 'session.restriction_updated'
+    const fixture = 'connection.restriction_updated'
     const listed = await run(`trigger --list`, [
       {
         body: {
@@ -127,13 +127,13 @@ test.each(['true', 'false'])(
     expect(listed.result.stdout).toContain(fixture)
 
     const {result, requests} = await run(
-      `trigger ${fixture} --project ${projectId} --session test-a --override restrictionActive=${active}`,
+      `trigger ${fixture} --project ${projectId} --connection test-a --override restrictionActive=${active}`,
       [
         {
           status: 202,
           body: {
             event: fixture,
-            session: 'test-a',
+            connection: 'test-a',
             delivery: 'generated',
             eventId,
             source: 'test',
@@ -150,9 +150,9 @@ test.each(['true', 'false'])(
   },
 )
 
-test('reports a real-session refusal without retrying', async () => {
+test('reports a real-connection refusal without retrying', async () => {
   const {result, requests} = await run(
-    `trigger call.received --project ${projectId} --session real-number`,
+    `trigger call.received --project ${projectId} --connection real-number`,
     [
       {
         status: 400,
@@ -161,7 +161,7 @@ test('reports a real-session refusal without retrying', async () => {
             type: 'invalid_request_error',
             code: 'invalid_parameter',
             message:
-              'Test events are available only for Test numbers. This session is not a Test number in the project, or it does not exist.',
+              'Test events are available only for Test connections. This connection is not a Test Connection in the project, or it does not exist.',
             param: null,
           },
           data: null,
@@ -169,16 +169,19 @@ test('reports a real-session refusal without retrying', async () => {
       },
     ],
   )
-  expect(result.stderr).toMatch(/only for Test numbers/)
+  expect(result.stderr).toMatch(/only for Test connections/)
   expect(requests).toHaveLength(1)
 })
 
-test('requires a session and a fixture before any request', async () => {
-  const noSession = await run(`trigger call.missed --project ${projectId}`, [])
-  expect(noSession.result.stderr).toMatch(/--session/)
-  expect(noSession.requests).toHaveLength(0)
+test('requires a connection and a fixture before any request', async () => {
+  const noConnection = await run(
+    `trigger call.missed --project ${projectId}`,
+    [],
+  )
+  expect(noConnection.result.stderr).toMatch(/--connection/)
+  expect(noConnection.requests).toHaveLength(0)
   const unknown = await run(
-    `trigger message.sent --project ${projectId} --session test-a`,
+    `trigger message.sent --project ${projectId} --connection test-a`,
     [],
   )
   expect(unknown.result.error).toBeDefined()
@@ -191,13 +194,13 @@ test.each([
   'bansafe.enforcement',
 ])('rejects retired %s test fixtures before any request', async (fixture) => {
   const {result, requests} = await run(
-    `trigger ${fixture} --project ${projectId} --session test-a`,
+    `trigger ${fixture} --project ${projectId} --connection test-a`,
     [
       {
         status: 202,
         body: {
           event: fixture,
-          session: 'test-a',
+          connection: 'test-a',
           delivery: 'generated',
           eventId,
           source: 'test',
@@ -231,7 +234,7 @@ test('rejects a shortcut that repeats an explicit override', async () => {
     '--override from=+15550001111 --from +15550002222',
   ]) {
     const collision = await run(
-      `trigger message.received --project ${projectId} --session test-a ${flags}`,
+      `trigger message.received --project ${projectId} --connection test-a ${flags}`,
       [],
     )
     expect(collision.result.error).toBeDefined()

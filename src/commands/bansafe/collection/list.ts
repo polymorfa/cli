@@ -10,7 +10,7 @@ export default class BanSafeCollectionList extends BaseCommand {
   static override flags = {
     cursor: Flags.string({description: 'Continue from an opaque page cursor.'}),
     limit: Flags.integer({
-      description: 'Maximum sessions to return (default 25).',
+      description: 'Maximum connections to return (default 25).',
       max: 100,
       min: 1,
     }),

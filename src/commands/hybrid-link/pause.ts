@@ -5,9 +5,9 @@ export default class HybridLinkPause extends BaseCommand {
   static override description =
     'Pause Hybrid routing at the exact current revision.'
   static override flags = {
-    session: Flags.string({
+    connection: Flags.string({
       required: true,
-      description: 'Number session name.',
+      description: 'Connection name.',
     }),
     'expected-revision': Flags.string({
       required: true,
@@ -19,7 +19,7 @@ export default class HybridLinkPause extends BaseCommand {
     const client = await this.messagingClient(flags, {
       serverCredentialOnly: 'Hybrid Link',
     })
-    const response = await client.hybridLink.setPaused(flags.session, {
+    const response = await client.hybridLink.setPaused(flags.connection, {
       expectedRevision: flags['expected-revision'],
       paused: true,
     })

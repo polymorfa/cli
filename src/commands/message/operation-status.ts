@@ -11,8 +11,8 @@ export default class MessageOperationStatus extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Number session name.',
+    connection: Flags.string({
+      description: 'Connection name.',
       required: true,
     }),
   }
@@ -22,7 +22,7 @@ export default class MessageOperationStatus extends BaseCommand {
       serverCredentialOnly: 'Message operation status',
     })
     const response = await client.messages.operationStatus(
-      flags.session,
+      flags.connection,
       args.operation,
     )
     const value = response.data.data

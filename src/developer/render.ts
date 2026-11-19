@@ -40,7 +40,7 @@ function phoneOfflineWarning(webhook: {
   readonly eventTypes: readonly string[]
   readonly phoneOfflineStartDay?: number
 }): string {
-  if (!webhook.eventTypes.includes('session.phone_offline')) return 'off'
+  if (!webhook.eventTypes.includes('connection.phone_offline')) return 'off'
   return webhook.phoneOfflineStartDay === undefined
     ? 'not reported'
     : `from day ${webhook.phoneOfflineStartDay}`

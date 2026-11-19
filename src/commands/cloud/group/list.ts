@@ -4,11 +4,11 @@ import {cloudResult} from '../../../services/cloud.js'
 
 export default class CloudGroupList extends BaseCommand {
   static override description =
-    'List Official groups on an Official API Number (beta). Requires groups:read and team enrollment.'
+    'List Official groups on an Official API Connection (beta). Requires groups:read and team enrollment.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     limit: Flags.integer({
@@ -29,7 +29,7 @@ export default class CloudGroupList extends BaseCommand {
     const client = await this.messagingClient(flags, {
       serverCredentialOnly: 'Official API',
     })
-    const response = await client.officialGroups.list(flags.session, {
+    const response = await client.officialGroups.list(flags.connection, {
       ...(flags.limit === undefined ? {} : {limit: flags.limit}),
       ...(flags.before === undefined ? {} : {before: flags.before}),
       ...(flags.after === undefined ? {} : {after: flags.after}),

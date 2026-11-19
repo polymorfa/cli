@@ -4,11 +4,11 @@ import {BaseCommand} from '../../base-command.js'
 import {listGroups} from '../../services/groups.js'
 
 export default class GroupList extends BaseCommand {
-  static override description = 'List groups for a Messaging session.'
+  static override description = 'List groups for a Messaging connection.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -17,7 +17,7 @@ export default class GroupList extends BaseCommand {
     const {flags} = await this.parse(GroupList)
     const result = await listGroups(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
-      flags.session,
+      flags.connection,
     )
     const human =
       result.data.length === 0

@@ -31,9 +31,9 @@ export default class CallsMedia extends BaseCommand {
   ].join(' ')
 
   static override examples = [
-    '<%= config.bin %> calls media --session support --output call.pcm',
-    '<%= config.bin %> calls media --session support --place +15550100 --input prompt.pcm --leave-on-eof --output reply.pcm',
-    'sox in.wav -t raw -r 16000 -e signed -b 16 -c 1 - | <%= config.bin %> calls media call_123 --session support --input - --exclusive > out.pcm',
+    '<%= config.bin %> calls media --connection support --output call.pcm',
+    '<%= config.bin %> calls media --connection support --place +15550100 --input prompt.pcm --leave-on-eof --output reply.pcm',
+    'sox in.wav -t raw -r 16000 -e signed -b 16 -c 1 - | <%= config.bin %> calls media call_123 --connection support --input - --exclusive > out.pcm',
   ]
 
   static override flags = {
@@ -65,9 +65,9 @@ export default class CallsMedia extends BaseCommand {
       description:
         'Place a call to this E.164 number or user ID instead of answering one.',
     }),
-    session: Flags.string({
+    connection: Flags.string({
       description:
-        'Session of the call. Required with a server API key; client tokens use their bound session.',
+        'Connection of the call. Required with a server API key; client tokens use their bound connection.',
     }),
     video: Flags.boolean({
       allowNo: true,
@@ -181,11 +181,11 @@ export default class CallsMedia extends BaseCommand {
           output,
           participant: flags.participant,
           place: flags.place,
-          session: flags.session,
+          connection: flags.connection,
           signal: halt.signal,
           video: flags.video,
         },
-        (status) => report(status, renderMediaStatus(status, flags.session)),
+        (status) => report(status, renderMediaStatus(status, flags.connection)),
       )
       await closeOutput()
       if (fileError !== undefined) throw outputFailed(flags.output, fileError)
@@ -210,14 +210,14 @@ export default class CallsMedia extends BaseCommand {
 
 function renderMediaStatus(
   status: CallMediaStatus,
-  session: string | undefined,
+  connection: string | undefined,
 ): string {
   switch (status.type) {
     case 'ready':
-      return `${renderCallsStatus(status, session)} Waiting for the call.`
+      return `${renderCallsStatus(status, connection)} Waiting for the call.`
     case 'disconnected':
     case 'notice':
-      return renderCallsStatus(status, session)
+      return renderCallsStatus(status, connection)
     case 'connected':
       return `Connected to call ${status.callId} as connection ${status.connectionId} at ${status.sampleRate} Hz.`
     case 'placed':

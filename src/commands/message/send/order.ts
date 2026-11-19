@@ -25,11 +25,11 @@ const REQUIRED_KEYS = [
 
 export default class MessageSendOrder extends BaseCommand {
   static override description =
-    'Send a Brazil order with Pix, payment link or boleto instructions (beta; Official API Numbers only). Polymorfa relays the order and does not process the payment. Makes one attempt.'
+    'Send a Brazil order with Pix, payment link or boleto instructions (beta; Official API Connections only). Polymorfa relays the order and does not process the payment. Makes one attempt.'
 
   static override examples = [
-    '<%= config.bin %> message send order --session session_123 --to +5511987654321 --order order.json',
-    'cat order.json | <%= config.bin %> message send order --session session_123 --to +5511987654321 --order - --idempotency-key order-1522',
+    '<%= config.bin %> message send order --connection connection_123 --to +5511987654321 --order order.json',
+    'cat order.json | <%= config.bin %> message send order --connection connection_123 --to +5511987654321 --order - --idempotency-key order-1522',
   ]
 
   static override flags = {
@@ -69,7 +69,7 @@ export default class MessageSendOrder extends BaseCommand {
     }
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       paymentOrderRequestOptions(flags['idempotency-key']),
     )

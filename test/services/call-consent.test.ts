@@ -223,7 +223,7 @@ describe('rendering', () => {
       [
         'Allowed\tno',
         'Refusal\tcalls_disabled',
-        'Call permission\tnot used on linked-device numbers',
+        'Call permission\tnot used on linked-device connections',
       ].join('\n'),
     )
   })
@@ -233,7 +233,7 @@ function fakeClient(
   requests: ImportCallOptOutsInput[],
   result: CallOptOutImportResult,
   failAfterFirst?: Error,
-): ClientInstance<'organization'> {
+): ClientInstance<'team'> {
   return {
     callOptOuts: {
       import(input: ImportCallOptOutsInput) {
@@ -247,5 +247,5 @@ function fakeClient(
         })
       },
     },
-  } as unknown as ClientInstance<'organization'>
+  } as unknown as ClientInstance<'team'>
 }

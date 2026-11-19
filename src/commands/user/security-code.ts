@@ -4,7 +4,7 @@ import {BaseCommand} from '../../base-command.js'
 import {
   renderUserSecurityCode,
   viewUserSecurityCode,
-} from '../../services/session-identities.js'
+} from '../../services/connection-identities.js'
 
 export default class UserSecurityCode extends BaseCommand {
   static override args = {
@@ -17,8 +17,8 @@ export default class UserSecurityCode extends BaseCommand {
   static override description = 'View a user identity verification code.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -27,7 +27,7 @@ export default class UserSecurityCode extends BaseCommand {
     const {args, flags} = await this.parse(UserSecurityCode)
     const result = await viewUserSecurityCode(
       await this.messagingClient(flags, {serverApiKeyOnly: 'User'}),
-      flags.session,
+      flags.connection,
       args.user,
     )
     this.writeValue(result, renderUserSecurityCode(result.data), flags)

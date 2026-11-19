@@ -15,14 +15,14 @@ describe('contact commands', () => {
     server = undefined
   })
 
-  test('lists complete unpaged session contacts as JSON', async () => {
+  test('lists complete unpaged connection contacts as JSON', async () => {
     server = await startHttpServer({
       body: {data: [contact()], success: true},
       headers: {'request-id': 'req_contacts'},
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact list --session session/main --json'),
+      runCommand('contact list --connection connection/main --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -30,7 +30,9 @@ describe('contact commands', () => {
       data: [contact()],
       metadata: {attempts: 1, requestId: 'req_contacts', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/contacts')
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/connection%2Fmain/contacts',
+    )
   })
 
   test('checks multiple phone numbers in one exact registration query', async () => {
@@ -46,7 +48,7 @@ describe('contact commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'contact check --session session_1 --phone +15551234567 --phone +15557654321 --json',
+        'contact check --connection session_1 --phone +15551234567 --phone +15557654321 --json',
       ),
     )
 
@@ -63,7 +65,7 @@ describe('contact commands', () => {
     server = await startHttpServer({body: {data: [], success: true}})
 
     const result = await clientTokenEnvironment(() =>
-      runCommand('contact list --session session_1 --json'),
+      runCommand('contact list --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -71,11 +73,11 @@ describe('contact commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
-  test('views one stored session contact through an encoded LID', async () => {
+  test('views one stored connection contact through an encoded LID', async () => {
     server = await startHttpServer({body: {data: contact(), success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact view 750000000001 --session session/main'),
+      runCommand('contact view 750000000001 --connection connection/main'),
     )
 
     expect(result.error).toBeUndefined()
@@ -83,7 +85,7 @@ describe('contact commands', () => {
     expect(result.stdout).toContain('ID\t750000000001')
     expect(result.stdout).toContain('Phone\t+15551234567')
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/contacts/750000000001',
+      '/messaging/connection%2Fmain/contacts/750000000001',
     )
   })
 
@@ -93,7 +95,7 @@ describe('contact commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact picture 750000000001 --session session_1'),
+      runCommand('contact picture 750000000001 --connection session_1'),
     )
 
     expect(result.error).toBeUndefined()
@@ -110,7 +112,7 @@ describe('contact commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact info 750000000001 --session session_1 --json'),
+      runCommand('contact info 750000000001 --connection session_1 --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -132,7 +134,7 @@ describe('contact commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact devices 750000000001 --session session_1'),
+      runCommand('contact devices 750000000001 --connection session_1'),
     )
 
     expect(result.error).toBeUndefined()
@@ -150,7 +152,9 @@ describe('contact commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact business-profile 750000000001 --session session_1'),
+      runCommand(
+        'contact business-profile 750000000001 --connection session_1',
+      ),
     )
 
     expect(result.error).toBeUndefined()
@@ -177,7 +181,7 @@ describe('contact commands', () => {
       server = await startHttpServer({body: {success: true, data: profile}})
       const result = await apiKeyEnvironment(() =>
         runCommand(
-          'contact business-profile 750000000001 --session session_1 --json',
+          'contact business-profile 750000000001 --connection session_1 --json',
         ),
       )
       expect(result.error, result.stderr).toBeUndefined()
@@ -185,7 +189,9 @@ describe('contact commands', () => {
         data: profile,
       })
       const plain = await apiKeyEnvironment(() =>
-        runCommand('contact business-profile 750000000001 --session session_1'),
+        runCommand(
+          'contact business-profile 750000000001 --connection session_1',
+        ),
       )
       expect(plain.error, plain.stderr).toBeUndefined()
       if (encryption === undefined)
@@ -203,7 +209,7 @@ describe('contact commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('contact blocklist --session session_1 --json'),
+      runCommand('contact blocklist --connection session_1 --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -225,7 +231,7 @@ describe('contact commands', () => {
 
       const result = await apiKeyEnvironment(() =>
         runCommand(
-          `contact ${action} 750000000001 --session session/main --idempotency-key ${action}_alice --json`,
+          `contact ${action} 750000000001 --connection connection/main --idempotency-key ${action}_alice --json`,
         ),
       )
 
@@ -237,7 +243,7 @@ describe('contact commands', () => {
       expect(server.requests[0]).toMatchObject({
         body: '',
         method: 'POST',
-        url: `/messaging/session%2Fmain/contacts/750000000001/${action}`,
+        url: `/messaging/connection%2Fmain/contacts/750000000001/${action}`,
       })
       expect(server.requests[0]?.headers['idempotency-key']).toBe(
         `${action}_alice`,
@@ -249,8 +255,7 @@ describe('contact commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -264,7 +269,7 @@ describe('contact commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browser',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
       run,
     )
