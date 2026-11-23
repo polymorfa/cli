@@ -1,0 +1,25 @@
+{
+  "repository": "polymorfa/polymorfa",
+  "sourceCommit": "15db8b1c9d88e2ceccb58c851e731feabb659a39",
+  "releaseStatus": "source-only",
+  "polymorfaVersion": "2026-09-22",
+  "contracts": {
+    "messaging": {
+      "sourcePath": "apps/api/docs/openapi.json",
+      "sha256": "e84c7ff814c6b59ca7f32c3fda1aedbed3f672e728910adb883f0aa8c6cf3ab7"
+    },
+    "platform": {
+      "sourcePath": "apps/api/docs/openapi.management.json",
+      "sha256": "e09ed3e8aa24e4f56fc64223ea3e54a9d603cdc533173ac0920a9d14f61be559"
+    }
+  },
+  "sdk": {
+    "repository": "polymorfa/sdks",
+    "sourceCommit": "d3affdf45db6cb1a1e88aad2716a32915277081f",
+    "documentationExportCommit": "d3affdf45db6cb1a1e88aad2716a32915277081f",
+    "localArtifactSha256": "4098733320613c3056a2b2f6cec3a22ded1bef9248db63ebd0046cc0d8e05137",
+    "publishedVersion": null
+  },
+  "dependencyPin": "0.1.0-dev.20261010020302",
+  "releaseGate": "The checked-in registry dependency predates Connections. Local verification uses the exact source SDK artifact above. Rebind the dependency to a matching accepted and published SDK before release; no registry publication or hosted acceptance is claimed."
+}

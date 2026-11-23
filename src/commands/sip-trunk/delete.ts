@@ -12,7 +12,7 @@ export default class SipTrunkDelete extends BaseCommand {
   }
 
   static override description =
-    'Delete a SIP trunk and its credentials. Fails with sip_trunk_in_use while a session routes incoming calls to it. Requires a server API key.'
+    'Delete a SIP trunk and its credentials. Fails with sip_trunk_in_use while a connection routes incoming calls to it. Requires a server API key.'
 
   static override flags = {
     yes: Flags.boolean({

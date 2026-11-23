@@ -10,9 +10,8 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 
-const API_KEY =
-  'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0'
-const CLIENT_TOKEN = 'pmfa_ct_YnJvd3Nlcl90b2tlbg'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+const CLIENT_TOKEN = 'pmfa_ct_cG1mYV9jdF9icm93c2VyX3Rva2Vu'
 const TOKEN = 'AbCdEf0123456789_link-token'
 
 describe('call link commands', () => {
@@ -28,7 +27,7 @@ describe('call link commands', () => {
       body: {
         success: true,
         data: {
-          session: 'support',
+          connection: 'support',
           token: TOKEN,
           url: `https://call.whatsapp.com/voice/${TOKEN}`,
           video: false,
@@ -39,7 +38,7 @@ describe('call link commands', () => {
     })
 
     const result = await apiKey(() =>
-      runCommand('calls link create --session support'),
+      runCommand('calls link create --connection support'),
     )
 
     expect(result.error).toBeUndefined()
@@ -54,7 +53,7 @@ describe('call link commands', () => {
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBeUndefined()
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      session: 'support',
+      connection: 'support',
       video: false,
     })
   })
@@ -64,7 +63,7 @@ describe('call link commands', () => {
       body: {
         success: true,
         data: {
-          session: 'support',
+          connection: 'support',
           token: TOKEN,
           url: `https://call.whatsapp.com/video/${TOKEN}`,
           video: true,
@@ -74,18 +73,18 @@ describe('call link commands', () => {
     })
 
     const result = await apiKey(() =>
-      runCommand('calls link create --session support --video --json'),
+      runCommand('calls link create --connection support --video --json'),
     )
 
     expect(result.error).toBeUndefined()
     expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual({
-      session: 'support',
+      connection: 'support',
       token: TOKEN,
       url: `https://call.whatsapp.com/video/${TOKEN}`,
       video: true,
     })
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      session: 'support',
+      connection: 'support',
       video: true,
     })
   })
@@ -95,7 +94,7 @@ describe('call link commands', () => {
       body: {
         success: true,
         data: {
-          session: 'support',
+          connection: 'support',
           video: true,
           creator: {id: '1637209842659371410', phoneNumber: '+15550100'},
           approvalRequired: true,
@@ -106,7 +105,7 @@ describe('call link commands', () => {
 
     const result = await withStdin(
       `https://call.whatsapp.com/video/${TOKEN}\n`,
-      () => apiKey(() => runCommand('calls link preview --session support')),
+      () => apiKey(() => runCommand('calls link preview --connection support')),
     )
 
     expect(result.error).toBeUndefined()
@@ -119,7 +118,7 @@ describe('call link commands', () => {
     })
     expect(server.requests[0]?.url).not.toContain(TOKEN)
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      session: 'support',
+      connection: 'support',
       token: TOKEN,
       video: true,
     })
@@ -130,7 +129,7 @@ describe('call link commands', () => {
       body: {
         success: true,
         data: {
-          session: 'support',
+          connection: 'support',
           video: true,
           creator: {id: '1637209842659371410'},
           approvalRequired: false,
@@ -141,13 +140,13 @@ describe('call link commands', () => {
 
     const result = await withStdin(TOKEN, () =>
       apiKey(() =>
-        runCommand('calls link preview --session support --video --json'),
+        runCommand('calls link preview --connection support --video --json'),
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      session: 'support',
+      connection: 'support',
       token: TOKEN,
       video: true,
     })
@@ -160,7 +159,7 @@ describe('call link commands', () => {
       `https://call.whatsapp.com/voice/${TOKEN}`,
       () =>
         apiKey(() =>
-          runCommand('calls link preview --session support --video'),
+          runCommand('calls link preview --connection support --video'),
         ),
     )
 
@@ -174,7 +173,7 @@ describe('call link commands', () => {
     const input = 'https://example.com/not-a-call-link?secret=abc'
 
     const result = await withStdin(input, () =>
-      apiKey(() => runCommand('calls link preview --session support')),
+      apiKey(() => runCommand('calls link preview --connection support')),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -187,10 +186,10 @@ describe('call link commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const create = await clientToken(() =>
-      runCommand('calls link create --session support'),
+      runCommand('calls link create --connection support'),
     )
     const preview = await withStdin(TOKEN, () =>
-      clientToken(() => runCommand('calls link preview --session support')),
+      clientToken(() => runCommand('calls link preview --connection support')),
     )
 
     expect(exitCode(create.error)).toBe(2)
@@ -233,10 +232,10 @@ describe('call link commands', () => {
     server = await startHttpServer({body: {success: true}})
     const terminal = Object.assign(Readable.from([]), {isTTY: true})
     const interactive = await withStdinStream(terminal, () =>
-      apiKey(() => runCommand('calls link preview --session support')),
+      apiKey(() => runCommand('calls link preview --connection support')),
     )
     const empty = await withStdin('', () =>
-      apiKey(() => runCommand('calls link preview --session support')),
+      apiKey(() => runCommand('calls link preview --connection support')),
     )
 
     expect(exitCode(interactive.error)).toBe(2)

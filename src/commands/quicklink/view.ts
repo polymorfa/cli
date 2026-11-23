@@ -15,7 +15,7 @@ export default class QuickLinkView extends BaseCommand {
     const response = await client.quickLinks.retrieve(args.quicklink)
     const quickLink = response.data.data
     const sync = quickLink.onboarding?.sync
-    const summary = `${quickLink.id}\t${quickLink.status}\t${quickLink.session}`
+    const summary = `${quickLink.id}\t${quickLink.status}\t${quickLink.connection}`
     const progress =
       sync === undefined
         ? ''

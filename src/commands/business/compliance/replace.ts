@@ -19,8 +19,8 @@ export default class BusinessComplianceReplace extends BaseCommand {
         'Read the complete JSON compliance body from a file or standard input (-).',
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -29,7 +29,7 @@ export default class BusinessComplianceReplace extends BaseCommand {
     const {flags} = await this.parse(BusinessComplianceReplace)
     const result = await replaceBusinessCompliance(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       await readJsonInput(flags.input),
       flags['idempotency-key'] === undefined
         ? {}

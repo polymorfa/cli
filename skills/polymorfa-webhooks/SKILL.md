@@ -13,8 +13,8 @@ Keep these actions distinct:
 - `listen` receives the project event stream and may forward locally; it does not create webhook history or alter a delivery.
 
 For `webhook test`, pass `--event`. Team tests accept only that event type.
-Project tests may also use `--input` with both `body` and `sessionId` for an
-exact native event from an HMS-enabled Number in the same project.
+Project tests may also use `--input` with both `body` and `connectionId` for an
+exact native event from an HMS-enabled Connection in the same project.
 
 ## Inspect before changing
 

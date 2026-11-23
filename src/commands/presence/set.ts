@@ -11,8 +11,8 @@ export default class PresenceSet extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this presence update.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     state: Flags.option({
@@ -26,7 +26,7 @@ export default class PresenceSet extends BaseCommand {
     const {flags} = await this.parse(PresenceSet)
     const result = await setPresence(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Presence state'}),
-      flags.session,
+      flags.connection,
       flags.state,
       flags['idempotency-key'] === undefined
         ? {}

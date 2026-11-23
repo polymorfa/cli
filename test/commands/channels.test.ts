@@ -15,14 +15,14 @@ describe('channel commands', () => {
     server = undefined
   })
 
-  test('lists complete unpaged channels for an encoded session', async () => {
+  test('lists complete unpaged channels for an encoded connection', async () => {
     server = await startHttpServer({
       body: {data: [channel()], success: true},
       headers: {'request-id': 'req_channels'},
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('channel list --session session/main --json'),
+      runCommand('channel list --connection connection/main --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -30,7 +30,9 @@ describe('channel commands', () => {
       data: [channel()],
       metadata: {attempts: 1, requestId: 'req_channels', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/channels')
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/connection%2Fmain/channels',
+    )
   })
 
   test('renders optional channel metadata without assuming every field exists', async () => {
@@ -39,7 +41,7 @@ describe('channel commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('channel view 760000000001 --session session_1'),
+      runCommand('channel view 760000000001 --connection session_1'),
     )
 
     expect(result.error).toBeUndefined()
@@ -56,7 +58,7 @@ describe('channel commands', () => {
     server = await startHttpServer({body: {data: [], success: true}})
 
     const result = await clientTokenEnvironment(() =>
-      runCommand('channel list --session session_1 --json'),
+      runCommand('channel list --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -69,7 +71,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel create --session session_1 --name "Polymorfa updates" --description "Product news" --idempotency-key channel_create_1 --json',
+        'channel create --connection session_1 --name "Polymorfa updates" --description "Product news" --idempotency-key channel_create_1 --json',
       ),
     )
 
@@ -92,7 +94,7 @@ describe('channel commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('channel create --session session_1 --name "" --json'),
+      runCommand('channel create --connection session_1 --name "" --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -107,7 +109,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel delete 760000000001 --session session_1 --yes --idempotency-key channel_delete_1 --json',
+        'channel delete 760000000001 --connection session_1 --yes --idempotency-key channel_delete_1 --json',
       ),
     )
 
@@ -133,7 +135,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message list 760000000001 --session session/main --limit 25 --before 951 --json',
+        'channel message list 760000000001 --connection connection/main --limit 25 --before 951 --json',
       ),
     )
 
@@ -147,7 +149,7 @@ describe('channel commands', () => {
       },
     })
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/channels/760000000001/messages?count=25&before=951',
+      '/messaging/connection%2Fmain/channels/760000000001/messages?count=25&before=951',
     )
   })
 
@@ -159,7 +161,7 @@ describe('channel commands', () => {
       })
       const result = await apiKeyEnvironment(() =>
         runCommand(
-          `channel message ${command} 760000000001 --session session_1`,
+          `channel message ${command} 760000000001 --connection session_1`,
         ),
       )
       expect(result.error).toBeUndefined()
@@ -174,7 +176,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message updates 760000000001 --session session_1 --limit 10 --since 1787212800 --after 951 --json',
+        'channel message updates 760000000001 --connection session_1 --limit 10 --since 1787212800 --after 951 --json',
       ),
     )
 
@@ -193,7 +195,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message list 760000000001 --session session_1 --limit 101 --json',
+        'channel message list 760000000001 --connection session_1 --limit 101 --json',
       ),
     )
 
@@ -211,7 +213,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message mark-viewed 760000000001 951 --session session_1 --idempotency-key viewed_951 --json',
+        'channel message mark-viewed 760000000001 951 --connection session_1 --idempotency-key viewed_951 --json',
       ),
     )
 
@@ -233,7 +235,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message mark-viewed 760000000001 0 --session session_1 --json',
+        'channel message mark-viewed 760000000001 0 --connection session_1 --json',
       ),
     )
 
@@ -251,7 +253,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel message react 760000000001 951 --session session_1 --reaction 👍 --idempotency-key reaction_951 --json',
+        'channel message react 760000000001 951 --connection session_1 --reaction 👍 --idempotency-key reaction_951 --json',
       ),
     )
 
@@ -272,7 +274,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        `channel message react 760000000001 951 --session session_1 --reaction ${'👍'.repeat(9)} --json`,
+        `channel message react 760000000001 951 --connection session_1 --reaction ${'👍'.repeat(9)} --json`,
       ),
     )
 
@@ -291,7 +293,7 @@ describe('channel commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'channel live-updates subscribe 760000000001 --session session/main --idempotency-key live_1',
+        'channel live-updates subscribe 760000000001 --connection connection/main --idempotency-key live_1',
       ),
     )
 
@@ -303,7 +305,7 @@ describe('channel commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'POST',
-      url: '/messaging/session%2Fmain/channels/760000000001/live-updates',
+      url: '/messaging/connection%2Fmain/channels/760000000001/live-updates',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('live_1')
   })
@@ -322,7 +324,7 @@ describe('channel commands', () => {
 
       const result = await apiKeyEnvironment(() =>
         runCommand(
-          `channel ${action} 760000000001 --session session_1 --idempotency-key ${action}_1 --json`,
+          `channel ${action} 760000000001 --connection session_1 --idempotency-key ${action}_1 --json`,
         ),
       )
 
@@ -344,8 +346,7 @@ describe('channel commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -359,7 +360,7 @@ describe('channel commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_YnJvd3Nlcg',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
       run,
     )

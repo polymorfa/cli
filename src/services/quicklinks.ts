@@ -17,8 +17,8 @@ export async function createQuickLink(
     'projectId',
     'purpose',
     'connectionGoal',
-    'session',
-    'addConnection',
+    'connection',
+    'addMethod',
     'customerId',
     'externalId',
     'configuration',
@@ -50,11 +50,11 @@ export async function createQuickLink(
       !Number.isInteger(financial.priority) ||
       financial.priority < 0 ||
       financial.priority > 1000000 ||
-      body.purpose === 'add_connection' ||
+      body.purpose === 'add_method' ||
       (body.configuration as {testing?: unknown} | undefined)?.testing
     )
       throw new PolymorfaConfigurationError(
-        'Billing controls require a real new number, credits and numeric priority.',
+        'Billing controls require a new real Connection, credits and numeric priority.',
         'input',
       )
   }

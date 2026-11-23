@@ -11,7 +11,7 @@ export default class BanSafeClaimList extends BaseCommand {
     cursor: Flags.string({description: 'Continue from an opaque page cursor.'}),
     limit: Flags.integer({max: 100, min: 1}),
     project: Flags.string({description: 'Project ID.', required: true}),
-    session: Flags.string({description: 'Match one session ID or name.'}),
+    connection: Flags.string({description: 'Match one connection ID or name.'}),
     status: Flags.string({
       options: [
         'filed',
@@ -29,7 +29,7 @@ export default class BanSafeClaimList extends BaseCommand {
       projectId: flags.project,
       ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),
       ...(flags.limit === undefined ? {} : {limit: flags.limit}),
-      ...(flags.session === undefined ? {} : {session: flags.session}),
+      ...(flags.connection === undefined ? {} : {connection: flags.connection}),
       ...(flags.status === undefined
         ? {}
         : {status: flags.status as BanSafeClaimStatus}),

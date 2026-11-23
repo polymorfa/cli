@@ -7,8 +7,8 @@ export default class BusinessComplianceView extends BaseCommand {
   static override description = 'View complete business merchant compliance.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -17,7 +17,7 @@ export default class BusinessComplianceView extends BaseCommand {
     const {flags} = await this.parse(BusinessComplianceView)
     const result = await viewBusinessCompliance(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
     )
     this.writeValue(result, renderJson(result.data), flags)
   }

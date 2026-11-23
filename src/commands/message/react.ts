@@ -24,8 +24,8 @@ export default class MessageReact extends BaseCommand {
       description:
         'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -34,7 +34,7 @@ export default class MessageReact extends BaseCommand {
     const {args, flags} = await this.parse(MessageReact)
     const result = await reactToMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       {
         conversation: conversationReference(flags.chat),
         id: args.message,

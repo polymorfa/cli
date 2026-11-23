@@ -10,7 +10,7 @@ export default class CallsReject extends BaseCommand {
   }
 
   static override description =
-    'Decline a ringing call through the unified Calls API. Declining ends the call for every participant. Exits with code 4 when the call is no longer ringing (call_not_ringing). To reject a call through the Linked Device session route with the caller ID, use call reject.'
+    'Decline a ringing call through the unified Calls API. Declining ends the call for every participant. Exits with code 4 when the call is no longer ringing (call_not_ringing). To reject a call through the Linked Device connection route with the caller ID, use call reject.'
 
   static override examples = [
     '<%= config.bin %> calls reject call_123',

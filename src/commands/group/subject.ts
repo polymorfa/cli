@@ -12,15 +12,15 @@ export default class GroupSubject extends BaseCommand {
   static override description = 'Rename a group.'
 
   static override examples = [
-    '<%= config.bin %> group subject 750000000009 --session session_123 --value "Launch team"',
+    '<%= config.bin %> group subject 750000000009 --connection connection_123 --value "Launch team"',
   ]
 
   static override flags = {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this change.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     value: Flags.string({description: 'New group subject.', required: true}),
@@ -30,7 +30,7 @@ export default class GroupSubject extends BaseCommand {
     const {args, flags} = await this.parse(GroupSubject)
     const result = await setGroupText(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
-      flags.session,
+      flags.connection,
       args.group,
       'subject',
       flags.value,

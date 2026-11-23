@@ -31,7 +31,21 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      - id: source-sdk
+        run: node scripts/source-sdk.mjs --github-output
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.source-sdk.outputs.source_only == 'true'
+        with:
+          repository: polymorfa/sdks
+          ref: ${{ steps.source-sdk.outputs.ref }}
+          path: .sdk-source/repo
+          persist-credentials: false
+      - if: steps.source-sdk.outputs.source_only == 'true'
+        run: npm ci --ignore-scripts
+        working-directory: .sdk-source/repo
+      - if: steps.source-sdk.outputs.source_only == 'true'
+        run: npm run ci:sdk-source -- --sdk-root .sdk-source/repo
       - run: npm run verify
       - run: node --test scripts/release-evidence.test.mjs
 
@@ -47,6 +61,20 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      - id: source-sdk
+        run: node scripts/source-sdk.mjs --github-output
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        if: steps.source-sdk.outputs.source_only == 'true'
+        with:
+          repository: polymorfa/sdks
+          ref: ${{ steps.source-sdk.outputs.ref }}
+          path: .sdk-source/repo
+          persist-credentials: false
+      - if: steps.source-sdk.outputs.source_only == 'true'
+        run: npm ci --ignore-scripts
+        working-directory: .sdk-source/repo
+      - if: steps.source-sdk.outputs.source_only == 'true'
+        run: npm run ci:sdk-source -- --sdk-root .sdk-source/repo
       - run: npm run build
       - run: node --test --test-concurrency=1 test/windows/agent-process.native.mjs

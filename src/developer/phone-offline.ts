@@ -1,6 +1,6 @@
 import {Flags} from '@oclif/core'
 
-export const PHONE_OFFLINE_EVENT = 'session.phone_offline'
+export const PHONE_OFFLINE_EVENT = 'connection.phone_offline'
 const MIN_DAY = 7
 const MAX_DAY = 13
 

@@ -18,8 +18,8 @@ export default class MessageSendTemplate extends BaseCommand {
     'Send an approved message template by name and language.'
 
   static override examples = [
-    '<%= config.bin %> message send template --session session_123 --to +15551234567 --name order_update --language en_US',
-    '<%= config.bin %> message send template --session session_123 --to +15551234567 --name order_update --language en_US --components components.json',
+    '<%= config.bin %> message send template --connection connection_123 --to +15551234567 --name order_update --language en_US',
+    '<%= config.bin %> message send template --connection connection_123 --to +15551234567 --name order_update --language en_US --components components.json',
   ]
 
   static override flags = {
@@ -60,7 +60,7 @@ export default class MessageSendTemplate extends BaseCommand {
     }
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       sendIdempotencyOptions(flags['idempotency-key']),
     )

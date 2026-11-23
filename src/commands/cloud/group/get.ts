@@ -12,8 +12,8 @@ export default class CloudGroupGet extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
   }
@@ -23,7 +23,7 @@ export default class CloudGroupGet extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.officialGroups.retrieve(
-      flags.session,
+      flags.connection,
       args.group,
     )
     const result = cloudResult(response)

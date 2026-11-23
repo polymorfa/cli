@@ -23,7 +23,7 @@ describe('Platform management commands', () => {
     directory = undefined
   })
 
-  test('lists team sessions and filters by exact project ID', async () => {
+  test('lists team connections and filters by exact project ID', async () => {
     server = await startHttpServer({
       body: {
         data: [
@@ -31,7 +31,7 @@ describe('Platform management commands', () => {
             _id: 'row_1',
             _creationTime: 1_723_000_000_000,
             projectId: 'project_1',
-            sessionId: 'session_1',
+            connectionId: 'session_1',
             name: 'Support',
             phone: null,
             platform: 'android',
@@ -45,12 +45,12 @@ describe('Platform management commands', () => {
           },
         ],
       },
-      headers: {'request-id': 'req_sessions'},
+      headers: {'request-id': 'req_connections'},
     })
 
-    const all = await platformEnvironment(() => runCommand('session list'))
+    const all = await platformEnvironment(() => runCommand('connection list'))
     const project = await platformEnvironment(() =>
-      runCommand('session list --project project_1 --json'),
+      runCommand('connection list --project project_1 --json'),
     )
 
     expect(all.error).toBeUndefined()
@@ -59,28 +59,84 @@ describe('Platform management commands', () => {
     )
     expect(project.error).toBeUndefined()
     expect(JSON.parse(project.stdout)).toMatchObject({
-      data: [{sessionId: 'session_1', status: 'CONNECTED'}],
-      metadata: {requestId: 'req_sessions', status: 200},
+      data: [{connectionId: 'session_1', status: 'CONNECTED'}],
+      metadata: {requestId: 'req_connections', status: 200},
     })
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      'GET /platform/sessions',
-      'GET /platform/sessions?projectId=project_1',
+      'GET /platform/connections',
+      'GET /platform/connections?projectId=project_1',
     ])
   })
 
-  test('views a session and reports only its stored status in the status command', async () => {
+  test.each(['linked_device', 'cloud_api', 'hybrid'])(
+    'keeps one root and reports type and scalar method for %s',
+    async (method) => {
+      const root = {
+        connectionId: 'stable-session-id',
+        name: 'Support',
+        tenantId: 'team_1',
+        type: 'whatsapp',
+        method,
+        phoneNumberId: '12345678901234567890',
+        testMode: false,
+        status: 'CONNECTED',
+        createdAt: '2026-11-16T00:00:00.000Z',
+        updatedAt: '2026-11-16T00:00:00.000Z',
+      }
+      server = await startHttpServer({body: {success: true, data: root}})
+      const structured = await platformEnvironment(() =>
+        runCommand('connection view stable-session-id --json'),
+      )
+      const human = await platformEnvironment(() =>
+        runCommand('connection view stable-session-id'),
+      )
+      expect(structured.error, structured.stderr).toBeUndefined()
+      expect((JSON.parse(structured.stdout) as {data: unknown}).data).toEqual(
+        root,
+      )
+      expect(human.error, human.stderr).toBeUndefined()
+      expect(human.stdout).toContain('Type\twhatsapp')
+      expect(human.stdout).toContain(`Method\t${method}`)
+      expect(human.stdout).toContain('ID\tstable-session-id')
+      expect(server.requests.map(({url}) => url)).toEqual([
+        '/platform/connections/stable-session-id',
+        '/platform/connections/stable-session-id',
+      ])
+    },
+  )
+
+  test.each([
+    'session list',
+    'session-ban list',
+    'customer number list customer_1 --project project_1',
+    'connection tier quote support --tier standard --split --stay linked_devices --new-number-name other',
+    'quicklink create --project project_1 --purpose add_method --connection support --add-connection linked_devices',
+    'trigger message.received --connection support --from-number other',
+    'connection view support --session support',
+  ])(
+    'refuses retired account command syntax before HTTP: %s',
+    async (command) => {
+      server = await startHttpServer({body: {data: []}})
+      const result = await platformEnvironment(() => runCommand(command))
+      expect(result.error).toBeDefined()
+      expect(server.requests).toHaveLength(0)
+    },
+  )
+
+  test('views a connection and reports only its stored status in the status command', async () => {
     server = await startHttpServer({
       body: {
         success: true,
         data: {
-          sessionId: 'session_1',
+          connectionId: 'session_1',
           name: 'Support',
           tenantId: 'org_1',
-          type: 'linked_device',
+          type: 'whatsapp',
+          method: 'linked_device',
           testMode: false,
           status: 'DISCONNECTED',
           statusReason: 'PHONE_OFFLINE',
-          configuration: {revisions: {team: 1, project: 2, session: 3}},
+          configuration: {revisions: {team: 1, project: 2, connection: 3}},
           createdAt: '2026-09-26T00:00:00.000Z',
           updatedAt: '2026-09-27T00:00:00.000Z',
         },
@@ -88,23 +144,23 @@ describe('Platform management commands', () => {
     })
 
     const view = await platformEnvironment(() =>
-      runCommand('session view session_1 --json'),
+      runCommand('connection view session_1 --json'),
     )
     const status = await platformEnvironment(() =>
-      runCommand('session status session_1 --json'),
+      runCommand('connection status session_1 --json'),
     )
     const human = await platformEnvironment(() =>
-      runCommand('session status session_1'),
+      runCommand('connection status session_1'),
     )
 
     expect(view.error).toBeUndefined()
     expect(JSON.parse(view.stdout)).toMatchObject({
-      data: {sessionId: 'session_1', status: 'DISCONNECTED'},
+      data: {connectionId: 'session_1', status: 'DISCONNECTED'},
     })
     expect(status.error).toBeUndefined()
     expect(JSON.parse(status.stdout)).toMatchObject({
       data: {
-        sessionId: 'session_1',
+        connectionId: 'session_1',
         status: 'DISCONNECTED',
         statusReason: 'PHONE_OFFLINE',
       },
@@ -113,18 +169,18 @@ describe('Platform management commands', () => {
     expect(statusJson).not.toHaveProperty('data.configuration')
     expect(human.stdout).toBe('session_1\tDISCONNECTED\tPHONE_OFFLINE\n')
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      'GET /platform/sessions/session_1',
-      'GET /platform/sessions/session_1',
-      'GET /platform/sessions/session_1',
+      'GET /platform/connections/session_1',
+      'GET /platform/connections/session_1',
+      'GET /platform/connections/session_1',
     ])
   })
 
-  test('rejects a project filter on session view and status before transport', async () => {
+  test('rejects a project filter on connection view and status before transport', async () => {
     server = await startHttpServer({body: {success: true, data: {}}})
 
     for (const command of ['view', 'status']) {
       const result = await platformEnvironment(() =>
-        runCommand(`session ${command} session_1 --project project_1`),
+        runCommand(`connection ${command} session_1 --project project_1`),
       )
       expect(exitCode(result.error)).toBe(2)
       expect(result.stderr).toContain('omit --project')
@@ -132,15 +188,15 @@ describe('Platform management commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
-  test('rejects a project token for team session reads before transport', async () => {
+  test('rejects a project token for team connection reads before transport', async () => {
     server = await startHttpServer({body: {data: []}})
     const result = await withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,
-        POLYMORFA_PROJECT_TOKEN: `pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg`,
+        POLYMORFA_PROJECT_TOKEN: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
       },
-      () => runCommand('session list --json'),
+      () => runCommand('connection list --json'),
     )
     expect(exitCode(result.error)).toBe(2)
     expect(result.stderr).toContain(
@@ -149,27 +205,27 @@ describe('Platform management commands', () => {
     expect(server.requests).toHaveLength(0)
   })
 
-  test('does not turn a missing session into a disconnected status', async () => {
+  test('does not turn a missing connection into a disconnected status', async () => {
     server = await startHttpServer({
       status: 404,
       body: {
         error: {
           type: 'not_found_error',
           code: 'not_found',
-          message: 'session not found',
+          message: 'connection not found',
         },
       },
     })
 
     const result = await platformEnvironment(() =>
-      runCommand('session status missing'),
+      runCommand('connection status missing'),
     )
     expect(result.error).toBeDefined()
     expect(result.stdout).not.toContain('DISCONNECTED')
     expect(server.requests).toHaveLength(1)
   })
 
-  test('reads and updates session configuration using Platform authority', async () => {
+  test('reads and updates connection configuration using Platform authority', async () => {
     server = await startHttpServer({
       body: {success: true, data: {name: 'support', configuration: {}}},
     })
@@ -178,18 +234,18 @@ describe('Platform management commands', () => {
       configuration: {reset: ['historySync.mode']},
     })
     const read = await platformEnvironment(() =>
-      runCommand('session configuration get support --json'),
+      runCommand('connection configuration get support --json'),
     )
     expect(read.error).toBeUndefined()
     const update = await platformEnvironment(() =>
       runCommand(
-        `session configuration update support --input ${input} --json`,
+        `connection configuration update support --input ${input} --json`,
       ),
     )
     expect(update.error).toBeUndefined()
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      'GET /platform/sessions/support',
-      'PUT /platform/sessions/support',
+      'GET /platform/connections/support',
+      'PUT /platform/connections/support',
     ])
     expect(JSON.parse(server.requests[1]!.body)).toEqual({
       revision: 2,
@@ -234,7 +290,7 @@ describe('Platform management commands', () => {
       })
       const result = await platformEnvironment(() =>
         runCommand(
-          `session configuration update support --input ${input} --json`,
+          `connection configuration update support --input ${input} --json`,
         ),
       )
       expect(result.error).toBeDefined()
@@ -258,7 +314,7 @@ describe('Platform management commands', () => {
     const input = await jsonInput('configuration.json', payload)
     const result = await platformEnvironment(() =>
       runCommand(
-        `session configuration update support --input ${input} --json`,
+        `connection configuration update support --input ${input} --json`,
       ),
     )
     expect(result.error).toBeUndefined()
@@ -390,12 +446,12 @@ describe('Platform management commands', () => {
   })
 
   test.each([
-    {command: 'session-ban list --json', path: '/platform/bans'},
+    {command: 'connection-ban list --json', path: '/platform/bans'},
     {
-      command: 'session-ban list --active --json',
+      command: 'connection-ban list --active --json',
       path: '/platform/bans/active',
     },
-  ])('lists session bans from $path', async ({command, path}) => {
+  ])('lists connection bans from $path', async ({command, path}) => {
     server = await startHttpServer({body: {data: []}})
 
     const result = await platformEnvironment(() => runCommand(command))
@@ -444,10 +500,10 @@ describe('Platform management commands', () => {
           createdAt: '2026-08-20T00:00:00Z',
           error: null,
           id: 'operation/1',
-          kind: 'session.stop',
+          kind: 'connection.stop',
           progress: null,
           projectId: 'project_1',
-          resource: {id: 'session_1', type: 'session'},
+          resource: {id: 'session_1', type: 'connection'},
           status: 'running',
           updatedAt: '2026-08-20T00:00:01Z',
         },
@@ -491,7 +547,7 @@ describe('Platform management commands', () => {
     server = await startHttpServer({
       body: {
         data: {
-          session: 'support/line',
+          connection: 'support/line',
           projectId: 'project_1',
           status: 'synced',
           syncedAt: '2026-09-24T10:00:00.000Z',
@@ -525,13 +581,13 @@ describe('Platform management commands', () => {
     })
 
     const result = await platformEnvironment(() =>
-      runCommand('session capabilities support/line'),
+      runCommand('connection capabilities support/line'),
     )
 
     expect(result.error, result.stderr).toBeUndefined()
     expect(server.requests[0]).toMatchObject({
       method: 'GET',
-      url: '/platform/sessions/support%2Fline/capabilities',
+      url: '/platform/connections/support%2Fline/capabilities',
     })
     expect(result.stdout).toContain('Status\tsynced')
     expect(result.stdout).toContain('channels\tenabled\tserver')
@@ -541,77 +597,81 @@ describe('Platform management commands', () => {
     expect(result.stdout).toContain('metaAi\tunknown\t-')
   })
 
-  test('requests asynchronous stops for a bounded session batch', async () => {
+  test('requests asynchronous stops for a bounded connection batch', async () => {
     server = await startHttpServer({body: {data: {stopping: 1}}})
 
     const result = await platformEnvironment(() =>
       runCommand(
-        'session stop session_1 " session_2 " --project project_1 --idempotency-key stop_batch',
-      ),
-    )
-
-    expect(result.error).toBeUndefined()
-    expect(result.stdout).toContain('Requested stops for 1 matching session.')
-    expect(result.stdout).toContain('This does not wait for completion.')
-    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      projectId: 'project_1',
-      sessionIds: ['session_1', 'session_2'],
-    })
-    expect(server.requests[0]).toMatchObject({
-      method: 'POST',
-      url: '/platform/sessions/stop',
-    })
-    expect(server.requests[0]?.headers['idempotency-key']).toBe('stop_batch')
-  })
-
-  test('rejects duplicate and oversized session batches before transport', async () => {
-    server = await startHttpServer({body: {data: {stopping: 0}}})
-
-    const duplicate = await platformEnvironment(() =>
-      runCommand('session stop session_1 session_1 --json'),
-    )
-    const oversizedIds = Array.from(
-      {length: 101},
-      (_, index) => `session_${index}`,
-    ).join(' ')
-    const oversized = await platformEnvironment(() =>
-      runCommand(`session stop ${oversizedIds} --json`),
-    )
-
-    expect(exitCode(duplicate.error)).toBe(2)
-    expect(duplicate.stderr).toContain('Session IDs must be unique')
-    expect(exitCode(oversized.error)).toBe(2)
-    expect(oversized.stderr).toContain('Session batches cannot exceed 100 IDs')
-    expect(server.requests).toHaveLength(0)
-  })
-
-  test('permanently removes matching sessions only with confirmation', async () => {
-    server = await startHttpServer({body: {data: {removed: 2}}})
-
-    const result = await platformEnvironment(() =>
-      runCommand(
-        'session delete session_1 session_2 --project project_1 --yes --idempotency-key delete_batch',
+        'connection stop session_1 " session_2 " --project project_1 --idempotency-key stop_batch',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain(
-      'Removed 2 matching sessions from management.',
+      'Requested stops for 1 matching connection.',
+    )
+    expect(result.stdout).toContain('This does not wait for completion.')
+    expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
+      projectId: 'project_1',
+      connectionIds: ['session_1', 'session_2'],
+    })
+    expect(server.requests[0]).toMatchObject({
+      method: 'POST',
+      url: '/platform/connections/stop',
+    })
+    expect(server.requests[0]?.headers['idempotency-key']).toBe('stop_batch')
+  })
+
+  test('rejects duplicate and oversized connection batches before transport', async () => {
+    server = await startHttpServer({body: {data: {stopping: 0}}})
+
+    const duplicate = await platformEnvironment(() =>
+      runCommand('connection stop session_1 session_1 --json'),
+    )
+    const oversizedIds = Array.from(
+      {length: 101},
+      (_, index) => `connection_${index}`,
+    ).join(' ')
+    const oversized = await platformEnvironment(() =>
+      runCommand(`connection stop ${oversizedIds} --json`),
+    )
+
+    expect(exitCode(duplicate.error)).toBe(2)
+    expect(duplicate.stderr).toContain('Connection IDs must be unique')
+    expect(exitCode(oversized.error)).toBe(2)
+    expect(oversized.stderr).toContain(
+      'Connection batches cannot exceed 100 IDs',
+    )
+    expect(server.requests).toHaveLength(0)
+  })
+
+  test('permanently removes matching connections only with confirmation', async () => {
+    server = await startHttpServer({body: {data: {removed: 2}}})
+
+    const result = await platformEnvironment(() =>
+      runCommand(
+        'connection delete session_1 session_2 --project project_1 --yes --idempotency-key delete_batch',
+      ),
+    )
+
+    expect(result.error).toBeUndefined()
+    expect(result.stdout).toContain(
+      'Removed 2 matching connections from management.',
     )
     expect(result.stdout).toContain('Device termination is best effort.')
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       projectId: 'project_1',
-      sessionIds: ['session_1', 'session_2'],
+      connectionIds: ['session_1', 'session_2'],
     })
-    expect(server.requests[0]?.url).toBe('/platform/sessions/delete')
+    expect(server.requests[0]?.url).toBe('/platform/connections/delete')
     expect(server.requests[0]?.headers['idempotency-key']).toBe('delete_batch')
   })
 
-  test('refuses batch session deletion without --yes before transport', async () => {
+  test('refuses batch connection deletion without --yes before transport', async () => {
     server = await startHttpServer({body: {data: {removed: 1}}})
 
     const result = await platformEnvironment(() =>
-      runCommand('session delete session_1 --json'),
+      runCommand('connection delete session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -738,8 +798,7 @@ describe('Platform management commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

@@ -11,8 +11,8 @@ export default class GroupView extends BaseCommand {
   static override description = 'View one group.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -21,7 +21,7 @@ export default class GroupView extends BaseCommand {
     const {args, flags} = await this.parse(GroupView)
     const result = await viewGroup(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
-      flags.session,
+      flags.connection,
       args.group,
     )
     this.writeValue(

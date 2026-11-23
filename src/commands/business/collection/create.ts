@@ -19,8 +19,8 @@ export default class BusinessCollectionCreate extends BaseCommand {
       multiple: true,
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -29,7 +29,7 @@ export default class BusinessCollectionCreate extends BaseCommand {
     const {flags} = await this.parse(BusinessCollectionCreate)
     const result = await createBusinessCollection(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       {name: flags.name, productIds: flags.product},
       flags['idempotency-key'] === undefined
         ? {}

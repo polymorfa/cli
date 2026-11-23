@@ -30,11 +30,14 @@ export default class OperationWatch extends BaseCommand {
     const {args, flags} = await this.parse(OperationWatch)
     // --timeout here is the wait budget in seconds. It replaces the global
     // per-request timeout (milliseconds), so it must not reach the client.
-    const session = await this.developerSession({...flags, timeout: undefined})
+    const connection = await this.developerConnection({
+      ...flags,
+      timeout: undefined,
+    })
     const deadline = Date.now() + flags.timeout * 1000
     let afterSequence: number | undefined
     for (;;) {
-      const operations = operationsFor(session)
+      const operations = operationsFor(connection)
       // The first read reports the current state; later reads long-poll
       // for the next transition.
       const response =
@@ -42,19 +45,19 @@ export default class OperationWatch extends BaseCommand {
           ? await this.firstRead(
               operations,
               args.operation,
-              session.requestOptions,
+              connection.requestOptions,
               deadline,
               flags.timeout,
             )
           : await operations.wait(args.operation, {
               afterSequence,
               maxWaitMs: Math.max(0, deadline - Date.now()),
-              requestOptions: session.requestOptions,
+              requestOptions: connection.requestOptions,
             })
       const operation = response.data
       if (afterSequence === undefined || operation.sequence > afterSequence) {
         this.writeValue(
-          developerResponse(response, session.context),
+          developerResponse(response, connection.context),
           renderOperationLine(operation),
           flags,
         )

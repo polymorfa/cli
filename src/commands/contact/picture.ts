@@ -14,8 +14,8 @@ export default class ContactPicture extends BaseCommand {
   static override description = 'Get a contact profile-picture URL.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -24,7 +24,7 @@ export default class ContactPicture extends BaseCommand {
     const {args, flags} = await this.parse(ContactPicture)
     const result = await viewContactPicture(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Contact'}),
-      flags.session,
+      flags.connection,
       args.contact,
     )
     this.writeValue(result, result.data.url, flags)

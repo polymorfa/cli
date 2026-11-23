@@ -21,11 +21,11 @@ export function stopOnSignals(): {
 
 export function renderCallsStatus(
   status: CallsStatus,
-  session: string | undefined,
+  connection: string | undefined,
 ): string {
   switch (status.type) {
     case 'ready':
-      return `Following calls${session === undefined ? '' : ` for session ${session}`}${status.participant === undefined ? '' : ` as ${status.participant}`}. Press Ctrl-C to stop.`
+      return `Following calls${connection === undefined ? '' : ` for connection ${connection}`}${status.participant === undefined ? '' : ` as ${status.participant}`}. Press Ctrl-C to stop.`
     case 'disconnected':
       return 'Disconnected from calls; reconnecting.'
     case 'notice':

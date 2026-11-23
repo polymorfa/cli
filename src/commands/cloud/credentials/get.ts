@@ -4,11 +4,11 @@ import {cloudResult} from '../../../services/cloud.js'
 
 export default class CloudCredentialsGet extends BaseCommand {
   static override description =
-    'Read redacted Meta credential checks for an enrolled Official API Number (beta). Requires sessions:read.'
+    'Read redacted Meta credential checks for an enrolled Official API Connection (beta). Requires connections:read.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
   }
@@ -18,8 +18,8 @@ export default class CloudCredentialsGet extends BaseCommand {
     const client = await this.messagingClient(flags, {
       serverCredentialOnly: 'Official API',
     })
-    const response = await client.sessions.getCloudCredentialHealth(
-      flags.session,
+    const response = await client.connections.getCloudCredentialHealth(
+      flags.connection,
     )
     const result = cloudResult(response)
     this.writeValue(result, JSON.stringify(result.data, null, 2), flags)

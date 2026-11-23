@@ -15,8 +15,8 @@ export default class ChannelLiveUpdatesSubscribe extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this subscription request.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -25,7 +25,7 @@ export default class ChannelLiveUpdatesSubscribe extends BaseCommand {
     const {args, flags} = await this.parse(ChannelLiveUpdatesSubscribe)
     const result = await subscribeToChannelLiveUpdates(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
-      flags.session,
+      flags.connection,
       args.channel,
       flags['idempotency-key'] === undefined
         ? {}

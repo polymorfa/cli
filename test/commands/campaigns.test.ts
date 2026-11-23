@@ -50,7 +50,7 @@ describe('Messaging campaign commands', () => {
       const input = await jsonInput('campaign.json', {
         name: 'September launch',
         recipientListId: 'recipients_1',
-        senderConfig: {session: 'session_1'},
+        senderConfig: {connection: 'session_1'},
         templateId: 'template_1',
         variableMapping: {firstName: {source: 'name', fallback: 'friend'}},
       })
@@ -66,7 +66,7 @@ describe('Messaging campaign commands', () => {
       expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
         name: 'September launch',
         recipientListId: 'recipients_1',
-        senderConfig: {session: 'session_1'},
+        senderConfig: {connection: 'session_1'},
         templateId: 'template_1',
         variableMapping: {firstName: {source: 'name', fallback: 'friend'}},
         frequencyCap: {maxPer24Hours: 2, maxPer7Days: null},
@@ -341,8 +341,7 @@ describe('Messaging campaign commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -356,7 +355,7 @@ describe('Messaging campaign commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_YnJvd3Nlcg',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
       run,
     )

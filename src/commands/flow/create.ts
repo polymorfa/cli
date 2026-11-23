@@ -4,7 +4,7 @@ import {readJsonInput} from '../../api/request.js'
 import {parseFlowCreate} from '../../services/flows.js'
 export default class FlowCreate extends FlowsCommand {
   static override description =
-    'Create a local project Flow draft. Requires sessions:manage.'
+    'Create a local project Flow draft. Requires connections:manage.'
   static override flags = {
     input: Flags.string({
       description:

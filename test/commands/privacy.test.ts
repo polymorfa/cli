@@ -15,14 +15,14 @@ describe('privacy commands', () => {
     server = undefined
   })
 
-  test('views every typed privacy setting for an encoded session', async () => {
+  test('views every typed privacy setting for an encoded connection', async () => {
     server = await startHttpServer({
       body: {data: privacySettings(), success: true},
       headers: {'request-id': 'req_privacy'},
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('privacy view --session session/main --json'),
+      runCommand('privacy view --connection connection/main --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -30,7 +30,7 @@ describe('privacy commands', () => {
       data: privacySettings(),
       metadata: {attempts: 1, requestId: 'req_privacy', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/privacy')
+    expect(server.requests[0]?.url).toBe('/messaging/connection%2Fmain/privacy')
   })
 
   test('renders privacy settings as a readable setting matrix', async () => {
@@ -39,7 +39,7 @@ describe('privacy commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('privacy view --session session_1'),
+      runCommand('privacy view --connection session_1'),
     )
 
     expect(result.error).toBeUndefined()
@@ -57,9 +57,9 @@ describe('privacy commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_YnJvd3Nlcg',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
-      () => runCommand('privacy view --session session_1 --json'),
+      () => runCommand('privacy view --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -77,7 +77,7 @@ describe('privacy commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'privacy set --session session_1 --setting online --value match_last_seen --idempotency-key privacy_online_1 --json',
+        'privacy set --connection session_1 --setting online --value match_last_seen --idempotency-key privacy_online_1 --json',
       ),
     )
 
@@ -100,7 +100,7 @@ describe('privacy commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'privacy set --session session_1 --setting location --value all --json',
+        'privacy set --connection session_1 --setting location --value all --json',
       ),
     )
 
@@ -115,7 +115,7 @@ describe('privacy commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'privacy set --session session_1 --setting readreceipts --value contacts --json',
+        'privacy set --connection session_1 --setting readreceipts --value contacts --json',
       ),
     )
 
@@ -140,7 +140,7 @@ describe('privacy commands', () => {
 
       const result = await apiKeyEnvironment(() =>
         runCommand(
-          `privacy disappearing-timer set --session session_1 --duration ${duration} --idempotency-key timer_${duration} --json`,
+          `privacy disappearing-timer set --connection session_1 --duration ${duration} --idempotency-key timer_${duration} --json`,
         ),
       )
 
@@ -164,8 +164,7 @@ describe('privacy commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },

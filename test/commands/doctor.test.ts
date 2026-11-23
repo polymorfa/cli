@@ -18,8 +18,7 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 
-const API_KEY =
-  'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 
 describe('doctor command exit status', () => {
   let server: TestHttpServer
@@ -68,7 +67,7 @@ describe('doctor command exit status', () => {
   })
 
   test('returns failure when credential validation is skipped', async () => {
-    const result = await doctor({POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_ZXhhbXBsZQ'})
+    const result = await doctor({POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_example'})
     expect(result.error, result.stderr).toBeUndefined()
     expect(JSON.parse(result.stdout)).toMatchObject({ok: false})
     expect(process.exitCode).toBe(1)

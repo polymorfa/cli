@@ -13,11 +13,11 @@ export default class CallsPlace extends BaseCommand {
   }
 
   static override description =
-    'Place a WhatsApp call from a session. The placing participant owns the call. Server API keys name the session with --session; client tokens place from the session they are bound to. While WhatsApp restricts the number to people it has already chatted with, a call to anyone else exits with code 3 and number_restricted.'
+    'Place a WhatsApp call from a connection. The placing participant owns the call. Server API keys name the connection with --connection; client tokens place from the connection they are bound to. While WhatsApp restricts the Connection to people it has already chatted with, a call to anyone else exits with code 3 and connection_restricted.'
 
   static override examples = [
-    '<%= config.bin %> calls place +15550100 --session support',
-    '<%= config.bin %> calls place +15550100 --session support --video --exclusive --participant agent-7 --json',
+    '<%= config.bin %> calls place +15550100 --connection support',
+    '<%= config.bin %> calls place +15550100 --connection support --video --exclusive --participant agent-7 --json',
   ]
 
   static override flags = {
@@ -29,9 +29,9 @@ export default class CallsPlace extends BaseCommand {
       description:
         'Server API keys only: participant that places the call (default "default").',
     }),
-    session: Flags.string({
+    connection: Flags.string({
       description:
-        'Session that places the call. Required with a server API key.',
+        'Connection that places the call. Required with a server API key.',
     }),
     video: Flags.boolean({description: 'Place a video call.'}),
   }
@@ -47,7 +47,7 @@ export default class CallsPlace extends BaseCommand {
       {
         exclusive: flags.exclusive,
         participant: flags.participant,
-        session: flags.session,
+        connection: flags.connection,
         to: args.to,
         video: flags.video,
       },

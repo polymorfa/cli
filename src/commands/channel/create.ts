@@ -12,8 +12,8 @@ export default class ChannelCreate extends BaseCommand {
       description: 'Safely identify retries of this channel creation.',
     }),
     name: Flags.string({description: 'Channel name.', required: true}),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -22,7 +22,7 @@ export default class ChannelCreate extends BaseCommand {
     const {flags} = await this.parse(ChannelCreate)
     const result = await createChannel(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
-      flags.session,
+      flags.connection,
       {
         name: flags.name,
         ...(flags.description === undefined

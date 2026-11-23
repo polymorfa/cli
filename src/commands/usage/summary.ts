@@ -9,18 +9,18 @@ import {
 
 export default class UsageSummary extends BaseCommand {
   static override description =
-    'Show metered usage for one calendar month (UTC), by meter and by number. Usage is measured, not charged: no credits are deducted for it. Requires sessions:read. A project token reads only its own project.'
+    'Show metered usage for one calendar month (UTC), by meter and by connection. Usage is measured, not charged: no credits are deducted for it. Requires connections:read. A project token reads only its own project.'
 
   static override examples = [
     '<%= config.bin %> usage summary',
-    '<%= config.bin %> usage summary --period 2026-09 --session support --json',
+    '<%= config.bin %> usage summary --period 2026-09 --connection support --json',
   ]
 
   static override flags = {
     period: Flags.string({
       description: 'Calendar month in UTC as YYYY-MM. Defaults to this month.',
     }),
-    session: Flags.string({description: 'Limit to one number (session name).'}),
+    connection: Flags.string({description: 'Limit to one Connection (name).'}),
   }
 
   static override summary = 'Show metered usage for a month.'
@@ -34,7 +34,9 @@ export default class UsageSummary extends BaseCommand {
       {
         ...(flags.period === undefined ? {} : {period: flags.period}),
         ...(flags.project === undefined ? {} : {project: flags.project}),
-        ...(flags.session === undefined ? {} : {session: flags.session}),
+        ...(flags.connection === undefined
+          ? {}
+          : {connection: flags.connection}),
       },
     )
     this.writeValue(result, renderUsageSummary(result.data), flags)

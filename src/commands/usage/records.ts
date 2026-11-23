@@ -9,11 +9,11 @@ import {
 
 export default class UsageRecords extends BaseCommand {
   static override description =
-    'List usage records, newest first. Filter by call, number, meter or calendar month. A call has one call.duration record, and an outgoing Cloud API call also a call.cloud_pulses record. Pass the printed cursor to read the next page.'
+    'List usage records, newest first. Filter by call, Connection, meter or calendar month. A call has one call.duration record, and an outgoing Cloud API call also a call.cloud_pulses record. Pass the printed cursor to read the next page.'
 
   static override examples = [
     '<%= config.bin %> usage records --call 3EB0C431C26A1916E07A',
-    '<%= config.bin %> usage records --session support --meter call.duration --limit 50 --json',
+    '<%= config.bin %> usage records --connection support --meter call.duration --limit 50 --json',
   ]
 
   static override flags = {
@@ -30,7 +30,7 @@ export default class UsageRecords extends BaseCommand {
     period: Flags.string({
       description: 'Calendar month in UTC as YYYY-MM.',
     }),
-    session: Flags.string({description: 'Limit to one number (session name).'}),
+    connection: Flags.string({description: 'Limit to one Connection (name).'}),
   }
 
   static override summary = 'List usage records.'
@@ -48,7 +48,9 @@ export default class UsageRecords extends BaseCommand {
         ...(flags.meter === undefined ? {} : {meter: flags.meter}),
         ...(flags.period === undefined ? {} : {period: flags.period}),
         ...(flags.project === undefined ? {} : {project: flags.project}),
-        ...(flags.session === undefined ? {} : {session: flags.session}),
+        ...(flags.connection === undefined
+          ? {}
+          : {connection: flags.connection}),
       },
     )
     this.writeValue(result, renderUsageRecords(result.data), flags)

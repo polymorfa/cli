@@ -22,7 +22,7 @@ describe('presence commands', () => {
     })
 
     const result = await clientTokenEnvironment(() =>
-      runCommand('presence view --session session/main'),
+      runCommand('presence view --connection connection/main'),
     )
 
     expect(result.error).toBeUndefined()
@@ -30,7 +30,9 @@ describe('presence commands', () => {
     expect(result.stdout).toContain('Last sent\tavailable')
     expect(result.stdout).toContain('Authoritative\tno')
     expect(result.stdout).not.toContain('live')
-    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/presence')
+    expect(server.requests[0]?.url).toBe(
+      '/messaging/connection%2Fmain/presence',
+    )
   })
 
   test('preserves self presence and response metadata as JSON', async () => {
@@ -40,7 +42,7 @@ describe('presence commands', () => {
     })
 
     const result = await clientTokenEnvironment(() =>
-      runCommand('presence view --session session_1 --json'),
+      runCommand('presence view --connection session_1 --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -57,7 +59,7 @@ describe('presence commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'presence set --session session_1 --state unavailable --idempotency-key presence_1 --json',
+        'presence set --connection session_1 --state unavailable --idempotency-key presence_1 --json',
       ),
     )
 
@@ -78,7 +80,9 @@ describe('presence commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await clientTokenEnvironment(() =>
-      runCommand('presence set --session session_1 --state available --json'),
+      runCommand(
+        'presence set --connection session_1 --state available --json',
+      ),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -92,7 +96,9 @@ describe('presence commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('presence set --session session_1 --state composing --json'),
+      runCommand(
+        'presence set --connection session_1 --state composing --json',
+      ),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -108,7 +114,7 @@ describe('presence commands', () => {
 
     const result = await clientTokenEnvironment(() =>
       runCommand(
-        'presence chat view 120363@g.us --session session/main --json',
+        'presence chat view 120363@g.us --connection connection/main --json',
       ),
     )
 
@@ -122,7 +128,7 @@ describe('presence commands', () => {
       },
     })
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/presence/120363%40g.us',
+      '/messaging/connection%2Fmain/presence/120363%40g.us',
     )
   })
 
@@ -132,7 +138,7 @@ describe('presence commands', () => {
     })
 
     const result = await clientTokenEnvironment(() =>
-      runCommand('presence chat view member@lid --session session_1'),
+      runCommand('presence chat view member@lid --connection session_1'),
     )
 
     expect(result.error).toBeUndefined()
@@ -157,7 +163,7 @@ describe('presence commands', () => {
 
     const result = await clientTokenEnvironment(() =>
       runCommand(
-        'presence chat subscribe member@lid --session session/main --idempotency-key presence_sub_1 --json',
+        'presence chat subscribe member@lid --connection connection/main --idempotency-key presence_sub_1 --json',
       ),
     )
 
@@ -172,7 +178,7 @@ describe('presence commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: '',
       method: 'POST',
-      url: '/messaging/session%2Fmain/presence/member%40lid/subscribe',
+      url: '/messaging/connection%2Fmain/presence/member%40lid/subscribe',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe(
       'presence_sub_1',
@@ -183,8 +189,7 @@ describe('presence commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -198,7 +203,7 @@ describe('presence commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_YnJvd3Nlcg',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
       run,
     )

@@ -43,7 +43,7 @@ describe('developer detail renderers', () => {
     const text = renderWebhookDetail({
       createdAt: '2026-09-08T00:00:00Z',
       enabled: true,
-      eventTypes: ['message.received', 'session.connected'],
+      eventTypes: ['message.received', 'connection.connected'],
       format: 'native',
       headers: [{name: 'x-team'}],
       id: 'wh_1',
@@ -59,7 +59,7 @@ describe('developer detail renderers', () => {
       'URL\thttps://hooks.example.test/polymorfa',
       'Enabled\ttrue',
       'Format\tnative',
-      'Event types\tmessage.received, session.connected',
+      'Event types\tmessage.received, connection.connected',
       'Phone offline warning\toff',
       'Header names\tx-team',
       'Created\t2026-09-08T00:00:00Z',
@@ -71,7 +71,7 @@ describe('developer detail renderers', () => {
     const base = {
       createdAt: '2026-09-08T00:00:00Z',
       enabled: true,
-      eventTypes: ['session.phone_offline'],
+      eventTypes: ['connection.phone_offline'],
       format: 'native',
       headers: [],
       id: 'wh_1',

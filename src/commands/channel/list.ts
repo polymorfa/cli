@@ -4,11 +4,11 @@ import {BaseCommand} from '../../base-command.js'
 import {listChannels, renderChannels} from '../../services/channels.js'
 
 export default class ChannelList extends BaseCommand {
-  static override description = 'List channels for a connected session.'
+  static override description = 'List channels for a connected connection.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -17,7 +17,7 @@ export default class ChannelList extends BaseCommand {
     const {flags} = await this.parse(ChannelList)
     const result = await listChannels(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
-      flags.session,
+      flags.connection,
     )
     this.writeValue(result, renderChannels(result.data), flags)
   }

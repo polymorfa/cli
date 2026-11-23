@@ -4,11 +4,11 @@ import {BaseCommand} from '../../base-command.js'
 import {listQuickReplies} from '../../services/quick-replies.js'
 
 export default class QuickReplyList extends BaseCommand {
-  static override description = 'List observed quick replies for a session.'
+  static override description = 'List observed quick replies for a connection.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -17,7 +17,7 @@ export default class QuickReplyList extends BaseCommand {
     const {flags} = await this.parse(QuickReplyList)
     const result = await listQuickReplies(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Quick Reply'}),
-      flags.session,
+      flags.connection,
     )
     const replies = result.data.quickReplies
     const human =

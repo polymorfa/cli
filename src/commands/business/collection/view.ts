@@ -35,8 +35,8 @@ export default class BusinessCollectionView extends BaseCommand {
       max: 100,
       min: 1,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     width: Flags.integer({
@@ -50,7 +50,7 @@ export default class BusinessCollectionView extends BaseCommand {
     const {args, flags} = await this.parse(BusinessCollectionView)
     const result = await viewBusinessCollection(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       args.collection,
       {
         id: flags.id,

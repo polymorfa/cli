@@ -9,8 +9,7 @@ describe('AuthService', () => {
     const fixture = createFixture()
 
     const result = await fixture.service.login({
-      apiKey:
-        'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+      apiKey: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       profile: 'work',
     })
 
@@ -21,7 +20,7 @@ describe('AuthService', () => {
     })
     expect(fixture.credentials.set).toHaveBeenCalledWith(
       'profile:work:apiKey',
-      'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+      'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
     )
     expect(fixture.saved()).toEqual({
       activeProfile: 'work',
@@ -33,7 +32,7 @@ describe('AuthService', () => {
       version: 2,
     })
     expect(JSON.stringify(fixture.saved())).not.toContain(
-      'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+      'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
     )
   })
 
@@ -42,8 +41,7 @@ describe('AuthService', () => {
 
     await expect(
       fixture.service.login({
-        apiKey:
-          'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+        apiKey: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         profile: '../work',
       }),
     ).rejects.toThrow('Profile names may contain')
@@ -55,13 +53,13 @@ describe('AuthService', () => {
 
     await expect(
       fixture.service.login({apiKey: 'secret', profile: 'work'}),
-    ).rejects.toThrow(/must use the canonical pmfa_ (?:v1|opaque) format/)
+    ).rejects.toThrow('must use the canonical pmfa_ opaque format')
     expect(fixture.credentials.set).not.toHaveBeenCalled()
   })
 
   test('stores an exact-project token only with explicit project ownership', async () => {
     const fixture = createFixture()
-    const token = `pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg`
+    const token = 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 
     await expect(
       fixture.service.loginProjectToken({
@@ -88,13 +86,12 @@ describe('AuthService', () => {
     await fixture.service.loginProjectToken({
       profile: 'project',
       project: 'project_1',
-      projectToken:
-        '  pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg  ',
+      projectToken: '  pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k  ',
     })
 
     expect(fixture.credentials.set).toHaveBeenCalledWith(
       'profile:project:projectToken',
-      'pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg',
+      'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
     )
     await expect(
       fixture.service.loginProjectToken({
@@ -102,9 +99,7 @@ describe('AuthService', () => {
         project: 'project_1',
         projectToken: 'pmfa_pt_',
       }),
-    ).rejects.toThrow(
-      /canonical (?:pmfa_pt_|\[REDACTED\]) (?:v1|opaque) format/,
-    )
+    ).rejects.toThrow('canonical [REDACTED] opaque format')
   })
 
   test('removes the previous project-token keyring entry after switching a profile to an API key', async () => {
@@ -122,12 +117,11 @@ describe('AuthService', () => {
       version: 2,
     })
     vi.mocked(fixture.credentials.get).mockResolvedValue(
-      `pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg`,
+      'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
     )
 
     await fixture.service.login({
-      apiKey:
-        'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+      apiKey: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       profile: 'work',
     })
 
@@ -159,7 +153,7 @@ describe('AuthService', () => {
       },
       version: 2,
     })
-    const oldToken = `pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg`
+    const oldToken = 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
     vi.mocked(fixture.credentials.get).mockResolvedValue(oldToken)
     vi.mocked(fixture.repository.save).mockRejectedValue(
       new Error('profile save failed'),
@@ -167,8 +161,7 @@ describe('AuthService', () => {
 
     await expect(
       fixture.service.login({
-        apiKey:
-          'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+        apiKey: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         profile: 'work',
       }),
     ).rejects.toThrow('profile save failed')
@@ -218,7 +211,7 @@ describe('AuthService', () => {
   test('switches the active profile and reports secure credential availability', async () => {
     const fixture = createFixture(profileConfig())
     vi.mocked(fixture.credentials.get).mockResolvedValue(
-      'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0',
+      'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
     )
 
     await expect(fixture.service.use('work')).resolves.toMatchObject({
@@ -252,7 +245,7 @@ describe('AuthService', () => {
       version: 2,
     })
     vi.mocked(fixture.credentials.get).mockResolvedValue(
-      `pmfa_pt_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBeS8leg`,
+      'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
     )
 
     await expect(fixture.service.status('project')).resolves.toMatchObject({

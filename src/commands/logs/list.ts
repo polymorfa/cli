@@ -35,12 +35,12 @@ export default class LogsList extends BaseCommand {
 
   async run(): Promise<void> {
     const {flags} = await this.parse(LogsList)
-    const session = await this.developerSession({
+    const connection = await this.developerConnection({
       ...flags,
       owner: flags.owner ?? 'project',
     })
-    const projectId = session.context.projectId
-    if (session.context.owner !== 'project' || !projectId) {
+    const projectId = connection.context.projectId
+    if (connection.context.owner !== 'project' || !projectId) {
       throw new CliConditionError(
         'action_required',
         'Request logs belong to a project. Pass --project or use a project token.',
@@ -56,7 +56,7 @@ export default class LogsList extends BaseCommand {
         '--cursor keeps the filters of the page that returned it; do not combine it with filters.',
       )
     }
-    const page = await listRequestLogs(session.client, projectId, {
+    const page = await listRequestLogs(connection.client, projectId, {
       ...filters,
       ...(flags.since === undefined ? {} : {since: flags.since}),
       ...(flags.until === undefined ? {} : {until: flags.until}),
@@ -76,7 +76,7 @@ export default class LogsList extends BaseCommand {
       followCursor: page.followCursor,
     }
     this.writeValue(
-      developerRead(page.items, page.metadata, session.context, outputPage),
+      developerRead(page.items, page.metadata, connection.context, outputPage),
       page.items.length === 0 ? 'No requests.\n' : `${human}\n`,
       flags,
     )

@@ -9,8 +9,8 @@ export default class CloudTemplateCreate extends BaseCommand {
     'Submit one Meta template (beta). Requires messages:write. Sends once; pass --idempotency-key so a manual retry cannot submit twice.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     input: Flags.string({
@@ -31,7 +31,7 @@ export default class CloudTemplateCreate extends BaseCommand {
     })
     const body = parseCloudTemplate(await readJsonInput(flags.input))
     const response = await client.cloudTemplates.create(
-      flags.session,
+      flags.connection,
       body,
       requestKey(flags['idempotency-key']),
     )

@@ -21,8 +21,8 @@ export default class BusinessCollectionAppeal extends BaseCommand {
       description: 'Safely identify retries of this collection appeal.',
     }),
     reason: Flags.string({description: 'Appeal reason.', required: true}),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -31,7 +31,7 @@ export default class BusinessCollectionAppeal extends BaseCommand {
     const {args, flags} = await this.parse(BusinessCollectionAppeal)
     const result = await appealBusinessCollection(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       args.collection,
       flags.reason,
       flags['idempotency-key'] === undefined

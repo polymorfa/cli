@@ -5,7 +5,7 @@ import {
   type VoipPreviewedCallLink,
 } from '@polymorfa/sdk'
 
-import {type CallsResult, result, validateSession, yesNo} from './calls.js'
+import {type CallsResult, result, validateConnection, yesNo} from './calls.js'
 
 // A pasted link may sit in share text and carry a query or fragment; only its
 // path names the media type and token.
@@ -42,10 +42,10 @@ export function parseCallLink(input: string): ParsedCallLink {
 
 export async function createCallLink(
   client: MessagingClient,
-  input: {readonly session: string; readonly video?: boolean},
+  input: {readonly connection: string; readonly video?: boolean},
 ): Promise<CallsResult<VoipCreatedCallLink>> {
   const response = await client.voip.createCallLink({
-    session: validateSession(input.session),
+    connection: validateConnection(input.connection),
     video: input.video === true,
   })
   return result(response.data.data, response.metadata)
@@ -55,7 +55,7 @@ export async function previewCallLink(
   client: MessagingClient,
   input: {
     readonly link: ParsedCallLink
-    readonly session: string
+    readonly connection: string
     readonly video?: boolean
   },
 ): Promise<CallsResult<VoipPreviewedCallLink>> {
@@ -70,7 +70,7 @@ export async function previewCallLink(
     )
   }
   const response = await client.voip.previewCallLink({
-    session: validateSession(input.session),
+    connection: validateConnection(input.connection),
     token: link.token,
     video: link.video ?? input.video === true,
   })
@@ -80,7 +80,7 @@ export async function previewCallLink(
 export function renderCreatedCallLink(link: VoipCreatedCallLink): string {
   return [
     `Link\t${link.url}`,
-    `Session\t${link.session}`,
+    `Connection\t${link.connection}`,
     `Video\t${yesNo(link.video)}`,
     'Anyone with this link can use it in WhatsApp. Keep it private. Creating it did not place or join a call.',
   ].join('\n')
@@ -90,10 +90,10 @@ export function renderPreviewedCallLink(link: VoipPreviewedCallLink): string {
   const creator =
     link.creator.phoneNumber ?? link.creator.username ?? link.creator.id
   return [
-    `Session\t${link.session}`,
+    `Connection\t${link.connection}`,
     `Video\t${yesNo(link.video)}`,
     `Creator\t${creator}`,
     `Approval required\t${yesNo(link.approvalRequired)}`,
-    `Number is link admin\t${yesNo(link.isAdmin)}`,
+    `Connection is link admin\t${yesNo(link.isAdmin)}`,
   ].join('\n')
 }

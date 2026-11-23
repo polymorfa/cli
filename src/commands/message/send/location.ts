@@ -14,7 +14,7 @@ export default class MessageSendLocation extends BaseCommand {
   static override description = 'Send a location pin.'
 
   static override examples = [
-    '<%= config.bin %> message send location --session session_123 --to +15551234567 --lat 51.5007 --long=-0.1246 --address "Westminster, London"',
+    '<%= config.bin %> message send location --connection connection_123 --to +15551234567 --lat 51.5007 --long=-0.1246 --address "Westminster, London"',
   ]
 
   static override flags = {
@@ -42,7 +42,7 @@ export default class MessageSendLocation extends BaseCommand {
     }
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       sendIdempotencyOptions(flags['idempotency-key']),
     )

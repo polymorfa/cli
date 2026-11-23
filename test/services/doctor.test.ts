@@ -9,8 +9,7 @@ import type {CredentialStore} from '../../src/config/credentials.js'
 import type {ProfileConfig} from '../../src/config/profiles.js'
 import {runDoctor, type DoctorDependencies} from '../../src/services/doctor.js'
 
-const KEY =
-  'pmfa_QUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFBQUFYTvk0'
+const KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const config: ProfileConfig = {
   activeProfile: 'work',
   profiles: {
@@ -254,7 +253,7 @@ describe('doctor', () => {
 
   test('does not remotely validate client tokens', async () => {
     const report = await runDoctor(
-      deps({env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_eA'}}),
+      deps({env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_x'}}),
     )
     expect(status(report).credential).toBe('skip')
     expect(report.ok).toBe(false)

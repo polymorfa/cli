@@ -26,8 +26,8 @@ export default class LabelChatReplace extends BaseCommand {
       exclusive: ['clear'],
       multiple: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -36,7 +36,7 @@ export default class LabelChatReplace extends BaseCommand {
     const {args, flags} = await this.parse(LabelChatReplace)
     const result = await replaceChatLabels(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Label'}),
-      flags.session,
+      flags.connection,
       args.chat,
       flags.label,
       flags.clear,

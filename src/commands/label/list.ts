@@ -4,14 +4,14 @@ import {BaseCommand} from '../../base-command.js'
 import {labelItems, listLabels} from '../../services/labels.js'
 
 export default class LabelList extends BaseCommand {
-  static override description = 'List labels for a Messaging session.'
+  static override description = 'List labels for a Messaging connection.'
 
   static override flags = {
     'include-observation': Flags.boolean({
       description: 'Include observation policy and freshness metadata.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -20,7 +20,7 @@ export default class LabelList extends BaseCommand {
     const {flags} = await this.parse(LabelList)
     const result = await listLabels(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Label'}),
-      flags.session,
+      flags.connection,
       flags['include-observation'],
     )
     const labels = labelItems(result.data)

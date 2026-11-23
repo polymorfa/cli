@@ -27,17 +27,17 @@ export default class OperationCancel extends BaseCommand {
       prompt: `Cancel operation ${args.operation}? This stops the work it performs.`,
       yes: flags.yes,
     })
-    const session = await this.developerSession(flags)
+    const connection = await this.developerConnection(flags)
     const key = idempotencyKey(flags['idempotency-key'])
-    const response = await operationsFor(session).cancel(args.operation, {
-      ...session.requestOptions,
+    const response = await operationsFor(connection).cancel(args.operation, {
+      ...connection.requestOptions,
       idempotencyKey: key,
     })
     const receipt = record(response.data, 'Operation cancellation')
     const operation = record(receipt.operation, 'Operation')
     this.writeValue(
       developerMutation({
-        context: session.context,
+        context: connection.context,
         metadata: response.metadata,
         receipt,
         resource: {id: stringField(receipt, 'operationId'), type: 'operation'},

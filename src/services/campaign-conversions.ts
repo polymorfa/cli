@@ -10,7 +10,7 @@ import type {CampaignResult} from './campaigns.js'
 
 /** Report a conversion for one campaign recipient (beta). */
 export async function recordCampaignConversion(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   campaignId: string,
   body: RecordCampaignConversionRequest,
 ): Promise<CampaignResult<CampaignConversion>> {
@@ -20,7 +20,7 @@ export async function recordCampaignConversion(
 
 /** A campaign's conversion counts and per-currency values (beta). */
 export async function viewCampaignConversions(
-  client: ClientInstance<'organization'>,
+  client: ClientInstance<'team'>,
   campaignId: string,
   projectId: string,
 ): Promise<CampaignResult<CampaignConversionReport>> {

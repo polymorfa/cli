@@ -7,21 +7,26 @@ import {z} from 'zod'
 
 import {LISTENER_PROJECT_ID_PATTERN} from '../listener/protocol.js'
 import type {ListenerManager} from './listener-manager.js'
-import {listMcpSessions, type McpSessionList} from './session-discovery.js'
+import {
+  listMcpConnections,
+  type McpConnectionList,
+} from './connection-discovery.js'
 
 export const MCP_TOOL_NAMES = [
   'polymorfa_listen_start',
   'polymorfa_listen_status',
   'polymorfa_listen_stop',
-  'polymorfa_session_list',
+  'polymorfa_connection_list',
 ] as const
 
-export type McpSessionLister = (projectId: string) => Promise<McpSessionList>
+export type McpConnectionLister = (
+  projectId: string,
+) => Promise<McpConnectionList>
 
 export function createMcpServer(
   manager: ListenerManager,
   version: string,
-  sessionLister: McpSessionLister = listMcpSessions,
+  connectionLister: McpConnectionLister = listMcpConnections,
 ): McpServer {
   const server = new McpServer({name: '@polymorfa/cli', version})
   server.registerTool(
@@ -83,7 +88,7 @@ export function createMcpServer(
     async ({listenerId}) => result(await manager.stop(listenerId)),
   )
   server.registerTool(
-    'polymorfa_session_list',
+    'polymorfa_connection_list',
     {
       annotations: {
         destructiveHint: false,
@@ -92,20 +97,20 @@ export function createMcpServer(
         readOnlyHint: true,
       },
       description:
-        'List stored session summaries in one project. Requires a CLI organization API key with sessions:read.',
+        'List stored connection summaries in one project. Requires a CLI organization API key with connections:read.',
       inputSchema: z.object({
         projectId: z.string().regex(LISTENER_PROJECT_ID_PATTERN),
       }),
-      title: 'List Polymorfa project sessions',
+      title: 'List Polymorfa project connections',
     },
     async ({projectId}) => {
       try {
-        return result(await sessionLister(projectId))
+        return result(await connectionLister(projectId))
       } catch {
         return {
           content: [
             {
-              text: 'Could not list project sessions with the selected CLI organization API key.',
+              text: 'Could not list project connections with the selected CLI organization API key.',
               type: 'text' as const,
             },
           ],
@@ -121,10 +126,10 @@ export function serveMcp(
   manager: ListenerManager,
   version: string,
   transport?: StdioServerTransport,
-  sessionLister?: McpSessionLister,
+  connectionLister?: McpConnectionLister,
 ): {close(): Promise<void>} {
   const handle = serveStdio(
-    () => createMcpServer(manager, version, sessionLister),
+    () => createMcpServer(manager, version, connectionLister),
     {
       onerror(error) {
         process.stderr.write(`MCP error: ${error.message}\n`)

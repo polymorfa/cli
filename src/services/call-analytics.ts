@@ -30,7 +30,7 @@ export const CALL_OUTCOMES = [
 export const CALL_STATS_GROUP_BY = [
   'day',
   'hour',
-  'session',
+  'connection',
   'outcome',
 ] as const
 export const CALL_EXPORT_FORMATS = ['csv', 'ndjson'] as const
@@ -43,7 +43,7 @@ const MAX_RANGE_DAYS: Readonly<Record<CallStatsGroupBy, number | undefined>> = {
   day: 366,
   hour: 31,
   outcome: undefined,
-  session: undefined,
+  connection: undefined,
 }
 /**
  * An IANA time zone name the runtime recognizes, such as UTC, CET or
@@ -64,7 +64,7 @@ export function isTimeZoneName(value: string): boolean {
 export interface CallFilterInput {
   readonly direction?: string | undefined
   readonly outcome?: string | undefined
-  readonly session?: string | undefined
+  readonly connection?: string | undefined
   readonly since?: string | undefined
   readonly until?: string | undefined
   readonly upstream?: string | undefined
@@ -80,7 +80,7 @@ type Query = Readonly<Record<string, string | number>>
 
 export class CallAnalyticsApi {
   private readonly calls:
-    PlatformCallsResource<'organization'> | PlatformCallsResource<'project'>
+    PlatformCallsResource<'team'> | PlatformCallsResource<'project'>
 
   constructor(
     environment: DeveloperEnvironment,
@@ -107,7 +107,7 @@ export class CallAnalyticsApi {
     } else {
       const root = new Client({
         ...options,
-        credential: {type: 'organizationApiKey', value: environment.credential},
+        credential: {type: 'teamApiKey', value: environment.credential},
       })
       this.calls =
         environment.context.owner === 'project' && environment.context.projectId
@@ -136,7 +136,7 @@ export class CallAnalyticsApi {
     if (
       !data ||
       typeof data.call?.callId !== 'string' ||
-      typeof data.call.sessionId !== 'string' ||
+      typeof data.call.connectionId !== 'string' ||
       typeof data.call.state !== 'string' ||
       typeof data.call.live !== 'boolean' ||
       !Array.isArray(data.history?.events) ||
@@ -196,12 +196,15 @@ export class CallAnalyticsApi {
 
 export function callFilterQuery(input: CallFilterInput): Query {
   const time = optionalTimeRange(input.since, input.until)
-  const session = input.session?.trim()
-  if (session !== undefined && (session.length === 0 || session.length > 128)) {
-    throw invalid('--session must be 1 to 128 characters.')
+  const connection = input.connection?.trim()
+  if (
+    connection !== undefined &&
+    (connection.length === 0 || connection.length > 128)
+  ) {
+    throw invalid('--connection must be 1 to 128 characters.')
   }
   return {
-    ...(session === undefined ? {} : {sessionId: session}),
+    ...(connection === undefined ? {} : {connectionId: connection}),
     ...(input.direction === undefined ? {} : {direction: input.direction}),
     ...(input.upstream === undefined ? {} : {upstream: input.upstream}),
     ...(input.outcome === undefined ? {} : {outcome: input.outcome}),
@@ -443,7 +446,7 @@ function renderGroups(stats: CallStats): string {
     day: 'Day',
     hour: 'Hour',
     outcome: 'Outcome',
-    session: 'Session',
+    connection: 'Connection',
   }[stats.groupBy]
   if (stats.groups.length === 0) return `No calls in this range.`
   const lines = [
@@ -476,7 +479,7 @@ function renderGroups(stats: CallStats): string {
   ]
   if (stats.groupsTruncated) {
     lines.push(
-      'Only the 500 numbers with the most calls are listed; totals count every call.',
+      'Only the 500 connections with the most calls are listed; totals count every call.',
     )
   }
   return lines.join('\n')
@@ -544,7 +547,7 @@ function invalid(message: string): PolymorfaValidationError {
 export interface StoredCallDetail {
   readonly call: {
     readonly callId: string
-    readonly sessionId: string
+    readonly connectionId: string
     readonly state: string
     readonly live: boolean
   }
@@ -566,11 +569,11 @@ export function renderCallRecords(
     records.length === 0
       ? ['No call records found.']
       : [
-          'Call ID\tNumber\tDirection\tOutcome\tConnected seconds',
+          'Call ID\tConnection\tDirection\tOutcome\tConnected seconds',
           ...records.map((record) =>
             [
               record.callId,
-              record.sessionId,
+              record.connectionId,
               record.direction,
               record.outcome,
               record.durationSeconds ?? 'unknown',
@@ -588,7 +591,7 @@ export function renderCallRecords(
 export function renderCallDetail(detail: StoredCallDetail): string {
   return [
     `Call\t${terminalText(detail.call.callId)}`,
-    `Number\t${terminalText(detail.call.sessionId)}`,
+    `Connection\t${terminalText(detail.call.connectionId)}`,
     `State\t${terminalText(detail.call.state)}`,
     `Live\t${detail.call.live ? 'yes' : 'no'}`,
     ...detail.history.events.map(
