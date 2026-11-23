@@ -8,10 +8,13 @@ import {
 
 export default class BanSafeHealthHistory extends BaseCommand {
   static override args = {
-    session: Args.string({description: 'Session ID or name.', required: true}),
+    connection: Args.string({
+      description: 'Connection ID or name.',
+      required: true,
+    }),
   }
   static override description =
-    'List recorded BanSafe Health evaluations for one session.'
+    'List recorded BanSafe Health evaluations for one connection.'
 
   static override flags = {
     limit: Flags.integer({
@@ -28,7 +31,7 @@ export default class BanSafeHealthHistory extends BaseCommand {
     const {args, flags} = await this.parse(BanSafeHealthHistory)
     const result = await listHealthHistory(
       await this.platformClient(flags),
-      args.session,
+      args.connection,
       {
         ...(flags.limit === undefined ? {} : {limit: flags.limit}),
         ...(flags.since === undefined ? {} : {since: flags.since}),

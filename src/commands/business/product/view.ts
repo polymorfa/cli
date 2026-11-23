@@ -18,8 +18,8 @@ export default class BusinessProductView extends BaseCommand {
       description: 'Polymorfa business user ID.',
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -28,7 +28,7 @@ export default class BusinessProductView extends BaseCommand {
     const {args, flags} = await this.parse(BusinessProductView)
     const result = await viewBusinessProduct(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       args.product,
       {id: flags.id},
     )

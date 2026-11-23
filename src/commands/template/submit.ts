@@ -19,8 +19,8 @@ export default class TemplateSubmit extends BaseCommand {
       description: 'Project slug that owns the template.',
       required: true,
     }),
-    session: Flags.string({
-      description: 'Official API Number ID in the same project.',
+    connection: Flags.string({
+      description: 'Official API Connection ID in the same project.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -44,7 +44,7 @@ export default class TemplateSubmit extends BaseCommand {
     const response = await client.templates.submit(
       flags['project-slug'],
       args.template,
-      {session: flags.session},
+      {connection: flags.connection},
       {maxNetworkRetries: 0},
     )
     const result = cloudResult(response)

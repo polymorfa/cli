@@ -29,8 +29,8 @@ export default class BusinessCollectionUpdate extends BaseCommand {
       description: 'Product ID to remove. Repeat for multiple products.',
       multiple: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -39,7 +39,7 @@ export default class BusinessCollectionUpdate extends BaseCommand {
     const {args, flags} = await this.parse(BusinessCollectionUpdate)
     const result = await updateBusinessCollection(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       args.collection,
       {
         ...(flags.name === undefined ? {} : {name: flags.name}),

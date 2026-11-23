@@ -5,15 +5,19 @@ import {getHealth, renderHealth} from '../../../services/bansafe.js'
 
 export default class BanSafeHealthView extends BaseCommand {
   static override args = {
-    session: Args.string({description: 'Session ID or name.', required: true}),
+    connection: Args.string({
+      description: 'Connection ID or name.',
+      required: true,
+    }),
   }
-  static override description = 'View current BanSafe Health for one session.'
+  static override description =
+    'View current BanSafe Health for one connection.'
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(BanSafeHealthView)
     const result = await getHealth(
       await this.platformClient(flags),
-      args.session,
+      args.connection,
     )
     this.writeValue(result, renderHealth(result.data), flags)
   }

@@ -32,25 +32,25 @@ export default class EventList extends BaseCommand {
       flags.until,
     ])
     const time = optionalTimeRange(flags.since, flags.until)
-    const session = await this.developerSession(flags)
+    const connection = await this.developerConnection(flags)
     const result = await listResources(
       paginationInput(flags),
       ({cursor, limit}) =>
-        session.client.events.list(
+        connection.client.events.list(
           {
             ...(cursor === undefined ? {} : {cursor}),
             limit,
             ...time,
             ...(flags.type === undefined ? {} : {type: flags.type}),
           },
-          session.requestOptions,
+          connection.requestOptions,
         ),
     )
     this.writeValue(
       developerRead(
         result.items,
         result.metadata,
-        session.context,
+        connection.context,
         result.page,
       ),
       renderEvents(result.items),

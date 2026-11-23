@@ -16,8 +16,8 @@ export default class CustomerList extends BaseCommand {
       description: 'Filter by default-Customer status.',
       options: ['true', 'false'],
     }),
-    'has-numbers': Flags.string({
-      description: 'Filter by whether a Customer has assigned Numbers.',
+    'has-connections': Flags.string({
+      description: 'Filter by whether a Customer has assigned Connections.',
       options: ['true', 'false'],
     }),
     limit: Flags.integer({
@@ -51,9 +51,9 @@ export default class CustomerList extends BaseCommand {
       ...(flags.default === undefined
         ? {}
         : {isDefault: flags.default === 'true'}),
-      ...(flags['has-numbers'] === undefined
+      ...(flags['has-connections'] === undefined
         ? {}
-        : {hasNumbers: flags['has-numbers'] === 'true'}),
+        : {hasConnections: flags['has-connections'] === 'true'}),
       ...(flags['needs-attention'] === undefined
         ? {}
         : {needsAttention: flags['needs-attention'] === 'true'}),

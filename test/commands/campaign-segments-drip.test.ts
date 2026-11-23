@@ -85,8 +85,7 @@ async function run(command: string) {
   if (!server) throw Error('No server')
   return withEnvironment(
     {
-      POLYMORFA_API_KEY:
-        'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+      POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
       POLYMORFA_BASE_URL: server.baseUrl,
       POLYMORFA_CLIENT_TOKEN: undefined,
     },

@@ -25,8 +25,8 @@ export default class ChannelMessageReact extends BaseCommand {
       description: 'Reaction text, at most 32 UTF-8 bytes; empty removes it.',
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -35,7 +35,7 @@ export default class ChannelMessageReact extends BaseCommand {
     const {args, flags} = await this.parse(ChannelMessageReact)
     const result = await reactToChannelMessage(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
-      flags.session,
+      flags.connection,
       args.channel,
       args['message-id'],
       flags.reaction,

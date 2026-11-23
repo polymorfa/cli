@@ -11,19 +11,19 @@ export default class QuickLinkCreate extends BaseCommand {
     'Create a persistent real or simulated onboarding QuickLink.'
   static override flags = {
     purpose: Flags.string({
-      options: ['initial', 'add_connection'] as const,
-      description: 'Initial setup or add a connection to an existing Number.',
+      options: ['initial', 'add_method'] as const,
+      description: 'Initial setup or add a method to an existing Connection.',
     }),
     'connection-goal': Flags.string({
       options: ['single', 'hybrid'] as const,
-      description: 'One connection or authorized Hybrid setup.',
+      description: 'One method or authorized Hybrid setup.',
     }),
-    session: Flags.string({
-      description: 'Existing Number for an added connection.',
+    connection: Flags.string({
+      description: 'Existing Connection for an added method.',
     }),
-    'add-connection': Flags.string({
+    'add-method': Flags.string({
       options: ['linked_devices', 'official_api'] as const,
-      description: 'Missing connection to add.',
+      description: 'Missing method to add.',
     }),
     'limit-credits': Flags.string({
       description:
@@ -32,11 +32,11 @@ export default class QuickLinkCreate extends BaseCommand {
     priority: Flags.integer({
       min: 0,
       max: 1000000,
-      description: 'Initial number funding priority.',
+      description: 'Initial Connection funding priority.',
     }),
     'account-type': Flags.string({
       options: [...testingAccountTypes],
-      description: 'Create a Test number in this account mode.',
+      description: 'Create a Test Connection in this account mode.',
     }),
     'primary-platform': Flags.string({
       options: ['android', 'ios'],
@@ -61,8 +61,8 @@ export default class QuickLinkCreate extends BaseCommand {
     for (const [key, value] of Object.entries({
       purpose: flags.purpose,
       connectionGoal: flags['connection-goal'],
-      session: flags.session,
-      addConnection: flags['add-connection'],
+      connection: flags.connection,
+      addMethod: flags['add-method'],
     })) {
       if (value === undefined) continue
       if (body[key] !== undefined && body[key] !== value)
@@ -123,11 +123,11 @@ export default class QuickLinkCreate extends BaseCommand {
       }
     }
     if (
-      body.purpose === 'add_connection' &&
-      (!body.session || !body.addConnection || body.connectionGoal === 'single')
+      body.purpose === 'add_method' &&
+      (!body.connection || !body.addMethod || body.connectionGoal === 'single')
     )
       throw new PolymorfaConfigurationError(
-        'Adding a connection requires --session and --add-connection with the hybrid goal.',
+        'Adding a method requires --connection and --add-method with the hybrid goal.',
         'input',
       )
     const linkedProject = await this.linkedProject(flags)

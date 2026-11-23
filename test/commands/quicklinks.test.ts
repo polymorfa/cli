@@ -16,7 +16,7 @@ test('creates a QuickLink and uploads separate test history with exact project s
         data: {
           id: 'ql_test',
           url: 'https://example.test/connect/test',
-          session: 'reserved',
+          connection: 'reserved',
           expiresAt: null,
         },
       },
@@ -35,7 +35,7 @@ test('creates a QuickLink and uploads separate test history with exact project s
   try {
     await withEnvironment(
       {
-        POLYMORFA_API_KEY: `pmfa_${'A'.repeat(72)}`,
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_PROJECT_TOKEN: undefined,
@@ -69,8 +69,8 @@ test('creates a QuickLink and uploads separate test history with exact project s
 })
 
 const projectId = '11111111-1111-4111-8111-111111111111'
-const apiKey = `pmfa_${'A'.repeat(72)}`
-const projectToken = `pmfa_pt_${'A'.repeat(94)}`
+const apiKey = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+const projectToken = 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 
 test('retrieves QuickLink status with an exact-project token and encoded ID', async () => {
   const server = await startHttpSequenceServer([
@@ -84,7 +84,7 @@ test('retrieves QuickLink status with an exact-project token and encoded ID', as
           id: 'ql/123',
           openedAt: null,
           phone: null,
-          session: 'quicklink-123',
+          connection: 'quicklink-123',
           status: 'pending',
         },
       },
@@ -205,7 +205,7 @@ test('includes initial number financial controls and rejects invalid precision b
         data: {
           id: 'ql_budget',
           url: 'https://example.test/connect/budget',
-          session: 'reserved',
+          connection: 'reserved',
           expiresAt: null,
         },
       },

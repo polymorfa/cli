@@ -32,21 +32,21 @@ export interface PrivacyResult<T> {
 
 export async function viewPrivacy(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<PrivacyResult<PrivacySettings>> {
-  const response = await client.privacy.get(session)
+  const response = await client.privacy.get(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function setPrivacy(
   client: MessagingClient,
-  session: string,
+  connection: string,
   setting: string,
   value: string,
   options: RequestOptions = {},
 ): Promise<PrivacyResult<PrivacySettings>> {
   const response = await client.privacy.set(
-    session,
+    connection,
     privacyMutation(setting, value),
     options,
   )
@@ -55,12 +55,12 @@ export async function setPrivacy(
 
 export async function setDefaultDisappearingTimer(
   client: MessagingClient,
-  session: string,
+  connection: string,
   duration: PrivacyTimerDuration,
   options: RequestOptions = {},
 ): Promise<PrivacyResult<SuccessResponse>> {
   const response = await client.privacy.setDefaultDisappearingTimer(
-    session,
+    connection,
     {durationSeconds: PRIVACY_TIMER_DURATIONS[duration]},
     options,
   )

@@ -7,8 +7,8 @@ export default class ProfileView extends BaseCommand {
   static override description = 'View the connected account profile.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -17,7 +17,7 @@ export default class ProfileView extends BaseCommand {
     const {flags} = await this.parse(ProfileView)
     const result = await viewProfile(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Profile'}),
-      flags.session,
+      flags.connection,
     )
     this.writeValue(result, renderProfile(result.data), flags)
   }

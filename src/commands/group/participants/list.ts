@@ -11,8 +11,8 @@ export default class GroupParticipantsList extends BaseCommand {
   static override description = 'List participants in a group.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -21,7 +21,7 @@ export default class GroupParticipantsList extends BaseCommand {
     const {args, flags} = await this.parse(GroupParticipantsList)
     const result = await listGroupParticipants(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
-      flags.session,
+      flags.connection,
       args.group,
     )
     const human =

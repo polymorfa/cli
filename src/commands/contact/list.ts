@@ -4,11 +4,11 @@ import {BaseCommand} from '../../base-command.js'
 import {listContacts, renderContacts} from '../../services/contacts.js'
 
 export default class ContactList extends BaseCommand {
-  static override description = 'List all contacts known to a session.'
+  static override description = 'List all contacts known to a connection.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -17,7 +17,7 @@ export default class ContactList extends BaseCommand {
     const {flags} = await this.parse(ContactList)
     const result = await listContacts(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Contact'}),
-      flags.session,
+      flags.connection,
     )
     this.writeValue(result, renderContacts(result.data), flags)
   }

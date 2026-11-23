@@ -32,8 +32,8 @@ export const sendContextFlags = {
   'reply-to': Flags.string({
     description: 'Polymorfa message ID to quote in the reply.',
   }),
-  session: Flags.string({
-    description: 'Messaging session ID.',
+  connection: Flags.string({
+    description: 'Messaging connection ID.',
     required: true,
   }),
   to: Flags.string({

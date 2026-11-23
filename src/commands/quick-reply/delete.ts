@@ -17,8 +17,8 @@ export default class QuickReplyDelete extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this delete operation.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -32,7 +32,7 @@ export default class QuickReplyDelete extends BaseCommand {
     const id = args['quick-reply']
     const result = await deleteQuickReply(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Quick Reply'}),
-      flags.session,
+      flags.connection,
       id,
       flags['idempotency-key'] === undefined
         ? {}

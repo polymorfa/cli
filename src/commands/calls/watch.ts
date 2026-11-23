@@ -14,11 +14,11 @@ import {
 
 export default class CallsWatch extends BaseCommand {
   static override description =
-    'Stream a session’s inbound calls and their progress: ringing, claims, state and participant changes, and endings. Watching never answers or declines a call. With --json, each line is one JSON object. Press Ctrl-C to stop. Exits with code 3 when the API stops authorizing the credential.'
+    'Stream a connection’s inbound calls and their progress: ringing, claims, state and participant changes, and endings. Watching never answers or declines a call. With --json, each line is one JSON object. Press Ctrl-C to stop. Exits with code 3 when the API stops authorizing the credential.'
 
   static override examples = [
-    '<%= config.bin %> calls watch --session support',
-    '<%= config.bin %> calls watch --session support --participant agent-7 --json',
+    '<%= config.bin %> calls watch --connection support',
+    '<%= config.bin %> calls watch --connection support --participant agent-7 --json',
     'POLYMORFA_CLIENT_TOKEN=... <%= config.bin %> calls watch --count 1 --json',
   ]
 
@@ -31,13 +31,13 @@ export default class CallsWatch extends BaseCommand {
       description:
         'Server API keys only: participant that watches (default "default").',
     }),
-    session: Flags.string({
+    connection: Flags.string({
       description:
-        'Session to watch. Required with a server API key; client tokens watch their bound session.',
+        'Connection to watch. Required with a server API key; client tokens watch their bound connection.',
     }),
   }
 
-  static override summary = 'Stream call updates for a session.'
+  static override summary = 'Stream call updates for a connection.'
 
   async run(): Promise<void> {
     const {flags} = await this.parse(CallsWatch)
@@ -53,7 +53,7 @@ export default class CallsWatch extends BaseCommand {
     const status = (value: CallsStatus): void => {
       if (mode === 'json') line(value, '')
       else if (mode === 'human') {
-        process.stderr.write(`${renderCallsStatus(value, flags.session)}\n`)
+        process.stderr.write(`${renderCallsStatus(value, flags.connection)}\n`)
       }
     }
 
@@ -65,7 +65,7 @@ export default class CallsWatch extends BaseCommand {
           count: flags.count,
           credential: environment.credential,
           participant: flags.participant,
-          session: flags.session,
+          connection: flags.connection,
           signal: stop.signal,
         },
         {

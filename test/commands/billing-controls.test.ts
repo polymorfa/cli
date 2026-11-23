@@ -8,15 +8,14 @@ import {
   withEnvironment,
   type TestHttpServer,
 } from '../helpers/http-server.js'
-const key =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const key = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const project = '22222222-2222-4222-8222-222222222222',
   number = '33333333-3333-4333-8333-333333333333'
 const priorities = {
   revision: 5,
   projects: [{id: project, name: 'Support', priority: 1}],
   customers: [],
-  numbers: [{id: number, projectId: project, name: 'Desk', priority: 2}],
+  connections: [{id: number, projectId: project, name: 'Desk', priority: 2}],
 }
 let server: TestHttpServer
 let directory: string | undefined
@@ -64,7 +63,7 @@ test('reads priorities and saves a complete number order with the observed revis
         'priority',
         'reorder',
         '--scope',
-        'number',
+        'connection',
         '--project',
         project,
         '--ids',
@@ -77,7 +76,7 @@ test('reads priorities and saves a complete number order with the observed revis
   ).toBeUndefined()
   expect(server.requests[0]?.url).toBe('/platform/billing/priorities')
   expect(JSON.parse(server.requests[1]!.body)).toEqual({
-    scope: 'number',
+    scope: 'connection',
     projectId: project,
     resourceIds: [number],
     expectedRevision: 4,
@@ -93,7 +92,7 @@ test('removes a cap explicitly and blocks malformed controls before sending a re
         'set',
         number,
         '--scope',
-        'number',
+        'connection',
         '--unlimited',
         '--expected-revision',
         '0',
@@ -111,7 +110,7 @@ test('removes a cap explicitly and blocks malformed controls before sending a re
     'set',
     number,
     '--scope',
-    'number',
+    'connection',
     '--credits',
     '0.0000001',
     '--expected-revision',
@@ -232,7 +231,7 @@ test('reads a selected project and saves mixed customer/number funding controls'
         '--project',
         project,
         '--ids',
-        `number:${number},customer:${project}`,
+        `connection:${number},customer:${project}`,
         '--expected-revision',
         '5',
         '--json',
@@ -246,7 +245,7 @@ test('reads a selected project and saves mixed customer/number funding controls'
     scope: 'resource',
     projectId: project,
     resources: [
-      {scope: 'number', resourceId: number},
+      {scope: 'connection', resourceId: number},
       {scope: 'customer', resourceId: project},
     ],
     expectedRevision: 5,
@@ -262,7 +261,7 @@ test('reads a selected project and saves mixed customer/number funding controls'
         '--project',
         project,
         '--ids',
-        `number:${number},number:${number}`,
+        `connection:${number},connection:${number}`,
         '--expected-revision',
         '5',
       ])
@@ -271,7 +270,7 @@ test('reads a selected project and saves mixed customer/number funding controls'
   expect(server.requests).toHaveLength(2)
 })
 
-test('renders customers as well as projects and numbers in human output', async () => {
+test('renders customers as well as projects and connections in human output', async () => {
   server = await startHttpSequenceServer([
     {
       body: {
@@ -294,7 +293,7 @@ test('renders customers as well as projects and numbers in human output', async 
   expect(result.error).toBeUndefined()
   expect(result.stdout).toContain('Revision: 5')
   expect(result.stdout).toContain(`customer\t${project}\tAcme\t3`)
-  expect(result.stdout).toContain(`number\t${number}\tDesk\t2`)
+  expect(result.stdout).toContain(`connection\t${number}\tDesk\t2`)
   expect(server.requests[0]?.url).toBe(
     `/platform/billing/priorities?projectId=${project}`,
   )
@@ -302,7 +301,7 @@ test('renders customers as well as projects and numbers in human output', async 
 
 test('loads a complete 2,000-resource order from a file into one revision-guarded request', async () => {
   const resources = Array.from({length: 2000}, (_, index) => ({
-    scope: index % 2 === 0 ? 'customer' : 'number',
+    scope: index % 2 === 0 ? 'customer' : 'connection',
     resourceId: `00000000-0000-4000-8000-${(index + 1).toString(16).padStart(12, '0')}`,
   }))
   const file = await orderFile(
@@ -348,9 +347,9 @@ test('rejects malformed, missing, duplicate, or conflicting file inputs before H
   ]
   for (const content of [
     '{not json',
-    JSON.stringify({ids: [`number:${number}`]}),
+    JSON.stringify({ids: [`connection:${number}`]}),
     JSON.stringify([5]),
-    JSON.stringify([`number:${number}`, `number:${number}`]),
+    JSON.stringify([`connection:${number}`, `connection:${number}`]),
     JSON.stringify([`project:${project}`]),
   ]) {
     const file = await orderFile(content)
@@ -358,13 +357,13 @@ test('rejects malformed, missing, duplicate, or conflicting file inputs before H
     expect(result.error, content).toBeDefined()
     expect(result.stdout).not.toContain('Priority order saved.')
   }
-  const file = await orderFile(JSON.stringify([`number:${number}`]))
+  const file = await orderFile(JSON.stringify([`connection:${number}`]))
   expect(
     (await run([...args, '--ids-file', `${file}.missing`])).error,
   ).toBeDefined()
   expect((await run(args)).error).toBeDefined()
   expect(
-    (await run([...args, '--ids-file', file, '--ids', `number:${number}`]))
+    (await run([...args, '--ids-file', file, '--ids', `connection:${number}`]))
       .error,
   ).toBeDefined()
   expect(server.requests).toHaveLength(0)

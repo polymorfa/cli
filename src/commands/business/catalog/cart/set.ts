@@ -18,8 +18,8 @@ export default class BusinessCatalogCartSet extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this cart update.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -29,7 +29,7 @@ export default class BusinessCatalogCartSet extends BaseCommand {
     const enabled = flags.enabled === 'true'
     const result = await setBusinessCartEnabled(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       enabled,
       flags['idempotency-key'] === undefined
         ? {}

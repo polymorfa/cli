@@ -13,8 +13,8 @@ export default class CloudTemplateDelete extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -37,7 +37,7 @@ export default class CloudTemplateDelete extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.cloudTemplates.delete(
-      flags.session,
+      flags.connection,
       args.name,
       requestKey(flags['idempotency-key']),
     )

@@ -32,24 +32,24 @@ export interface ChannelResult<T> {
 
 export async function listChannels(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<ChannelResult<readonly Channel[]>> {
-  const response = await client.channels.list(session)
+  const response = await client.channels.list(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function viewChannel(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
 ): Promise<ChannelResult<Channel>> {
-  const response = await client.channels.retrieve(session, channel)
+  const response = await client.channels.retrieve(connection, channel)
   return result(response.data.data, response.metadata)
 }
 
 export async function createChannel(
   client: MessagingClient,
-  session: string,
+  connection: string,
   input: CreateChannelRequest,
   options: RequestOptions = {},
 ): Promise<ChannelResult<Channel | AsyncAcceptedData>> {
@@ -60,38 +60,42 @@ export async function createChannel(
     )
   }
 
-  const response = await client.channels.create(session, input, options)
+  const response = await client.channels.create(connection, input, options)
   return result(response.data.data, response.metadata)
 }
 
 export async function deleteChannel(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
   options: RequestOptions = {},
 ): Promise<ChannelResult<DeletedChannel | AsyncAcceptedData>> {
-  const response = await client.channels.delete(session, channel, options)
+  const response = await client.channels.delete(connection, channel, options)
   return result(response.data.data, response.metadata)
 }
 
 export async function listChannelMessages(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
   params: ChannelMessagesParams,
 ): Promise<ChannelResult<readonly ChannelMessage[]>> {
-  const response = await client.channels.listMessages(session, channel, params)
+  const response = await client.channels.listMessages(
+    connection,
+    channel,
+    params,
+  )
   return result(response.data.data, response.metadata)
 }
 
 export async function listChannelMessageUpdates(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
   params: ChannelMessageUpdatesParams,
 ): Promise<ChannelResult<readonly ChannelMessage[]>> {
   const response = await client.channels.listMessageUpdates(
-    session,
+    connection,
     channel,
     params,
   )
@@ -100,13 +104,13 @@ export async function listChannelMessageUpdates(
 
 export async function markChannelMessageViewed(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
   messageId: string,
   options: RequestOptions = {},
 ): Promise<ChannelResult<MarkChannelMessageViewedResponse>> {
   const response = await client.channels.markMessageViewed(
-    session,
+    connection,
     channel,
     parseMessageId(messageId),
     options,
@@ -116,7 +120,7 @@ export async function markChannelMessageViewed(
 
 export async function reactToChannelMessage(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
   messageId: string,
   reaction: string,
@@ -130,7 +134,7 @@ export async function reactToChannelMessage(
   }
 
   const response = await client.channels.reactToMessage(
-    session,
+    connection,
     channel,
     parseMessageId(messageId),
     {reaction},
@@ -141,12 +145,12 @@ export async function reactToChannelMessage(
 
 export async function subscribeToChannelLiveUpdates(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
   options: RequestOptions = {},
 ): Promise<ChannelResult<ChannelLiveUpdates | AsyncAcceptedData>> {
   const response = await client.channels.subscribeToLiveUpdates(
-    session,
+    connection,
     channel,
     options,
   )
@@ -155,38 +159,38 @@ export async function subscribeToChannelLiveUpdates(
 
 export async function followChannel(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
   options: RequestOptions = {},
 ): Promise<ChannelResult<FollowChannelResponse>> {
-  return channelAction(client.channels.follow(session, channel, options))
+  return channelAction(client.channels.follow(connection, channel, options))
 }
 
 export async function unfollowChannel(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
   options: RequestOptions = {},
 ): Promise<ChannelResult<UnfollowChannelResponse>> {
-  return channelAction(client.channels.unfollow(session, channel, options))
+  return channelAction(client.channels.unfollow(connection, channel, options))
 }
 
 export async function muteChannel(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
   options: RequestOptions = {},
 ): Promise<ChannelResult<MuteChannelResponse>> {
-  return channelAction(client.channels.mute(session, channel, options))
+  return channelAction(client.channels.mute(connection, channel, options))
 }
 
 export async function unmuteChannel(
   client: MessagingClient,
-  session: string,
+  connection: string,
   channel: string,
   options: RequestOptions = {},
 ): Promise<ChannelResult<UnmuteChannelResponse>> {
-  return channelAction(client.channels.unmute(session, channel, options))
+  return channelAction(client.channels.unmute(connection, channel, options))
 }
 
 export function renderChannels(channels: readonly Channel[]): string {

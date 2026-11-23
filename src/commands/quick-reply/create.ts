@@ -19,8 +19,8 @@ export default class QuickReplyCreate extends BaseCommand {
       description: 'Complete reply message.',
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     shortcut: Flags.string({
@@ -33,7 +33,7 @@ export default class QuickReplyCreate extends BaseCommand {
     const {flags} = await this.parse(QuickReplyCreate)
     const result = await createQuickReply(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Quick Reply'}),
-      flags.session,
+      flags.connection,
       {
         message: flags.message,
         shortcut: flags.shortcut,

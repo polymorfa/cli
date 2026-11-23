@@ -17,8 +17,7 @@ import {
 } from '../../src/context/environment.js'
 import {ProjectContextService} from '../../src/services/projects.js'
 
-const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const APP = '11111111-1111-4111-8111-111111111111'
 const WEB = '22222222-2222-4222-8222-222222222222'
 
@@ -320,17 +319,17 @@ function project(id: string, slug: string, name: string) {
   return {
     _creationTime: 0,
     _id: id,
-    activeSessions: 0,
+    activeConnections: 0,
     defaultTier: 'standard',
     icon: {},
     iconUrl: null,
     isActive: true,
     lastActivity: null,
     name,
-    orgId: 'org_1',
+    teamId: 'org_1',
     slug,
     stage: 'development',
     totalMessages: 0,
-    totalSessions: 0,
+    totalConnections: 0,
   }
 }

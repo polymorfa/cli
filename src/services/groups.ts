@@ -26,36 +26,36 @@ export interface GroupInviteLink {
 
 export async function listGroups(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<ResourceResult<readonly Group[]>> {
-  const response = await client.groups.list(session)
+  const response = await client.groups.list(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function viewGroup(
   client: MessagingClient,
-  session: string,
+  connection: string,
   group: string,
 ): Promise<ResourceResult<Group>> {
-  const response = await client.groups.retrieve(session, group)
+  const response = await client.groups.retrieve(connection, group)
   return result(response.data.data, response.metadata)
 }
 
 export async function listGroupParticipants(
   client: MessagingClient,
-  session: string,
+  connection: string,
   group: string,
 ): Promise<ResourceResult<readonly GroupParticipant[]>> {
-  const response = await client.groups.listParticipants(session, group)
+  const response = await client.groups.listParticipants(connection, group)
   return result(response.data.data, response.metadata)
 }
 
 export async function getGroupInviteLink(
   client: MessagingClient,
-  session: string,
+  connection: string,
   group: string,
 ): Promise<ResourceResult<GroupInviteLink>> {
-  const response = await client.groups.getInviteCode(session, group)
+  const response = await client.groups.getInviteCode(connection, group)
   const code = response.data.data.code
   return result(
     {code, url: `https://chat.whatsapp.com/${code}`},
@@ -89,7 +89,7 @@ export function participantIds(values: readonly string[]): string[] {
 
 export async function createGroup(
   client: MessagingClient,
-  session: string,
+  connection: string,
   name: string,
   participants: readonly string[],
   options: RequestOptions = {},
@@ -101,7 +101,7 @@ export async function createGroup(
     )
   }
   const response = await client.groups.create(
-    session,
+    connection,
     {name, participants: participantIds(participants)},
     options,
   )
@@ -110,7 +110,7 @@ export async function createGroup(
 
 export async function changeGroupParticipants(
   client: MessagingClient,
-  session: string,
+  connection: string,
   group: string,
   action: ParticipantAction,
   participants: readonly string[],
@@ -119,18 +119,23 @@ export async function changeGroupParticipants(
   const body = {participants: participantIds(participants)}
   const response =
     action === 'add'
-      ? await client.groups.addParticipants(session, group, body, options)
+      ? await client.groups.addParticipants(connection, group, body, options)
       : action === 'remove'
-        ? await client.groups.removeParticipants(session, group, body, options)
+        ? await client.groups.removeParticipants(
+            connection,
+            group,
+            body,
+            options,
+          )
         : action === 'promote'
           ? await client.groups.promoteParticipants(
-              session,
+              connection,
               group,
               body,
               options,
             )
           : await client.groups.demoteParticipants(
-              session,
+              connection,
               group,
               body,
               options,
@@ -140,7 +145,7 @@ export async function changeGroupParticipants(
 
 export async function setGroupText(
   client: MessagingClient,
-  session: string,
+  connection: string,
   group: string,
   field: 'subject' | 'description',
   value: string,
@@ -154,8 +159,8 @@ export async function setGroupText(
   }
   const response =
     field === 'subject'
-      ? await client.groups.setSubject(session, group, {value}, options)
-      : await client.groups.setDescription(session, group, {value}, options)
+      ? await client.groups.setSubject(connection, group, {value}, options)
+      : await client.groups.setDescription(connection, group, {value}, options)
   return result(response.data, response.metadata)
 }
 
@@ -180,7 +185,7 @@ export interface GroupSettingsResult {
  */
 export async function updateGroupSettings(
   client: MessagingClient,
-  session: string,
+  connection: string,
   group: string,
   change: GroupSettingsChange,
 ): Promise<ResourceResult<GroupSettingsResult>> {
@@ -192,14 +197,14 @@ export async function updateGroupSettings(
     const adminsOnly = change.infoEditing === 'admins'
     steps.push([
       'info-editing',
-      () => client.groups.setInfoEditing(session, group, {adminsOnly}),
+      () => client.groups.setInfoEditing(connection, group, {adminsOnly}),
     ])
   }
   if (change.messaging !== undefined) {
     const adminsOnly = change.messaging === 'admins'
     steps.push([
       'messaging',
-      () => client.groups.setMessaging(session, group, {adminsOnly}),
+      () => client.groups.setMessaging(connection, group, {adminsOnly}),
     ])
   }
   if (change.memberAdd !== undefined) {
@@ -207,14 +212,14 @@ export async function updateGroupSettings(
       change.memberAdd === 'admins' ? 'admin_add' : 'all_member_add'
     steps.push([
       'member-add',
-      () => client.groups.setMemberAddMode(session, group, {mode}),
+      () => client.groups.setMemberAddMode(connection, group, {mode}),
     ])
   }
   if (change.joinApproval !== undefined) {
     const required = change.joinApproval
     steps.push([
       'join-approval',
-      () => client.groups.setJoinApproval(session, group, {required}),
+      () => client.groups.setJoinApproval(connection, group, {required}),
     ])
   }
   if (steps.length === 0) {
@@ -272,7 +277,7 @@ export interface GroupCapabilities {
 }
 export async function getGroupCapabilities(
   client: MessagingClient,
-  session: string,
+  connection: string,
   group: string,
 ): Promise<ResourceResult<GroupCapabilities>> {
   const response = await client.raw.request<{
@@ -280,7 +285,7 @@ export async function getGroupCapabilities(
     data: GroupCapabilities
   }>({
     method: 'GET',
-    path: `/messaging/${encodeURIComponent(session)}/groups/${encodeURIComponent(group)}/capabilities`,
+    path: `/messaging/${encodeURIComponent(connection)}/groups/${encodeURIComponent(group)}/capabilities`,
   })
   return result(response.data.data, response.metadata)
 }

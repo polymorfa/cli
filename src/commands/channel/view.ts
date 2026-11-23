@@ -11,8 +11,8 @@ export default class ChannelView extends BaseCommand {
   static override description = 'View one channel.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -21,7 +21,7 @@ export default class ChannelView extends BaseCommand {
     const {args, flags} = await this.parse(ChannelView)
     const result = await viewChannel(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
-      flags.session,
+      flags.connection,
       args.channel,
     )
     this.writeValue(result, renderChannel(result.data), flags)

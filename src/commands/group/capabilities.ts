@@ -13,16 +13,16 @@ export default class GroupCapabilitiesCommand extends BaseCommand {
     }),
   }
   static override description =
-    'Read stored WhatsApp group capabilities. Requires current membership and enrollment in the number-capabilities beta.'
+    'Read stored WhatsApp group capabilities. Requires current membership and enrollment in the connection-capabilities beta.'
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
   static override examples = [
-    '<%= config.bin %> group capabilities 9007199254740993 --session support',
-    '<%= config.bin %> group capabilities 9007199254740993 --session support --json',
+    '<%= config.bin %> group capabilities 9007199254740993 --connection support',
+    '<%= config.bin %> group capabilities 9007199254740993 --connection support --json',
   ]
   async run(): Promise<void> {
     const {args, flags} = await this.parse(GroupCapabilitiesCommand)
@@ -30,7 +30,7 @@ export default class GroupCapabilitiesCommand extends BaseCommand {
       await this.messagingClient(flags, {
         serverApiKeyOnly: 'Group capabilities',
       }),
-      flags.session,
+      flags.connection,
       args.group,
     )
     this.writeValue(result, renderGroupCapabilities(result.data), flags)

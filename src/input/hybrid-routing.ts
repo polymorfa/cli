@@ -6,18 +6,18 @@ import {
 
 export const hybridPolicyFlags = {
   scope: Flags.string({
-    options: ['team', 'project', 'session'] as const,
+    options: ['team', 'project', 'connection'] as const,
     required: true,
     description: 'Policy authority to read or update.',
   }),
-  session: Flags.string({
-    description: 'Number session name for session scope.',
+  connection: Flags.string({
+    description: 'Connection name for connection scope.',
   }),
 }
 export function hybridPolicyScope(
   flags: {
     scope: string
-    session?: string | undefined
+    connection?: string | undefined
   },
   projectId?: string,
 ): HybridRoutingPolicyScope {
@@ -28,12 +28,12 @@ export function hybridPolicyScope(
       'project',
     )
   if (flags.scope === 'project') return {scope: 'project', projectId}
-  if (flags.scope !== 'session')
+  if (flags.scope !== 'connection')
     throw new PolymorfaConfigurationError('Invalid policy scope.', 'scope')
-  if (!flags.session)
+  if (!flags.connection)
     throw new PolymorfaConfigurationError(
-      'Session scope requires --session.',
-      'session',
+      'Connection scope requires --connection.',
+      'connection',
     )
-  return {scope: 'session', projectId, session: flags.session}
+  return {scope: 'connection', projectId, connection: flags.connection}
 }

@@ -12,6 +12,13 @@ for a nightly or production acceptance for stable. Missing SDK provenance,
 failed scenarios, different source/spec/environment or an unavailable SDK block
 publication. Nightly timestamps never advance `Polymorfa-Version`.
 
+Source-only PR checks may build the exact SDK revision pinned in
+`contracts/connections.json`. Both hosted operating systems validate its clean
+source, API producer and raw spec hashes before packing and installing it for
+CLI checks. The `source-sdk-ci-artifact` receipt is a local build receipt. The
+publisher still selects and validates a registry SDK with matching environment
+acceptance; source-only CI does not replace any publication check.
+
 The build pins that exact SDK version in its disposable manifest and lockfile,
 runs verification, then writes the package version. The packed CLI is installed
 into a clean consumer and its `version --json` output must match both versions.

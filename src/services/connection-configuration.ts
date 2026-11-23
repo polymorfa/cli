@@ -1,11 +1,11 @@
 import {
   PolymorfaConfigurationError,
-  type UpdateSessionRequest,
+  type UpdateConnectionRequest,
 } from '@polymorfa/sdk'
 
 function invalid(path: string): never {
   throw new PolymorfaConfigurationError(
-    `Invalid session configuration at ${path}.`,
+    `Invalid connection configuration at ${path}.`,
     'input',
   )
 }
@@ -37,9 +37,9 @@ const resetPaths = [
 ]
 
 /** Validate the complete JSON boundary before constructing a client or sending a request. */
-export function parseSessionConfigurationUpdate(
+export function parseConnectionConfigurationUpdate(
   input: unknown,
-): UpdateSessionRequest {
+): UpdateConnectionRequest {
   const body = object(input, ['revision', 'configuration'], 'input')
   if (!Number.isSafeInteger(body.revision) || Number(body.revision) < 0)
     invalid('revision')
@@ -159,5 +159,5 @@ export function parseSessionConfigurationUpdate(
         invalid(`configuration.reset.${path}: also present in set`)
     }
   }
-  return input as UpdateSessionRequest
+  return input as UpdateConnectionRequest
 }

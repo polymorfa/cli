@@ -2,13 +2,13 @@ import {Args, Flags} from '@oclif/core'
 import {FlowsCommand} from '../../flows/command.js'
 export default class FlowDiscard extends FlowsCommand {
   static override description =
-    'Delete a draft from WhatsApp (beta). Requires sessions:manage.'
+    'Delete a draft from WhatsApp (beta). Requires connections:manage.'
   static override args = {
     flow: Args.string({description: 'Flow draft UUID.', required: true}),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Number name or ID in the same project.',
+    connection: Flags.string({
+      description: 'Connection name or ID in the same project.',
       required: true,
     }),
     'request-id': Flags.string({
@@ -26,7 +26,7 @@ export default class FlowDiscard extends FlowsCommand {
       this.error('Pass --yes to confirm this Flow change.', {exit: 2})
     const resource = await this.flows(flags)
     const result = await resource.discard(args.flow, {
-      sessionId: flags.session,
+      connectionId: flags.connection,
       ...(flags['request-id'] === undefined
         ? {}
         : {requestId: flags['request-id']}),

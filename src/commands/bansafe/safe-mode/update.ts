@@ -5,14 +5,15 @@ import {BaseCommand} from '../../../base-command.js'
 import {
   renderSafeMode,
   updateProjectSafeMode,
-  updateSessionSafeMode,
+  updateConnectionSafeMode,
 } from '../../../services/bansafe.js'
 
 export default class BanSafeSafeModeUpdate extends BaseCommand {
   static override args = {
-    session: Args.string({description: 'Session ID or name.'}),
+    connection: Args.string({description: 'Connection ID or name.'}),
   }
-  static override description = 'Update project or session Safe Mode settings.'
+  static override description =
+    'Update project or connection Safe Mode settings.'
   static override flags = {
     'idempotency-key': Flags.string({
       description: 'Identify retries of this update.',
@@ -24,25 +25,30 @@ export default class BanSafeSafeModeUpdate extends BaseCommand {
       required: true,
     }),
     project: Flags.string({
-      description: 'Project ID; required when session is omitted.',
+      description: 'Project ID; required when connection is omitted.',
     }),
   }
   async run(): Promise<void> {
     const {args, flags} = await this.parse(BanSafeSafeModeUpdate)
-    if (args.session === undefined && flags.project === undefined)
-      this.error('Provide a session argument or --project.', {exit: 2})
+    if (args.connection === undefined && flags.project === undefined)
+      this.error('Provide a connection argument or --project.', {exit: 2})
     const client = await this.platformClient(flags)
     const input = await readJsonInput(flags.input)
     const options = {idempotencyKey: flags['idempotency-key']}
     const result =
-      args.session === undefined
+      args.connection === undefined
         ? await updateProjectSafeMode(
             client,
             flags.project as string,
             input,
             options,
           )
-        : await updateSessionSafeMode(client, args.session, input, options)
+        : await updateConnectionSafeMode(
+            client,
+            args.connection,
+            input,
+            options,
+          )
     this.writeValue(result, renderSafeMode(result.data), flags)
   }
 }

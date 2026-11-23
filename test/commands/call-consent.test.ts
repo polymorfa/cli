@@ -11,9 +11,8 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 
-const API_KEY =
-  'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA'
-const CLIENT_TOKEN = 'pmfa_ct_browser_token'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+const CLIENT_TOKEN = 'pmfa_ct_cG1mYV9jdF9icm93c2VyX3Rva2Vu'
 const OPT_OUT_ID = '0b9f6a52-8f0e-4a44-9d51-3c1f9d6f2a10'
 const NEXT_CURSOR = '1c9f6a52-8f0e-4a44-9d51-3c1f9d6f2a11'
 
@@ -489,9 +488,9 @@ describe('call consent commands', () => {
     await writeFile(file, JSON.stringify([{phoneNumber: '+14155550123'}]))
     const unknownField = join(directory, 'unknown.json')
     await writeFile(unknownField, JSON.stringify([{phone: '+14155550123'}]))
-    const noHeader = join(directory, 'numbers.csv')
+    const noHeader = join(directory, 'connections.csv')
     await writeFile(noHeader, '+14155550123\n')
-    const text = join(directory, 'numbers.txt')
+    const text = join(directory, 'connections.txt')
     await writeFile(text, '+14155550123\n')
 
     const full = await apiKey(() => runCommand(`calls opt-outs import ${file}`))
@@ -529,10 +528,10 @@ describe('call consent commands', () => {
     ])
 
     const read = await apiKey(() =>
-      runCommand('calls permission get +14155550123 --session support'),
+      runCommand('calls permission get +14155550123 --connection support'),
     )
     const checked = await apiKey(() =>
-      runCommand('calls check +14155550123 --session support'),
+      runCommand('calls check +14155550123 --connection support'),
     )
 
     expect(read.error).toBeUndefined()
@@ -550,7 +549,7 @@ describe('call consent commands', () => {
       'POST /messaging/voip/calls/check',
     ])
     expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
-      session: 'support',
+      connection: 'support',
       to: '+14155550123',
     })
   }, 30_000)
@@ -559,10 +558,10 @@ describe('call consent commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const read = await clientToken(() =>
-      runCommand('calls permission get +14155550123 --session support'),
+      runCommand('calls permission get +14155550123 --connection support'),
     )
     const checked = await clientToken(() =>
-      runCommand('calls check +14155550123 --session support'),
+      runCommand('calls check +14155550123 --connection support'),
     )
 
     expect(exitCode(read.error)).toBe(2)
@@ -575,7 +574,7 @@ describe('call consent commands', () => {
       body: {
         error: {
           code: 'unsupported_for_connection',
-          message: 'Call permissions apply to Cloud API numbers only.',
+          message: 'Call permissions apply to Cloud API connections only.',
         },
         success: false,
       },
@@ -583,7 +582,9 @@ describe('call consent commands', () => {
     })
 
     const read = await apiKey(() =>
-      runCommand('calls permission get +14155550123 --session linked --json'),
+      runCommand(
+        'calls permission get +14155550123 --connection linked --json',
+      ),
     )
 
     expect(exitCode(read.error)).toBe(4)
@@ -622,22 +623,22 @@ describe('call consent commands', () => {
 
     const sent = await apiKey(() =>
       runCommand(
-        'calls permission request +14155550123 --session support --body "We would like to call you about your order."',
+        'calls permission request +14155550123 --connection support --body "We would like to call you about your order."',
       ),
     )
     const limited = await apiKey(() =>
       runCommand(
-        'calls permission request +14155550123 --session support --body Again --json',
+        'calls permission request +14155550123 --connection support --body Again --json',
       ),
     )
     const granted = await apiKey(() =>
       runCommand(
-        'calls permission request +14155550123 --session support --body Hi',
+        'calls permission request +14155550123 --connection support --body Hi',
       ),
     )
     const empty = await apiKey(() =>
       runCommand(
-        'calls permission request +14155550123 --session support --body " "',
+        'calls permission request +14155550123 --connection support --body " "',
       ),
     )
 

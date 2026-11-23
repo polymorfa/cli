@@ -16,7 +16,7 @@ export const requestLogFilterFlags = {
   }),
   route: Flags.string({
     description:
-      'Only this exact route pattern, for example /messaging/:session/messages.',
+      'Only this exact route pattern, for example /messaging/:connection/messages.',
   }),
   source: Flags.string({
     description: 'Only direct API requests or requests made through MCP.',

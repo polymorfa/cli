@@ -24,8 +24,8 @@ export default class ChannelMessageUpdates extends BaseCommand {
       max: 100,
       min: 1,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     since: Flags.integer({
@@ -39,7 +39,7 @@ export default class ChannelMessageUpdates extends BaseCommand {
     const {args, flags} = await this.parse(ChannelMessageUpdates)
     const result = await listChannelMessageUpdates(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
-      flags.session,
+      flags.connection,
       args.channel,
       {
         ...(flags.limit === undefined ? {} : {count: flags.limit}),

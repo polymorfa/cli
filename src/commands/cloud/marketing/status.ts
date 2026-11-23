@@ -4,12 +4,12 @@ import {BaseCommand} from '../../../base-command.js'
 
 export default class CloudMarketingStatus extends BaseCommand {
   static override description =
-    'Read raw Marketing Messages WABA status strings (beta). Requires sessions:read and Graph access.'
+    'Read raw Marketing Messages WABA status strings (beta). Requires connections:read and Graph access.'
 
   static override flags = {
     waba: Flags.string({
       description:
-        'WhatsApp Business Account ID from an Official API Number in your project.',
+        'WhatsApp Business Account ID from an Official API Connection in your project.',
       required: true,
     }),
     'graph-version': Flags.string({

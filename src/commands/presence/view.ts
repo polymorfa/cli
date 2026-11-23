@@ -8,8 +8,8 @@ export default class PresenceView extends BaseCommand {
     'View remembered self presence state (not a live authoritative query).'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -18,7 +18,7 @@ export default class PresenceView extends BaseCommand {
     const {flags} = await this.parse(PresenceView)
     const result = await viewPresence(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
     )
     this.writeValue(result, renderPresence(result.data), flags)
   }

@@ -7,8 +7,8 @@ export default class PrivacyView extends BaseCommand {
   static override description = 'View account-level Messaging privacy settings.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -17,7 +17,7 @@ export default class PrivacyView extends BaseCommand {
     const {flags} = await this.parse(PrivacyView)
     const result = await viewPrivacy(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Privacy'}),
-      flags.session,
+      flags.connection,
     )
     this.writeValue(result, renderPrivacy(result.data), flags)
   }

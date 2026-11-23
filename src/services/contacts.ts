@@ -24,54 +24,54 @@ export interface ContactResult<T> {
 
 export async function listContacts(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<ContactResult<readonly Contact[]>> {
-  const response = await client.contacts.list(session)
+  const response = await client.contacts.list(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function checkContacts(
   client: MessagingClient,
-  session: string,
+  connection: string,
   phones: readonly string[],
 ): Promise<ContactResult<readonly CheckContactResult[]>> {
-  const response = await client.contacts.check(session, phones)
+  const response = await client.contacts.check(connection, phones)
   return result(response.data.data, response.metadata)
 }
 
 export async function viewContact(
   client: MessagingClient,
-  session: string,
+  connection: string,
   contact: string,
 ): Promise<ContactResult<Contact>> {
-  const response = await client.contacts.retrieve(session, contact)
+  const response = await client.contacts.retrieve(connection, contact)
   return result(response.data.data, response.metadata)
 }
 
 export async function viewContactPicture(
   client: MessagingClient,
-  session: string,
+  connection: string,
   contact: string,
 ): Promise<ContactResult<ContactProfilePicture>> {
-  const response = await client.contacts.picture(session, contact)
+  const response = await client.contacts.picture(connection, contact)
   return result(response.data.data, response.metadata)
 }
 
 export async function viewContactInfo(
   client: MessagingClient,
-  session: string,
+  connection: string,
   contact: string,
 ): Promise<ContactResult<ContactUserInfo>> {
-  const response = await client.contacts.info(session, contact)
+  const response = await client.contacts.info(connection, contact)
   return result(response.data.data, response.metadata)
 }
 
 export async function listContactDevices(
   client: MessagingClient,
-  session: string,
+  connection: string,
   contact: string,
 ): Promise<ContactResult<readonly string[]>> {
-  const response = await client.contacts.devices(session, contact)
+  const response = await client.contacts.devices(connection, contact)
   return result(response.data.data, response.metadata)
 }
 
@@ -81,10 +81,10 @@ export type BusinessProfileView = BusinessProfile & {
 
 export async function viewContactBusinessProfile(
   client: MessagingClient,
-  session: string,
+  connection: string,
   contact: string,
 ): Promise<ContactResult<BusinessProfileView>> {
-  const response = await client.contacts.businessProfile(session, contact)
+  const response = await client.contacts.businessProfile(connection, contact)
   const profile = response.data.data as BusinessProfile & {encryption?: unknown}
   if (
     'encryption' in profile &&
@@ -104,29 +104,29 @@ export async function viewContactBusinessProfile(
 
 export async function viewContactBlocklist(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<ContactResult<ContactBlocklist>> {
-  const response = await client.contacts.blocklist(session)
+  const response = await client.contacts.blocklist(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function blockContact(
   client: MessagingClient,
-  session: string,
+  connection: string,
   contact: string,
   options: RequestOptions = {},
 ): Promise<ContactResult<SuccessResponse>> {
-  const response = await client.contacts.block(session, contact, options)
+  const response = await client.contacts.block(connection, contact, options)
   return result(response.data, response.metadata)
 }
 
 export async function unblockContact(
   client: MessagingClient,
-  session: string,
+  connection: string,
   contact: string,
   options: RequestOptions = {},
 ): Promise<ContactResult<SuccessResponse>> {
-  const response = await client.contacts.unblock(session, contact, options)
+  const response = await client.contacts.unblock(connection, contact, options)
   return result(response.data, response.metadata)
 }
 

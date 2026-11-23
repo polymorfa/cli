@@ -28,7 +28,7 @@ describe('call retention changes', () => {
     const {client} = fakeClient()
     client.retrieve = () =>
       Promise.reject(
-        new PolymorfaAuthorizationError('Missing sessions:read', {
+        new PolymorfaAuthorizationError('Missing connections:read', {
           code: 'forbidden',
           status: 403,
           requestId: 'req_retention',
