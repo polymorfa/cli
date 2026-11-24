@@ -51,7 +51,7 @@ describe('stored chat history commands', () => {
     })
     const result = await apiKey(() =>
       runCommand(
-        'chat list --session number/one --limit 20 --kind direct --active-since 2026-09-01T00:00:00Z --cursor page_1 --json',
+        'chat list --connection number/one --limit 20 --kind direct --active-since 2026-09-01T00:00:00Z --cursor page_1 --json',
       ),
     )
 
@@ -72,7 +72,7 @@ describe('stored chat history commands', () => {
   test('reads a chat by E.164 number', async () => {
     server = await startHttpServer({body: {success: true, data: chat}})
     const result = await apiKey(() =>
-      runCommand('chat view +15550001111 --session number_1'),
+      runCommand('chat view +15550001111 --connection number_1'),
     )
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain('Conversation\t739182640518203')
@@ -81,7 +81,7 @@ describe('stored chat history commands', () => {
     )
   })
 
-  test('allows a project token for its own Number', async () => {
+  test('allows a project token for its own Connection', async () => {
     server = await startHttpServer({body: {success: true, data: chat}})
     const result = await withEnvironment(
       {
@@ -90,7 +90,8 @@ describe('stored chat history commands', () => {
         POLYMORFA_CLIENT_TOKEN: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
       },
-      () => runCommand('chat view 739182640518203 --session number_1 --json'),
+      () =>
+        runCommand('chat view 739182640518203 --connection number_1 --json'),
     )
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
@@ -110,7 +111,7 @@ describe('stored chat history commands', () => {
     })
     const result = await apiKey(() =>
       runCommand(
-        'chat message list +15550001111 --session number_1 --limit 10 --cursor page_2 --order asc --since 2026-09-01T00:00:00Z --until 2026-09-20T00:00:00Z --direction inbound --types text,image',
+        'chat message list +15550001111 --connection number_1 --limit 10 --cursor page_2 --order asc --since 2026-09-01T00:00:00Z --until 2026-09-20T00:00:00Z --direction inbound --types text,image',
       ),
     )
     expect(result.error).toBeUndefined()
@@ -125,7 +126,7 @@ describe('stored chat history commands', () => {
     server = await startHttpServer({body: {success: true, data: message}})
     const result = await apiKey(() =>
       runCommand(
-        'chat message view +15550001111 739182640518204 --session number_1 --json',
+        'chat message view +15550001111 739182640518204 --connection number_1 --json',
       ),
     )
     expect(result.error).toBeUndefined()
@@ -140,11 +141,10 @@ describe('stored chat history commands', () => {
     const result = await withEnvironment(
       {
         POLYMORFA_API_KEY: undefined,
-        POLYMORFA_CLIENT_TOKEN:
-          'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
         POLYMORFA_BASE_URL: server.baseUrl,
       },
-      () => runCommand('chat list --session number_1 --json'),
+      () => runCommand('chat list --connection number_1 --json'),
     )
     expect(result.error).toBeDefined()
     expect(result.stderr).toContain(
@@ -163,7 +163,7 @@ describe('stored chat history commands', () => {
         body: {success: false, error: {code, message: 'History unavailable.'}},
       })
       const result = await apiKey(() =>
-        runCommand('chat list --session number_1 --json'),
+        runCommand('chat list --connection number_1 --json'),
       )
       expect(result.error).toBeDefined()
       expect(result.stderr).toContain(code)
@@ -182,7 +182,7 @@ describe('stored chat history commands', () => {
       const output = join(directory, 'photo.jpg')
       const result = await apiKey(() =>
         runCommand(
-          `chat message media +15550001111 739182640518204 --session number/one --output ${output} --json`,
+          `chat message media +15550001111 739182640518204 --connection number/one --output ${output} --json`,
         ),
       )
       expect(result.error).toBeUndefined()
@@ -195,7 +195,7 @@ describe('stored chat history commands', () => {
       await writeFile(output, 'keep')
       const refused = await apiKey(() =>
         runCommand(
-          `chat message media +15550001111 739182640518204 --session number/one --output ${output}`,
+          `chat message media +15550001111 739182640518204 --connection number/one --output ${output}`,
         ),
       )
       expect(refused.error).toBeDefined()

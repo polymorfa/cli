@@ -22,38 +22,38 @@ export interface PresenceResult<T> {
 
 export async function viewPresence(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<PresenceResult<PresenceData>> {
-  const response = await client.presence.get(session)
+  const response = await client.presence.get(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function setPresence(
   client: MessagingClient,
-  session: string,
+  connection: string,
   presence: PresenceState,
   options: RequestOptions = {},
 ): Promise<PresenceResult<SetPresenceResponse>> {
-  const response = await client.presence.set(session, {presence}, options)
+  const response = await client.presence.set(connection, {presence}, options)
   return result(response.data, response.metadata)
 }
 
 export async function viewChatPresence(
   client: MessagingClient,
-  session: string,
+  connection: string,
   chat: string,
 ): Promise<PresenceResult<ChatPresenceData>> {
-  const response = await client.presence.getForChat(session, chat)
+  const response = await client.presence.getForChat(connection, chat)
   return result(response.data.data, response.metadata)
 }
 
 export async function subscribeToChatPresence(
   client: MessagingClient,
-  session: string,
+  connection: string,
   chat: string,
   options: RequestOptions = {},
 ): Promise<PresenceResult<PresenceSubscriptionData | AsyncAcceptedData>> {
-  const response = await client.presence.subscribe(session, chat, options)
+  const response = await client.presence.subscribe(connection, chat, options)
   return result(response.data.data, response.metadata)
 }
 

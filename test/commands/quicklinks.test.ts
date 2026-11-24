@@ -16,7 +16,7 @@ test('creates a QuickLink and uploads separate test history with exact project s
         data: {
           id: 'ql_test',
           url: 'https://example.test/connect/test',
-          session: 'reserved',
+          connection: 'reserved',
           expiresAt: null,
         },
       },
@@ -84,7 +84,7 @@ test('retrieves QuickLink status with an exact-project token and encoded ID', as
           id: 'ql/123',
           openedAt: null,
           phone: null,
-          session: 'quicklink-123',
+          connection: 'quicklink-123',
           status: 'pending',
         },
       },
@@ -205,7 +205,7 @@ test('includes initial number financial controls and rejects invalid precision b
         data: {
           id: 'ql_budget',
           url: 'https://example.test/connect/budget',
-          session: 'reserved',
+          connection: 'reserved',
           expiresAt: null,
         },
       },

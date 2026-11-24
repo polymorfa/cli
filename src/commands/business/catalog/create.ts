@@ -13,8 +13,8 @@ export default class BusinessCatalogCreate extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this catalog creation.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -23,7 +23,7 @@ export default class BusinessCatalogCreate extends BaseCommand {
     const {flags} = await this.parse(BusinessCatalogCreate)
     const result = await createBusinessCatalog(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       flags['idempotency-key'] === undefined
         ? {}
         : {idempotencyKey: flags['idempotency-key']},

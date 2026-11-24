@@ -31,7 +31,7 @@ describe('Official API commands', () => {
     ]
     server = await startHttpServer({body: {success: true, data}})
     const result = await credential(() =>
-      runCommand('cloud template list --session number/eu --json'),
+      runCommand('cloud template list --connection number/eu --json'),
     )
     expect(result.error).toBeUndefined()
     expect((JSON.parse(result.stdout) as {data: unknown}).data).toEqual(data)
@@ -44,7 +44,7 @@ describe('Official API commands', () => {
     })
     const result = await credential(() =>
       runCommand(
-        'cloud template get order/update --session number/eu --language pt_BR --json',
+        'cloud template get order/update --connection number/eu --language pt_BR --json',
       ),
     )
     expect(result.error).toBeUndefined()
@@ -74,7 +74,7 @@ describe('Official API commands', () => {
     })
     const result = await credential(() =>
       runCommand(
-        `cloud template create --session number --input ${path} --idempotency-key tpl-1 --json`,
+        `cloud template create --connection number --input ${path} --idempotency-key tpl-1 --json`,
       ),
     )
     expect(exitCode(result.error)).toBe(5)
@@ -131,7 +131,7 @@ describe('Official API commands', () => {
         },
         () =>
           runCommand(
-            'template submit template_123 --project-slug support --session number_123 --yes --json',
+            'template submit template_123 --project-slug support --connection number_123 --yes --json',
           ),
       )
       expect(result.error, result.stderr).toBeUndefined()
@@ -161,7 +161,7 @@ describe('Official API commands', () => {
     })
     const result = await credential(() =>
       runCommand(
-        `cloud template edit order/update --session number --language pt_BR --input ${path} --json`,
+        `cloud template edit order/update --connection number --language pt_BR --input ${path} --json`,
       ),
     )
     expect(result.error).toBeUndefined()
@@ -183,7 +183,7 @@ describe('Official API commands', () => {
     server = await startHttpServer({body: {success: true}})
     const result = await credential(() =>
       runCommand(
-        `cloud template edit order --session number --input ${path} --json`,
+        `cloud template edit order --connection number --input ${path} --json`,
       ),
     )
     expect(exitCode(result.error)).toBe(2)
@@ -197,7 +197,7 @@ describe('Official API commands', () => {
         data: {
           id: 'ql_1',
           status: 'connected',
-          session: 'number',
+          connection: 'number',
           purpose: 'reauthorization',
           onboarding: {
             sync: {
@@ -235,7 +235,7 @@ describe('Official API commands', () => {
     })
     const result = await credential(() =>
       runCommand(
-        'message typing --session number --chat 730000000001 --id 740000000001 --state typing --json',
+        'message typing --connection number --chat 730000000001 --id 740000000001 --state typing --json',
       ),
     )
     expect(result.error).toBeUndefined()
@@ -253,13 +253,15 @@ describe('Official API commands', () => {
   test('requires deletion confirmation before any request', async () => {
     server = await startHttpServer({body: {success: true}})
     const refused = await credential(() =>
-      runCommand('cloud template delete order_update --session number --json'),
+      runCommand(
+        'cloud template delete order_update --connection number --json',
+      ),
     )
     expect(refused.error).toBeDefined()
     expect(server.requests).toHaveLength(0)
     const confirmed = await credential(() =>
       runCommand(
-        'cloud template delete order_update --session number --yes --json',
+        'cloud template delete order_update --connection number --yes --json',
       ),
     )
     expect(confirmed.error).toBeUndefined()
@@ -282,7 +284,7 @@ describe('Official API commands', () => {
     const result = await credential(
       () =>
         runCommand(
-          'cloud service-window +5511999999999 --session number --json',
+          'cloud service-window +5511999999999 --connection number --json',
         ),
       'project',
     )
@@ -310,7 +312,7 @@ describe('Official API commands', () => {
     server = await startHttpServer({body: {success: true, data}})
     const result = await credential(() =>
       runCommand(
-        'cloud pricing --session number --since 2026-09-01T00:00:00Z --until 2026-09-26T00:00:00Z --json',
+        'cloud pricing --connection number --since 2026-09-01T00:00:00Z --until 2026-09-26T00:00:00Z --json',
       ),
     )
     expect(result.error).toBeUndefined()
@@ -328,7 +330,7 @@ describe('Official API commands', () => {
       },
     })
     const result = await credential(() =>
-      runCommand('cloud credentials get --session number --json'),
+      runCommand('cloud credentials get --connection number --json'),
     )
     expect(result.error).toBeUndefined()
     expect(server.requests).toHaveLength(1)
@@ -338,13 +340,13 @@ describe('Official API commands', () => {
     })
   })
 
-  test('does not retry an uncertain reauthorization or stop the Number', async () => {
+  test('does not retry an uncertain reauthorization or stop the Connection', async () => {
     server = await startHttpServer({
       status: 502,
       body: {error: {code: 'upstream_failure', message: 'Unknown'}},
     })
     const result = await credential(() =>
-      runCommand('cloud credentials reauthorize --session number --json'),
+      runCommand('cloud credentials reauthorize --connection number --json'),
     )
     expect(exitCode(result.error)).toBe(5)
     expect(server.requests).toHaveLength(1)
@@ -357,7 +359,7 @@ describe('Official API commands', () => {
   test('rejects client tokens before request dispatch', async () => {
     server = await startHttpServer({body: {success: true, data: {}}})
     const result = await credential(
-      () => runCommand('cloud credentials get --session number --json'),
+      () => runCommand('cloud credentials get --connection number --json'),
       'client',
     )
     expect(exitCode(result.error)).toBe(2)
@@ -384,7 +386,7 @@ describe('Official API commands', () => {
       },
     })
     const result = await credential(() =>
-      runCommand('cloud credentials reauthorize --session number --json'),
+      runCommand('cloud credentials reauthorize --connection number --json'),
     )
     expect(exitCode(result.error)).toBe(expected)
     expect(result.stdout).not.toContain('"success":true')

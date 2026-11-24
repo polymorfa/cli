@@ -39,7 +39,7 @@ describe('local event forwarding', () => {
     })
     for (const value of [
       'Authorization: Bearer hidden',
-      'Cookie: session=hidden',
+      'Cookie: connection=hidden',
       'Content-Length: 0',
       'Polymorfa-Local-Signature: forged',
       'X-Mode: ok\r\nInjected: true',

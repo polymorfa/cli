@@ -17,7 +17,7 @@ function log(id: string, createdAt: string) {
     projectId: project,
     createdAt,
     method: 'POST',
-    route: '/messaging/:session/messages',
+    route: '/messaging/:connection/messages',
     status: 422,
     durationMs: 41,
     result: 'failure',
@@ -83,7 +83,7 @@ test('lists filtered requests newest first and prints the older-page cursor', as
     traceId: '4bf92f3577b34da6a3ce929d0e0e4736',
   })
   expect(result.stdout).toContain(
-    'POST\t/messaging/:session/messages\t422\t41ms\tinvalid_recipient',
+    'POST\t/messaging/:connection/messages\t422\t41ms\tinvalid_recipient',
   )
   expect(result.stdout).toContain('Older requests: --cursor older-1')
 })

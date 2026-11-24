@@ -14,14 +14,14 @@ export default class WebhookDeliveryAttemptView extends BaseCommand {
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(WebhookDeliveryAttemptView)
-    const session = await this.developerSession(flags)
-    const response = await session.client.webhookDeliveries.retrieveAttempt(
+    const connection = await this.developerConnection(flags)
+    const response = await connection.client.webhookDeliveries.retrieveAttempt(
       args.delivery,
       args.attempt,
-      session.requestOptions,
+      connection.requestOptions,
     )
     this.writeValue(
-      developerResponse(response, session.context),
+      developerResponse(response, connection.context),
       renderAttemptDetail(response.data),
       flags,
     )

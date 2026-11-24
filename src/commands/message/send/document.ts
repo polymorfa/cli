@@ -16,8 +16,8 @@ export default class MessageSendDocument extends BaseCommand {
   static override description = 'Send a document from a local file or URL.'
 
   static override examples = [
-    '<%= config.bin %> message send document --session session_123 --to +15551234567 --file ./invoice.pdf',
-    '<%= config.bin %> message send document --session session_123 --to +15551234567 --url https://example.com/invoice.pdf',
+    '<%= config.bin %> message send document --connection connection_123 --to +15551234567 --file ./invoice.pdf',
+    '<%= config.bin %> message send document --connection connection_123 --to +15551234567 --url https://example.com/invoice.pdf',
   ]
 
   static override flags = {
@@ -35,7 +35,7 @@ export default class MessageSendDocument extends BaseCommand {
     const request = await mediaSendRequest('document', flags)
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       sendIdempotencyOptions(flags['idempotency-key']),
     )

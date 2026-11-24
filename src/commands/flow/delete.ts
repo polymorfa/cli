@@ -2,7 +2,7 @@ import {Args, Flags} from '@oclif/core'
 import {FlowsCommand} from '../../flows/command.js'
 export default class FlowDelete extends FlowsCommand {
   static override description =
-    'Delete a local Flow draft. Requires sessions:manage.'
+    'Delete a local Flow draft. Requires connections:manage.'
   static override args = {
     flow: Args.string({description: 'Flow draft UUID.', required: true}),
   }

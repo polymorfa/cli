@@ -70,14 +70,14 @@ describe('event stream', () => {
         '--type',
         'message.*',
         '--type',
-        'session.connected',
+        'connection.connected',
         '--from',
         'c0',
         '--json',
       ]),
     )
     expect(sdk.params[0]).toMatchObject({
-      types: ['message.*', 'session.connected'],
+      types: ['message.*', 'connection.connected'],
       since: 'c0',
     })
     const lines = output.mock.calls.map(
@@ -239,7 +239,7 @@ function item(id: string, cursor: string, withBody = true) {
     webhook: withBody
       ? {
           id,
-          session: 'support',
+          connection: 'support',
           timestamp: '2026-09-18T10:00:00.000Z',
           event: 'message.received',
           payload: {text: 'hi'},

@@ -15,14 +15,14 @@ describe('label commands', () => {
     server = undefined
   })
 
-  test('lists unpaged labels for an explicit encoded session', async () => {
+  test('lists unpaged labels for an explicit encoded connection', async () => {
     server = await startHttpServer({
       body: {data: [label()], success: true},
       headers: {'request-id': 'req_labels'},
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('label list --session session/main --json'),
+      runCommand('label list --connection connection/main --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -30,7 +30,7 @@ describe('label commands', () => {
       data: [label()],
       metadata: {attempts: 1, requestId: 'req_labels', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/labels')
+    expect(server.requests[0]?.url).toBe('/messaging/connection%2Fmain/labels')
   })
 
   test('preserves the observation envelope only when requested', async () => {
@@ -46,7 +46,9 @@ describe('label commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('label list --session session_1 --include-observation --json'),
+      runCommand(
+        'label list --connection session_1 --include-observation --json',
+      ),
     )
 
     expect(result.error).toBeUndefined()
@@ -63,10 +65,9 @@ describe('label commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN:
-          'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
-      () => runCommand('label list --session session_1 --json'),
+      () => runCommand('label list --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -81,7 +82,7 @@ describe('label commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'label create --session session_1 --name Priority --color 5 --idempotency-key create_priority --json',
+        'label create --connection session_1 --name Priority --color 5 --idempotency-key create_priority --json',
       ),
     )
 
@@ -104,7 +105,7 @@ describe('label commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('label update label_1 --session session_1 --json'),
+      runCommand('label update label_1 --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -117,7 +118,7 @@ describe('label commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'label update label/1 --session session_1 --name Urgent --color 7 --json',
+        'label update label/1 --connection session_1 --name Urgent --color 7 --json',
       ),
     )
 
@@ -134,7 +135,7 @@ describe('label commands', () => {
 
   test('requires explicit yes before deleting a label', async () => {
     const result = await runCommand(
-      'label delete label_1 --session session_1 --json',
+      'label delete label_1 --connection session_1 --json',
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -146,7 +147,7 @@ describe('label commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'label delete label/1 --session session_1 --yes --idempotency-key delete_1 --json',
+        'label delete label/1 --connection session_1 --yes --idempotency-key delete_1 --json',
       ),
     )
 
@@ -165,12 +166,14 @@ describe('label commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('label chat list 120363@g.us --session session/main --json'),
+      runCommand(
+        'label chat list 120363@g.us --connection connection/main --json',
+      ),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/labels/chats/120363%40g.us',
+      '/messaging/connection%2Fmain/labels/chats/120363%40g.us',
     )
   })
 
@@ -179,7 +182,7 @@ describe('label commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'label chat replace 120363@g.us --session session_1 --label priority --label customer --idempotency-key replace_1 --json',
+        'label chat replace 120363@g.us --connection session_1 --label priority --label customer --idempotency-key replace_1 --json',
       ),
     )
 
@@ -196,7 +199,7 @@ describe('label commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('label chat replace chat_1 --session session_1 --json'),
+      runCommand('label chat replace chat_1 --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -209,7 +212,7 @@ describe('label commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'label chat replace chat_1 --session session_1 --clear --json',
+        'label chat replace chat_1 --connection session_1 --clear --json',
       ),
     )
 

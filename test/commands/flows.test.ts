@@ -53,14 +53,14 @@ describe('project Flow commands', () => {
     }
     server = await startHttpServer({body: {data}})
     const result = await run(
-      `flow upload ${flow} --project ${project} --session support --category APPOINTMENT_BOOKING --request-id ${request} --json`,
+      `flow upload ${flow} --project ${project} --connection support --category APPOINTMENT_BOOKING --request-id ${request} --json`,
     )
     expect(result.error).toBeUndefined()
     expect(JSON.parse(result.stdout)).toMatchObject({data})
     expect(server.requests).toHaveLength(1)
     expect(JSON.parse(server.requests[0]!.body)).toEqual({
       projectId: project,
-      sessionId: 'support',
+      connectionId: 'support',
       categories: ['APPOINTMENT_BOOKING'],
       requestId: request,
     })
@@ -70,7 +70,7 @@ describe('project Flow commands', () => {
     async (action) => {
       server = await startHttpServer({body: {data: {ok: true}}})
       const result = await run(
-        `flow ${action} ${flow} --project ${project}${action === 'delete' ? '' : ' --session support'} --json`,
+        `flow ${action} ${flow} --project ${project}${action === 'delete' ? '' : ' --connection support'} --json`,
       )
       expect(result.error).toBeDefined()
       expect(server.requests).toHaveLength(0)
@@ -82,7 +82,7 @@ describe('project Flow commands', () => {
       body: {error: {code: 'service_unavailable', message: 'Unknown outcome'}},
     })
     const result = await run(
-      `flow publish ${flow} --project ${project} --session support --yes --json`,
+      `flow publish ${flow} --project ${project} --connection support --yes --json`,
     )
     expect(result.error).toBeDefined()
     expect(server.requests).toHaveLength(1)

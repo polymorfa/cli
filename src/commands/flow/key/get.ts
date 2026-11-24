@@ -3,7 +3,7 @@ import {BaseCommand} from '../../../base-command.js'
 
 export default class FlowKeyGet extends BaseCommand {
   static override description =
-    'Read the public Flow encryption key registered to a Meta phone number. Requires sessions:read.'
+    'Read the public Flow encryption key registered to a Meta phone number. Requires connections:read.'
   static override flags = {
     'phone-number-id': Flags.string({
       description: 'Meta phone number ID.',

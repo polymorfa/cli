@@ -12,8 +12,8 @@ export default class CloudGroupRemoveParticipants extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     participant: Flags.string({
@@ -33,7 +33,7 @@ export default class CloudGroupRemoveParticipants extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.officialGroups.removeParticipants(
-      flags.session,
+      flags.connection,
       args.group,
       flags.participant,
       requestKey(flags['idempotency-key']),

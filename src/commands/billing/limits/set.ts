@@ -4,13 +4,16 @@ import {setLimit, limitValue} from '../../../services/billing-controls.js'
 export default class LimitsSet extends BaseCommand {
   static override summary = 'Set or remove a monthly spending limit.'
   static override description =
-    'Requires Pay-As-You-Go and an team key with billing:manage. Zero blocks new charges; already-paid service continues. A stale observed revision fails without overwriting newer settings.'
+    'Requires Pay-As-You-Go and an organization key with billing:manage. Zero blocks new charges; already-paid service continues. A stale observed revision fails without overwriting newer settings.'
   static override args = {
-    id: Args.string({required: true, description: 'Project or number UUID.'}),
+    id: Args.string({
+      required: true,
+      description: 'Project or Connection UUID.',
+    }),
   }
   static override flags = {
     scope: Flags.string({
-      options: ['project', 'customer', 'number'],
+      options: ['project', 'customer', 'connection'],
       required: true,
     }),
     credits: Flags.string({
@@ -31,7 +34,7 @@ export default class LimitsSet extends BaseCommand {
     const value = limitValue(flags.credits, flags.unlimited)
     const result = await setLimit(
       await this.platformClient(flags),
-      flags.scope as 'project' | 'customer' | 'number',
+      flags.scope as 'project' | 'customer' | 'connection',
       args.id,
       value,
       flags['expected-revision'],

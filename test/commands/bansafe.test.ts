@@ -37,8 +37,8 @@ describe('BanSafe commands', () => {
     {
       body: {data: [], page: {hasMore: false, nextCursor: null}},
       command:
-        'bansafe health-action list --project project_1 --session session_1 --status failed --json',
-      path: '/platform/bansafe/health-actions?projectId=project_1&session=session_1&status=failed',
+        'bansafe health-action list --project project_1 --connection session_1 --status failed --json',
+      path: '/platform/bansafe/health-actions?projectId=project_1&connection=session_1&status=failed',
     },
     {
       body: {data: []},
@@ -64,19 +64,19 @@ describe('BanSafe commands', () => {
 
     const result = await platformEnvironment(() =>
       runCommand(
-        'bansafe telemetry history session/1 --since 2026-09-01T00:00:00Z --until 2026-09-08T00:00:00Z --cursor next_1 --limit 50 --json',
+        'bansafe telemetry history connection/1 --since 2026-09-01T00:00:00Z --until 2026-09-08T00:00:00Z --cursor next_1 --limit 50 --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/platform/bansafe/telemetry/session%2F1/history?cursor=next_1&limit=50&since=2026-09-01T00%3A00%3A00Z&until=2026-09-08T00%3A00%3A00Z',
+      '/platform/bansafe/telemetry/connection%2F1/history?cursor=next_1&limit=50&since=2026-09-01T00%3A00%3A00Z&until=2026-09-08T00%3A00%3A00Z',
     )
   })
 
   test('gets Health history without inventing cursor pagination', async () => {
     server = await startHttpServer({
-      body: {data: {points: [], session: 'session_1', sessionId: 'id_1'}},
+      body: {data: {points: [], connection: 'session_1', connectionId: 'id_1'}},
     })
 
     const result = await platformEnvironment(() =>
@@ -96,7 +96,7 @@ describe('BanSafe commands', () => {
     const input = await jsonInput('policy.json', {
       emailNotification: true,
       enabled: true,
-      sessionAction: 'slow_down',
+      connectionAction: 'slow_down',
       slowDownMps: 0.5,
       threshold: 30,
       version: 4,
@@ -116,7 +116,7 @@ describe('BanSafe commands', () => {
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('policy_4')
     expect(JSON.parse(server.requests[0]?.body ?? '')).toMatchObject({
-      sessionAction: 'slow_down',
+      connectionAction: 'slow_down',
       slowDownMps: 0.5,
       version: 4,
     })
@@ -147,8 +147,8 @@ describe('BanSafe commands', () => {
           phoneNumber: '+1',
           projectId: 'p1',
           reason: 'Attributed to Polymorfa.',
-          session: 's1',
-          sessionId: 'id1',
+          connection: 's1',
+          connectionId: 'id1',
           status: 'under_review',
           summary: 'Restricted inside the claim window.',
           verdict: 'ours',
@@ -198,8 +198,8 @@ describe('BanSafe commands', () => {
           projectId: 'p1',
           reason:
             'Simultaneous calls were on for this number during the 30 days before the ban. Ban Insurance does not cover a number with simultaneous calls on.',
-          session: 's1',
-          sessionId: 'id1',
+          connection: 's1',
+          connectionId: 'id1',
           status: 'denied',
           summary:
             'This claim was not approved because simultaneous calls were on for this number.',
@@ -250,7 +250,7 @@ describe('BanSafe commands', () => {
     const input = await jsonInput('invalid-policy.json', {
       emailNotification: false,
       enabled: true,
-      sessionAction: 'slow_down',
+      connectionAction: 'slow_down',
       slowDownMps: null,
       threshold: 30,
       version: 4,
@@ -299,8 +299,8 @@ describe('BanSafe commands', () => {
       '/platform/bansafe/enforcement?projectId=p1&rung=throttle',
     ],
     [
-      'bansafe incident list --project p1 --session s1 --json',
-      '/platform/bansafe/incidents?projectId=p1&session=s1',
+      'bansafe incident list --project p1 --connection s1 --json',
+      '/platform/bansafe/incidents?projectId=p1&connection=s1',
     ],
     [
       'bansafe claim list --project p1 --status paid --json',
@@ -325,14 +325,14 @@ describe('BanSafe commands', () => {
           created: true,
           incidentId: 'incident_1',
           occurredAt: '2026-09-08T00:00:00Z',
-          session: 's1',
-          sessionId: 'id1',
+          connection: 's1',
+          connectionId: 'id1',
         },
       },
     })
     const report = await platformEnvironment(() =>
       runCommand(
-        'bansafe incident report --session s1 --occurred-at 2026-09-08T00:00:00Z --note observed --idempotency-key report_1 --json',
+        'bansafe incident report --connection s1 --occurred-at 2026-09-08T00:00:00Z --note observed --idempotency-key report_1 --json',
       ),
     )
     expect(report.error).toBeUndefined()
@@ -344,7 +344,7 @@ describe('BanSafe commands', () => {
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       note: 'observed',
       occurredAt: '2026-09-08T00:00:00Z',
-      session: 's1',
+      connection: 's1',
     })
 
     await server.close()
@@ -362,7 +362,7 @@ describe('BanSafe commands', () => {
     expect(server.requests[0]?.headers['idempotency-key']).toBe('retract_1')
   })
 
-  test('gets and updates project and session Safe Mode through separate typed resources', async () => {
+  test('gets and updates project and connection Safe Mode through separate typed resources', async () => {
     server = await startHttpServer({body: {data: projectSafeMode()}})
     const input = await jsonInput('safe-mode.json', {
       onlineEnd: 18,
@@ -386,20 +386,20 @@ describe('BanSafe commands', () => {
     })
 
     await server.close()
-    server = await startHttpServer({body: {data: sessionSafeMode()}})
-    const sessionInput = await jsonInput('session-safe-mode.json', {
+    server = await startHttpServer({body: {data: connectionSafeMode()}})
+    const connectionInput = await jsonInput('connection-safe-mode.json', {
       pacing: 'jittered',
       presence: 'dark',
     })
-    const session = await platformEnvironment(() =>
+    const connection = await platformEnvironment(() =>
       runCommand(
-        `bansafe safe-mode update session/1 --input ${sessionInput} --idempotency-key safe_2 --json`,
+        `bansafe safe-mode update connection/1 --input ${connectionInput} --idempotency-key safe_2 --json`,
       ),
     )
-    expect(session.error).toBeUndefined()
+    expect(connection.error).toBeUndefined()
     expect(server.requests[0]).toMatchObject({
       method: 'PUT',
-      url: '/platform/sessions/session%2F1/safe-mode',
+      url: '/platform/connections/connection%2F1/safe-mode',
     })
   })
 
@@ -460,7 +460,7 @@ describe('BanSafe commands', () => {
   test('invalid mutation arguments stop before any live request', async () => {
     server = await startHttpServer({body: {data: {}}})
     const missingRetryIdentity = await platformEnvironment(() =>
-      runCommand('bansafe incident report --session s1 --json'),
+      runCommand('bansafe incident report --connection s1 --json'),
     )
     const missingSafeModeTarget = await platformEnvironment(() =>
       runCommand('bansafe safe-mode view --json'),
@@ -505,7 +505,7 @@ function policy() {
     enabled: true,
     integrations: {emailConfigured: true, webhookConfigured: false},
     projectId: 'project_1',
-    sessionAction: 'slow_down',
+    connectionAction: 'slow_down',
     slowDownMps: 0.5,
     threshold: 30,
     version: 4,
@@ -528,8 +528,8 @@ function incident() {
     projectId: 'p1',
     reportedBy: 'key_1',
     resolution: 'open',
-    session: 's1',
-    sessionId: 'id1',
+    connection: 's1',
+    connectionId: 'id1',
     source: 'customer',
     startedAt: '2026-09-08T00:00:00Z',
   }
@@ -555,7 +555,7 @@ function projectSafeMode() {
   }
 }
 
-function sessionSafeMode() {
+function connectionSafeMode() {
   return {
     applied: null,
     effective: settings(),
@@ -570,7 +570,7 @@ function sessionSafeMode() {
     },
     project: settings(),
     projectId: 'p1',
-    session: 's1',
+    connection: 's1',
   }
 }
 

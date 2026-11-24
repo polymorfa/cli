@@ -17,8 +17,8 @@ export default class LabelChatList extends BaseCommand {
     'include-observation': Flags.boolean({
       description: 'Include observation policy and freshness metadata.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -27,7 +27,7 @@ export default class LabelChatList extends BaseCommand {
     const {args, flags} = await this.parse(LabelChatList)
     const result = await listChatLabels(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Label'}),
-      flags.session,
+      flags.connection,
       args.chat,
       flags['include-observation'],
     )

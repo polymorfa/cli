@@ -2,7 +2,7 @@ import {Args} from '@oclif/core'
 import {FlowsCommand} from '../../flows/command.js'
 export default class FlowReceipts extends FlowsCommand {
   static override description =
-    'Read provider operation receipts, including uncertain outcomes. Requires sessions:read.'
+    'Read provider operation receipts, including uncertain outcomes. Requires connections:read.'
   static override args = {
     flow: Args.string({description: 'Flow draft UUID.', required: true}),
   }

@@ -57,8 +57,7 @@ describe('campaign profiles commands', () => {
   function run(command: string, env: Record<string, string | undefined> = {}) {
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server!.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
         ...env,

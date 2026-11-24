@@ -19,7 +19,7 @@ export default class BanSafeHealthActionList extends BaseCommand {
       min: 1,
     }),
     project: Flags.string({description: 'Project ID.', required: true}),
-    session: Flags.string({description: 'Match one session ID or name.'}),
+    connection: Flags.string({description: 'Match one connection ID or name.'}),
     status: Flags.string({
       description: 'Match one action status.',
       options: ['pending', 'running', 'succeeded', 'failed', 'cancelled'],
@@ -32,7 +32,7 @@ export default class BanSafeHealthActionList extends BaseCommand {
       projectId: flags.project,
       ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),
       ...(flags.limit === undefined ? {} : {limit: flags.limit}),
-      ...(flags.session === undefined ? {} : {session: flags.session}),
+      ...(flags.connection === undefined ? {} : {connection: flags.connection}),
       ...(flags.status === undefined
         ? {}
         : {status: flags.status as BanSafeHealthActionStatus}),

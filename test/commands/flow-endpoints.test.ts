@@ -25,20 +25,20 @@ describe('dynamic Flow endpoint commands', () => {
       () => runCommand(command),
     )
   }
-  test('reads the endpoint, receipts and custody for one Number', async () => {
+  test('reads the endpoint, receipts and custody for one Connection', async () => {
     server = await startHttpServer({body: {data: {endpoint: null}}})
     for (const command of [
-      `flow endpoint get ${flow} --session support`,
-      `flow endpoint receipts ${flow} --session support --limit 5`,
-      `flow key custody --session support`,
+      `flow endpoint get ${flow} --connection support`,
+      `flow endpoint receipts ${flow} --connection support --limit 5`,
+      `flow key custody --connection support`,
     ]) {
       const result = await run(`${command} --project ${project} --json`)
       expect(result.error).toBeUndefined()
     }
     expect(server.requests.map((r) => `${r.method} ${r.url}`)).toEqual([
-      `GET /platform/flows/${flow}/endpoint?sessionId=support&projectId=${project}`,
-      `GET /platform/flows/${flow}/endpoint/receipts?sessionId=support&limit=5&projectId=${project}`,
-      `GET /platform/flow-encryption-keys?sessionId=support&projectId=${project}`,
+      `GET /platform/flows/${flow}/endpoint?connectionId=support&projectId=${project}`,
+      `GET /platform/flows/${flow}/endpoint/receipts?connectionId=support&limit=5&projectId=${project}`,
+      `GET /platform/flow-encryption-keys?connectionId=support&projectId=${project}`,
     ])
   })
   test('sets each mode with exactly its fields and prints the secret once', async () => {
@@ -48,7 +48,7 @@ describe('dynamic Flow endpoint commands', () => {
       },
     })
     const forward = await run(
-      `flow endpoint set ${flow} --project ${project} --session support --mode forward --url https://example.com/flow --rotate-signing-secret --expected-revision 2 --json`,
+      `flow endpoint set ${flow} --project ${project} --connection support --mode forward --url https://example.com/flow --rotate-signing-secret --expected-revision 2 --json`,
     )
     expect(forward.error).toBeUndefined()
     expect(
@@ -56,14 +56,14 @@ describe('dynamic Flow endpoint commands', () => {
         .signingSecret,
     ).toBe('pfes_x')
     await run(
-      `flow endpoint set ${flow} --project ${project} --session support --mode function --function ${fn} --json`,
+      `flow endpoint set ${flow} --project ${project} --connection support --mode function --function ${fn} --json`,
     )
     await run(
-      `flow endpoint set ${flow} --project ${project} --session support --mode direct --url https://example.com/direct --disabled --json`,
+      `flow endpoint set ${flow} --project ${project} --connection support --mode direct --url https://example.com/direct --disabled --json`,
     )
     expect(server.requests.map((r) => JSON.parse(r.body) as unknown)).toEqual([
       {
-        sessionId: 'support',
+        connectionId: 'support',
         expectedRevision: 2,
         mode: 'forward',
         url: 'https://example.com/flow',
@@ -71,13 +71,13 @@ describe('dynamic Flow endpoint commands', () => {
         projectId: project,
       },
       {
-        sessionId: 'support',
+        connectionId: 'support',
         mode: 'function',
         functionId: fn,
         projectId: project,
       },
       {
-        sessionId: 'support',
+        connectionId: 'support',
         enabled: false,
         mode: 'direct',
         url: 'https://example.com/direct',
@@ -94,14 +94,14 @@ describe('dynamic Flow endpoint commands', () => {
   ])('refuses mismatched flags (%s) before dispatch', async (flags) => {
     server = await startHttpServer({body: {data: {}}})
     const result = await run(
-      `flow endpoint set ${flow} --project ${project} --session support ${flags} --json`,
+      `flow endpoint set ${flow} --project ${project} --connection support ${flags} --json`,
     )
     expect(result.error).toBeDefined()
     expect(server.requests).toHaveLength(0)
   })
   test.each([
-    `flow endpoint delete ${flow} --session support`,
-    'flow key rotate --session support',
+    `flow endpoint delete ${flow} --connection support`,
+    'flow key rotate --connection support',
   ])('requires confirmation: %s', async (command) => {
     server = await startHttpServer({body: {data: {ok: true}}})
     const result = await run(`${command} --project ${project} --json`)
@@ -114,7 +114,7 @@ describe('dynamic Flow endpoint commands', () => {
       body: {error: {code: 'service_unavailable', message: 'Unknown outcome'}},
     })
     const result = await run(
-      `flow key rotate --project ${project} --session support --yes --json`,
+      `flow key rotate --project ${project} --connection support --yes --json`,
     )
     expect(result.error).toBeDefined()
     expect(server.requests).toHaveLength(1)

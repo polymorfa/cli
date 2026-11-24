@@ -9,7 +9,7 @@ export abstract class FlowsCommand extends BaseCommand {
         'Flows are project-owned; use --owner project.',
         'owner',
       )
-    const scope = await this.developerSession({...flags, owner: 'project'})
+    const scope = await this.developerConnection({...flags, owner: 'project'})
     const projectId = scope.context.projectId
     if (!z.string().uuid().safeParse(projectId).success || !projectId)
       throw new PolymorfaConfigurationError(

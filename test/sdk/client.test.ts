@@ -30,11 +30,7 @@ describe('createRawClient', () => {
   test('returns the public Messaging raw client', () => {
     const client = createRawClient({
       surface: 'messaging',
-      credential: {
-        type: 'clientToken',
-        value:
-          'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
-      },
+      credential: {type: 'clientToken', value: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy'},
     })
 
     expect(client).toBeInstanceOf(RawClient)
@@ -46,14 +42,13 @@ describe('createRawClient', () => {
         surface: 'platform',
         credential: {
           type: 'clientToken',
-          value:
-            'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+          value: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
         },
       }),
     ).toThrow('Client and project tokens cannot be used as team keys.')
   })
 
-  test('creates a typed Messaging client with session and operation resources', () => {
+  test('creates a typed Messaging client with connection and operation resources', () => {
     const client = createMessagingClient({
       surface: 'messaging',
       credential: {
@@ -64,8 +59,8 @@ describe('createRawClient', () => {
     })
 
     expect(client).toBeInstanceOf(MessagingClient)
-    expect(client.sessions).toHaveProperty('qr')
-    expect(client.sessions).toHaveProperty('requestPairingCode')
+    expect(client.connections).toHaveProperty('qr')
+    expect(client.connections).toHaveProperty('requestPairingCode')
     expect(client.quickLinks).toHaveProperty('create')
     expect(client.quickLinks).toHaveProperty('retrieve')
     expect(client.quickLinks).toHaveProperty('cancel')
@@ -95,17 +90,17 @@ describe('createRawClient', () => {
     })
 
     expect(client).toBeInstanceOf(Client)
-    expect(client.owner).toBe('organization')
+    expect(client.owner).toBe('team')
     expect(client.billing).toHaveProperty('retrieve')
     expect(client.billing).toHaveProperty('usage')
     expect(client.billing).toHaveProperty('listTransactions')
     expect(client.billing).toHaveProperty('listPricing')
     expect(client.billing).not.toHaveProperty('updateReminderSettings')
-    expect(client.sessions).toHaveProperty('retrieve')
-    expect(client.sessions).toHaveProperty('update')
-    expect(client.sessions).toHaveProperty('quoteTierChange')
-    expect(client.sessions).toHaveProperty('retrieveTierChange')
-    expect(client.organizations).not.toHaveProperty('update')
+    expect(client.connections).toHaveProperty('retrieve')
+    expect(client.connections).toHaveProperty('update')
+    expect(client.connections).toHaveProperty('quoteTierChange')
+    expect(client.connections).toHaveProperty('retrieveTierChange')
+    expect(client.teams).not.toHaveProperty('update')
 
     expect(() =>
       createPlatformClient({
@@ -157,17 +152,17 @@ describe('typed webhook events', () => {
       event: 'command.result',
       id: 'evt_123',
       payload: {
-        command: 'session.start',
+        command: 'connection.start',
         requestId: 'req_123',
         success: true,
       },
-      session: 'session_123',
+      connection: 'connection_123',
       timestamp: '2026-08-19T18:00:00.000Z',
     }
 
     expect(isEvent(event, 'command.result')).toBe(true)
     if (isEvent(event, 'command.result')) {
-      expect(event.payload.command).toBe('session.start')
+      expect(event.payload.command).toBe('connection.start')
       expect(event.payload.success).toBe(true)
     }
     expect(isEvent(event, 'message.received')).toBe(false)

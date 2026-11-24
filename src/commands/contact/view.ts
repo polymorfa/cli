@@ -11,11 +11,12 @@ export default class ContactView extends BaseCommand {
     }),
   }
 
-  static override description = 'View stored contact data known to a session.'
+  static override description =
+    'View stored contact data known to a connection.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -24,7 +25,7 @@ export default class ContactView extends BaseCommand {
     const {args, flags} = await this.parse(ContactView)
     const result = await viewContact(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Contact'}),
-      flags.session,
+      flags.connection,
       args.contact,
     )
     this.writeValue(result, renderContact(result.data), flags)

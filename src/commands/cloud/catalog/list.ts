@@ -4,7 +4,7 @@ import {BaseCommand} from '../../../base-command.js'
 
 export default class CloudCatalogList extends BaseCommand {
   static override description =
-    'List visible Meta product catalogs for a WhatsApp Business Account. Requires sessions:read and Graph access.'
+    'List visible Meta product catalogs for a WhatsApp Business Account. Requires connections:read and Graph access.'
   static override flags = {
     waba: Flags.string({
       description: 'WhatsApp Business Account ID.',

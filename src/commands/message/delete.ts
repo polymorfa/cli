@@ -18,7 +18,7 @@ export default class MessageDelete extends BaseCommand {
     'Delete a message you sent for everyone in the conversation.'
 
   static override examples = [
-    '<%= config.bin %> message delete 740000000001 --session session_123 --chat 730000000001 --yes',
+    '<%= config.bin %> message delete 740000000001 --connection connection_123 --chat 730000000001 --yes',
   ]
 
   static override flags = {
@@ -31,8 +31,8 @@ export default class MessageDelete extends BaseCommand {
       description:
         'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -48,7 +48,7 @@ export default class MessageDelete extends BaseCommand {
     })
     const result = await deleteMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       flags.chat,
       args.message,
       {

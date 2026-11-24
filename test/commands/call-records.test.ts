@@ -12,7 +12,7 @@ const PROJECT = '11111111-1111-4111-8111-111111111111'
 const record = {
   callId: 'call_1',
   projectId: PROJECT,
-  sessionId: 'support',
+  connectionId: 'support',
   direction: 'inbound',
   upstream: 'linked_device',
   outcome: 'answered',
@@ -123,7 +123,7 @@ describe('stored call record commands', () => {
       renderCallDetail({
         call: {
           callId: 'call_1',
-          sessionId: '\u001b[31msupport',
+          connectionId: '\u001b[31msupport',
           state: 'ended',
           live: false,
         },

@@ -182,7 +182,7 @@ describe('api', () => {
       },
       () =>
         runCommand(
-          'api /platform/sessions/number/start --surface platform --method POST --json',
+          'api /platform/connections/connection/start --surface platform --method POST --json',
         ),
     )
     expect(exitCode(result.error)).toBe(4)

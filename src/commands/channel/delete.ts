@@ -14,8 +14,8 @@ export default class ChannelDelete extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this channel deletion.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -28,7 +28,7 @@ export default class ChannelDelete extends BaseCommand {
     const {args, flags} = await this.parse(ChannelDelete)
     const result = await deleteChannel(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
-      flags.session,
+      flags.connection,
       args.channel,
       flags['idempotency-key'] === undefined
         ? {}

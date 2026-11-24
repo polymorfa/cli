@@ -9,14 +9,14 @@ export default class ControlsGet extends BaseCommand {
   static override flags = {
     scope: Flags.string({
       required: true,
-      options: ['project', 'customer', 'number'],
+      options: ['project', 'customer', 'connection'],
     }),
   }
   async run() {
     const {args, flags} = await this.parse(ControlsGet)
     const result = await getResourceControls(
       await this.platformClient(flags),
-      flags.scope as 'project' | 'customer' | 'number',
+      flags.scope as 'project' | 'customer' | 'connection',
       args.id,
     )
     this.writeValue(result, JSON.stringify(result.data), flags)

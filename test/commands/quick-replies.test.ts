@@ -15,7 +15,7 @@ describe('quick-reply commands', () => {
     server = undefined
   })
 
-  test('lists the complete observed quick-reply collection for an encoded session', async () => {
+  test('lists the complete observed quick-reply collection for an encoded connection', async () => {
     const collection = {
       observedAt: '2026-08-19T22:00:00.000Z',
       policy: 'cache',
@@ -28,7 +28,7 @@ describe('quick-reply commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('quick-reply list --session session/main --json'),
+      runCommand('quick-reply list --connection connection/main --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -41,7 +41,7 @@ describe('quick-reply commands', () => {
       },
     })
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/business/quick-replies',
+      '/messaging/connection%2Fmain/business/quick-replies',
     )
   })
 
@@ -54,10 +54,9 @@ describe('quick-reply commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN:
-          'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
-      () => runCommand('quick-reply list --session session_1 --json'),
+      () => runCommand('quick-reply list --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -76,7 +75,7 @@ describe('quick-reply commands', () => {
       runCommand([
         'quick-reply',
         'create',
-        '--session',
+        '--connection',
         'session_1',
         '--shortcut',
         '/hours',
@@ -111,7 +110,7 @@ describe('quick-reply commands', () => {
 
   test('requires the complete shortcut and message when replacing', async () => {
     const result = await runCommand(
-      'quick-reply replace reply_1 --session session_1 --shortcut /hours --json',
+      'quick-reply replace reply_1 --connection session_1 --shortcut /hours --json',
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -128,8 +127,8 @@ describe('quick-reply commands', () => {
         'quick-reply',
         'replace',
         'reply/1',
-        '--session',
-        'session/main',
+        '--connection',
+        'connection/main',
         '--shortcut',
         '/hours',
         '--message',
@@ -143,7 +142,7 @@ describe('quick-reply commands', () => {
     expect(result.error).toBeUndefined()
     expect(server.requests[0]).toMatchObject({
       method: 'PUT',
-      url: '/messaging/session%2Fmain/business/quick-replies/reply%2F1',
+      url: '/messaging/connection%2Fmain/business/quick-replies/reply%2F1',
     })
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       keywords: ['hours'],
@@ -154,7 +153,7 @@ describe('quick-reply commands', () => {
 
   test('requires explicit yes before deleting a quick reply', async () => {
     const result = await runCommand(
-      'quick-reply delete reply_1 --session session_1 --json',
+      'quick-reply delete reply_1 --connection session_1 --json',
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -168,7 +167,7 @@ describe('quick-reply commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'quick-reply delete reply/1 --session session_1 --yes --idempotency-key delete_reply_1 --json',
+        'quick-reply delete reply/1 --connection session_1 --yes --idempotency-key delete_reply_1 --json',
       ),
     )
 

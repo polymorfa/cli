@@ -10,7 +10,7 @@ export default class CallsHand extends BaseCommand {
   }
 
   static override description =
-    'Raise or lower the Number’s hand. The Number has one hand state shared across its application connections.'
+    'Raise or lower the Connection’s hand. The Connection has one hand state shared across its application connections.'
 
   static override examples = [
     '<%= config.bin %> calls hand call_123 --connection-id conn_0123456789 --raised',

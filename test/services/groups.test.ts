@@ -26,13 +26,13 @@ describe('group read services', () => {
       headers: {'request-id': 'req_groups'},
     })
 
-    const result = await listGroups(client(server.baseUrl), 'session/main')
+    const result = await listGroups(client(server.baseUrl), 'connection/main')
 
     expect(result).toEqual({
       data: [group],
       metadata: {attempts: 1, requestId: 'req_groups', status: 200},
     })
-    expect(server.requests[0]?.url).toBe('/messaging/session%2Fmain/groups')
+    expect(server.requests[0]?.url).toBe('/messaging/connection%2Fmain/groups')
   })
 
   test('retrieves a group and its participants through encoded identifiers', async () => {
@@ -40,10 +40,10 @@ describe('group read services', () => {
     server = await startHttpServer({body: {data: group, success: true}})
 
     await expect(
-      viewGroup(client(server.baseUrl), 'session/main', '123@g.us'),
+      viewGroup(client(server.baseUrl), 'connection/main', '123@g.us'),
     ).resolves.toMatchObject({data: group})
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/groups/123%40g.us',
+      '/messaging/connection%2Fmain/groups/123%40g.us',
     )
 
     await server.close()
@@ -51,7 +51,11 @@ describe('group read services', () => {
       body: {data: group.participants, success: true},
     })
     await expect(
-      listGroupParticipants(client(server.baseUrl), 'session/main', '123@g.us'),
+      listGroupParticipants(
+        client(server.baseUrl),
+        'connection/main',
+        '123@g.us',
+      ),
     ).resolves.toMatchObject({data: group.participants})
   })
 
@@ -73,12 +77,12 @@ describe('group read services', () => {
     server = await startHttpServer({body: {success: true, data}})
     const response = await getGroupCapabilities(
       client(server.baseUrl),
-      'session/main',
+      'connection/main',
       '9007199254740993',
     )
     expect(response.data).toEqual(data)
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/groups/9007199254740993/capabilities',
+      '/messaging/connection%2Fmain/groups/9007199254740993/capabilities',
     )
     expect(renderGroupCapabilities(data)).toContain(
       'polls.endTime\tunknown\tunknown',

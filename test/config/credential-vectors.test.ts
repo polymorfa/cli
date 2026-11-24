@@ -1,5 +1,5 @@
 import {readFileSync} from 'node:fs'
-import {validateOrganizationApiKey} from '@polymorfa/sdk'
+import {validateTeamApiKey} from '@polymorfa/sdk'
 import {describe, expect, test} from 'vitest'
 
 import {validateProjectToken} from '../../src/config/credentials.js'
@@ -17,9 +17,7 @@ describe('canonical API credential vectors through the published SDK', () => {
   for (const fixture of vectors.opaque) {
     test(`accepts the ${fixture.kind} vector without rewriting its opaque bytes`, () => {
       const validate =
-        fixture.kind === 'key'
-          ? validateOrganizationApiKey
-          : validateProjectToken
+        fixture.kind === 'key' ? validateTeamApiKey : validateProjectToken
       expect(validate(fixture.token)).toBe(fixture.token)
       const changed = `${fixture.token.slice(0, -1)}A`
       expect(() => validate(changed)).toThrow()

@@ -37,15 +37,15 @@ export default class WebhookUpdate extends BaseCommand {
       flags.input === undefined
         ? {}
         : record(await readJsonInput(flags.input), 'Webhook input')
-    const session = await this.developerSession(flags)
+    const connection = await this.developerConnection(flags)
     if (startDay !== undefined) {
       // Off edits the saved event list unless the input already supplies one.
       const saved =
         startDay === 'off' && !Array.isArray(body.eventTypes)
           ? (
-              await session.client.webhooks.retrieve(
+              await connection.client.webhooks.retrieve(
                 args.webhook,
-                session.requestOptions,
+                connection.requestOptions,
               )
             ).data.eventTypes
           : undefined
@@ -55,14 +55,18 @@ export default class WebhookUpdate extends BaseCommand {
         this.error((error as Error).message, {exit: 2})
       }
     }
-    const response = await session.client.webhooks.update(args.webhook, body, {
-      ...session.requestOptions,
-      idempotencyKey: idempotencyKey(flags['idempotency-key']),
-    })
+    const response = await connection.client.webhooks.update(
+      args.webhook,
+      body,
+      {
+        ...connection.requestOptions,
+        idempotencyKey: idempotencyKey(flags['idempotency-key']),
+      },
+    )
     const receipt = record(response.data, 'Webhook mutation receipt')
     const webhook = record(receipt.webhook, 'Webhook')
     const output = developerMutation({
-      context: session.context,
+      context: connection.context,
       metadata: response.metadata,
       receipt,
       resource: {id: stringField(webhook, 'id'), type: 'webhook'},

@@ -15,7 +15,7 @@ export default class MessageSendList extends BaseCommand {
     'Send an interactive list message with selectable rows.'
 
   static override examples = [
-    '<%= config.bin %> message send list --session session_123 --to +15551234567 --title "Pick a slot" --button-text Choose --row "Morning/am9=9:00" --row "Afternoon/pm2=14:00|Near the office"',
+    '<%= config.bin %> message send list --connection connection_123 --to +15551234567 --title "Pick a slot" --button-text Choose --row "Morning/am9=9:00" --row "Afternoon/pm2=14:00|Near the office"',
   ]
 
   static override flags = {
@@ -53,7 +53,7 @@ export default class MessageSendList extends BaseCommand {
     }
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       sendIdempotencyOptions(flags['idempotency-key']),
     )

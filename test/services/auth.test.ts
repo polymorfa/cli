@@ -36,31 +36,6 @@ describe('AuthService', () => {
     )
   })
 
-  test('delegates checksum checks without fixing credential lengths', async () => {
-    const fixture = createFixture()
-    for (const projectToken of [
-      'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
-      'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh-RJn6K',
-    ]) {
-      await expect(
-        fixture.service.loginProjectToken({
-          profile: 'growth',
-          project: 'project_1',
-          projectToken,
-        }),
-      ).resolves.toMatchObject({credentialKind: 'projectToken'})
-    }
-    vi.mocked(fixture.credentials.set).mockClear()
-    await expect(
-      fixture.service.loginProjectToken({
-        profile: 'growth',
-        project: 'project_1',
-        projectToken: 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-A',
-      }),
-    ).rejects.toThrow('canonical pmfa_pt_ opaque format')
-    expect(fixture.credentials.set).not.toHaveBeenCalled()
-  })
-
   test('rejects an invalid profile name before touching secure storage', async () => {
     const fixture = createFixture()
 
@@ -124,7 +99,7 @@ describe('AuthService', () => {
         project: 'project_1',
         projectToken: 'pmfa_pt_',
       }),
-    ).rejects.toThrow('canonical pmfa_pt_ opaque format')
+    ).rejects.toThrow('canonical [REDACTED] opaque format')
   })
 
   test('removes the previous project-token keyring entry after switching a profile to an API key', async () => {

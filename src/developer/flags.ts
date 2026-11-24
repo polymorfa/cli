@@ -39,8 +39,8 @@ export const callFilterFlags = {
       'Include only calls with this outcome. answered includes answered calls still in progress; in_progress means still ringing.',
     options: ['answered', 'missed', 'declined', 'failed', 'in_progress'],
   }),
-  session: Flags.string({
-    description: 'Include only calls on this session (number).',
+  connection: Flags.string({
+    description: 'Include only calls on this connection.',
   }),
   since: Flags.string({
     description: 'Include calls that started at or after this RFC 3339 time.',
@@ -49,7 +49,7 @@ export const callFilterFlags = {
     description: 'Include calls that started before this RFC 3339 time.',
   }),
   upstream: Flags.string({
-    description: 'Include only numbers that connect this way.',
+    description: 'Include only connections that connect this way.',
     options: ['linked_device', 'cloud_api'],
   }),
 }

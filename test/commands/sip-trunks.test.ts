@@ -35,7 +35,7 @@ const trunk = {
   inbound: {
     username: 'pmfa_abc',
     realm: 'sip.example.test',
-    session: null,
+    connection: null,
     allowedAddresses: ['203.0.113.10/32'],
     allowedDestinations: [],
   },
@@ -94,7 +94,9 @@ describe('sip-trunk commands', () => {
     )
     expect(viewed.stdout).toContain('Password stored\tyes')
     expect(viewed.stdout).toContain('From user\tcaller identity (automatic)')
-    expect(viewed.stdout).toContain('Calling session\tnot set (calls refused)')
+    expect(viewed.stdout).toContain(
+      'Calling connection\tnot set (calls refused)',
+    )
     expect(viewed.stdout).toContain('Allowed destinations\tany')
     expect(viewed.stdout).toContain('Revision\t3')
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([

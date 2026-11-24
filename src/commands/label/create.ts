@@ -12,8 +12,8 @@ export default class LabelCreate extends BaseCommand {
       description: 'Safely identify retries of this create operation.',
     }),
     name: Flags.string({description: 'Label name.', required: true}),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -22,7 +22,7 @@ export default class LabelCreate extends BaseCommand {
     const {flags} = await this.parse(LabelCreate)
     const result = await createLabel(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Label'}),
-      flags.session,
+      flags.connection,
       {
         name: flags.name,
         ...(flags.color === undefined ? {} : {color: flags.color}),

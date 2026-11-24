@@ -5,11 +5,11 @@ import {listHistoryChats, renderHistoryChats} from '../../services/history.js'
 
 export default class ChatList extends BaseCommand {
   static override description =
-    'List stored chats for an enrolled HMS Number (beta). Requires chats:read.'
+    'List stored chats for an enrolled HMS Connection (beta). Requires chats:read.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     limit: Flags.integer({
@@ -36,7 +36,7 @@ export default class ChatList extends BaseCommand {
     const {flags} = await this.parse(ChatList)
     const result = await listHistoryChats(
       await this.historyMessagingClient(flags),
-      flags.session,
+      flags.connection,
       {
         ...(flags.limit === undefined ? {} : {limit: flags.limit}),
         ...(flags.cursor === undefined ? {} : {cursor: flags.cursor}),

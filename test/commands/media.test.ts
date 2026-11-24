@@ -52,8 +52,7 @@ describe('media commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN:
-          'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
       () => runCommand('media view media_1 --json'),
     )
@@ -467,7 +466,7 @@ function mediaInfo() {
     mimeType: 'image/png',
     persisted: false,
     s3Url: null,
-    session: 'session_1',
+    connection: 'session_1',
   }
 }
 
@@ -494,7 +493,7 @@ function whatsAppFixture(plaintext: Buffer): {
     .subarray(0, 10)
   const encrypted = Buffer.concat([ciphertext, mac])
   const url = 'https://mmg.whatsapp.net/v/t62.7118-24/fixture.enc?ccb=11-4'
-  // ImageMessage field numbers: URL 1, fileSHA256 4, mediaKey 8, fileEncSHA256 9.
+  // ImageMessage field connections: URL 1, fileSHA256 4, mediaKey 8, fileEncSHA256 9.
   const field = (number: number, value: Buffer): Buffer =>
     Buffer.concat([Buffer.from([(number << 3) | 2, value.length]), value])
   const media = Buffer.concat([

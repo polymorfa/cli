@@ -17,8 +17,8 @@ export default class BusinessProfileCoverSet extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this cover-photo update.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     url: Flags.string({
@@ -32,7 +32,7 @@ export default class BusinessProfileCoverSet extends BaseCommand {
     const {flags} = await this.parse(BusinessProfileCoverSet)
     const result = await setBusinessCoverPhoto(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       {
         ...(flags.file === undefined ? {} : {file: flags.file}),
         ...(flags.url === undefined ? {} : {url: flags.url}),

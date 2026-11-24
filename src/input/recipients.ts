@@ -73,7 +73,7 @@ export async function readCsvRecipients(
     if (record.every((cell) => cell.trim() === '')) continue
     const phone = (record[phoneIndex] ?? '').trim()
     if (phone === '') {
-      // Header is row 1, matching the API's row numbers for file imports.
+      // Header is row 1, matching the API's row connections for file imports.
       missingPhoneRows.push(index + 2)
       continue
     }

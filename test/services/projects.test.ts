@@ -319,17 +319,17 @@ function project(id: string, slug: string, name: string) {
   return {
     _creationTime: 0,
     _id: id,
-    activeSessions: 0,
+    activeConnections: 0,
     defaultTier: 'standard',
     icon: {},
     iconUrl: null,
     isActive: true,
     lastActivity: null,
     name,
-    orgId: 'org_1',
+    teamId: 'org_1',
     slug,
     stage: 'development',
     totalMessages: 0,
-    totalSessions: 0,
+    totalConnections: 0,
   }
 }

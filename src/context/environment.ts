@@ -75,7 +75,7 @@ export interface ResolveDeveloperEnvironmentInput {
   /**
    * Choose the owner when neither --owner nor the profile names one: a
    * project context (--project, or a project token) reads one project, and
-   * an team key otherwise reads the whole organization. For commands
+   * an organization key otherwise reads the whole organization. For commands
    * whose results span projects rather than belong to one owner.
    */
   readonly inferOwner?: boolean | undefined
@@ -464,8 +464,8 @@ export async function resolveCommandEnvironment(
   ) {
     throw new PolymorfaConfigurationError(
       input.surface === 'platform'
-        ? `Profile ${selected} contains a project token; this Platform command requires an team key.`
-        : `Profile ${selected} contains a project token; this Messaging command requires an team key or a Messaging client token.`,
+        ? `Profile ${selected} contains a project token; this Platform command requires an organization API key.`
+        : `Profile ${selected} contains a project token; this Messaging command requires an organization API key or a Messaging client token.`,
       'credential',
     )
   }
@@ -746,7 +746,7 @@ export async function listProjects(
 ): Promise<readonly ProjectWithStats[]> {
   const client = new Client({
     baseUrl: input.baseUrl,
-    credential: {type: 'organizationApiKey', value: input.credential},
+    credential: {type: 'teamApiKey', value: input.credential},
     ...(input.apiVersion === undefined ? {} : {apiVersion: input.apiVersion}),
     ...(input.timeoutMs === undefined ? {} : {timeoutMs: input.timeoutMs}),
   })

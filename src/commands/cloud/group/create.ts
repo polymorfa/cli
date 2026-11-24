@@ -7,8 +7,8 @@ export default class CloudGroupCreate extends BaseCommand {
     'Ask WhatsApp to create an Official group (beta). Requires groups:manage, team enrollment and an Official Business Account. Sends once; the group ID and invite link arrive in a group.update event carrying the returned requestId.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     subject: Flags.string({
@@ -33,7 +33,7 @@ export default class CloudGroupCreate extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.officialGroups.create(
-      flags.session,
+      flags.connection,
       {
         subject: flags.subject,
         ...(flags.description === undefined

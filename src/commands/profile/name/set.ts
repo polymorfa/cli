@@ -11,8 +11,8 @@ export default class ProfileNameSet extends BaseCommand {
       description: 'Safely identify retries of this name update.',
     }),
     name: Flags.string({description: 'Complete profile name.', required: true}),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -21,7 +21,7 @@ export default class ProfileNameSet extends BaseCommand {
     const {flags} = await this.parse(ProfileNameSet)
     const result = await setProfileName(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Profile'}),
-      flags.session,
+      flags.connection,
       flags.name,
       flags['idempotency-key'] === undefined
         ? {}

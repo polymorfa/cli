@@ -20,8 +20,8 @@ import {errorEnvelope, type OutputContext} from './output/contracts.js'
 import {renderValue, type OutputMode} from './output/render.js'
 import {createMessagingClient, createPlatformClient} from './sdk/client.js'
 import {
-  createDeveloperSession,
-  type DeveloperSession,
+  createDeveloperConnection,
+  type DeveloperConnection,
 } from './developer/client.js'
 
 export interface GlobalFlags {
@@ -89,22 +89,22 @@ export abstract class BaseCommand extends Command {
     return 'human'
   }
 
-  protected async developerSession(
+  protected async developerConnection(
     flags: GlobalFlags,
-  ): Promise<DeveloperSession> {
-    const session = await createDeveloperSession(
+  ): Promise<DeveloperConnection> {
+    const connection = await createDeveloperConnection(
       flags,
       (secret) => this.registerSecret(secret),
       () => this.linkedProject(flags),
     )
-    this.errorContext = session.context
-    return session
+    this.errorContext = connection.context
+    return connection
   }
 
   /**
-   * Resolve an team key or exact-project token without building a
+   * Resolve an organization API key or exact-project token without building a
    * typed client, for commands that span projects. With `inferOwner`, --project
-   * or a project token reads one project and an team key otherwise
+   * or a project token reads one project and an organization key otherwise
    * reads the whole organization.
    */
   protected async developerEnvironment(
@@ -243,7 +243,7 @@ export abstract class BaseCommand extends Command {
 
   protected async platformClient(
     flags: GlobalFlags,
-  ): Promise<ClientInstance<'organization'>> {
+  ): Promise<ClientInstance<'team'>> {
     return createPlatformClient(await this.platformEnvironment(flags))
   }
 

@@ -1,0 +1,28 @@
+{
+  "repository": "polymorfa/polymorfa",
+  "commit": "8354399b827d9127210b9759cd055586e967449e",
+  "sourcePath": "apps/api/docs/openapi.json",
+  "sourceSha256": "e84c7ff814c6b59ca7f32c3fda1aedbed3f672e728910adb883f0aa8c6cf3ab7",
+  "operations": [
+    {
+      "command": "trigger --list",
+      "method": "GET",
+      "path": "/messaging/test-events/fixtures"
+    },
+    {
+      "command": "trigger <event> --connection <connectionId> [--from-connection <connectionId>]",
+      "method": "POST",
+      "path": "/messaging/{connection}/test-events",
+      "requestFields": ["event", "overrides", "fromConnection"]
+    },
+    {
+      "command": "testing history-fixture create --project <projectId>",
+      "method": "POST",
+      "path": "/messaging/projects/{projectId}/test-history-fixtures"
+    }
+  ],
+  "sdkTransport": "Matching Connection SDK typed Testing methods; source-only verification does not authorize publication.",
+  "scopes": ["sandbox:read", "sandbox:write"],
+  "releaseStatus": "source-only",
+  "published": false
+}

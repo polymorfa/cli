@@ -50,20 +50,20 @@ type BusinessMutation<T> = T | AsyncAcceptedData
 
 export async function viewOwnBusinessProfile(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<BusinessResult<BusinessProfile>> {
-  const response = await client.business.getProfile(session)
+  const response = await client.business.getProfile(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function updateOwnBusinessProfile(
   client: MessagingClient,
-  session: string,
+  connection: string,
   input: unknown,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessProfileStatus>>> {
   const response = await client.business.updateProfile(
-    session,
+    connection,
     profileUpdate(input),
     options,
   )
@@ -72,12 +72,12 @@ export async function updateOwnBusinessProfile(
 
 export async function setBusinessCoverPhoto(
   client: MessagingClient,
-  session: string,
+  connection: string,
   source: {readonly file?: string; readonly url?: string},
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessCoverPhotoResult>>> {
   const response = await client.business.setCoverPhoto(
-    session,
+    connection,
     await coverPhotoRequest(source),
     options,
   )
@@ -86,12 +86,12 @@ export async function setBusinessCoverPhoto(
 
 export async function deleteBusinessCoverPhoto(
   client: MessagingClient,
-  session: string,
+  connection: string,
   coverPhotoId: string,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessProfileStatus>>> {
   const response = await client.business.deleteCoverPhoto(
-    session,
+    connection,
     coverPhotoId,
     options,
   )
@@ -100,30 +100,30 @@ export async function deleteBusinessCoverPhoto(
 
 export async function viewBusinessCatalog(
   client: MessagingClient,
-  session: string,
+  connection: string,
   params: BusinessCatalogParams,
 ): Promise<BusinessResult<BusinessCatalogPage>> {
-  const response = await client.business.getCatalog(session, params)
+  const response = await client.business.getCatalog(connection, params)
   return result(response.data.data, response.metadata)
 }
 
 export async function createBusinessCatalog(
   client: MessagingClient,
-  session: string,
+  connection: string,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessActionSuccess>>> {
-  const response = await client.business.createCatalog(session, options)
+  const response = await client.business.createCatalog(connection, options)
   return result(response.data.data, response.metadata)
 }
 
 export async function setBusinessCartEnabled(
   client: MessagingClient,
-  session: string,
+  connection: string,
   enabled: boolean,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessActionSuccess>>> {
   const response = await client.business.setCartEnabled(
-    session,
+    connection,
     {enabled},
     options,
   )
@@ -132,22 +132,26 @@ export async function setBusinessCartEnabled(
 
 export async function viewBusinessProduct(
   client: MessagingClient,
-  session: string,
+  connection: string,
   productId: string,
   params: BusinessProductParams,
 ): Promise<BusinessResult<BusinessProduct>> {
-  const response = await client.business.getProduct(session, productId, params)
+  const response = await client.business.getProduct(
+    connection,
+    productId,
+    params,
+  )
   return result(response.data.data, response.metadata)
 }
 
 export async function createBusinessProduct(
   client: MessagingClient,
-  session: string,
+  connection: string,
   input: unknown,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessProduct>>> {
   const response = await client.business.createProduct(
-    session,
+    connection,
     await productMutation(input, false),
     options,
   )
@@ -156,13 +160,13 @@ export async function createBusinessProduct(
 
 export async function replaceBusinessProduct(
   client: MessagingClient,
-  session: string,
+  connection: string,
   productId: string,
   input: unknown,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessProduct>>> {
   const response = await client.business.updateProduct(
-    session,
+    connection,
     productId,
     await productMutation(input, true),
     options,
@@ -172,12 +176,12 @@ export async function replaceBusinessProduct(
 
 export async function deleteBusinessProduct(
   client: MessagingClient,
-  session: string,
+  connection: string,
   productId: string,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessProductDeleteResult>>> {
   const response = await client.business.deleteProduct(
-    session,
+    connection,
     productId,
     options,
   )
@@ -186,13 +190,13 @@ export async function deleteBusinessProduct(
 
 export async function setBusinessProductVisibility(
   client: MessagingClient,
-  session: string,
+  connection: string,
   productId: string,
   hidden: boolean,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessActionSuccess>>> {
   const response = await client.business.setProductVisibility(
-    session,
+    connection,
     productId,
     {hidden},
     options,
@@ -202,13 +206,13 @@ export async function setBusinessProductVisibility(
 
 export async function appealBusinessProduct(
   client: MessagingClient,
-  session: string,
+  connection: string,
   productId: string,
   reason: string,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessActionSuccess>>> {
   const response = await client.business.appealProduct(
-    session,
+    connection,
     productId,
     appeal(reason),
     options,
@@ -218,21 +222,21 @@ export async function appealBusinessProduct(
 
 export async function listBusinessCollections(
   client: MessagingClient,
-  session: string,
+  connection: string,
   params: BusinessCollectionsParams,
 ): Promise<BusinessResult<BusinessCollectionPage>> {
-  const response = await client.business.listCollections(session, params)
+  const response = await client.business.listCollections(connection, params)
   return result(response.data.data, response.metadata)
 }
 
 export async function viewBusinessCollection(
   client: MessagingClient,
-  session: string,
+  connection: string,
   collectionId: string,
   params: BusinessCollectionParams,
 ): Promise<BusinessResult<BusinessCollection>> {
   const response = await client.business.getCollection(
-    session,
+    connection,
     collectionId,
     params,
   )
@@ -241,13 +245,13 @@ export async function viewBusinessCollection(
 
 export async function createBusinessCollection(
   client: MessagingClient,
-  session: string,
+  connection: string,
   input: BusinessCollectionCreateRequest,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessCollectionMutationResult>>> {
   validateCollectionCreate(input)
   const response = await client.business.createCollection(
-    session,
+    connection,
     input,
     options,
   )
@@ -256,14 +260,14 @@ export async function createBusinessCollection(
 
 export async function updateBusinessCollection(
   client: MessagingClient,
-  session: string,
+  connection: string,
   collectionId: string,
   input: BusinessCollectionUpdateRequest,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessCollectionMutationResult>>> {
   validateCollectionUpdate(input)
   const response = await client.business.updateCollection(
-    session,
+    connection,
     collectionId,
     input,
     options,
@@ -273,12 +277,12 @@ export async function updateBusinessCollection(
 
 export async function deleteBusinessCollection(
   client: MessagingClient,
-  session: string,
+  connection: string,
   collectionId: string,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessActionSuccess>>> {
   const response = await client.business.deleteCollection(
-    session,
+    connection,
     collectionId,
     options,
   )
@@ -287,12 +291,12 @@ export async function deleteBusinessCollection(
 
 export async function reorderBusinessCollections(
   client: MessagingClient,
-  session: string,
+  connection: string,
   input: unknown,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessActionSuccess>>> {
   const response = await client.business.reorderCollections(
-    session,
+    connection,
     collectionReorder(input),
     options,
   )
@@ -301,13 +305,13 @@ export async function reorderBusinessCollections(
 
 export async function appealBusinessCollection(
   client: MessagingClient,
-  session: string,
+  connection: string,
   collectionId: string,
   reason: string,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessActionSuccess>>> {
   const response = await client.business.appealCollection(
-    session,
+    connection,
     collectionId,
     appeal(reason),
     options,
@@ -317,7 +321,7 @@ export async function appealBusinessCollection(
 
 export async function viewBusinessOrder(
   client: MessagingClient,
-  session: string,
+  connection: string,
   orderId: string,
   token: string,
   options: RequestOptions = {},
@@ -329,7 +333,7 @@ export async function viewBusinessOrder(
     )
   }
   const response = await client.business.getOrder(
-    session,
+    connection,
     orderId,
     {token},
     options,
@@ -339,20 +343,20 @@ export async function viewBusinessOrder(
 
 export async function viewBusinessCompliance(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<BusinessResult<BusinessMerchantCompliance>> {
-  const response = await client.business.getMerchantCompliance(session)
+  const response = await client.business.getMerchantCompliance(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function replaceBusinessCompliance(
   client: MessagingClient,
-  session: string,
+  connection: string,
   input: unknown,
   options: RequestOptions = {},
 ): Promise<BusinessResult<BusinessMutation<BusinessMerchantCompliance>>> {
   const response = await client.business.setMerchantCompliance(
-    session,
+    connection,
     merchantCompliance(input),
     options,
   )
@@ -361,17 +365,17 @@ export async function replaceBusinessCompliance(
 
 export async function viewBusinessLinkedAccounts(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<BusinessResult<BusinessLinkedAccounts>> {
-  const response = await client.business.getLinkedAccounts(session)
+  const response = await client.business.getLinkedAccounts(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function viewBusinessEligibility(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<BusinessResult<BusinessEligibility>> {
-  const response = await client.business.getEligibility(session)
+  const response = await client.business.getEligibility(connection)
   return result(response.data.data, response.metadata)
 }
 

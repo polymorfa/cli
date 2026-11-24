@@ -1,6 +1,6 @@
 import type {ApiResponse, CursorPage, RequestOptions} from '@polymorfa/sdk'
 
-import type {DeveloperSession} from './client.js'
+import type {DeveloperConnection} from './client.js'
 import type {OperationLike} from './operation-view.js'
 
 export type OperationRecord = OperationLike
@@ -23,8 +23,8 @@ export interface OperationWaitOptions {
 }
 
 /**
- * The SDK's `client.operations` resource for the session's scope. The
- * session client is already bound to the selected project when the context
+ * The SDK's `client.operations` resource for the connection's scope. The
+ * connection client is already bound to the selected project when the context
  * is project-owned, so the SDK resolves the team or project route itself.
  *
  * Operation kinds and statuses are passed through as the API spells them, so
@@ -50,6 +50,8 @@ export interface OperationsClient {
   ): Promise<ApiResponse<OperationRecord>>
 }
 
-export function operationsFor(session: DeveloperSession): OperationsClient {
-  return session.client.operations as unknown as OperationsClient
+export function operationsFor(
+  connection: DeveloperConnection,
+): OperationsClient {
+  return connection.client.operations as unknown as OperationsClient
 }

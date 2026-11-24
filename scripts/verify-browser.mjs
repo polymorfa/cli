@@ -130,7 +130,7 @@ const sent = await actual.runCommand(
     'message',
     'send',
     'text',
-    '--session',
+    '--connection',
     '739182640518203',
     '--to',
     '+15550002222',
@@ -138,7 +138,7 @@ const sent = await actual.runCommand(
     'Hello from Polymorfa',
   ],
   {
-    env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_' + 'A'.repeat(43)},
+    env: {POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_Zml4dHVyZQ'},
     fetch: async (input, init = {}) => {
       requests.push({
         path: new URL(String(input)).pathname,

@@ -12,8 +12,8 @@ export default class CloudServiceWindow extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
   }
@@ -24,7 +24,7 @@ export default class CloudServiceWindow extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.chats.getServiceWindow(
-      flags.session,
+      flags.connection,
       args.conversation,
     )
     const result = cloudResult(response)

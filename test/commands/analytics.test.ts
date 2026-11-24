@@ -23,7 +23,7 @@ const body = {
   period: {start: 0, end: 1},
   requestVitals: {requests: 20, failures: 1, errorRate: 0.05},
   summary: null,
-  numbers: [],
+  connections: [],
   series: [],
   callSeries: [],
 }

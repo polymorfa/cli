@@ -15,14 +15,14 @@ export default class OperationView extends BaseCommand {
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(OperationView)
-    const session = await this.developerSession(flags)
-    const response = await operationsFor(session).get(
+    const connection = await this.developerConnection(flags)
+    const response = await operationsFor(connection).get(
       args.operation,
       {},
-      session.requestOptions,
+      connection.requestOptions,
     )
     this.writeValue(
-      developerResponse(response, session.context),
+      developerResponse(response, connection.context),
       renderOperation(response.data),
       flags,
     )

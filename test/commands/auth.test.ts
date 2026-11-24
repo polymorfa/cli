@@ -102,7 +102,7 @@ describe('auth commands', () => {
   test('reports environment credential validation separately from remote exercise', async () => {
     await withEnvironment(
       {
-        POLYMORFA_API_KEY: 'pmfa_YmJiYmJiYmJiYmJiYmJiYmJiYmKK0GQs',
+        POLYMORFA_API_KEY: 'pmfa_AgMEBQYHCAkKCwwNDg8QERITFBXd5SUP',
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
       async () => {

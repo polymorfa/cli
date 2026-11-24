@@ -15,7 +15,7 @@ describe('group commands', () => {
     server = undefined
   })
 
-  test('lists groups from the explicitly selected session as JSON', async () => {
+  test('lists groups from the explicitly selected connection as JSON', async () => {
     server = await startHttpServer({
       body: {
         data: [
@@ -34,7 +34,7 @@ describe('group commands', () => {
     })
 
     const result = await environment(() =>
-      runCommand('group list --session session_1 --json'),
+      runCommand('group list --connection session_1 --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -71,7 +71,7 @@ describe('group commands', () => {
     server = await startHttpServer({body: {success: true, data}})
     const result = await environment(() =>
       runCommand(
-        'group capabilities 9007199254740993 --session session_1 --json',
+        'group capabilities 9007199254740993 --connection session_1 --json',
       ),
     )
     expect(result.error).toBeUndefined()
@@ -81,12 +81,12 @@ describe('group commands', () => {
     )
   })
 
-  test('requires explicit session scope before making a request', async () => {
+  test('requires explicit connection scope before making a request', async () => {
     const result = await runCommand('group list --json')
 
     expect(exitCode(result.error)).toBe(2)
     expect(result.stdout).toBe('')
-    expect(result.stderr).toContain('Missing required flag session')
+    expect(result.stderr).toContain('Missing required flag connection')
   })
 
   test('rejects a Messaging client token before a Groups request', async () => {
@@ -96,10 +96,9 @@ describe('group commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN:
-          'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
-      () => runCommand('group list --session session_1 --json'),
+      () => runCommand('group list --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -123,7 +122,7 @@ describe('group commands', () => {
     })
 
     const result = await environment(() =>
-      runCommand('group view 123@g.us --session session_1 --json'),
+      runCommand('group view 123@g.us --connection session_1 --json'),
     )
 
     expect(result.error).toBeUndefined()
@@ -151,7 +150,9 @@ describe('group commands', () => {
     })
 
     const result = await environment(() =>
-      runCommand('group participants list 123@g.us --session session_1 --json'),
+      runCommand(
+        'group participants list 123@g.us --connection session_1 --json',
+      ),
     )
 
     expect(result.error).toBeUndefined()
@@ -166,7 +167,7 @@ describe('group commands', () => {
     })
 
     const result = await environment(() =>
-      runCommand('group invite-link 123@g.us --session session_1'),
+      runCommand('group invite-link 123@g.us --connection session_1'),
     )
 
     expect(result.error).toBeUndefined()

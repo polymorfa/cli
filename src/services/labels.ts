@@ -22,10 +22,10 @@ export interface LabelResult<T> {
 
 export async function listLabels(
   client: MessagingClient,
-  session: string,
+  connection: string,
   includeObservation: boolean,
 ): Promise<LabelResult<LabelReadData>> {
-  const response = await client.labels.list(session, {
+  const response = await client.labels.list(connection, {
     ...(includeObservation ? {includeObservation: true} : {}),
   })
   return result(response.data.data, response.metadata)
@@ -33,24 +33,24 @@ export async function listLabels(
 
 export async function createLabel(
   client: MessagingClient,
-  session: string,
+  connection: string,
   input: {readonly color?: number; readonly name: string},
   options: RequestOptions = {},
 ): Promise<LabelResult<Label>> {
-  const response = await client.labels.create(session, input, options)
+  const response = await client.labels.create(connection, input, options)
   return result(response.data.data, response.metadata)
 }
 
 export async function updateLabel(
   client: MessagingClient,
-  session: string,
+  connection: string,
   labelId: string,
   input: {readonly color?: number; readonly name?: string},
   options: RequestOptions = {},
 ): Promise<LabelResult<SuccessResponse>> {
   const request = updateRequest(input)
   const response = await client.labels.update(
-    session,
+    connection,
     labelId,
     request,
     options,
@@ -60,22 +60,22 @@ export async function updateLabel(
 
 export async function deleteLabel(
   client: MessagingClient,
-  session: string,
+  connection: string,
   labelId: string,
   options: RequestOptions = {},
 ): Promise<LabelResult<SuccessResponse>> {
-  const response = await client.labels.delete(session, labelId, options)
+  const response = await client.labels.delete(connection, labelId, options)
   return result(response.data, response.metadata)
 }
 
 export async function listChatLabels(
   client: MessagingClient,
-  session: string,
+  connection: string,
   chatId: string,
   includeObservation: boolean,
 ): Promise<LabelResult<LabelReadData>> {
   const response = await client.labels.listForChat(
-    session,
+    connection,
     chatId,
     includeObservation ? {includeObservation: true} : {},
   )
@@ -84,7 +84,7 @@ export async function listChatLabels(
 
 export async function replaceChatLabels(
   client: MessagingClient,
-  session: string,
+  connection: string,
   chatId: string,
   labels: readonly string[] | undefined,
   clear: boolean,
@@ -98,7 +98,7 @@ export async function replaceChatLabels(
   }
 
   const response = await client.labels.replaceForChat(
-    session,
+    connection,
     chatId,
     {labels: clear ? [] : labels!},
     options,

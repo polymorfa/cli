@@ -22,15 +22,15 @@ export interface ProfileResult<T> {
 
 export async function viewProfile(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<ProfileResult<unknown>> {
-  const response = await client.profile.get(session)
+  const response = await client.profile.get(connection)
   return result(response.data.data as unknown, response.metadata)
 }
 
 export async function setProfileName(
   client: MessagingClient,
-  session: string,
+  connection: string,
   name: string,
   options: RequestOptions = {},
 ): Promise<ProfileResult<SuccessResponse>> {
@@ -41,37 +41,37 @@ export async function setProfileName(
     )
   }
 
-  const response = await client.profile.setName(session, {name}, options)
+  const response = await client.profile.setName(connection, {name}, options)
   return result(response.data, response.metadata)
 }
 
 export async function setProfileStatus(
   client: MessagingClient,
-  session: string,
+  connection: string,
   status: string,
   options: RequestOptions = {},
 ): Promise<ProfileResult<SuccessResponse>> {
-  const response = await client.profile.setStatus(session, {status}, options)
+  const response = await client.profile.setStatus(connection, {status}, options)
   return result(response.data, response.metadata)
 }
 
 export async function setProfilePicture(
   client: MessagingClient,
-  session: string,
+  connection: string,
   source: {readonly file?: string; readonly url?: string},
   options: RequestOptions = {},
 ): Promise<ProfileResult<SuccessResponse>> {
   const request = await pictureRequest(source)
-  const response = await client.profile.setPicture(session, request, options)
+  const response = await client.profile.setPicture(connection, request, options)
   return result(response.data, response.metadata)
 }
 
 export async function deleteProfilePicture(
   client: MessagingClient,
-  session: string,
+  connection: string,
   options: RequestOptions = {},
 ): Promise<ProfileResult<SuccessResponse>> {
-  const response = await client.profile.deletePicture(session, options)
+  const response = await client.profile.deletePicture(connection, options)
   return result(response.data, response.metadata)
 }
 

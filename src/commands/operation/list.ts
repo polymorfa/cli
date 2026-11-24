@@ -60,11 +60,11 @@ export default class OperationList extends BaseCommand {
       flags.until,
     ])
     const time = optionalTimeRange(flags.since, flags.until)
-    const session = await this.developerSession(flags)
+    const connection = await this.developerConnection(flags)
     const result = await listResources(
       paginationInput(flags),
       ({cursor, limit}) =>
-        operationsFor(session).list(
+        operationsFor(connection).list(
           {
             ...(cursor === undefined ? {} : {cursor}),
             limit,
@@ -78,14 +78,14 @@ export default class OperationList extends BaseCommand {
                   resourceType: flags['resource-type'],
                 }),
           },
-          session.requestOptions,
+          connection.requestOptions,
         ),
     )
     this.writeValue(
       developerRead(
         result.items,
         result.metadata,
-        session.context,
+        connection.context,
         result.page,
       ),
       result.items.length === 0

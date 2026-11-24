@@ -4,11 +4,11 @@ import {cloudResult} from '../../services/cloud.js'
 
 export default class CloudPricing extends BaseCommand {
   static override description =
-    'Read Meta-reported message counts (beta), without prices or invoice amounts. Requires sessions:read and service-window enrollment.'
+    'Read Meta-reported message counts (beta), without prices or invoice amounts. Requires connections:read and service-window enrollment.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     since: Flags.string({
@@ -26,7 +26,7 @@ export default class CloudPricing extends BaseCommand {
     const client = await this.messagingClient(flags, {
       serverCredentialOnly: 'Official API',
     })
-    const response = await client.sessions.getMetaPricing(flags.session, {
+    const response = await client.connections.getMetaPricing(flags.connection, {
       ...(flags.since === undefined ? {} : {since: flags.since}),
       ...(flags.until === undefined ? {} : {until: flags.until}),
     })

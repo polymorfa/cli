@@ -7,11 +7,11 @@ import {
 
 export default class TestingAccountMode extends BaseCommand {
   static override description =
-    'Change a Test number account mode. A change unlinks every companion, which must pair again. Fails with a conflict if the number is claimed in Inspector or another change is pending.'
+    'Change a Test Connection account mode. A change unlinks every companion, which must pair again. Fails with a conflict if the Connection is claimed in Inspector or another change is pending.'
   static override args = {
-    session: Args.string({
+    connection: Args.string({
       required: true,
-      description: 'The Test number session ID.',
+      description: 'The Test Connection ID.',
     }),
   }
   static override flags = {
@@ -35,7 +35,7 @@ export default class TestingAccountMode extends BaseCommand {
       await this.messagingClient(flags, {
         serverCredentialOnly: 'Testing account mode',
       }),
-      args.session,
+      args.connection,
       {
         accountType: flags['account-type'],
         ...(flags['primary-platform'] === undefined

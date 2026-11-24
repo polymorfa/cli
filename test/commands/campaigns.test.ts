@@ -50,7 +50,7 @@ describe('Messaging campaign commands', () => {
       const input = await jsonInput('campaign.json', {
         name: 'September launch',
         recipientListId: 'recipients_1',
-        senderConfig: {session: 'session_1'},
+        senderConfig: {connection: 'session_1'},
         templateId: 'template_1',
         variableMapping: {firstName: {source: 'name', fallback: 'friend'}},
       })
@@ -66,7 +66,7 @@ describe('Messaging campaign commands', () => {
       expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
         name: 'September launch',
         recipientListId: 'recipients_1',
-        senderConfig: {session: 'session_1'},
+        senderConfig: {connection: 'session_1'},
         templateId: 'template_1',
         variableMapping: {firstName: {source: 'name', fallback: 'friend'}},
         frequencyCap: {maxPer24Hours: 2, maxPer7Days: null},
@@ -355,8 +355,7 @@ describe('Messaging campaign commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN:
-          'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
       run,
     )

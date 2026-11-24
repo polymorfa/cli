@@ -15,12 +15,12 @@ describe('message commands', () => {
     server = undefined
   })
 
-  test('sends text through the explicitly selected session as JSON', async () => {
+  test('sends text through the explicitly selected connection as JSON', async () => {
     server = await messageServer('req_message')
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message send text --session session/main --to +15551234567 --body Hello --json',
+        'message send text --connection connection/main --to +15551234567 --body Hello --json',
       ),
     )
 
@@ -35,7 +35,7 @@ describe('message commands', () => {
         content: {text: 'Hello'},
       }),
       method: 'POST',
-      url: '/messaging/session%2Fmain/messages/send',
+      url: '/messaging/connection%2Fmain/messages/send',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toMatch(
       /^pmfa_cli_[0-9a-f-]{36}$/,
@@ -58,7 +58,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        `message send ${kind} --session session_1 --to +15551234567 --json`,
+        `message send ${kind} --connection session_1 --to +15551234567 --json`,
       ),
     )
 
@@ -73,7 +73,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message send text --session session_1 --to +15551234567 --body Hello --idempotency-key " " --json',
+        'message send text --connection session_1 --to +15551234567 --body Hello --idempotency-key " " --json',
       ),
     )
 
@@ -86,7 +86,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message send text --session session_1 --to 730000000001 --body Reply --reply-to 740000000001 --forwarded --mention 750000000001 --mention 750000000002 --idempotency-key send_1 --json',
+        'message send text --connection session_1 --to 730000000001 --body Reply --reply-to 740000000001 --forwarded --mention 750000000001 --mention 750000000002 --idempotency-key send_1 --json',
       ),
     )
 
@@ -102,14 +102,14 @@ describe('message commands', () => {
     expect(server.requests[0]?.url).toBe('/messaging/session_1/messages/send')
   })
 
-  test('requires explicit session scope before sending', async () => {
+  test('requires explicit connection scope before sending', async () => {
     const result = await runCommand(
       'message send text --to +15551234567 --body Hello --json',
     )
 
     expect(exitCode(result.error)).toBe(2)
     expect(result.stdout).toBe('')
-    expect(result.stderr).toContain('Missing required flag session')
+    expect(result.stderr).toContain('Missing required flag connection')
   })
 
   test('rejects an empty text body before transport', async () => {
@@ -117,7 +117,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message send text --session session_1 --to +15551234567 --body "" --json',
+        'message send text --connection session_1 --to +15551234567 --body "" --json',
       ),
     )
 
@@ -134,12 +134,11 @@ describe('message commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN:
-          'pmfa_ct_AQNtYzEzMzMzMzNDM4MzMzMzMzMzAAABoUcohAAAAA4QRERERERERESERERERERERAt0ZXN0LW51bWJlcgdicm93c2VyASIiIiIiIkIigiIiIiIiIiL__________wBTX4VcUmrk5uKjY5gnH00LcrWKw9eWe18PVEgJs1Z_49lLYduDasQEoXgU0QxV5mty5r5Q5M9IG6tYvCvbUIEO',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
       () =>
         runCommand(
-          'message send text --session session_1 --to +15551234567 --body Hello --json',
+          'message send text --connection session_1 --to +15551234567 --body Hello --json',
         ),
     )
 
@@ -154,7 +153,7 @@ describe('message commands', () => {
 
       const result = await apiKeyEnvironment(() =>
         runCommand(
-          `message react 740000000001 --session session/main --chat 730000000001 --emoji 👍 ${key === undefined ? '' : `--idempotency-key ${key}`} --json`,
+          `message react 740000000001 --connection connection/main --chat 730000000001 --emoji 👍 ${key === undefined ? '' : `--idempotency-key ${key}`} --json`,
         ),
       )
 
@@ -170,7 +169,7 @@ describe('message commands', () => {
           reaction: '👍',
         }),
         method: 'POST',
-        url: '/messaging/session%2Fmain/messages/react',
+        url: '/messaging/connection%2Fmain/messages/react',
       })
       if (key === undefined) {
         expect(server.requests[0]?.headers['idempotency-key']).toMatch(
@@ -187,7 +186,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message mark-seen 740000000001 --session session_1 --chat 730000000001 --json',
+        'message mark-seen 740000000001 --connection session_1 --chat 730000000001 --json',
       ),
     )
 
@@ -211,7 +210,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message typing --session session_1 --chat 730000000001 --state recording --json',
+        'message typing --connection session_1 --chat 730000000001 --state recording --json',
       ),
     )
 
@@ -234,7 +233,7 @@ describe('message commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'message star 740000000001 --session session_1 --chat 730000000001 --remove --json',
+        'message star 740000000001 --connection session_1 --chat 730000000001 --remove --json',
       ),
     )
 

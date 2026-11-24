@@ -11,8 +11,8 @@ export default class BusinessAccountsView extends BaseCommand {
     'View linked business accounts and ad identities.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -21,7 +21,7 @@ export default class BusinessAccountsView extends BaseCommand {
     const {flags} = await this.parse(BusinessAccountsView)
     const result = await viewBusinessLinkedAccounts(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
     )
     this.writeValue(result, renderJson(result.data), flags)
   }

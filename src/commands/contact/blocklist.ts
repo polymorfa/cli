@@ -7,8 +7,8 @@ export default class ContactBlocklist extends BaseCommand {
   static override description = 'View the account contact blocklist.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -17,7 +17,7 @@ export default class ContactBlocklist extends BaseCommand {
     const {flags} = await this.parse(ContactBlocklist)
     const result = await viewContactBlocklist(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Contact'}),
-      flags.session,
+      flags.connection,
     )
     this.writeValue(result, renderBlocklist(result.data), flags)
   }
