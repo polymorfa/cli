@@ -14,8 +14,8 @@ export default class LabelDelete extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this delete operation.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -28,7 +28,7 @@ export default class LabelDelete extends BaseCommand {
     const {args, flags} = await this.parse(LabelDelete)
     const result = await deleteLabel(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Label'}),
-      flags.session,
+      flags.connection,
       args.label,
       flags['idempotency-key'] === undefined
         ? {}

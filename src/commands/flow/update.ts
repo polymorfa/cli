@@ -4,7 +4,7 @@ import {readJsonInput} from '../../api/request.js'
 import {parseFlowUpdate} from '../../services/flows.js'
 export default class FlowUpdate extends FlowsCommand {
   static override description =
-    'Update a local project Flow draft. Requires sessions:manage.'
+    'Update a local project Flow draft. Requires connections:manage.'
   static override args = {
     flow: Args.string({description: 'Flow draft UUID.', required: true}),
   }

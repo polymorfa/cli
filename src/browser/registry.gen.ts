@@ -255,6 +255,25 @@ export const COMMAND_LOADERS: Readonly<
   'cloud template list': () => import('../commands/cloud/template/list.js'),
   'completion suggest': () => import('../commands/completion/suggest.js'),
   completion: () => import('../commands/completion.js'),
+  'connection capabilities': () =>
+    import('../commands/connection/capabilities.js'),
+  'connection configuration get': () =>
+    import('../commands/connection/configuration/get.js'),
+  'connection configuration update': () =>
+    import('../commands/connection/configuration/update.js'),
+  'connection delete': () => import('../commands/connection/delete.js'),
+  'connection hybrid-merge-candidates': () =>
+    import('../commands/connection/hybrid-merge-candidates.js'),
+  'connection list': () => import('../commands/connection/list.js'),
+  'connection status': () => import('../commands/connection/status.js'),
+  'connection stop': () => import('../commands/connection/stop.js'),
+  'connection tier confirm': () =>
+    import('../commands/connection/tier/confirm.js'),
+  'connection tier quote': () => import('../commands/connection/tier/quote.js'),
+  'connection tier status': () =>
+    import('../commands/connection/tier/status.js'),
+  'connection view': () => import('../commands/connection/view.js'),
+  'connection-ban list': () => import('../commands/connection-ban/list.js'),
   'contact block': () => import('../commands/contact/block.js'),
   'contact blocklist': () => import('../commands/contact/blocklist.js'),
   'contact business-profile': () =>
@@ -267,13 +286,14 @@ export const COMMAND_LOADERS: Readonly<
   'contact unblock': () => import('../commands/contact/unblock.js'),
   'contact view': () => import('../commands/contact/view.js'),
   'customer archive': () => import('../commands/customer/archive.js'),
+  'customer connection list': () =>
+    import('../commands/customer/connection/list.js'),
+  'customer connection transfer': () =>
+    import('../commands/customer/connection/transfer.js'),
   'customer create': () => import('../commands/customer/create.js'),
   'customer enable': () => import('../commands/customer/enable.js'),
   'customer event list': () => import('../commands/customer/event/list.js'),
   'customer list': () => import('../commands/customer/list.js'),
-  'customer number list': () => import('../commands/customer/number/list.js'),
-  'customer number transfer': () =>
-    import('../commands/customer/number/transfer.js'),
   'customer pairing-link create': () =>
     import('../commands/customer/pairing-link/create.js'),
   'customer pairing-link list': () =>
@@ -444,22 +464,6 @@ export const COMMAND_LOADERS: Readonly<
     import('../commands/security-incident/acknowledge.js'),
   'security-incident list': () =>
     import('../commands/security-incident/list.js'),
-  'session capabilities': () => import('../commands/session/capabilities.js'),
-  'session configuration get': () =>
-    import('../commands/session/configuration/get.js'),
-  'session configuration update': () =>
-    import('../commands/session/configuration/update.js'),
-  'session delete': () => import('../commands/session/delete.js'),
-  'session hybrid-merge-candidates': () =>
-    import('../commands/session/hybrid-merge-candidates.js'),
-  'session list': () => import('../commands/session/list.js'),
-  'session status': () => import('../commands/session/status.js'),
-  'session stop': () => import('../commands/session/stop.js'),
-  'session tier confirm': () => import('../commands/session/tier/confirm.js'),
-  'session tier quote': () => import('../commands/session/tier/quote.js'),
-  'session tier status': () => import('../commands/session/tier/status.js'),
-  'session view': () => import('../commands/session/view.js'),
-  'session-ban list': () => import('../commands/session-ban/list.js'),
   'sip-trunk create': () => import('../commands/sip-trunk/create.js'),
   'sip-trunk delete': () => import('../commands/sip-trunk/delete.js'),
   'sip-trunk endpoint': () => import('../commands/sip-trunk/endpoint.js'),

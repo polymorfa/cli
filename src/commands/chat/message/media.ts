@@ -20,15 +20,15 @@ export default class ChatMessageMedia extends BaseCommand {
   }
 
   static override description =
-    'Download a stored Official API message media copy for an enrolled HMS Number (beta). Requires messages:read and media:read.'
+    'Download a stored Official API message media copy for an enrolled HMS Connection (beta). Requires messages:read and media:read.'
 
   static override examples = [
-    '<%= config.bin %> chat message media +15550001111 739182640518204 --session NUMBER_ID --output ./attachment.bin',
+    '<%= config.bin %> chat message media +15550001111 739182640518204 --connection NUMBER_ID --output ./attachment.bin',
   ]
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     output: Flags.string({
@@ -51,7 +51,7 @@ export default class ChatMessageMedia extends BaseCommand {
     }
     const result = await downloadHistoryMessageMedia(
       await this.historyMessagingClient(flags),
-      flags.session,
+      flags.connection,
       args.conversation,
       args.message,
       {

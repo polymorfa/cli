@@ -16,19 +16,19 @@ export default class WebhookDeliveryAttemptList extends BaseCommand {
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(WebhookDeliveryAttemptList)
-    const session = await this.developerSession(flags)
+    const connection = await this.developerConnection(flags)
     const result = await listResources(paginationInput(flags), (page) =>
-      session.client.webhookDeliveries.listAttempts(
+      connection.client.webhookDeliveries.listAttempts(
         args.delivery,
         page,
-        session.requestOptions,
+        connection.requestOptions,
       ),
     )
     this.writeValue(
       developerRead(
         result.items,
         result.metadata,
-        session.context,
+        connection.context,
         result.page,
       ),
       `${result.items.length} delivery attempt(s).`,

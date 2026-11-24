@@ -5,7 +5,7 @@ import {
   withEnvironment,
 } from '../helpers/http-server.js'
 
-const key = `pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m`
+const key = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 function environment(
   baseUrl: string,
   run: () => Promise<unknown>,
@@ -16,7 +16,9 @@ function environment(
       POLYMORFA_API_KEY: client ? undefined : key,
       POLYMORFA_BASE_URL: baseUrl,
       POLYMORFA_PROJECT_TOKEN: undefined,
-      POLYMORFA_CLIENT_TOKEN: client ? `pmfa_ct_${'A'.repeat(94)}` : undefined,
+      POLYMORFA_CLIENT_TOKEN: client
+        ? `pmfa_ct_AAECAwQFBgcICQoLDA0ODxAREhM73f-k`
+        : undefined,
     },
     run,
   )
@@ -29,7 +31,7 @@ for (const accountType of [
 ]) {
   test(`changes Test account mode ${accountType} using the installed transport`, async () => {
     const reply = {
-      session: 'demo/a',
+      connection: 'demo/a',
       accountType,
       primaryPlatform: accountType === 'meta_cloud' ? null : 'android',
       changed: true,
@@ -65,7 +67,7 @@ test('keeps iOS and a completed unchanged result', async () => {
   const server = await startHttpSequenceServer([
     {
       body: {
-        session: 'demo',
+        connection: 'demo',
         accountType: 'business_app',
         primaryPlatform: 'ios',
         changed: false,
@@ -126,7 +128,7 @@ test('rejects client credentials before I/O', async () => {
   }
 })
 test('rejects malformed mode responses', async () => {
-  const server = await startHttpSequenceServer([{body: {session: 'demo'}}])
+  const server = await startHttpSequenceServer([{body: {connection: 'demo'}}])
   try {
     await environment(server.baseUrl, async () => {
       const result = await runCommand(
@@ -148,7 +150,7 @@ test('creates a Test QuickLink with mode-specific flags', async () => {
         data: {
           id: 'ql',
           url: 'https://example.test/ql',
-          session: 'demo',
+          connection: 'demo',
           expiresAt: null,
         },
       },

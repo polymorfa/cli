@@ -23,7 +23,7 @@ describe('call and identity commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'call reject call/1 --session session/main --from caller@lid --idempotency-key reject_1 --json',
+        'call reject call/1 --connection connection/main --from caller@lid --idempotency-key reject_1 --json',
       ),
     )
 
@@ -35,7 +35,7 @@ describe('call and identity commands', () => {
     expect(server.requests[0]).toMatchObject({
       body: JSON.stringify({from: 'caller@lid'}),
       method: 'POST',
-      url: '/messaging/session%2Fmain/calls/call%2F1/reject',
+      url: '/messaging/connection%2Fmain/calls/call%2F1/reject',
     })
     expect(server.requests[0]?.headers['idempotency-key']).toBe('reject_1')
   })
@@ -45,12 +45,12 @@ describe('call and identity commands', () => {
 
     const clientResult = await clientTokenEnvironment(() =>
       runCommand(
-        'call reject call_1 --session session_1 --from caller@lid --json',
+        'call reject call_1 --connection session_1 --from caller@lid --json',
       ),
     )
     const invalidResult = await apiKeyEnvironment(() =>
       runCommand(
-        `call reject ${'c'.repeat(129)} --session session_1 --from caller@lid --json`,
+        `call reject ${'c'.repeat(129)} --connection session_1 --from caller@lid --json`,
       ),
     )
 
@@ -75,7 +75,7 @@ describe('call and identity commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'identity resolve --session session_1 --phone-number "  +15551234567  " --json',
+        'identity resolve --connection session_1 --phone-number "  +15551234567  " --json',
       ),
     )
 
@@ -92,7 +92,7 @@ describe('call and identity commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'identity resolve --session session_1 --username alice --username-key 1234 --json',
+        'identity resolve --connection session_1 --username alice --username-key 1234 --json',
       ),
     )
 
@@ -106,7 +106,7 @@ describe('call and identity commands', () => {
     server = await startHttpServer({body: {data: {}, success: true}})
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('identity resolve --session session_1 --json'),
+      runCommand('identity resolve --connection session_1 --json'),
     )
 
     expect(exitCode(result.error)).toBe(2)
@@ -133,7 +133,9 @@ describe('call and identity commands', () => {
     })
 
     const result = await apiKeyEnvironment(() =>
-      runCommand('user security-code 750000000001 --session session/main'),
+      runCommand(
+        'user security-code 750000000001 --connection connection/main',
+      ),
     )
 
     expect(result.error).toBeUndefined()
@@ -141,7 +143,7 @@ describe('call and identity commands', () => {
     expect(result.stdout).toContain(`Numeric code\t${numericCode}`)
     expect(result.stdout).not.toContain('cHJpdmF0ZS1kaXNwbGF5LXFy')
     expect(server.requests[0]?.url).toBe(
-      '/messaging/session%2Fmain/users/750000000001/security-code',
+      '/messaging/connection%2Fmain/users/750000000001/security-code',
     )
   })
 
@@ -150,7 +152,7 @@ describe('call and identity commands', () => {
 
     const result = await apiKeyEnvironment(() =>
       runCommand(
-        'user security-code alice@s.whatsapp.net --session session_1 --json',
+        'user security-code alice@s.whatsapp.net --connection session_1 --json',
       ),
     )
 
@@ -163,8 +165,7 @@ describe('call and identity commands', () => {
     if (server === undefined) throw new Error('Test server was not started.')
     return withEnvironment(
       {
-        POLYMORFA_API_KEY:
-          'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m',
+        POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
         POLYMORFA_BASE_URL: server.baseUrl,
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
@@ -178,7 +179,7 @@ describe('call and identity commands', () => {
       {
         POLYMORFA_API_KEY: undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
-        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browserA',
+        POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
       },
       run,
     )

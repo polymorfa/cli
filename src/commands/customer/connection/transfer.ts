@@ -3,22 +3,22 @@ import {Args, Flags} from '@oclif/core'
 import {BaseCommand} from '../../../base-command.js'
 import {
   requireCustomerProject,
-  transferCustomerNumber,
+  transferCustomerConnection,
 } from '../../../services/customers.js'
 
-export default class CustomerNumberTransfer extends BaseCommand {
+export default class CustomerConnectionTransfer extends BaseCommand {
   static override args = {
     customer: Args.string({
       description: 'Destination Customer ID.',
       required: true,
     }),
-    session: Args.string({
-      description: 'Number session ID or slug.',
+    connection: Args.string({
+      description: 'Connection ID or slug.',
       required: true,
     }),
   }
 
-  static override description = 'Transfer a Number between Customers.'
+  static override description = 'Transfer a Connection between Customers.'
 
   static override flags = {
     from: Flags.string({
@@ -30,17 +30,17 @@ export default class CustomerNumberTransfer extends BaseCommand {
       required: true,
     }),
     yes: Flags.boolean({
-      description: 'Confirm the Number transfer.',
+      description: 'Confirm the Connection transfer.',
       required: true,
     }),
   }
 
   async run(): Promise<void> {
-    const {args, flags} = await this.parse(CustomerNumberTransfer)
-    const result = await transferCustomerNumber(
+    const {args, flags} = await this.parse(CustomerConnectionTransfer)
+    const result = await transferCustomerConnection(
       await this.platformClient(flags),
       args.customer,
-      args.session,
+      args.connection,
       {
         confirm: true,
         projectId: requireCustomerProject(flags.project),
@@ -50,7 +50,7 @@ export default class CustomerNumberTransfer extends BaseCommand {
     )
     this.writeValue(
       result,
-      `Transferred Number ${result.data.sessionId} to Customer ${args.customer}.`,
+      `Transferred Connection ${result.data.connectionId} to Customer ${args.customer}.`,
       flags,
     )
   }

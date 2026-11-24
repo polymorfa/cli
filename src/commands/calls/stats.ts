@@ -13,15 +13,15 @@ import {
 } from '../../services/call-analytics.js'
 
 export default class CallsStats extends BaseCommand {
-  static override description = `Summarize calls: counts by outcome, answer rate, and connected time, grouped by day, hour, session, or outcome.
+  static override description = `Summarize calls: counts by outcome, answer rate, and connected time, grouped by day, hour, connection, or outcome.
 
 The range defaults to the last 7 days. --group-by day covers at most 366 days and --group-by hour at most 31. Day and hour buckets, and the heatmap, use --timezone (UTC by default).
 
-Pass --project to read one project. Without it, a team API key reads every project in the team. A project token reads only its own project and requires --project. Credentials need the sessions:read scope.`
+Pass --project to read one project. Without it, a team API key reads every project in the team. A project token reads only its own project and requires --project. Credentials need the connections:read scope.`
 
   static override examples = [
     '<%= config.bin %> calls stats',
-    '<%= config.bin %> calls stats --project 018f0000-0000-7000-8000-000000000002 --group-by session',
+    '<%= config.bin %> calls stats --project 018f0000-0000-7000-8000-000000000002 --group-by connection',
     '<%= config.bin %> calls stats --since 2026-09-01T00:00:00Z --until 2026-09-02T00:00:00Z --group-by hour --timezone Europe/Lisbon',
     '<%= config.bin %> calls stats --direction inbound --outcome missed --heatmap',
     '<%= config.bin %> calls stats --json',
@@ -31,7 +31,7 @@ Pass --project to read one project. Without it, a team API key reads every proje
     ...callFilterFlags,
     'group-by': Flags.string({
       default: 'day',
-      description: 'Group the results by day, hour, session, or outcome.',
+      description: 'Group the results by day, hour, connection, or outcome.',
       options: [...CALL_STATS_GROUP_BY],
     }),
     heatmap: Flags.boolean({
@@ -52,7 +52,7 @@ Pass --project to read one project. Without it, a team API key reads every proje
       direction: flags.direction,
       groupBy: flags['group-by'] as CallStatsGroupBy,
       outcome: flags.outcome,
-      session: flags.session,
+      connection: flags.connection,
       since: flags.since,
       timezone: flags.timezone,
       until: flags.until,

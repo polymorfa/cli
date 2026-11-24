@@ -14,14 +14,12 @@ import {
 } from '../helpers/http-server.js'
 import {temporaryDirectory} from '../support/fs.js'
 
-const API_KEY =
-  'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m'
-const PROJECT_TOKEN =
-  'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+const PROJECT_TOKEN = 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const PROJECT = '11111111-1111-4111-8111-111111111111'
 
 const HEADER =
-  'callId,projectId,sessionId,direction,upstream,outcome,state,hasVideo,peerRef,startedAt,connectedAt,endedAt,durationSeconds,endReason'
+  'callId,projectId,connectionId,direction,upstream,outcome,state,hasVideo,peerRef,startedAt,connectedAt,endedAt,durationSeconds,endReason'
 
 function metrics(overrides: Record<string, unknown> = {}) {
   return {
@@ -113,7 +111,7 @@ describe('calls stats', () => {
         'stats',
         '--project',
         PROJECT,
-        '--session',
+        '--connection',
         'support',
         '--direction',
         'inbound',
@@ -140,7 +138,7 @@ describe('calls stats', () => {
       groupBy: 'day',
       outcome: 'answered',
       projectId: PROJECT,
-      sessionId: 'support',
+      connectionId: 'support',
       since: '2026-09-11T00:00:00Z',
       timezone: 'Europe/Lisbon',
       until: '2026-09-18T00:00:00Z',
@@ -166,7 +164,7 @@ describe('calls stats', () => {
       {
         body: {
           data: stats({
-            groupBy: 'session',
+            groupBy: 'connection',
             groups: [{key: 'support', start: null, ...metrics()}],
             groupsTruncated: true,
           }),
@@ -175,15 +173,17 @@ describe('calls stats', () => {
     ])
 
     const result = await apiKey(() =>
-      runCommand('calls stats --group-by session --heatmap'),
+      runCommand('calls stats --group-by connection --heatmap'),
     )
 
     expect(result.error).toBeUndefined()
     expect(server.requests[0]?.url).toBe(
-      '/platform/calls/stats?groupBy=session',
+      '/platform/calls/stats?groupBy=connection',
     )
-    expect(result.stdout).toContain('Session\tCalls')
-    expect(result.stdout).toContain('Only the 500 numbers with the most calls')
+    expect(result.stdout).toContain('Connection\tCalls')
+    expect(result.stdout).toContain(
+      'Only the 500 connections with the most calls',
+    )
     expect(result.stdout).toContain('Calls by hour\t00\t01')
     expect(result.stdout).toMatch(/\nMon\t(0\t){14}7\t0/)
   })
@@ -271,7 +271,7 @@ describe('calls stats', () => {
         body: {
           error: {
             code: 'insufficient_scope',
-            message: 'This credential lacks the sessions:read scope.',
+            message: 'This credential lacks the connections:read scope.',
           },
         },
         headers: {'x-request-id': 'req_denied'},
@@ -282,7 +282,7 @@ describe('calls stats', () => {
     const result = await apiKey(() => runCommand('calls stats'))
 
     expect(exitCode(result.error)).toBe(3)
-    expect(result.stderr).toContain('sessions:read')
+    expect(result.stderr).toContain('connections:read')
     expect(result.stdout).toBe('')
   })
 

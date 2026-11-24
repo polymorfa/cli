@@ -13,8 +13,8 @@ export default class CloudGroupPin extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     message: Flags.string({
@@ -44,7 +44,7 @@ export default class CloudGroupPin extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.officialGroups.pin(
-      flags.session,
+      flags.connection,
       args.group,
       flags.unpin
         ? {operation: 'unpin', messageId: flags.message}

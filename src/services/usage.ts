@@ -29,7 +29,7 @@ export interface UsageFilters {
   readonly meter?: string
   readonly period?: string
   readonly project?: string
-  readonly session?: string
+  readonly connection?: string
 }
 
 const PERIOD = /^\d{4}-(0[1-9]|1[0-2])$/
@@ -88,7 +88,9 @@ export async function getUsageSummary(
   const response = await usage.summary({
     ...(period === undefined ? {} : {period}),
     ...(filters.project === undefined ? {} : {projectId: filters.project}),
-    ...(filters.session === undefined ? {} : {session: filters.session}),
+    ...(filters.connection === undefined
+      ? {}
+      : {connection: filters.connection}),
   })
   return result(response.data, response.metadata)
 }
@@ -109,7 +111,9 @@ export async function listUsageRecords(
       : {meter: filters.meter as UsageMeter}),
     ...(period === undefined ? {} : {period}),
     ...(filters.project === undefined ? {} : {projectId: filters.project}),
-    ...(filters.session === undefined ? {} : {session: filters.session}),
+    ...(filters.connection === undefined
+      ? {}
+      : {connection: filters.connection}),
   })
   return result(response.data, response.metadata)
 }
@@ -120,7 +124,9 @@ export async function listUsageGates(
 ): Promise<UsageResult<UsageGateList>> {
   const response = await usage.listGates({
     ...(filters.project === undefined ? {} : {projectId: filters.project}),
-    ...(filters.session === undefined ? {} : {session: filters.session}),
+    ...(filters.connection === undefined
+      ? {}
+      : {connection: filters.connection}),
   })
   return result(response.data, response.metadata)
 }
@@ -129,7 +135,7 @@ export function renderUsageSummary(summary: UsageSummary): string {
   const lines = [
     `Period\t${summary.period}`,
     `Project\t${summary.projectId ?? 'every project'}`,
-    `Number\t${summary.session ?? 'every number'}`,
+    `Connection\t${summary.connection ?? 'every connection'}`,
     `Charged\t${summary.billingEnabled ? 'yes' : 'no (measured only)'}`,
   ]
   lines.push(
@@ -142,24 +148,25 @@ export function renderUsageSummary(summary: UsageSummary): string {
           )
           .join('\n'),
   )
-  if (summary.numbers.length > 0) {
-    // Without a project, numbers from several projects can share a session
+  if (summary.connections.length > 0) {
+    // Without a project, connections from several projects can share a connection
     // name, so each row names its project.
     const crossProject = summary.projectId === null
     lines.push(
-      'Numbers',
-      ...summary.numbers.map((number) =>
+      'Connections',
+      ...summary.connections.map((connection) =>
         [
-          number.session,
-          ...(crossProject ? [number.projectId ?? '-'] : []),
-          number.meters
+          connection.connection,
+          ...(crossProject ? [connection.projectId ?? '-'] : []),
+          connection.meters
             .map((total) => `${total.meter} ${total.quantity} ${total.unit}`)
             .join(', '),
         ].join('\t'),
       ),
     )
   }
-  if (summary.numbersTruncated) lines.push('More than 100 numbers had usage.')
+  if (summary.connectionsTruncated)
+    lines.push('More than 100 connections had usage.')
   return lines.join('\n')
 }
 
@@ -170,7 +177,7 @@ export function renderUsageRecords(page: UsageRecordPage): string {
       record.occurredAt,
       record.meter,
       `${record.quantity} ${record.unit}`,
-      record.session ?? '-',
+      record.connection ?? '-',
       record.projectId ?? '-',
       record.sourceId,
       record.pricingState,
@@ -200,7 +207,7 @@ export function renderUsageGates(list: UsageGateList): string {
 }
 
 function limitLabel(limit: null | number): string {
-  if (limit === null) return 'per number (pass --session)'
+  if (limit === null) return 'per Connection (pass --connection)'
   return limit < 0 ? 'none' : String(limit)
 }
 

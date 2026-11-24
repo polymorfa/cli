@@ -10,25 +10,25 @@ import {
 } from '../helpers/http-server.js'
 
 const project = '11111111-1111-4111-8111-111111111111'
-const apiKey = `pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m`
-const projectToken = `pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ`
+const apiKey = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+const projectToken = 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const cases = [
   {
-    command: 'hybrid-link state --session existing',
+    command: 'hybrid-link state --connection existing',
     method: 'GET',
     path: '/messaging/existing/hybrid-link',
     data: {revision: 'revision-1', paused: true, connections: []},
   },
   {
     command:
-      'hybrid-link pause --session existing --expected-revision revision-1',
+      'hybrid-link pause --connection existing --expected-revision revision-1',
     method: 'PUT',
     path: '/messaging/existing/hybrid-link',
     data: {revision: 'revision-2', paused: true},
   },
   {
     command:
-      'hybrid-link resume --session existing --expected-revision revision-2',
+      'hybrid-link resume --connection existing --expected-revision revision-2',
     method: 'PUT',
     path: '/messaging/existing/hybrid-link',
     data: {revision: 'revision-3', paused: false},
@@ -45,41 +45,41 @@ const cases = [
     },
   },
   {
-    command: `routing-policy set --scope session --project ${project} --session existing --expected-revision default --prefer inherit --deny-all`,
+    command: `routing-policy set --scope connection --project ${project} --connection existing --expected-revision default --prefer inherit --deny-all`,
     method: 'PUT',
-    path: `/messaging/routing/hybrid?scope=session&projectId=${project}&session=existing`,
+    path: `/messaging/routing/hybrid?scope=connection&projectId=${project}&connection=existing`,
     data: {
-      scope: 'session',
+      scope: 'connection',
       revision: 'revision-4',
       prefer: null,
       allowedTransports: [],
     },
   },
   {
-    command: 'message operation-status op-1 --session existing',
+    command: 'message operation-status op-1 --connection existing',
     method: 'GET',
     path: '/messaging/existing/operations/op-1',
     data: {operationId: 'op-1', status: 'unknown'},
   },
   {
-    command: `quicklink create --project ${project} --purpose add_connection --session existing --add-connection linked_devices`,
+    command: `quicklink create --project ${project} --purpose add_method --connection existing --add-method linked_devices`,
     method: 'POST',
     path: '/messaging/quicklinks',
     data: {
       id: 'ql_1',
-      session: 'existing',
+      connection: 'existing',
       url: 'https://example.test/quicklink/1',
       expiresAt: null,
     },
   },
   {
-    command: `quicklink availability --project ${project} --session existing`,
+    command: `quicklink availability --project ${project} --connection existing`,
     method: 'GET',
-    path: `/messaging/quicklinks/availability?projectId=${project}&session=existing`,
+    path: `/messaging/quicklinks/availability?projectId=${project}&connection=existing`,
     data: {
       allowed: false,
-      addConnection: null,
-      connections: [],
+      addMethod: null,
+      methods: [],
       resumeQuickLinkId: null,
     },
   },
@@ -155,9 +155,9 @@ test.each(credentials)(
       ).toBe(true)
       expect(JSON.parse(server.requests[6]!.body)).toEqual({
         projectId: project,
-        purpose: 'add_connection',
-        session: 'existing',
-        addConnection: 'linked_devices',
+        purpose: 'add_method',
+        connection: 'existing',
+        addMethod: 'linked_devices',
       })
       if (source === 'environment') expect(keyring).not.toHaveBeenCalled()
       else expect(keyring).toHaveBeenCalledTimes(cases.length)
@@ -214,7 +214,7 @@ test('Hybrid mutation refuses a project-token profile in a different linked dire
       },
       async () => {
         const result = await runCommand(
-          'hybrid-link pause --session existing --expected-revision prior --json',
+          'hybrid-link pause --connection existing --expected-revision prior --json',
         )
         expect(result.error).toBeDefined()
         expect(result.stderr).toContain('This directory is linked to project')
@@ -230,13 +230,13 @@ test('Hybrid mutation refuses a project-token profile in a different linked dire
   }
 })
 
-test('session policy uses the project bound to the selected profile', async () => {
+test('connection policy uses the project bound to the selected profile', async () => {
   const server = await startHttpSequenceServer([
     {
       body: {
         success: true,
         data: {
-          scope: 'session',
+          scope: 'connection',
           revision: 'default',
           prefer: null,
           allowedTransports: ['linked_devices'],
@@ -275,13 +275,13 @@ test('session policy uses the project bound to the selected profile', async () =
       },
       async () => {
         const result = await runCommand(
-          'routing-policy get --scope session --session existing --json',
+          'routing-policy get --scope connection --connection existing --json',
         )
         expect(result.error, result.stderr).toBeUndefined()
       },
     )
     expect(server.requests.map(({url}) => url)).toEqual([
-      `/messaging/routing/hybrid?scope=session&projectId=${project}&session=existing`,
+      `/messaging/routing/hybrid?scope=connection&projectId=${project}&connection=existing`,
     ])
     expect(keyring).toHaveBeenCalledOnce()
   } finally {
@@ -301,7 +301,7 @@ test.each(cases)(
           POLYMORFA_BASE_URL: server.baseUrl,
           POLYMORFA_API_KEY: undefined,
           POLYMORFA_PROJECT_TOKEN: undefined,
-          POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_browserA',
+          POLYMORFA_CLIENT_TOKEN: 'pmfa_ct_cG1mYV9jdF9icm93c2Vy',
         },
         async () => {
           const result = await runCommand(`${command} --json`)
@@ -309,7 +309,7 @@ test.each(cases)(
           expect(JSON.parse(result.stderr)).toMatchObject({
             error: {category: 'configuration'},
           })
-          expect(result.stderr).not.toContain('pmfa_ct_browserA')
+          expect(result.stderr).not.toContain('pmfa_ct_cG1mYV9jdF9icm93c2Vy')
         },
       )
       expect(server.requests).toEqual([])
@@ -356,10 +356,10 @@ test('invalid project-token format is rejected before transport', async () => {
       },
       async () => {
         const result = await runCommand(
-          'hybrid-link state --session existing --json',
+          'hybrid-link state --connection existing --json',
         )
         expect(result.error).toBeDefined()
-        expect(result.stderr).toContain('opaque format')
+        expect(result.stderr).toContain('canonical [REDACTED] opaque format')
         expect(result.stderr).not.toContain('pmfa_pt_invalid')
       },
     )
@@ -386,7 +386,7 @@ test('a server scope refusal is surfaced once without changing credentials', asy
       },
       async () => {
         const result = await runCommand(
-          'hybrid-link state --session another-project --json',
+          'hybrid-link state --connection another-project --json',
         )
         expect(result.error).toBeDefined()
         expect(JSON.parse(result.stderr)).toMatchObject({
@@ -427,7 +427,7 @@ test('an explicit retired API revision is sent and rejected without automatic up
       },
       async () => {
         const result = await runCommand(
-          'hybrid-link state --session existing --api-version 2026-08-19 --json',
+          'hybrid-link state --connection existing --api-version 2026-08-19 --json',
         )
         expect(result.error).toBeDefined()
         expect(JSON.parse(result.stderr)).toMatchObject({

@@ -18,8 +18,8 @@ export default class ChannelMessageMarkViewed extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this viewed action.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -28,7 +28,7 @@ export default class ChannelMessageMarkViewed extends BaseCommand {
     const {args, flags} = await this.parse(ChannelMessageMarkViewed)
     const result = await markChannelMessageViewed(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Channel'}),
-      flags.session,
+      flags.connection,
       args.channel,
       args['message-id'],
       flags['idempotency-key'] === undefined

@@ -4,9 +4,9 @@ import {
   type HybridMergeCandidate,
   type HybridResolution,
   type HybridTransport,
-  type NumberHybridTransition,
-  type NumberTierChange,
-  type NumberTierQuoteRequest,
+  type ConnectionHybridTransition,
+  type ConnectionTierChange,
+  type ConnectionTierQuoteRequest,
   type RequestOptions,
   type ResponseMetadata,
 } from '@polymorfa/sdk'
@@ -17,8 +17,8 @@ export const TIER_CHOICES = ['free', 'standard', 'pro', 'inherit'] as const
 export type TierChoice = (typeof TIER_CHOICES)[number]
 export const HYBRID_TRANSPORTS = ['linked_devices', 'official_api'] as const
 
-/** The API's Number name rule, checked before sending a split. */
-const NUMBER_NAME = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/
+/** The API's Connection name rule, checked before sending a split. */
+const CONNECTION_NAME = /^[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export interface TierQuoteInput {
@@ -27,14 +27,14 @@ export interface TierQuoteInput {
   readonly keep?: HybridTransport | undefined
   readonly split?: boolean | undefined
   readonly stay?: HybridTransport | undefined
-  readonly newNumberName?: string | undefined
+  readonly newConnectionName?: string | undefined
   readonly mergeWith?: string | undefined
 }
 
 /** Builds the tier quote body, refusing flag combinations the API rejects. */
 export function tierQuoteRequest(
   input: TierQuoteInput,
-): NumberTierQuoteRequest {
+): ConnectionTierQuoteRequest {
   const base = {
     tierOverride: input.tier === 'inherit' ? null : input.tier,
     ...(input.projectId === undefined ? {} : {projectId: input.projectId}),
@@ -43,7 +43,7 @@ export function tierQuoteRequest(
   if (input.mergeWith !== undefined) {
     if (resolution !== undefined) {
       throw new PolymorfaValidationError(
-        'Use --merge-with on its own; --keep and --split resolve a Hybrid Link Number leaving Pro.',
+        'Use --merge-with on its own; --keep and --split resolve a Hybrid Link Connection leaving Pro.',
       )
     }
     if (input.tier !== 'pro') {
@@ -51,13 +51,13 @@ export function tierQuoteRequest(
         'A Hybrid Link merge needs --tier pro.',
       )
     }
-    const absorbNumberId = input.mergeWith.trim()
-    if (!UUID.test(absorbNumberId)) {
+    const absorbConnectionId = input.mergeWith.trim()
+    if (!UUID.test(absorbConnectionId)) {
       throw new PolymorfaValidationError(
-        '--merge-with needs the other Number UUID. List pairs with `polymorfa session hybrid-merge-candidates`.',
+        '--merge-with needs the other Connection UUID. List pairs with `polymorfa connection hybrid-merge-candidates`.',
       )
     }
-    return {...base, hybridMerge: {absorbNumberId}}
+    return {...base, hybridMerge: {absorbConnectionId}}
   }
   return resolution === undefined
     ? base
@@ -71,25 +71,25 @@ function hybridResolution(input: TierQuoteInput): HybridResolution | undefined {
         'Choose either --keep or --split, not both.',
       )
     }
-    if (input.stay === undefined || input.newNumberName === undefined) {
+    if (input.stay === undefined || input.newConnectionName === undefined) {
       throw new PolymorfaValidationError(
-        '--split needs --stay <linked_devices|official_api> and --new-number-name <name>.',
+        '--split needs --stay <linked_devices|official_api> and --new-connection-name <name>.',
       )
     }
-    if (!NUMBER_NAME.test(input.newNumberName)) {
+    if (!CONNECTION_NAME.test(input.newConnectionName)) {
       throw new PolymorfaValidationError(
-        '--new-number-name must be 1-64 characters: a letter or digit, then letters, digits, ".", "_" or "-".',
+        '--new-connection-name must be 1-64 characters: a letter or digit, then letters, digits, ".", "_" or "-".',
       )
     }
     return {
       action: 'split',
-      existingNumberTransport: input.stay,
-      newNumberName: input.newNumberName,
+      existingConnectionTransport: input.stay,
+      newConnectionName: input.newConnectionName,
     }
   }
-  if (input.stay !== undefined || input.newNumberName !== undefined) {
+  if (input.stay !== undefined || input.newConnectionName !== undefined) {
     throw new PolymorfaValidationError(
-      '--stay and --new-number-name are used only with --split.',
+      '--stay and --new-connection-name are used only with --split.',
     )
   }
   return input.keep === undefined
@@ -99,22 +99,22 @@ function hybridResolution(input: TierQuoteInput): HybridResolution | undefined {
 
 export async function quoteTierChange(
   client: ClientInstance<'team'>,
-  sessionId: string,
-  body: NumberTierQuoteRequest,
-): Promise<PlatformResult<NumberTierChange>> {
-  const response = await client.sessions.quoteTierChange(sessionId, body)
+  connectionId: string,
+  body: ConnectionTierQuoteRequest,
+): Promise<PlatformResult<ConnectionTierChange>> {
+  const response = await client.connections.quoteTierChange(connectionId, body)
   return result(response.data.data, response.metadata)
 }
 
 export async function confirmTierChange(
   client: ClientInstance<'team'>,
-  sessionId: string,
+  connectionId: string,
   quoteId: string,
   projectId?: string,
   options: RequestOptions = {},
-): Promise<PlatformResult<NumberTierChange>> {
-  const response = await client.sessions.setTierOverride(
-    sessionId,
+): Promise<PlatformResult<ConnectionTierChange>> {
+  const response = await client.connections.setTierOverride(
+    connectionId,
     {quoteId, ...(projectId === undefined ? {} : {projectId})},
     options,
   )
@@ -123,10 +123,13 @@ export async function confirmTierChange(
 
 export async function retrieveTierChange(
   client: ClientInstance<'team'>,
-  sessionId: string,
+  connectionId: string,
   quoteId: string,
-): Promise<PlatformResult<NumberTierChange>> {
-  const response = await client.sessions.retrieveTierChange(sessionId, quoteId)
+): Promise<PlatformResult<ConnectionTierChange>> {
+  const response = await client.connections.retrieveTierChange(
+    connectionId,
+    quoteId,
+  )
   return result(response.data.data, response.metadata)
 }
 
@@ -139,7 +142,7 @@ export async function listHybridMergeCandidates(
 }
 
 export function renderTierChange(
-  change: NumberTierChange,
+  change: ConnectionTierChange,
   next?: string,
 ): string {
   const {quote} = change
@@ -156,19 +159,21 @@ export function renderTierChange(
     change.failureReason === 'hybrid_choice_required'
   )
     lines.push(
-      'This Hybrid Link Number needs a choice before leaving Pro. Quote again with --keep linked_devices|official_api, or --split --stay linked_devices|official_api --new-number-name NAME.',
+      'This Hybrid Link Connection needs a choice before leaving Pro. Quote again with --keep linked_devices|official_api, or --split --stay linked_devices|official_api --new-connection-name NAME.',
     )
   if (next !== undefined) lines.push(next)
   return lines.join('\n')
 }
 
-function renderHybridTransition(transition: NumberHybridTransition): string[] {
+function renderHybridTransition(
+  transition: ConnectionHybridTransition,
+): string[] {
   const plan =
     transition.action === 'keep'
-      ? `keep ${transition.keepTransport} on ${transition.survivingNumberId}; the other connection is disconnected`
+      ? `keep ${transition.keepTransport} on ${transition.survivingConnectionId}; the other method is disconnected`
       : transition.action === 'split'
-        ? `split: ${transition.existingNumberTransport} stays on ${transition.survivingNumberId}; the other connection moves to new Number "${transition.newNumberName}"${transition.newNumberId === undefined ? '' : ` (${transition.newNumberId})`}`
-        : `merge ${transition.absorbNumberId} into ${transition.survivingNumberId}`
+        ? `split: ${transition.existingConnectionTransport} stays on ${transition.survivingConnectionId}; the other method moves to new Connection "${transition.newConnectionName}"${transition.newConnectionId === undefined ? '' : ` (${transition.newConnectionId})`}`
+        : `merge ${transition.absorbConnectionId} into ${transition.survivingConnectionId}`
   const lines = [
     `Hybrid Link: ${plan}`,
     `Hybrid Link status: ${transition.status ?? 'not confirmed'}${transition.failureReason ? ` (${transition.failureReason})` : ''}${transition.effectiveAtMs == null ? '' : `, runs ${isoTime(transition.effectiveAtMs)}`}`,
@@ -182,16 +187,16 @@ function renderHybridTransition(transition: NumberHybridTransition): string[] {
 
 /** Customer wording for each candidate `ineligibleReason`. */
 const MERGE_INELIGIBLE_REASONS: Readonly<Record<string, string>> = {
-  deletion_in_progress: 'a Number is being deleted',
+  deletion_in_progress: 'a Connection is being deleted',
   transition_in_progress: 'a tier or Hybrid Link change is already running',
-  pairing_in_progress: 'a Number is still pairing',
+  pairing_in_progress: 'a Connection is still pairing',
   hms_enabled:
-    'both Numbers use hosted message storage; disable it on one Number',
+    'both Connections use hosted message storage; disable it on one Connection',
   not_coexistence:
-    'the Official API Number does not share the number with the WhatsApp Business app',
-  different_customer: 'the Numbers belong to different Customers',
+    'the Official API Connection does not share the number with the WhatsApp Business app',
+  different_customer: 'the Connections belong to different Customers',
   connection_disabled: 'a connection is disabled',
-  not_connected: 'both Numbers must be connected',
+  not_connected: 'both Connections must be connected',
 }
 
 export function renderMergeCandidates(
@@ -204,16 +209,18 @@ export function renderMergeCandidates(
       const verdict = candidate.eligible
         ? 'eligible'
         : `ineligible: ${reason === undefined ? 'unknown' : `${reason} (${MERGE_INELIGIBLE_REASONS[reason] ?? 'see the API reason'})`}`
-      const keep = candidate.numbers.filter((number) => !number.canBeAbsorbed)
+      const keep = candidate.connections.filter(
+        (connection) => !connection.canBeAbsorbed,
+      )
       return [
-        ...candidate.numbers.map(
-          (number) =>
-            `${number.id} (${number.name}, ${number.transport}, ${number.status}, ${number.canBeAbsorbed ? 'can be absorbed' : 'must be kept'})`,
+        ...candidate.connections.map(
+          (connection) =>
+            `${connection.id} (${connection.name}, ${connection.method}, ${connection.status}, ${connection.canBeAbsorbed ? 'can be absorbed' : 'must be kept'})`,
         ),
         verdict,
         ...(candidate.eligible && keep.length === 1
           ? [
-              `merge with: session tier quote ${keep[0]!.id} --tier pro --merge-with ${candidate.numbers.find((number) => number.canBeAbsorbed)!.id}`,
+              `merge with: connection tier quote ${keep[0]!.id} --tier pro --merge-with ${candidate.connections.find((connection) => connection.canBeAbsorbed)!.id}`,
             ]
           : []),
       ].join('\t')

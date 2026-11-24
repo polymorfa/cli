@@ -25,15 +25,15 @@ export default class WebhookDelete extends BaseCommand {
       prompt: `Delete webhook ${args.webhook}?`,
       yes: flags.yes,
     })
-    const session = await this.developerSession(flags)
-    const response = await session.client.webhooks.delete(args.webhook, {
-      ...session.requestOptions,
+    const connection = await this.developerConnection(flags)
+    const response = await connection.client.webhooks.delete(args.webhook, {
+      ...connection.requestOptions,
       idempotencyKey: idempotencyKey(flags['idempotency-key']),
     })
     const receipt = record(response.data, 'Webhook deletion receipt')
     const webhookId = stringField(receipt, 'webhookId')
     const output = developerMutation({
-      context: session.context,
+      context: connection.context,
       metadata: response.metadata,
       receipt,
       resource: {id: webhookId, type: 'webhook'},

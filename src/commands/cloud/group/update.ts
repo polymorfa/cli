@@ -13,8 +13,8 @@ export default class CloudGroupUpdate extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     subject: Flags.string({description: 'New subject, 1 to 128 characters.'}),
@@ -37,7 +37,7 @@ export default class CloudGroupUpdate extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.officialGroups.update(
-      flags.session,
+      flags.connection,
       args.group,
       {
         ...(flags.subject === undefined ? {} : {subject: flags.subject}),

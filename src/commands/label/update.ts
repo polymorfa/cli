@@ -16,8 +16,8 @@ export default class LabelUpdate extends BaseCommand {
       description: 'Safely identify retries of this update operation.',
     }),
     name: Flags.string({description: 'New label name.'}),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -26,7 +26,7 @@ export default class LabelUpdate extends BaseCommand {
     const {args, flags} = await this.parse(LabelUpdate)
     const result = await updateLabel(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Label'}),
-      flags.session,
+      flags.connection,
       args.label,
       {
         ...(flags.name === undefined ? {} : {name: flags.name}),

@@ -31,8 +31,8 @@ export default class MessageSendText extends BaseCommand {
     'reply-to': Flags.string({
       description: 'Polymorfa message ID to quote in the reply.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     to: Flags.string({
@@ -61,7 +61,7 @@ export default class MessageSendText extends BaseCommand {
     }
     const result = await sendTextMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       {idempotencyKey: idempotencyKey(flags['idempotency-key'])},
     )

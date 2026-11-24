@@ -2,7 +2,7 @@ import {Args} from '@oclif/core'
 import {FlowsCommand} from '../../flows/command.js'
 export default class FlowGet extends FlowsCommand {
   static override description =
-    'Read a project Flow draft. Requires sessions:read.'
+    'Read a project Flow draft. Requires connections:read.'
   static override args = {
     flow: Args.string({description: 'Flow draft UUID.', required: true}),
   }

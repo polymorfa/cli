@@ -20,13 +20,13 @@ export default class WebhookTest extends BaseCommand {
     'idempotency-key': idempotencyFlag,
     input: Flags.string({
       description:
-        'Read optional test input from a file or stdin (-). Project tests accept body and sessionId together; team tests accept only eventType.',
+        'Read optional test input from a file or stdin (-). Project tests accept body and connectionId together; team tests accept only eventType.',
     }),
   }
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(WebhookTest)
-    const session = await this.developerSession(flags)
+    const connection = await this.developerConnection(flags)
     const input =
       flags.input === undefined
         ? {eventType: flags.event}
@@ -34,15 +34,19 @@ export default class WebhookTest extends BaseCommand {
             ...record(await readJsonInput(flags.input), 'Webhook test input'),
             eventType: flags.event,
           }
-    validateTestInput(session.context.owner, input)
-    const response = await session.client.webhooks.test(args.webhook, input, {
-      ...session.requestOptions,
-      idempotencyKey: idempotencyKey(flags['idempotency-key']),
-    })
+    validateTestInput(connection.context.owner, input)
+    const response = await connection.client.webhooks.test(
+      args.webhook,
+      input,
+      {
+        ...connection.requestOptions,
+        idempotencyKey: idempotencyKey(flags['idempotency-key']),
+      },
+    )
     const receipt = record(response.data, 'Webhook test receipt')
     const deliveryId = stringField(receipt, 'deliveryId')
     const output = developerMutation({
-      context: session.context,
+      context: connection.context,
       metadata: response.metadata,
       receipt,
       resource: {id: deliveryId, type: 'webhook_delivery'},
@@ -58,7 +62,7 @@ function validateTestInput(
   const allowed =
     owner === 'team'
       ? new Set(['eventType'])
-      : new Set(['eventType', 'body', 'sessionId'])
+      : new Set(['eventType', 'body', 'connectionId'])
   const unexpected = Object.keys(input).find((key) => !allowed.has(key))
   if (unexpected !== undefined) {
     throw new PolymorfaValidationError(
@@ -66,9 +70,9 @@ function validateTestInput(
       {code: 'invalid_parameter'},
     )
   }
-  if (owner === 'project' && 'body' in input !== 'sessionId' in input) {
+  if (owner === 'project' && 'body' in input !== 'connectionId' in input) {
     throw new PolymorfaValidationError(
-      'Project webhook test bodies require sessionId, and sessionId requires a body.',
+      'Project webhook test bodies require connectionId, and connectionId requires a body.',
       {code: 'invalid_parameter'},
     )
   }

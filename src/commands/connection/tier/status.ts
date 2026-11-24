@@ -4,12 +4,12 @@ import {BaseCommand} from '../../../base-command.js'
 import {
   renderTierChange,
   retrieveTierChange,
-} from '../../../services/number-tiers.js'
+} from '../../../services/connection-tiers.js'
 
-export default class SessionTierStatus extends BaseCommand {
+export default class ConnectionTierStatus extends BaseCommand {
   static override args = {
-    session: Args.string({
-      description: 'Number session UUID or stable slug.',
+    connection: Args.string({
+      description: 'Connection UUID or stable slug.',
       required: true,
     }),
     quote: Args.string({
@@ -18,19 +18,19 @@ export default class SessionTierStatus extends BaseCommand {
     }),
   }
 
-  static override description = `Read a Number tier change and its Hybrid Link transition.
+  static override description = `Read a Connection tier change and its Hybrid Link transition.
 
 The tier change is queued until applied or rejected. A Hybrid Link transition reports its own status: scheduled, running, completed, failed or cancelled.`
 
   static override examples = [
-    '<%= config.bin %> session tier status support QUOTE_UUID',
+    '<%= config.bin %> connection tier status support QUOTE_UUID',
   ]
 
   async run(): Promise<void> {
-    const {args, flags} = await this.parse(SessionTierStatus)
+    const {args, flags} = await this.parse(ConnectionTierStatus)
     const result = await retrieveTierChange(
       await this.platformClient(flags),
-      args.session,
+      args.connection,
       args.quote,
     )
     this.writeValue(result, renderTierChange(result.data), flags)

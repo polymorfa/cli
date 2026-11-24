@@ -20,31 +20,31 @@ export interface QuickReplyResult<T> {
 
 export async function listQuickReplies(
   client: MessagingClient,
-  session: string,
+  connection: string,
 ): Promise<QuickReplyResult<BusinessQuickReplyCollection>> {
-  const response = await client.quickReplies.list(session)
+  const response = await client.quickReplies.list(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function createQuickReply(
   client: MessagingClient,
-  session: string,
+  connection: string,
   input: BusinessQuickReplyMutation,
   options: RequestOptions = {},
 ): Promise<QuickReplyResult<BusinessQuickReply>> {
-  const response = await client.quickReplies.create(session, input, options)
+  const response = await client.quickReplies.create(connection, input, options)
   return result(response.data.data, response.metadata)
 }
 
 export async function replaceQuickReply(
   client: MessagingClient,
-  session: string,
+  connection: string,
   quickReplyId: string,
   input: BusinessQuickReplyMutation,
   options: RequestOptions = {},
 ): Promise<QuickReplyResult<BusinessQuickReply>> {
   const response = await client.quickReplies.replace(
-    session,
+    connection,
     quickReplyId,
     input,
     options,
@@ -54,12 +54,12 @@ export async function replaceQuickReply(
 
 export async function deleteQuickReply(
   client: MessagingClient,
-  session: string,
+  connection: string,
   quickReplyId: string,
   options: RequestOptions = {},
 ): Promise<QuickReplyResult<DeletedBusinessQuickReply>> {
   const response = await client.quickReplies.delete(
-    session,
+    connection,
     quickReplyId,
     options,
   )

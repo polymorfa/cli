@@ -8,13 +8,13 @@ import {z} from 'zod'
 const uuid = z.uuid()
 const revision = z.number().int().min(0).max(2147483646)
 const priority = z.number().int().min(0).max(1000000)
-export const billingScope = z.enum(['project', 'customer', 'number'])
+export const billingScope = z.enum(['project', 'customer', 'connection'])
 const row = z.object({id: uuid, name: z.string(), priority})
 const priorities = z.object({
   revision,
   projects: z.array(row),
   customers: z.array(row.extend({projectId: uuid})),
-  numbers: z.array(row.extend({projectId: uuid})),
+  connections: z.array(row.extend({projectId: uuid})),
 })
 const credits = z.number().finite().nonnegative()
 const limits = z.object({
@@ -110,7 +110,7 @@ export function getLimits(client: ClientInstance<'team'>, projectId?: string) {
 }
 export function setLimit(
   client: ClientInstance<'team'>,
-  scope: 'project' | 'customer' | 'number',
+  scope: 'project' | 'customer' | 'connection',
   id: string,
   credits: number | null,
   expectedRevision: number,
@@ -141,7 +141,7 @@ export function getPriorities(
 }
 export function setPriority(
   client: ClientInstance<'team'>,
-  scope: 'project' | 'customer' | 'number',
+  scope: 'project' | 'customer' | 'connection',
   id: string,
   value: number,
   expectedRevision: number,
@@ -159,7 +159,7 @@ export function setPriority(
 }
 export function reorderPriorities(
   client: ClientInstance<'team'>,
-  scope: 'project' | 'customer' | 'number' | 'resource',
+  scope: 'project' | 'customer' | 'connection' | 'resource',
   ids: string[],
   expectedRevision: number,
   projectId?: string,
@@ -167,13 +167,13 @@ export function reorderPriorities(
   if (scope === 'resource') {
     if (!projectId)
       throw new PolymorfaValidationError(
-        '--project is required for customer and number funding controls.',
+        '--project is required for customer and connection funding controls.',
       )
     const resources = ids.map((value) => {
       const [kind, id, ...extra] = value.split(':')
-      if ((kind !== 'customer' && kind !== 'number') || !id || extra.length)
+      if ((kind !== 'customer' && kind !== 'connection') || !id || extra.length)
         throw new PolymorfaValidationError(
-          'Use customer:UUID or number:UUID, highest first.',
+          'Use customer:UUID or connection:UUID, highest first.',
         )
       return {scope: kind, resourceId: resourceId(id)}
     })
@@ -199,7 +199,7 @@ export function reorderPriorities(
     (scope === 'project' && projectId)
   )
     throw new PolymorfaValidationError(
-      'Use unique IDs; --project is required for customer or number order.',
+      'Use unique IDs; --project is required for customer or connection order.',
       {code: 'invalid_billing_control'},
     )
   return request(client, 'PUT', '/platform/billing/priorities', priorities, {
@@ -225,9 +225,9 @@ export function renderPriorities(data: BillingPriorities): string {
       (c) =>
         `customer\t${c.id}\t${c.name}\t${c.priority}\tproject ${c.projectId}`,
     ),
-    ...data.numbers.map(
+    ...data.connections.map(
       (n) =>
-        `number\t${n.id}\t${n.name}\t${n.priority}\tproject ${n.projectId}`,
+        `connection\t${n.id}\t${n.name}\t${n.priority}\tproject ${n.projectId}`,
     ),
   ].join('\n')
 }
@@ -239,7 +239,7 @@ const resourceControls = z.object({
 })
 export function getResourceControls(
   client: ClientInstance<'team'>,
-  scope: 'project' | 'customer' | 'number',
+  scope: 'project' | 'customer' | 'connection',
   id: string,
 ) {
   return request(
@@ -251,7 +251,7 @@ export function getResourceControls(
 }
 export function setResourceControls(
   client: ClientInstance<'team'>,
-  scope: 'project' | 'customer' | 'number',
+  scope: 'project' | 'customer' | 'connection',
   id: string,
   input: {
     limitCredits: number | null

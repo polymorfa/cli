@@ -20,8 +20,8 @@ export default class BusinessProfileCoverDelete extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this cover-photo deletion.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -34,7 +34,7 @@ export default class BusinessProfileCoverDelete extends BaseCommand {
     const {args, flags} = await this.parse(BusinessProfileCoverDelete)
     const result = await deleteBusinessCoverPhoto(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Business App'}),
-      flags.session,
+      flags.connection,
       args.cover,
       flags['idempotency-key'] === undefined
         ? {}

@@ -14,8 +14,8 @@ export default class ContactInfo extends BaseCommand {
   static override description = 'Get live WhatsApp metadata for a contact.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -24,7 +24,7 @@ export default class ContactInfo extends BaseCommand {
     const {args, flags} = await this.parse(ContactInfo)
     const result = await viewContactInfo(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Contact'}),
-      flags.session,
+      flags.connection,
       args.contact,
     )
     this.writeValue(result, renderContactInfo(result.data), flags)

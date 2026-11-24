@@ -26,8 +26,8 @@ export default class QuickReplyReplace extends BaseCommand {
       description: 'Complete reply message.',
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
     shortcut: Flags.string({
@@ -40,7 +40,7 @@ export default class QuickReplyReplace extends BaseCommand {
     const {args, flags} = await this.parse(QuickReplyReplace)
     const result = await replaceQuickReply(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Quick Reply'}),
-      flags.session,
+      flags.connection,
       args['quick-reply'],
       {
         message: flags.message,

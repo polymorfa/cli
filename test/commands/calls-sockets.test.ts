@@ -25,8 +25,8 @@ import {
 } from '../helpers/calls-server.js'
 import {withEnvironment} from '../helpers/http-server.js'
 
-const API_KEY = 'pmfa_socket_test_key_0123456789'
-const CLIENT_TOKEN = 'pmfa_ct_socket_test_tokenAA'
+const API_KEY = 'pmfa_BAUGBwgJCgsMDQ4PEBESExQVFhfgvFaM'
+const CLIENT_TOKEN = 'pmfa_ct_cG1mYV9jdF9zb2NrZXRfdGVzdF90b2tlbg'
 const TIMESTAMP = '2026-09-16T10:00:00.000Z'
 
 describe('calls watch and media', () => {
@@ -49,7 +49,7 @@ describe('calls watch and media', () => {
         await socket.next()
         socket.sendJson({
           participant: 'server:agent-7',
-          session: 'support',
+          connection: 'support',
           type: 'ready',
         })
         sendEvent(socket, 'call.received', 'call_1', {
@@ -74,7 +74,7 @@ describe('calls watch and media', () => {
 
     const result = await apiKey(() =>
       runCommand(
-        'calls watch --session support --participant agent-7 --count 4 --json',
+        'calls watch --connection support --participant agent-7 --count 4 --json',
       ),
     )
 
@@ -109,7 +109,7 @@ describe('calls watch and media', () => {
       {activities: 4, stoppedBy: 'count', type: 'stopped'},
     ])
     const [socket] = server.sockets
-    expect(socket?.path).toBe('/voip/ws?session=support&participant=agent-7')
+    expect(socket?.path).toBe('/voip/ws?connection=support&participant=agent-7')
     expect(socket?.path).not.toContain(API_KEY)
     expect(JSON.parse(String(socket?.messages[0]))).toEqual({
       token: API_KEY,
@@ -130,7 +130,7 @@ describe('calls watch and media', () => {
     })
 
     const result = await apiKey(() =>
-      runCommand('calls watch --session support --count 1'),
+      runCommand('calls watch --connection support --count 1'),
     )
 
     expect(result.error).toBeUndefined()
@@ -138,7 +138,7 @@ describe('calls watch and media', () => {
       'incoming\tcall_1\tfrom=+15550100\tvideo=false\n',
     )
     expect(result.stderr).toContain(
-      'Following calls for session support as server:default.',
+      'Following calls for connection support as server:default.',
     )
   })
 
@@ -156,7 +156,7 @@ describe('calls watch and media', () => {
     })
 
     const result = await apiKey(() =>
-      runCommand('calls watch --session support --count 2 --json'),
+      runCommand('calls watch --connection support --count 2 --json'),
     )
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain('"reason":"call_restricted"')
@@ -176,7 +176,7 @@ describe('calls watch and media', () => {
     })
 
     const result = await apiKey(() =>
-      runCommand('calls watch --session support --json'),
+      runCommand('calls watch --connection support --json'),
     )
 
     expect(exitCode(result.error)).toBe(3)
@@ -188,13 +188,13 @@ describe('calls watch and media', () => {
     expect(server.sockets).toHaveLength(1)
   })
 
-  test('watches a client token’s bound session without query parameters', async () => {
+  test('watches a client token’s bound connection without query parameters', async () => {
     server = await startCallsServer({
       onSocket: async (socket) => {
         await socket.next()
         socket.sendJson({
           participant: 'client:web-1',
-          session: 'support',
+          connection: 'support',
           type: 'ready',
         })
         sendEvent(socket, 'call.received', 'call_2', {from: '+15550100'})
@@ -213,14 +213,14 @@ describe('calls watch and media', () => {
     })
   })
 
-  test('validates watch credentials, session, and base URL before connecting', async () => {
+  test('validates watch credentials, connection, and base URL before connecting', async () => {
     server = await startCallsServer({})
 
     const participant = await clientToken(() =>
       runCommand('calls watch --participant agent-7 --json'),
     )
-    const session = await clientToken(() =>
-      runCommand('calls watch --session support --json'),
+    const connection = await clientToken(() =>
+      runCommand('calls watch --connection support --json'),
     )
     const missing = await apiKey(() => runCommand('calls watch --json'))
     const insecure = await withEnvironment(
@@ -229,17 +229,17 @@ describe('calls watch and media', () => {
         POLYMORFA_BASE_URL: 'http://api.example.com',
         POLYMORFA_CLIENT_TOKEN: undefined,
       },
-      () => runCommand('calls watch --session support --json'),
+      () => runCommand('calls watch --connection support --json'),
     )
 
     expect(exitCode(participant.error)).toBe(2)
     expect(participant.stderr).toContain(
       '--participant requires a server API key',
     )
-    expect(exitCode(session.error)).toBe(2)
-    expect(session.stderr).toContain('omit --session')
+    expect(exitCode(connection.error)).toBe(2)
+    expect(connection.stderr).toContain('omit --connection')
     expect(exitCode(missing.error)).toBe(2)
-    expect(missing.stderr).toContain('requires --session')
+    expect(missing.stderr).toContain('requires --connection')
     expect(exitCode(insecure.error)).toBe(2)
     expect(insecure.stderr).toContain('HTTPS POLYMORFA_BASE_URL')
     expect(server.sockets).toHaveLength(0)
@@ -258,7 +258,7 @@ describe('calls watch and media', () => {
       {
         baseUrl: server.baseUrl,
         credential: {type: 'apiKey', value: API_KEY},
-        session: 'support',
+        connection: 'support',
         signal: controller.signal,
       },
       {
@@ -285,7 +285,7 @@ describe('calls watch and media', () => {
       {
         baseUrl,
         credential: {type: 'apiKey', value: API_KEY},
-        session: 'support',
+        connection: 'support',
         signal: controller.signal,
       },
       {
@@ -348,7 +348,7 @@ describe('calls watch and media', () => {
       },
       rest: () => ({
         body: {
-          data: {callId: 'call_9', session: 'support', video: false},
+          data: {callId: 'call_9', connection: 'support', video: false},
           success: true,
         },
         status: 201,
@@ -357,7 +357,7 @@ describe('calls watch and media', () => {
 
     const result = await apiKey(() =>
       runCommand(
-        `calls media --session support --place +15550100 --input ${inputPath} --output ${outputPath} --leave-on-eof --json`,
+        `calls media --connection support --place +15550100 --input ${inputPath} --output ${outputPath} --leave-on-eof --json`,
       ),
     )
 
@@ -398,7 +398,7 @@ describe('calls watch and media', () => {
     })
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       exclusive: false,
-      session: 'support',
+      connection: 'support',
       to: '+15550100',
       video: false,
     })
@@ -419,7 +419,7 @@ describe('calls watch and media', () => {
         await delay(100)
         return {
           body: {
-            data: {callId: 'call_8', session: 'support', video: false},
+            data: {callId: 'call_8', connection: 'support', video: false},
             success: true,
           },
           status: 201,
@@ -433,7 +433,7 @@ describe('calls watch and media', () => {
         credential: {type: 'apiKey', value: API_KEY},
         output: () => undefined,
         place: '+15550100',
-        session: 'support',
+        connection: 'support',
         signal: AbortSignal.timeout(2_000),
       },
       () => undefined,
@@ -459,7 +459,7 @@ describe('calls watch and media', () => {
           await delay(100)
           return {
             body: {
-              data: {callId: 'call_7', session: 'support', video: false},
+              data: {callId: 'call_7', connection: 'support', video: false},
               success: true,
             },
             status: 201,
@@ -476,7 +476,7 @@ describe('calls watch and media', () => {
         credential: {type: 'apiKey', value: API_KEY},
         output: () => undefined,
         place: '+15550100',
-        session: 'support',
+        connection: 'support',
         signal: controller.signal,
       },
       (status) => statuses.push(status.type),
@@ -503,7 +503,7 @@ describe('calls watch and media', () => {
           await delay(100)
           return {
             body: {
-              data: {callId: 'call_7', session: 'support', video: false},
+              data: {callId: 'call_7', connection: 'support', video: false},
               success: true,
             },
             status: 201,
@@ -529,7 +529,7 @@ describe('calls watch and media', () => {
         credential: {type: 'apiKey', value: API_KEY},
         output: () => undefined,
         place: '+15550100',
-        session: 'support',
+        connection: 'support',
         signal: controller.signal,
       },
       () => undefined,
@@ -581,7 +581,7 @@ describe('calls watch and media', () => {
     try {
       const result = await apiKey(() =>
         runCommand(
-          `calls media call_4 --session support --input - --output ${join(directory, 'out.pcm')} --json`,
+          `calls media call_4 --connection support --input - --output ${join(directory, 'out.pcm')} --json`,
         ),
       )
 
@@ -633,7 +633,7 @@ describe('calls watch and media', () => {
         'calls',
         'media',
         'call_2',
-        '--session',
+        '--connection',
         'support',
         '--input',
         '-',
@@ -722,7 +722,7 @@ describe('calls watch and media', () => {
         credential: {type: 'apiKey', value: API_KEY},
         exclusive: true,
         output: () => undefined,
-        session: 'support',
+        connection: 'support',
         signal: controller.signal,
       },
       () => undefined,
@@ -762,7 +762,7 @@ describe('calls watch and media', () => {
 
     const result = await apiKey(() =>
       runCommand(
-        `calls media call_1 --session support --participant agent-7 --exclusive --output ${outputPath} --json`,
+        `calls media call_1 --connection support --participant agent-7 --exclusive --output ${outputPath} --json`,
       ),
     )
 
@@ -780,7 +780,7 @@ describe('calls watch and media', () => {
     })
   })
 
-  test('exits with an authorization error when calling is turned off for the session', async () => {
+  test('exits with an authorization error when calling is turned off for the connection', async () => {
     const directory = await mkdtemp(join(tmpdir(), 'polymorfa-calls-off-'))
     const outputPath = join(directory, 'out.pcm')
     try {
@@ -809,7 +809,7 @@ describe('calls watch and media', () => {
 
       const result = await apiKey(() =>
         runCommand(
-          `calls media call_4 --session support --output ${outputPath} --json`,
+          `calls media call_4 --connection support --output ${outputPath} --json`,
         ),
       )
 
@@ -841,7 +841,7 @@ describe('calls watch and media', () => {
 
     const result = await apiKey(() =>
       runCommand(
-        `calls media --session support --output ${join(tmpdir(), 'polymorfa-missing-dir', 'nested', 'out.pcm')} --json`,
+        `calls media --connection support --output ${join(tmpdir(), 'polymorfa-missing-dir', 'nested', 'out.pcm')} --json`,
       ),
     )
 
@@ -870,7 +870,7 @@ describe('calls watch and media', () => {
     ]) {
       const result = await apiKey(() =>
         runCommand(
-          `calls media --session support --input ${inputPath} --output ${output} --json`,
+          `calls media --connection support --input ${inputPath} --output ${output} --json`,
         ),
       )
 
@@ -886,7 +886,7 @@ describe('calls watch and media', () => {
 
     const result = await apiKey(() =>
       runCommand(
-        `calls media --session support --input ${join(directory, 'missing.pcm')} --output ${join(directory, 'out.pcm')} --json`,
+        `calls media --connection support --input ${join(directory, 'missing.pcm')} --output ${join(directory, 'out.pcm')} --json`,
       ),
     )
 
@@ -929,7 +929,7 @@ describe('calls watch and media', () => {
 
     const result = await apiKey(() =>
       runCommand(
-        `calls media call_6 --session support --input ${unreadable} --output ${join(directory, 'out.pcm')} --json`,
+        `calls media call_6 --connection support --input ${unreadable} --output ${join(directory, 'out.pcm')} --json`,
       ),
     )
 
@@ -976,7 +976,7 @@ describe('calls watch and media', () => {
         credential: {type: 'apiKey', value: API_KEY},
         input: Readable.from([pcm(16_000)]),
         output: () => undefined,
-        session: 'support',
+        connection: 'support',
         signal: controller.signal,
       },
       (status) => {
@@ -999,7 +999,7 @@ describe('calls watch and media', () => {
 
     const result = await apiKey(() =>
       runCommand(
-        `calls media --session support --leave-on-eof --output ${join(directory, 'out.pcm')}`,
+        `calls media --connection support --leave-on-eof --output ${join(directory, 'out.pcm')}`,
       ),
     )
 

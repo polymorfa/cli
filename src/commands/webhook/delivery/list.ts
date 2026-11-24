@@ -39,10 +39,10 @@ export default class WebhookDeliveryList extends BaseCommand {
       flags.until,
       flags.webhook,
     ])
-    const session = await this.developerSession(flags)
+    const connection = await this.developerConnection(flags)
     const time = optionalTimeRange(flags.since, flags.until)
     const result = await listResources(paginationInput(flags), (page) =>
-      session.client.webhookDeliveries.list(
+      connection.client.webhookDeliveries.list(
         {
           ...page,
           ...time,
@@ -52,14 +52,14 @@ export default class WebhookDeliveryList extends BaseCommand {
             : {status: flags.status as WebhookDeliveryStatus}),
           ...(flags.webhook === undefined ? {} : {webhookId: flags.webhook}),
         },
-        session.requestOptions,
+        connection.requestOptions,
       ),
     )
     this.writeValue(
       developerRead(
         result.items,
         result.metadata,
-        session.context,
+        connection.context,
         result.page,
       ),
       `${result.items.length} webhook delivery or deliveries.`,

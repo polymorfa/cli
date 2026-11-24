@@ -12,11 +12,11 @@ export default class ChatView extends BaseCommand {
   }
 
   static override description =
-    'View one stored chat for an enrolled HMS Number (beta). Requires chats:read.'
+    'View one stored chat for an enrolled HMS Connection (beta). Requires chats:read.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
   }
@@ -25,7 +25,7 @@ export default class ChatView extends BaseCommand {
     const {args, flags} = await this.parse(ChatView)
     const result = await viewHistoryChat(
       await this.historyMessagingClient(flags),
-      flags.session,
+      flags.connection,
       args.conversation,
     )
     this.writeValue(result, renderHistoryChat(result.data), flags)

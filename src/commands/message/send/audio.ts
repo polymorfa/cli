@@ -17,8 +17,8 @@ export default class MessageSendAudio extends BaseCommand {
     'Send audio or a voice note from a local file or URL.'
 
   static override examples = [
-    '<%= config.bin %> message send audio --session session_123 --to +15551234567 --file ./note.ogg',
-    '<%= config.bin %> message send audio --session session_123 --to +15551234567 --url https://example.com/note.ogg',
+    '<%= config.bin %> message send audio --connection connection_123 --to +15551234567 --file ./note.ogg',
+    '<%= config.bin %> message send audio --connection connection_123 --to +15551234567 --url https://example.com/note.ogg',
   ]
 
   static override flags = {
@@ -35,7 +35,7 @@ export default class MessageSendAudio extends BaseCommand {
     const request = await mediaSendRequest('audio', flags)
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       sendIdempotencyOptions(flags['idempotency-key']),
     )

@@ -18,12 +18,12 @@ describe('Official group commands (beta)', () => {
     return withEnvironment(
       {
         POLYMORFA_API_KEY:
-          kind === 'api'
-            ? `pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m`
-            : undefined,
+          kind === 'api' ? 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k' : undefined,
         POLYMORFA_PROJECT_TOKEN: undefined,
         POLYMORFA_CLIENT_TOKEN:
-          kind === 'client' ? `pmfa_ct_${'A'.repeat(94)}` : undefined,
+          kind === 'client'
+            ? `pmfa_ct_AAECAwQFBgcICQoLDA0ODxAREhM73f-k`
+            : undefined,
         POLYMORFA_BASE_URL: server.baseUrl,
       },
       () => runCommand(command),
@@ -35,73 +35,73 @@ describe('Official group commands (beta)', () => {
     const base = '/messaging/number%2Feu/official-groups'
     const cases: Array<[string, string, string, unknown?]> = [
       [
-        'cloud group list --session number/eu --limit 10 --after QUZ',
+        'cloud group list --connection number/eu --limit 10 --after QUZ',
         'GET',
         `${base}?limit=10&after=QUZ`,
       ],
       [
-        'cloud group create --session number/eu --subject Orders --join-approval',
+        'cloud group create --connection number/eu --subject Orders --join-approval',
         'POST',
         base,
         {subject: 'Orders', joinApprovalRequired: true},
       ],
       [
-        'cloud group get 739182640518203 --session number/eu',
+        'cloud group get 739182640518203 --connection number/eu',
         'GET',
         `${base}/739182640518203`,
       ],
       [
-        'cloud group update 739182640518203 --session number/eu --description Hi',
+        'cloud group update 739182640518203 --connection number/eu --description Hi',
         'PATCH',
         `${base}/739182640518203`,
         {description: 'Hi'},
       ],
       [
-        'cloud group delete 739182640518203 --session number/eu --yes',
+        'cloud group delete 739182640518203 --connection number/eu --yes',
         'DELETE',
         `${base}/739182640518203`,
       ],
       [
-        'cloud group invite-link 739182640518203 --session number/eu',
+        'cloud group invite-link 739182640518203 --connection number/eu',
         'GET',
         `${base}/739182640518203/invite-link`,
       ],
       [
-        'cloud group invite-link 739182640518203 --session number/eu --reset',
+        'cloud group invite-link 739182640518203 --connection number/eu --reset',
         'POST',
         `${base}/739182640518203/invite-link/reset`,
       ],
       [
-        'cloud group remove-participants 739182640518203 --session number/eu --participant +15550001111 --participant 123',
+        'cloud group remove-participants 739182640518203 --connection number/eu --participant +15550001111 --participant 123',
         'POST',
         `${base}/739182640518203/participants/remove`,
         {participants: ['+15550001111', '123']},
       ],
       [
-        'cloud group join-requests list 739182640518203 --session number/eu',
+        'cloud group join-requests list 739182640518203 --connection number/eu',
         'GET',
         `${base}/739182640518203/join-requests`,
       ],
       [
-        'cloud group join-requests approve 739182640518203 --session number/eu --request MTY0',
+        'cloud group join-requests approve 739182640518203 --connection number/eu --request MTY0',
         'POST',
         `${base}/739182640518203/join-requests/approve`,
         {joinRequestIds: ['MTY0']},
       ],
       [
-        'cloud group join-requests reject 739182640518203 --session number/eu --request MTY0',
+        'cloud group join-requests reject 739182640518203 --connection number/eu --request MTY0',
         'POST',
         `${base}/739182640518203/join-requests/reject`,
         {joinRequestIds: ['MTY0']},
       ],
       [
-        'cloud group pin 739182640518203 --session number/eu --message 42 --days 7',
+        'cloud group pin 739182640518203 --connection number/eu --message 42 --days 7',
         'POST',
         `${base}/739182640518203/pins`,
         {operation: 'pin', messageId: '42', expirationDays: 7},
       ],
       [
-        'cloud group pin 739182640518203 --session number/eu --message 42 --unpin',
+        'cloud group pin 739182640518203 --connection number/eu --message 42 --unpin',
         'POST',
         `${base}/739182640518203/pins`,
         {operation: 'unpin', messageId: '42'},
@@ -132,7 +132,7 @@ describe('Official group commands (beta)', () => {
       },
     })
     const result = await run(
-      'cloud group create --session number --subject Orders --idempotency-key grp-1 --json',
+      'cloud group create --connection number --subject Orders --idempotency-key grp-1 --json',
     )
     expect(result.error).toBeDefined()
     expect(server.requests).toHaveLength(1)
@@ -145,14 +145,14 @@ describe('Official group commands (beta)', () => {
   test('refuses invalid local input and client tokens before any request', async () => {
     server = await startHttpServer({body: {success: true, data: {}}})
     for (const command of [
-      'cloud group update 1 --session number',
-      'cloud group pin 1 --session number --message 42',
-      'cloud group invite-link 1 --session number --idempotency-key k',
+      'cloud group update 1 --connection number',
+      'cloud group pin 1 --connection number --message 42',
+      'cloud group invite-link 1 --connection number --idempotency-key k',
     ]) {
       expect((await run(command)).error, command).toBeDefined()
     }
     expect(
-      (await run('cloud group list --session number', 'client')).error,
+      (await run('cloud group list --connection number', 'client')).error,
     ).toBeDefined()
     expect(server.requests).toHaveLength(0)
   })

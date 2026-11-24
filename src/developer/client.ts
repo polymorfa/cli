@@ -16,18 +16,18 @@ export type MetadataLike = ResponseMetadata
 export type ApiResponseLike<T> = ApiResponse<T>
 export type CursorPageLike<T> = CursorPage<T>
 
-export interface DeveloperSession {
+export interface DeveloperConnection {
   readonly baseUrl: string
   readonly client: ClientBase<ClientOwner>
   readonly context: OutputContext
   readonly requestOptions: RequestOptions
 }
 
-export async function createDeveloperSession(
+export async function createDeveloperConnection(
   flags: GlobalFlags,
   registerSecret?: (secret: string) => void,
   loadLinkedProject?: () => Promise<string | undefined>,
-): Promise<DeveloperSession> {
+): Promise<DeveloperConnection> {
   const environment = await resolveDeveloperEnvironment({
     env: process.env,
     ...(loadLinkedProject === undefined ? {} : {loadLinkedProject}),

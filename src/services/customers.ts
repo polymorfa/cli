@@ -6,7 +6,7 @@ import {
   type Customer,
   type CustomerEvent,
   type CustomerListEnvelope,
-  type CustomerNumber,
+  type CustomerConnection,
   type CustomerPairingLink,
   type CustomerProjectRequest,
   type CustomersEnablement,
@@ -17,7 +17,7 @@ import {
   PolymorfaValidationError,
   type RequestOptions,
   type ResponseMetadata,
-  type TransferCustomerNumberRequest,
+  type TransferCustomerConnectionRequest,
   type UpdateCustomerRequest,
 } from '@polymorfa/sdk'
 
@@ -119,12 +119,12 @@ export async function restoreCustomer(
   return result(response.data.data, response.metadata)
 }
 
-export async function listCustomerNumbers(
+export async function listCustomerConnections(
   client: ClientInstance<'team'>,
   customerId: string,
   projectId: string,
-): Promise<CustomerResult<readonly CustomerNumber[]>> {
-  const response = await client.customers.listNumbers(customerId, projectId)
+): Promise<CustomerResult<readonly CustomerConnection[]>> {
+  const response = await client.customers.listConnections(customerId, projectId)
   return result(response.data.data, response.metadata)
 }
 
@@ -177,16 +177,16 @@ export async function revokeCustomerPairingLink(
   return result(response.data.data, response.metadata)
 }
 
-export async function transferCustomerNumber(
+export async function transferCustomerConnection(
   client: ClientInstance<'team'>,
   customerId: string,
-  sessionId: string,
-  body: TransferCustomerNumberRequest,
+  connectionId: string,
+  body: TransferCustomerConnectionRequest,
   options: RequestOptions,
-): Promise<CustomerResult<CustomerNumber>> {
-  const response = await client.customers.transferNumber(
+): Promise<CustomerResult<CustomerConnection>> {
+  const response = await client.customers.transferConnection(
     customerId,
-    sessionId,
+    connectionId,
     body,
     options,
   )
@@ -202,7 +202,7 @@ export function renderCustomers(customers: CustomerListEnvelope): string {
         customer.name ?? '',
         customer.externalCustomerId ?? '',
         customer.status,
-        `${customer.connectedNumberCount}/${customer.numberCount} connected`,
+        `${customer.connectedConnectionCount}/${customer.connectionCount} connected`,
         customer.needsAttention ? 'needs attention' : '',
       ].join('\t'),
     )
@@ -225,14 +225,15 @@ export function renderCustomerStatus(status: CustomersStatus): string {
     : 'Customers is not enabled for this project.'
 }
 
-export function renderCustomerNumbers(
-  numbers: readonly CustomerNumber[],
+export function renderCustomerConnections(
+  connections: readonly CustomerConnection[],
 ): string {
-  if (numbers.length === 0) return 'No Numbers are assigned to this Customer.'
-  return numbers
+  if (connections.length === 0)
+    return 'No Connections are assigned to this Customer.'
+  return connections
     .map((number) =>
       [
-        number.sessionId,
+        number.connectionId,
         number.name ?? '',
         number.phoneMasked ?? '',
         number.status,

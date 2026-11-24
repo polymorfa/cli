@@ -15,7 +15,7 @@ export default class GroupParticipantsDemote extends BaseCommand {
   static override description = 'Demote group admins to regular participants.'
 
   static override examples = [
-    '<%= config.bin %> group participants demote 750000000009 --session session_123 --participant 750000000001',
+    '<%= config.bin %> group participants demote 750000000009 --connection connection_123 --participant 750000000001',
   ]
 
   static override flags = {
@@ -27,8 +27,8 @@ export default class GroupParticipantsDemote extends BaseCommand {
       multiple: true,
       required: true,
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -38,7 +38,7 @@ export default class GroupParticipantsDemote extends BaseCommand {
     const participants = participantIds(flags.participant)
     const result = await changeGroupParticipants(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Groups'}),
-      flags.session,
+      flags.connection,
       args.group,
       'demote',
       participants,

@@ -7,10 +7,10 @@ import CallsPlace from './place.js'
 
 export default class CallsPlaceGroup extends BaseCommand {
   static override description =
-    'Place one WhatsApp group call by public group ID or to 2 to 31 distinct recipients from a Linked Device number. Each recipient must pass the number’s calling restrictions and your team’s destination policy. Cloud API numbers refuse this operation.'
+    'Place one WhatsApp group call by public group ID or to 2 to 31 distinct recipients from a Linked Device Connection. Each recipient must pass the Connection’s calling restrictions and your team’s destination policy. Cloud API connections refuse this operation.'
   static override examples = [
-    '<%= config.bin %> calls place-group --to +15550100 --to +15550101 --session support',
-    '<%= config.bin %> calls place-group --group-id 9007199254740996 --session support',
+    '<%= config.bin %> calls place-group --to +15550100 --to +15550101 --connection support',
+    '<%= config.bin %> calls place-group --group-id 9007199254740996 --connection support',
   ]
   static override flags = {
     ...CallsPlace.flags,
@@ -37,7 +37,7 @@ export default class CallsPlaceGroup extends BaseCommand {
       {
         to: flags.to,
         groupId: flags['group-id'],
-        session: flags.session,
+        connection: flags.connection,
         video: flags.video,
         exclusive: flags.exclusive,
         participant: flags.participant,

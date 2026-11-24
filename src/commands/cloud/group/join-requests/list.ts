@@ -12,8 +12,8 @@ export default class CloudGroupJoinRequestsList extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     before: Flags.string({
@@ -30,7 +30,7 @@ export default class CloudGroupJoinRequestsList extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.officialGroups.listJoinRequests(
-      flags.session,
+      flags.connection,
       args.group,
       {
         ...(flags.before === undefined ? {} : {before: flags.before}),

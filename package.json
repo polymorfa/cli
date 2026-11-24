@@ -95,7 +95,7 @@
         "description": "Manage the business profile cover photo."
       },
       "call": {
-        "description": "Reject incoming calls through the Linked Device session route."
+        "description": "Reject incoming calls through the Linked Device connection route."
       },
       "calls": {
         "description": "Place and manage calls, check consent, carry audio, and report on past calls."
@@ -107,7 +107,7 @@
         "description": "Manage the team do-not-call list."
       },
       "calls:permission": {
-        "description": "Inspect and request call permission on Cloud API numbers."
+        "description": "Inspect and request call permission on Cloud API connections."
       },
       "calls:policy": {
         "description": "Inspect and replace the team call policy."
@@ -116,7 +116,7 @@
         "description": "Inspect and change how long Polymorfa keeps your team's call data."
       },
       "calls:settings": {
-        "description": "Inspect and replace session call settings."
+        "description": "Inspect and replace connection call settings."
       },
       "campaign": {
         "description": "Inspect and manage Messaging campaigns."
@@ -134,22 +134,22 @@
         "description": "Inspect and act on channel messages."
       },
       "chat": {
-        "description": "Read stored chats on enrolled HMS Numbers (beta)."
+        "description": "Read stored chats on enrolled HMS Connections (beta)."
       },
       "chat:message": {
-        "description": "Read stored messages on enrolled HMS Numbers (beta)."
+        "description": "Read stored messages on enrolled HMS Connections (beta)."
       },
       "contact": {
         "description": "Inspect contacts and manage the contact blocklist."
       },
       "customer": {
-        "description": "Manage project Customers, pairing links, and assigned Numbers."
+        "description": "Manage project Customers, pairing links, and assigned Connections."
       },
       "customer:event": {
         "description": "Inspect Customer lifecycle events."
       },
-      "customer:number": {
-        "description": "Inspect and transfer Customer Numbers."
+      "customer:connection": {
+        "description": "Inspect and transfer Customer Connections."
       },
       "customer:pairing-link": {
         "description": "Create, inspect, and revoke Customer pairing links."
@@ -235,11 +235,11 @@
       "security-incident": {
         "description": "Inspect and acknowledge team security incidents."
       },
-      "session": {
-        "description": "Manage Platform sessions."
+      "connection": {
+        "description": "Manage Platform connections."
       },
-      "session-ban": {
-        "description": "Inspect recorded team session bans."
+      "connection-ban": {
+        "description": "Inspect recorded team connection bans."
       },
       "voice": {
         "description": "Voice Automation (beta): audio library and text-to-speech provider credentials."
@@ -250,17 +250,17 @@
       "voice:credential": {
         "description": "Store, check, and delete your text-to-speech provider keys (beta)."
       },
-      "session:configuration": {
-        "description": "Inspect and update inherited session configuration."
+      "connection:configuration": {
+        "description": "Inspect and update inherited connection configuration."
       },
-      "session:tier": {
-        "description": "Quote, confirm, and follow Number tier changes, including Hybrid Link choices."
+      "connection:tier": {
+        "description": "Quote, confirm, and follow Connection tier changes, including Hybrid Link choices."
       },
       "sip-trunk": {
         "description": "Connect a PBX to WhatsApp calls with SIP trunks."
       },
       "testing": {
-        "description": "Manage simulated session fixtures."
+        "description": "Manage simulated connection fixtures."
       },
       "testing:history-fixture": {
         "description": "Upload project-scoped test history."
@@ -296,7 +296,7 @@
         "description": "Invoke Functions once and inspect metadata receipts."
       },
       "cloud": {
-        "description": "Official API Number operations (beta). Team enrollment and scopes apply."
+        "description": "Official API Connection operations (beta). Team enrollment and scopes apply."
       },
       "cloud:template": {
         "description": "Manage Meta templates, separate from Polymorfa project drafts."
@@ -317,13 +317,13 @@
         "description": "Read Meta product catalogs visible to a WhatsApp Business Account."
       },
       "cloud:group": {
-        "description": "Manage WhatsApp groups on an Official API Number (beta). Requires an Official Business Account."
+        "description": "Manage WhatsApp groups on an Official API Connection (beta). Requires an Official Business Account."
       },
       "cloud:group:join-requests": {
         "description": "Review join requests for Official groups that require approval."
       },
       "analytics": {
-        "description": "Read WhatsApp number activity and operational vitals."
+        "description": "Read WhatsApp Connection activity and operational vitals."
       },
       "campaign:profiles": {
         "description": "Manage customer-supplied team audience profiles (beta)."
@@ -351,13 +351,14 @@
     "build": "npm run clean && tsc -p tsconfig.build.json",
     "build:browser": "node scripts/gen-browser-registry.mjs && node scripts/build-browser.mjs",
     "clean": "node scripts/clean-dist.js",
+    "ci:sdk-source": "node scripts/source-sdk.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "prepare": "npm run build",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node --test scripts/cli-reference.test.mjs scripts/sync-business-account-modes.test.mjs && node scripts/cli-reference.mjs --check && npm run verify:browser && npm pack --dry-run --ignore-scripts && npm run verify:bundled-runtime && npm run audit:prod",
+    "verify": "npm run format:check && npm run lint && npm run typecheck && npm test && npm run build && node --test scripts/cli-reference.test.mjs scripts/sync-business-account-modes.test.mjs scripts/source-sdk.test.mjs && node scripts/cli-reference.mjs --check && npm run verify:browser && npm pack --dry-run --ignore-scripts && npm run verify:bundled-runtime && npm run audit:prod",
     "docs:reference": "npm run build && node scripts/cli-reference.mjs",
     "docs:reference:check": "npm run build && node scripts/cli-reference.mjs --check",
     "verify:browser": "node scripts/verify-browser.mjs",

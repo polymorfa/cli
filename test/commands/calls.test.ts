@@ -13,11 +13,9 @@ import {
   type CallSettings,
 } from '../../src/services/calls.js'
 
-const API_KEY =
-  'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m'
-const CLIENT_TOKEN = 'pmfa_ct_browser_tokenAA'
-const PROJECT_TOKEN =
-  'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+const CLIENT_TOKEN = 'pmfa_ct_cG1mYV9jdF9icm93c2VyX3Rva2Vu'
+const PROJECT_TOKEN = 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const TRUNK_ID = '6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10'
 const DEFAULT_RETENTION = {
   appliesTo: ['call_records', 'call_events', 'client_reports'],
@@ -40,7 +38,7 @@ describe('unified calls commands', () => {
       {
         body: {
           success: true,
-          data: {callId: 'group_1', session: 'support', video: false},
+          data: {callId: 'group_1', connection: 'support', video: false},
         },
         status: 201,
       },
@@ -48,12 +46,12 @@ describe('unified calls commands', () => {
     ])
     const group = await apiKey(() =>
       runCommand(
-        'calls place-group --to +15550100 --to +15550101 --session support --json',
+        'calls place-group --to +15550100 --to +15550101 --connection support --json',
       ),
     )
     expect(group.error).toBeUndefined()
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      session: 'support',
+      connection: 'support',
       participants: ['+15550100', '+15550101'],
     })
     const ring = await apiKey(() =>
@@ -73,18 +71,18 @@ describe('unified calls commands', () => {
     server = await startHttpServer({
       body: {
         success: true,
-        data: {callId: 'stored-group', session: 'support', video: false},
+        data: {callId: 'stored-group', connection: 'support', video: false},
       },
       status: 201,
     })
     const result = await apiKey(() =>
       runCommand(
-        'calls place-group --group-id 9007199254740996 --session support --json',
+        'calls place-group --group-id 9007199254740996 --connection support --json',
       ),
     )
     expect(result.error).toBeUndefined()
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
-      session: 'support',
+      connection: 'support',
       groupId: '9007199254740996',
     })
     expect(server.requests).toHaveLength(1)
@@ -98,7 +96,7 @@ describe('unified calls commands', () => {
       '',
     ]) {
       const denied = await apiKey(() =>
-        runCommand(`calls place-group ${args} --session support --json`),
+        runCommand(`calls place-group ${args} --connection support --json`),
       )
       expect(exitCode(denied.error)).toBe(2)
     }
@@ -112,7 +110,9 @@ describe('unified calls commands', () => {
       '--to +15550100 --to +15550100',
     ]) {
       const response = await apiKey(() =>
-        runCommand(`calls place-group ${recipients} --session support --json`),
+        runCommand(
+          `calls place-group ${recipients} --connection support --json`,
+        ),
       )
       expect(exitCode(response.error)).toBe(2)
     }
@@ -148,10 +148,10 @@ describe('unified calls commands', () => {
     })
   })
 
-  test('places a call from a named session with a claim and participant', async () => {
+  test('places a call from a named connection with a claim and participant', async () => {
     server = await startHttpServer({
       body: {
-        data: {callId: 'call_1', session: 'support', video: true},
+        data: {callId: 'call_1', connection: 'support', video: true},
         success: true,
       },
       headers: {'request-id': 'req_place'},
@@ -160,13 +160,13 @@ describe('unified calls commands', () => {
 
     const result = await apiKey(() =>
       runCommand(
-        'calls place " +15550100 " --session support --video --exclusive --participant agent-7 --json',
+        'calls place " +15550100 " --connection support --video --exclusive --participant agent-7 --json',
       ),
     )
 
     expect(result.error).toBeUndefined()
     expect(JSON.parse(result.stdout)).toEqual({
-      data: {callId: 'call_1', session: 'support', video: true},
+      data: {callId: 'call_1', connection: 'support', video: true},
       metadata: {attempts: 1, requestId: 'req_place', status: 201},
     })
     expect(server.requests[0]).toMatchObject({
@@ -176,17 +176,17 @@ describe('unified calls commands', () => {
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       exclusive: true,
       participant: 'agent-7',
-      session: 'support',
+      connection: 'support',
       to: '+15550100',
       video: true,
     })
     expect(server.requests[0]?.headers.authorization).toBe(`Bearer ${API_KEY}`)
   })
 
-  test('places a call with a client token from its bound session', async () => {
+  test('places a call with a client token from its bound connection', async () => {
     server = await startHttpServer({
       body: {
-        data: {callId: 'call_2', session: 'support', video: false},
+        data: {callId: 'call_2', connection: 'support', video: false},
         success: true,
       },
       status: 201,
@@ -196,7 +196,7 @@ describe('unified calls commands', () => {
 
     expect(result.error).toBeUndefined()
     expect(result.stdout).toContain('Call\tcall_2')
-    expect(result.stdout).toContain('Session\tsupport')
+    expect(result.stdout).toContain('Connection\tsupport')
     expect(JSON.parse(server.requests[0]?.body ?? '')).toEqual({
       to: '15550100',
     })
@@ -208,23 +208,23 @@ describe('unified calls commands', () => {
   test('validates placement input before transport', async () => {
     server = await startHttpServer({body: {success: true}})
 
-    const noSession = await apiKey(() =>
+    const noConnection = await apiKey(() =>
       runCommand('calls place +15550100 --json'),
     )
     const participant = await clientToken(() =>
       runCommand('calls place +15550100 --participant agent-7 --json'),
     )
     const target = await apiKey(() =>
-      runCommand('calls place 0555 --session support --json'),
+      runCommand('calls place 0555 --connection support --json'),
     )
     const badParticipant = await apiKey(() =>
       runCommand(
-        'calls place +15550100 --session support --participant "agent 7" --json',
+        'calls place +15550100 --connection support --participant "agent 7" --json',
       ),
     )
 
-    expect(exitCode(noSession.error)).toBe(2)
-    expect(noSession.stderr).toContain('requires --session')
+    expect(exitCode(noConnection.error)).toBe(2)
+    expect(noConnection.stderr).toContain('requires --connection')
     expect(exitCode(participant.error)).toBe(2)
     expect(participant.stderr).toContain(
       '--participant requires a server API key',
@@ -312,14 +312,14 @@ describe('unified calls commands', () => {
     server = await startHttpServer(
       apiError(
         403,
-        'number_restricted',
+        'connection_restricted',
         'This number can call only people it has already chatted with.',
         'req_restricted',
       ),
     )
 
     for (const command of [
-      'calls place +15550100 --session support',
+      'calls place +15550100 --connection support',
       'calls invite call_1 +15550101',
     ]) {
       const human = await apiKey(() => runCommand(command))
@@ -332,7 +332,7 @@ describe('unified calls commands', () => {
       expect(JSON.parse(json.stderr)).toMatchObject({
         error: {
           category: 'authorization',
-          code: 'number_restricted',
+          code: 'connection_restricted',
           requestId: 'req_restricted',
         },
       })
@@ -473,7 +473,7 @@ describe('unified calls commands', () => {
     expect(server.requests).toHaveLength(1)
   })
 
-  test('reads and replaces session call settings with a server API key', async () => {
+  test('reads and replaces connection call settings with a server API key', async () => {
     server = await startHttpServer({
       body: {
         data: {conferenceMode: false, updatedAt: '2026-09-16T10:00:00.000Z'},
@@ -482,17 +482,17 @@ describe('unified calls commands', () => {
     })
 
     const viewed = await apiKey(() =>
-      runCommand('calls settings get --session support/main'),
+      runCommand('calls settings get --connection support/main'),
     )
     const updated = await apiKey(() =>
       runCommand(
-        'calls settings set --session support/main --no-conference-mode --json',
+        'calls settings set --connection support/main --no-conference-mode --json',
       ),
     )
 
     expect(viewed.error).toBeUndefined()
     expect(viewed.stdout).toBe(
-      'Session\tsupport/main\nCalls\ton\nConference mode\toff\nIncoming calls\tclients\nCloud API calls answered by\tyour Graph API integration\nSimultaneous calls\toff\nRevision\t0\nUpdated\t2026-09-16T10:00:00.000Z\n',
+      'Connection\tsupport/main\nCalls\ton\nConference mode\toff\nIncoming calls\tclients\nCloud API calls answered by\tyour Graph API integration\nSimultaneous calls\toff\nRevision\t0\nUpdated\t2026-09-16T10:00:00.000Z\n',
     )
     expect(updated.error).toBeUndefined()
     expect(jsonData(updated.stdout)).toEqual({
@@ -500,8 +500,8 @@ describe('unified calls commands', () => {
       updatedAt: '2026-09-16T10:00:00.000Z',
     })
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      'GET /platform/sessions/support%2Fmain/call-settings',
-      'PUT /platform/sessions/support%2Fmain/call-settings',
+      'GET /platform/connections/support%2Fmain/call-settings',
+      'PUT /platform/connections/support%2Fmain/call-settings',
     ])
     expect(JSON.parse(server.requests[1]?.body ?? '')).toEqual({
       conferenceMode: false,
@@ -520,35 +520,35 @@ describe('unified calls commands', () => {
     server = await startHttpServer({body: {data: routed, success: true}})
 
     const conference = await apiKey(() =>
-      runCommand('calls settings set --session support --conference-mode'),
+      runCommand('calls settings set --connection support --conference-mode'),
     )
     const trunk = await apiKey(() =>
       runCommand(
-        `calls settings set --session support --sip-trunk ${TRUNK_ID}`,
+        `calls settings set --connection support --sip-trunk ${TRUNK_ID}`,
       ),
     )
     const back = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --inbound-route clients --sip-claim=false',
+        'calls settings set --connection support --inbound-route clients --sip-claim=false',
       ),
     )
     const keepTrunk = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --inbound-route sip_trunk',
+        'calls settings set --connection support --inbound-route sip_trunk',
       ),
     )
     const hosting = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --host-cloud-api-calls=true',
+        'calls settings set --connection support --host-cloud-api-calls=true',
       ),
     )
     const conflicting = await apiKey(() =>
       runCommand(
-        `calls settings set --session support --inbound-route clients --sip-trunk ${TRUNK_ID}`,
+        `calls settings set --connection support --inbound-route clients --sip-trunk ${TRUNK_ID}`,
       ),
     )
     const empty = await apiKey(() =>
-      runCommand('calls settings set --session support'),
+      runCommand('calls settings set --connection support'),
     )
 
     for (const ok of [conference, trunk, back, keepTrunk, hosting]) {
@@ -606,32 +606,32 @@ describe('unified calls commands', () => {
 
     const unacknowledged = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --simultaneous-calls=true --json',
+        'calls settings set --connection support --simultaneous-calls=true --json',
       ),
     )
     const stray = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --conference-mode --acknowledge-risk',
+        'calls settings set --connection support --conference-mode --acknowledge-risk',
       ),
     )
     const offWithAck = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --simultaneous-calls=false --acknowledge-risk',
+        'calls settings set --connection support --simultaneous-calls=false --acknowledge-risk',
       ),
     )
     const acknowledged = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --simultaneous-calls=true --acknowledge-risk',
+        'calls settings set --connection support --simultaneous-calls=true --acknowledge-risk',
       ),
     )
     const json = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --conference-mode --simultaneous-calls=true --acknowledge-risk --expected-revision 1 --json',
+        'calls settings set --connection support --conference-mode --simultaneous-calls=true --acknowledge-risk --expected-revision 1 --json',
       ),
     )
     const off = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --simultaneous-calls=false',
+        'calls settings set --connection support --simultaneous-calls=false',
       ),
     )
 
@@ -647,7 +647,7 @@ describe('unified calls commands', () => {
     expect(exitCode(offWithAck.error)).toBe(2)
     expect(acknowledged.error).toBeUndefined()
     expect(acknowledged.stdout).toContain(
-      'Simultaneous calls\ton (Ban Insurance does not cover this number)',
+      'Simultaneous calls\ton (Ban Insurance does not cover this Connection)',
     )
     expect(json.error).toBeUndefined()
     expect(jsonData(json.stdout)).toMatchObject({simultaneousCalls: true})
@@ -675,12 +675,12 @@ describe('unified calls commands', () => {
 
     const denied = await apiKey(() =>
       runCommand(
-        'calls settings set --session support/main --simultaneous-calls=true --acknowledge-risk --json',
+        'calls settings set --connection support/main --simultaneous-calls=true --acknowledge-risk --json',
       ),
     )
     const stale = await apiKey(() =>
       runCommand(
-        'calls settings set --session support/main --simultaneous-calls=false --expected-revision 2 --json',
+        'calls settings set --connection support/main --simultaneous-calls=false --expected-revision 2 --json',
       ),
     )
 
@@ -701,12 +701,12 @@ describe('unified calls commands', () => {
     ).toEqual([
       {
         method: 'PUT',
-        url: '/platform/sessions/support%2Fmain/call-settings',
+        url: '/platform/connections/support%2Fmain/call-settings',
         authorization: `Bearer ${API_KEY}`,
       },
       {
         method: 'PUT',
-        url: '/platform/sessions/support%2Fmain/call-settings',
+        url: '/platform/connections/support%2Fmain/call-settings',
         authorization: `Bearer ${API_KEY}`,
       },
     ])
@@ -788,7 +788,7 @@ describe('unified calls commands', () => {
       },
     ])
 
-    const get = 'calls settings get --session support/main'
+    const get = 'calls settings get --connection support/main'
     const dated = await apiKey(() => runCommand(get))
     const noEnd = await apiKey(() => runCommand(get))
     const on = await apiKey(() => runCommand(get))
@@ -798,7 +798,7 @@ describe('unified calls commands', () => {
     const expired = await apiKey(() => runCommand(get))
     const turnedOff = await apiKey(() =>
       runCommand(
-        'calls settings set --session support/main --simultaneous-calls=false',
+        'calls settings set --connection support/main --simultaneous-calls=false',
       ),
     )
 
@@ -815,14 +815,14 @@ describe('unified calls commands', () => {
       expect(run.error, run.stderr).toBeUndefined()
     }
     expect(dated.stdout).toBe(
-      `Session\tsupport/main\nCalls\ton\nConference mode\toff\nIncoming calls\tclients\nCloud API calls answered by\tyour Graph API integration\nSimultaneous calls\toff\nBan Insurance exclusion ends\t${until}\nRevision\t3\nUpdated\t2026-10-21T08:00:00.000Z\n`,
+      `Connection\tsupport/main\nCalls\ton\nConference mode\toff\nIncoming calls\tclients\nCloud API calls answered by\tyour Graph API integration\nSimultaneous calls\toff\nBan Insurance exclusion ends\t${until}\nRevision\t3\nUpdated\t2026-10-21T08:00:00.000Z\n`,
     )
     for (const run of [noEnd, legacy, expired]) {
       expect(run.stdout).toContain('Simultaneous calls\toff\nRevision\t3\n')
       expect(run.stdout).not.toMatch(/exclusion|cover/i)
     }
     expect(on.stdout).toContain(
-      'Simultaneous calls\ton (Ban Insurance does not cover this number)\nRevision\t3\n',
+      'Simultaneous calls\ton (Ban Insurance does not cover this Connection)\nRevision\t3\n',
     )
     expect(on.stdout).not.toContain('exclusion ends')
     expect(jsonData(jsonDated.stdout)).toMatchObject({
@@ -837,9 +837,9 @@ describe('unified calls commands', () => {
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
       ...Array.from(
         {length: 7},
-        () => 'GET /platform/sessions/support%2Fmain/call-settings',
+        () => 'GET /platform/connections/support%2Fmain/call-settings',
       ),
-      'PUT /platform/sessions/support%2Fmain/call-settings',
+      'PUT /platform/connections/support%2Fmain/call-settings',
     ])
     expect(JSON.parse(server.requests[7]?.body ?? '')).toEqual({
       simultaneousCalls: false,
@@ -903,21 +903,23 @@ describe('unified calls commands', () => {
 
     const guarded = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --calls-enabled=false --expected-revision 3',
+        'calls settings set --connection support --calls-enabled=false --expected-revision 3',
       ),
     )
     const stale = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --calls-enabled=true --expected-revision 3 --json',
+        'calls settings set --connection support --calls-enabled=true --expected-revision 3 --json',
       ),
     )
     const negative = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --calls-enabled=true --expected-revision -1',
+        'calls settings set --connection support --calls-enabled=true --expected-revision -1',
       ),
     )
     const alone = await apiKey(() =>
-      runCommand('calls settings set --session support --expected-revision 3'),
+      runCommand(
+        'calls settings set --connection support --expected-revision 3',
+      ),
     )
 
     expect(guarded.error).toBeUndefined()
@@ -957,10 +959,12 @@ describe('unified calls commands', () => {
     ])
 
     const off = await apiKey(() =>
-      runCommand('calls settings set --session support --calls-enabled=false'),
+      runCommand(
+        'calls settings set --connection support --calls-enabled=false',
+      ),
     )
     const place = await apiKey(() =>
-      runCommand('calls place +15550100 --session support'),
+      runCommand('calls place +15550100 --connection support'),
     )
 
     expect(off.error).toBeUndefined()
@@ -983,7 +987,7 @@ describe('unified calls commands', () => {
 
     const result = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --inbound-route sip_trunk',
+        'calls settings set --connection support --inbound-route sip_trunk',
       ),
     )
 
@@ -995,16 +999,16 @@ describe('unified calls commands', () => {
     server = await startHttpServer({body: {success: true}})
 
     const token = await clientToken(() =>
-      runCommand('calls settings get --session support --json'),
+      runCommand('calls settings get --connection support --json'),
     )
     const value = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --conference-mode=yes --json',
+        'calls settings set --connection support --conference-mode=yes --json',
       ),
     )
     const retired = await apiKey(() =>
       runCommand(
-        'calls settings set --session support --include-self-audio=true --json',
+        'calls settings set --connection support --include-self-audio=true --json',
       ),
     )
 
@@ -1281,9 +1285,9 @@ describe('unified calls commands', () => {
     )
   })
 
-  test('explains that changing call retention also needs sessions:read for the first read', async () => {
+  test('explains that changing call retention also needs connections:read for the first read', async () => {
     server = await startHttpSequenceServer([
-      apiError(403, 'missing_scope', 'This action requires sessions:read.'),
+      apiError(403, 'missing_scope', 'This action requires connections:read.'),
     ])
 
     const result = await apiKey(() =>
@@ -1298,10 +1302,10 @@ describe('unified calls commands', () => {
     }
     expect(envelope.error.category).toBe('authorization')
     expect(envelope.error.message).toContain(
-      'use a team API key with the sessions:read and sessions:manage scopes to change it',
+      'use a team API key with the connections:read and connections:manage scopes to change it',
     )
     expect(envelope.error.message).toContain(
-      'This action requires sessions:read.',
+      'This action requires connections:read.',
     )
     expect(server.requests.map(({method}) => method)).toEqual(['GET'])
   })
@@ -1341,7 +1345,7 @@ describe('unified calls commands', () => {
     }
   })
 
-  test('distinguishes the unified and session-route reject commands in help', async () => {
+  test('distinguishes the unified and connection-route reject commands in help', async () => {
     const unified = await runCommand('calls reject --help')
     const legacy = await runCommand('call reject --help')
 

@@ -30,7 +30,7 @@ export interface MessageResult<T> {
 
 export async function sendTextMessage(
   client: MessagingClient,
-  session: string,
+  connection: string,
   request: SendTextMessageRequest,
   options: RequestOptions = {},
 ): Promise<MessageResult<MessageResponse>> {
@@ -40,24 +40,24 @@ export async function sendTextMessage(
       'body',
     )
   }
-  const response = await client.messages.send(session, request, options)
+  const response = await client.messages.send(connection, request, options)
   return result(response.data.data, response.metadata)
 }
 
 /** Send any typed message kind through the SDK's single send method. */
 export async function sendMessage(
   client: MessagingClient,
-  session: string,
+  connection: string,
   request: SendMessageRequest,
   options: RequestOptions = {},
 ): Promise<MessageResult<MessageResponse>> {
-  const response = await client.messages.send(session, request, options)
+  const response = await client.messages.send(connection, request, options)
   return result(response.data.data, response.metadata)
 }
 
 export async function editMessage(
   client: MessagingClient,
-  session: string,
+  connection: string,
   chat: string,
   message: string,
   text: string,
@@ -70,7 +70,7 @@ export async function editMessage(
     )
   }
   const response = await client.chats.editMessage(
-    session,
+    connection,
     chat,
     message,
     {
@@ -86,13 +86,13 @@ export async function editMessage(
 
 export async function deleteMessage(
   client: MessagingClient,
-  session: string,
+  connection: string,
   chat: string,
   message: string,
   options: RequestOptions & {readonly transport?: MessageTransport} = {},
 ): Promise<MessageResult<SuccessResponse>> {
   const response = await client.chats.deleteMessage(
-    session,
+    connection,
     chat,
     message,
     options,
@@ -102,41 +102,41 @@ export async function deleteMessage(
 
 export async function reactToMessage(
   client: MessagingClient,
-  session: string,
+  connection: string,
   request: ReactRequest,
   options: RequestOptions = {},
 ): Promise<MessageResult<MessageReceipt>> {
-  const response = await client.messages.react(session, request, options)
+  const response = await client.messages.react(connection, request, options)
   return result(response.data.data, response.metadata)
 }
 
 export async function markMessageSeen(
   client: MessagingClient,
-  session: string,
+  connection: string,
   request: SeenRequest,
   options: RequestOptions = {},
 ): Promise<MessageResult<SuccessResponse>> {
-  const response = await client.messages.markSeen(session, request, options)
+  const response = await client.messages.markSeen(connection, request, options)
   return result(response.data, response.metadata)
 }
 
 export async function setMessageTyping(
   client: MessagingClient,
-  session: string,
+  connection: string,
   request: TypingRequest,
   options: RequestOptions = {},
 ): Promise<MessageResult<SuccessResponse>> {
-  const response = await client.messages.setTyping(session, request, options)
+  const response = await client.messages.setTyping(connection, request, options)
   return result(response.data, response.metadata)
 }
 
 export async function setMessageStar(
   client: MessagingClient,
-  session: string,
+  connection: string,
   request: StarRequest,
   options: RequestOptions = {},
 ): Promise<MessageResult<{readonly status: 'OK'}>> {
-  const response = await client.messages.star(session, request, options)
+  const response = await client.messages.star(connection, request, options)
   return result(response.data.data, response.metadata)
 }
 

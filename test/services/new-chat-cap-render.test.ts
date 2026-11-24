@@ -1,10 +1,10 @@
-import type {Session} from '@polymorfa/sdk'
+import type {Connection} from '@polymorfa/sdk'
 import {describe, expect, test} from 'vitest'
 
-import {renderManagedSession} from '../../src/services/platform-management.js'
+import {renderManagedConnection} from '../../src/services/platform-management.js'
 
 const base = {
-  sessionId: 'session_1',
+  connectionId: 'session_1',
   name: 'Support',
   tenantId: 'team_1',
   type: 'linked_device',
@@ -12,16 +12,16 @@ const base = {
   status: 'CONNECTED',
   createdAt: '2026-09-26T00:00:00.000Z',
   updatedAt: '2026-09-27T00:00:00.000Z',
-} as unknown as Session
+} as unknown as Connection
 
 const cap = (newChatCapping: unknown) =>
-  renderManagedSession({...base, newChatCapping} as unknown as Session)
+  renderManagedConnection({...base, newChatCapping} as unknown as Connection)
     .split('\n')
     .find((line) => line.startsWith('New-chat cap'))
 
-describe('session view new-chat cap line', () => {
+describe('connection view new-chat cap line', () => {
   test('omits the line when the API returned no field', () => {
-    expect(renderManagedSession(base)).not.toContain('New-chat cap')
+    expect(renderManagedConnection(base)).not.toContain('New-chat cap')
   })
 
   test('describes each WhatsApp state', () => {

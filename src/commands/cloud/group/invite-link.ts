@@ -13,8 +13,8 @@ export default class CloudGroupInviteLink extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     reset: Flags.boolean({
@@ -39,11 +39,11 @@ export default class CloudGroupInviteLink extends BaseCommand {
     })
     const response = flags.reset
       ? await client.officialGroups.resetInviteLink(
-          flags.session,
+          flags.connection,
           args.group,
           requestKey(flags['idempotency-key']),
         )
-      : await client.officialGroups.getInviteLink(flags.session, args.group)
+      : await client.officialGroups.getInviteLink(flags.connection, args.group)
     const result = cloudResult(response)
     this.writeValue(result, JSON.stringify(result.data, null, 2), flags)
   }

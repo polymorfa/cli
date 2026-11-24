@@ -1,13 +1,13 @@
 import {
   type BanSafeClaim,
-  type BanSafeCollectionSession,
+  type BanSafeCollectionConnection,
   type BanSafeEnforcementSummary,
   type BanSafeFinding,
   type BanSafeHealthAction,
   type BanSafeHealthHistory,
   type BanSafeIncident,
-  type BanSafeNumber,
-  type BanSafeNumberDetail,
+  type BanSafeConnection,
+  type BanSafeConnectionDetail,
   type BanSafeSignalDefinition,
   type BanSafeTelemetryDetail,
   type BanSafeTelemetrySnapshot,
@@ -30,12 +30,12 @@ import {
   type ReportBanSafeIncidentRequest,
   type RequestOptions,
   type ResponseMetadata,
-  type SessionSafeMode,
+  type ConnectionSafeMode,
   type UpdateProjectHealthPolicyRequest,
   type UpdateProjectInsuranceEvidenceRequest,
   type UpdateProjectSafeModeRequest,
   type UpdateProjectWarmupPlanRequest,
-  type UpdateSessionSafeModeRequest,
+  type UpdateConnectionSafeModeRequest,
 } from '@polymorfa/sdk'
 
 export interface BanSafeResult<T> {
@@ -57,25 +57,25 @@ interface ResultMetadata {
 export async function listHealth(
   client: TeamClient,
   params: ListBanSafeHealthParams,
-): Promise<BanSafePageResult<BanSafeNumber>> {
+): Promise<BanSafePageResult<BanSafeConnection>> {
   const response = await client.banSafe.listHealth(params)
   return pageResult(response.data, response.metadata)
 }
 
 export async function getHealth(
   client: TeamClient,
-  session: string,
-): Promise<BanSafeResult<BanSafeNumberDetail>> {
-  const response = await client.banSafe.getHealth(session)
+  connection: string,
+): Promise<BanSafeResult<BanSafeConnectionDetail>> {
+  const response = await client.banSafe.getHealth(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function listHealthHistory(
   client: TeamClient,
-  session: string,
+  connection: string,
   params: ListBanSafeHealthHistoryParams,
 ): Promise<BanSafeResult<BanSafeHealthHistory>> {
-  const response = await client.banSafe.listHealthHistory(session, params)
+  const response = await client.banSafe.listHealthHistory(connection, params)
   return result(response.data.data, response.metadata)
 }
 
@@ -88,25 +88,25 @@ export async function listSignals(
 
 export async function getTelemetry(
   client: TeamClient,
-  session: string,
+  connection: string,
 ): Promise<BanSafeResult<BanSafeTelemetryDetail>> {
-  const response = await client.banSafe.getTelemetry(session)
+  const response = await client.banSafe.getTelemetry(connection)
   return result(response.data.data, response.metadata)
 }
 
 export async function listTelemetryHistory(
   client: TeamClient,
-  session: string,
+  connection: string,
   params: ListBanSafeTelemetryHistoryParams,
 ): Promise<BanSafePageResult<BanSafeTelemetrySnapshot>> {
-  const response = await client.banSafe.listTelemetryHistory(session, params)
+  const response = await client.banSafe.listTelemetryHistory(connection, params)
   return pageResult(response.data, response.metadata)
 }
 
 export async function listCollection(
   client: TeamClient,
   params: ListBanSafeCollectionParams,
-): Promise<BanSafePageResult<BanSafeCollectionSession>> {
+): Promise<BanSafePageResult<BanSafeCollectionConnection>> {
   const response = await client.banSafe.listCollection(params)
   return pageResult(response.data, response.metadata)
 }
@@ -191,19 +191,22 @@ export async function updateProjectSafeMode(
   return result(response.data.data, response.metadata)
 }
 
-export async function getSessionSafeMode(client: TeamClient, session: string) {
-  const response = await client.sessions.getSafeMode(session)
+export async function getConnectionSafeMode(
+  client: TeamClient,
+  connection: string,
+) {
+  const response = await client.connections.getSafeMode(connection)
   return result(response.data.data, response.metadata)
 }
 
-export async function updateSessionSafeMode(
+export async function updateConnectionSafeMode(
   client: TeamClient,
-  session: string,
+  connection: string,
   input: unknown,
   options: RequestOptions,
-): Promise<BanSafeResult<SessionSafeMode>> {
-  const response = await client.sessions.updateSafeMode(
-    session,
+): Promise<BanSafeResult<ConnectionSafeMode>> {
+  const response = await client.connections.updateSafeMode(
+    connection,
     safeModeInput(input, true),
     options,
   )
@@ -281,42 +284,44 @@ export async function updateHealthPolicy(
   return result(response.data.data, response.metadata)
 }
 
-export function renderHealthList(numbers: readonly BanSafeNumber[]): string {
-  if (numbers.length === 0) return 'No BanSafe Health records found.'
-  return numbers
-    .map((number) =>
+export function renderHealthList(
+  connections: readonly BanSafeConnection[],
+): string {
+  if (connections.length === 0) return 'No BanSafe Health records found.'
+  return connections
+    .map((connection) =>
       [
-        number.session,
-        number.phoneNumber,
-        number.health ?? 'unknown',
-        number.band,
-        number.healthSource,
+        connection.connection,
+        connection.phoneNumber,
+        connection.health ?? 'unknown',
+        connection.band,
+        connection.healthSource,
       ].join('\t'),
     )
     .join('\n')
 }
 
-export function renderHealth(number: BanSafeNumberDetail): string {
-  const explanation = number.healthExplanation
+export function renderHealth(connection: BanSafeConnectionDetail): string {
+  const explanation = connection.healthExplanation
   return [
-    `Session\t${number.session}`,
-    `Phone\t${number.phoneNumber}`,
-    `Health\t${number.health ?? 'unknown'}`,
-    `Band\t${number.band}`,
-    `Source\t${number.healthSource}`,
-    `Estimator\t${number.healthEstimatorVersion ?? ''}`,
-    `Reliability\t${number.healthReliability}`,
-    `Coverage\t${number.healthFeatureCoverage ?? 'unknown'}`,
-    `Observed state\t${number.observedAccountState?.state ?? 'not observed'}`,
+    `Connection\t${connection.connection}`,
+    `Phone\t${connection.phoneNumber}`,
+    `Health\t${connection.health ?? 'unknown'}`,
+    `Band\t${connection.band}`,
+    `Source\t${connection.healthSource}`,
+    `Estimator\t${connection.healthEstimatorVersion ?? ''}`,
+    `Reliability\t${connection.healthReliability}`,
+    `Coverage\t${connection.healthFeatureCoverage ?? 'unknown'}`,
+    `Observed state\t${connection.observedAccountState?.state ?? 'not observed'}`,
     `Collection groups\t${explanation?.measuredGroups.join(', ') ?? 'unavailable'}`,
     `Missing groups\t${explanation?.missingGroups.join(', ') ?? 'unavailable'}`,
-    `Findings\t${number.findings.length}`,
+    `Findings\t${connection.findings.length}`,
   ].join('\n')
 }
 
 export function renderHealthHistory(history: BanSafeHealthHistory): string {
   if (history.points.length === 0)
-    return `No Health history found for ${history.session}.`
+    return `No Health history found for ${history.connection}.`
   return history.points
     .map((point) =>
       [
@@ -348,7 +353,7 @@ export function renderTelemetry(telemetry: BanSafeTelemetryDetail): string {
   const measured =
     snapshot?.signals.filter((signal) => signal.measured).length ?? 0
   return [
-    `Session\t${telemetry.session}`,
+    `Connection\t${telemetry.connection}`,
     `Collection\t${telemetry.collection.state}`,
     `Latest flush\t${telemetry.collection.latestFlushedAt ?? 'none'}`,
     `Fresh until\t${telemetry.collection.freshUntil ?? 'none'}`,
@@ -378,17 +383,17 @@ export function renderTelemetryHistory(
 }
 
 export function renderCollection(
-  sessions: readonly BanSafeCollectionSession[],
+  connections: readonly BanSafeCollectionConnection[],
 ): string {
-  if (sessions.length === 0) return 'No project sessions found.'
-  return sessions
-    .map((session) =>
+  if (connections.length === 0) return 'No project connections found.'
+  return connections
+    .map((connection) =>
       [
-        session.session,
-        session.collection.state,
-        session.collection.latestFlushedAt ?? '',
-        session.collection.collectorVersion ?? '',
-        session.collection.droppedRecords ?? '',
+        connection.connection,
+        connection.collection.state,
+        connection.collection.latestFlushedAt ?? '',
+        connection.collection.collectorVersion ?? '',
+        connection.collection.droppedRecords ?? '',
       ].join('\t'),
     )
     .join('\n')
@@ -399,7 +404,7 @@ export function renderFindings(findings: readonly BanSafeFinding[]): string {
   return findings
     .map((finding) =>
       [
-        finding.session,
+        finding.connection,
         finding.key,
         finding.status,
         finding.severity ?? '',
@@ -417,7 +422,7 @@ export function renderEnforcement(
   return records
     .map((record) =>
       [
-        record.session,
+        record.connection,
         record.rung,
         record.state,
         record.health ?? 'unknown',
@@ -434,7 +439,7 @@ export function renderIncidents(incidents: readonly BanSafeIncident[]): string {
     .map((incident) =>
       [
         incident.id,
-        incident.session,
+        incident.connection,
         incident.kind,
         incident.source,
         incident.startedAt,
@@ -450,7 +455,7 @@ export function renderClaims(claims: readonly BanSafeClaim[]): string {
     .map((claim) =>
       [
         claim.id,
-        claim.session,
+        claim.connection,
         claim.status,
         claim.verdict,
         claim.amountCents,
@@ -463,7 +468,7 @@ export function renderClaims(claims: readonly BanSafeClaim[]): string {
 export function renderClaim(claim: BanSafeClaim): string {
   return [
     `Claim\t${claim.id}`,
-    `Session\t${claim.session}`,
+    `Connection\t${claim.connection}`,
     `Status\t${claim.status}`,
     `Verdict\t${claim.verdict}`,
     `Amount credits\t${claim.amountCents}`,
@@ -489,12 +494,12 @@ function simultaneousCallsEvidence(claim: BanSafeClaim): string[] {
 }
 
 export function renderSafeMode(
-  mode: ProjectSafeMode | SessionSafeMode,
+  mode: ProjectSafeMode | ConnectionSafeMode,
 ): string {
   const settings = 'effective' in mode ? mode.effective : mode.ceiling
   return [
     `Project\t${mode.projectId}`,
-    ...('session' in mode ? [`Session\t${mode.session}`] : []),
+    ...('connection' in mode ? [`Connection\t${mode.connection}`] : []),
     `Presence\t${settings.presence}`,
     `Typing\t${settings.typing}`,
     `Reads\t${settings.reads}`,
@@ -534,7 +539,7 @@ export function renderHealthActions(
     .map((action) =>
       [
         action.id,
-        action.session,
+        action.connection,
         action.mode,
         action.action,
         action.status,
@@ -552,7 +557,7 @@ export function renderHealthPolicy(policy: ProjectHealthPolicy): string {
     `Version\t${policy.version}`,
     `Enabled\t${policy.enabled}`,
     `Threshold\t${policy.threshold}`,
-    `Session action\t${policy.sessionAction}`,
+    `Connection action\t${policy.connectionAction}`,
     `Slowdown messages/second\t${policy.slowDownMps ?? 'off'}`,
     `Email notification\t${policy.emailNotification}`,
     `Webhook notification\t${policy.webhookNotification}`,
@@ -568,7 +573,7 @@ function healthPolicyInput(input: unknown): UpdateProjectHealthPolicyRequest {
     'version',
     'enabled',
     'threshold',
-    'sessionAction',
+    'connectionAction',
     'slowDownMps',
     'emailNotification',
     'webhookNotification',
@@ -598,11 +603,11 @@ function healthPolicyInput(input: unknown): UpdateProjectHealthPolicyRequest {
       'Health policy threshold must be an integer from 0 to 100.',
     )
   if (
-    typeof input.sessionAction !== 'string' ||
-    !['none', 'stop', 'slow_down', 'log_out'].includes(input.sessionAction)
+    typeof input.connectionAction !== 'string' ||
+    !['none', 'stop', 'slow_down', 'log_out'].includes(input.connectionAction)
   )
     throw invalidPolicy(
-      'Health policy sessionAction must be none, stop, slow_down, or log_out.',
+      'Health policy connectionAction must be none, stop, slow_down, or log_out.',
     )
   if (
     input.slowDownMps !== null &&
@@ -611,17 +616,17 @@ function healthPolicyInput(input: unknown): UpdateProjectHealthPolicyRequest {
       input.slowDownMps <= 0)
   )
     throw invalidPolicy(
-      'Health policy slowDownMps must be null or a positive number.',
+      'Health policy slowDownMps must be null or a positive connection.',
     )
-  if (input.sessionAction === 'slow_down' && input.slowDownMps === null)
+  if (input.connectionAction === 'slow_down' && input.slowDownMps === null)
     throw invalidPolicy('slow_down requires a positive slowDownMps.')
-  if (input.sessionAction !== 'slow_down' && input.slowDownMps !== null)
+  if (input.connectionAction !== 'slow_down' && input.slowDownMps !== null)
     throw invalidPolicy(
-      'slowDownMps must be null unless sessionAction is slow_down.',
+      'slowDownMps must be null unless connectionAction is slow_down.',
     )
   if (
     input.enabled === true &&
-    input.sessionAction === 'none' &&
+    input.connectionAction === 'none' &&
     input.emailNotification === false &&
     input.webhookNotification === false
   )
@@ -634,7 +639,7 @@ function healthPolicyInput(input: unknown): UpdateProjectHealthPolicyRequest {
 function safeModeInput(
   input: unknown,
   allowInherit: boolean,
-): UpdateProjectSafeModeRequest | UpdateSessionSafeModeRequest {
+): UpdateProjectSafeModeRequest | UpdateConnectionSafeModeRequest {
   if (!isRecord(input))
     throw invalidInput('Safe Mode input must contain one JSON object.')
   const allowed = [

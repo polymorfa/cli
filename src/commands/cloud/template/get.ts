@@ -9,8 +9,8 @@ export default class CloudTemplateGet extends BaseCommand {
     name: Args.string({description: 'Meta template name.', required: true}),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     language: Flags.string({
@@ -24,7 +24,7 @@ export default class CloudTemplateGet extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.cloudTemplates.retrieve(
-      flags.session,
+      flags.connection,
       args.name,
       flags.language === undefined ? {} : {language: flags.language},
     )

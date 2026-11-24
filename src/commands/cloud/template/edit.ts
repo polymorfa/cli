@@ -10,8 +10,8 @@ export default class CloudTemplateEdit extends BaseCommand {
     name: Args.string({description: 'Meta template name.', required: true}),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     language: Flags.string({
@@ -29,7 +29,7 @@ export default class CloudTemplateEdit extends BaseCommand {
     })
     const body = parseCloudTemplateEdit(await readJsonInput(flags.input))
     const response = await client.cloudTemplates.update(
-      flags.session,
+      flags.connection,
       args.name,
       body,
       flags.language === undefined ? {} : {language: flags.language},

@@ -580,16 +580,16 @@ function rejection(
   }
 }
 
-// ── Call permissions (Cloud API numbers) ───────────────────────────────────
+// ── Call permissions (Cloud API connections) ───────────────────────────────────
 
 export async function viewCallPermission(
   client: MessagingClient,
-  session: string,
+  connection: string,
   to: string,
 ): Promise<CallConsentResult<CallPermission>> {
   const target = validateCallTarget(to)
   const response = await client.voip.retrieveCallPermission(
-    validateSession(session),
+    validateConnection(connection),
     target,
   )
   return envelope(response.data.data, response.metadata)
@@ -597,11 +597,11 @@ export async function viewCallPermission(
 
 export async function checkCall(
   client: MessagingClient,
-  session: string,
+  connection: string,
   to: string,
 ): Promise<CallConsentResult<CallCheck>> {
   const response = await client.voip.check({
-    session: validateSession(session),
+    connection: validateConnection(connection),
     to: validateCallTarget(to),
   })
   return envelope(response.data.data, response.metadata)
@@ -609,7 +609,7 @@ export async function checkCall(
 
 export async function requestCallPermission(
   client: MessagingClient,
-  session: string,
+  connection: string,
   to: string,
   body: string,
   options: RequestOptions = {},
@@ -622,7 +622,7 @@ export async function requestCallPermission(
     )
   }
   const response = await client.messages.send(
-    validateSession(session),
+    validateConnection(connection),
     {
       content: {callPermissionRequest: {body}},
       conversation: conversationReference(to.trim()),
@@ -713,7 +713,7 @@ export function renderCallCheck(check: CallCheck): string {
     `Allowed\t${check.allowed ? 'yes' : 'no'}`,
     ...(check.refusal === null ? [] : [`Refusal\t${check.refusal}`]),
     ...(check.permission === null
-      ? ['Call permission\tnot used on linked-device numbers']
+      ? ['Call permission\tnot used on linked-device connections']
       : permissionLines(check.permission)),
   ].join('\n')
 }
@@ -817,12 +817,12 @@ function optOutIdentity(
   return {}
 }
 
-function validateSession(session: string): string {
-  const trimmed = session.trim()
+function validateConnection(connection: string): string {
+  const trimmed = connection.trim()
   if (trimmed.length === 0 || trimmed.length > 128) {
     throw new PolymorfaConfigurationError(
-      'Session must contain 1 to 128 characters.',
-      'session',
+      'Connection must contain 1 to 128 characters.',
+      'connection',
     )
   }
   return trimmed

@@ -14,10 +14,10 @@ import {EventEmitter as BrowserEmitter} from '../../src/browser/stubs/events.js'
 import {process as browserProcess} from '../../src/browser/stubs/process.js'
 import * as browserPath from '../../src/browser/stubs/path.js'
 
-// A client token fixture: the SDK checks the prefix and canonical base64url shape of client tokens.
-const CLIENT_TOKEN = `pmfa_ct_${'fixtureA'.repeat(5)}`
+// Canonical synthetic client token; HTTP fixtures provide the server response.
+const CLIENT_TOKEN = 'pmfa_ct_Zml4dHVyZQ'
 // A well-formed team key fixture for Platform commands. Not a real key.
-const API_KEY = `pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m`
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 const PROJECT = '11111111-1111-4111-8111-111111111111'
 
 /**
@@ -138,7 +138,7 @@ describe('browser command runner', () => {
 
   it('runs the real command and prints what the installed CLI prints', async () => {
     const result = await run(
-      'message send text --session 739182640518203 --to +15550002222 --body "Hello from Polymorfa"',
+      'message send text --connection 739182640518203 --to +15550002222 --body "Hello from Polymorfa"',
       () => json({success: true, data: {id: '3EB0FIXTURE', status: 'sent'}}),
     )
     expect(result).toMatchObject({exitCode: 0, command: 'message send text'})
@@ -155,7 +155,7 @@ describe('browser command runner', () => {
 
   it('prints the CLI JSON shape with --json', async () => {
     const result = await run(
-      'message send text --session 739182640518203 --to +15550002222 --body hi --json',
+      'message send text --connection 739182640518203 --to +15550002222 --body hi --json',
       () => json({success: true, data: {id: '3EB0FIXTURE', status: 'sent'}}),
     )
     expect(JSON.parse(result.stdout)).toEqual({
@@ -166,7 +166,7 @@ describe('browser command runner', () => {
 
   it('reports usage errors and unknown commands with the CLI exit codes', async () => {
     const missing = await run(
-      'message send text --session 739182640518203',
+      'message send text --connection 739182640518203',
       () => json({}),
     )
     expect(missing.exitCode).toBe(2)
@@ -184,11 +184,11 @@ describe('browser command runner', () => {
     }
     const [first, second] = await Promise.all([
       run(
-        'message send text --session 739182640518203 --to +15550002222 --body one',
+        'message send text --connection 739182640518203 --to +15550002222 --body one',
         respond,
       ),
       run(
-        'message send text --session 739182640518204 --to +15550002222 --body two',
+        'message send text --connection 739182640518204 --to +15550002222 --body two',
         respond,
       ),
     ])
@@ -204,7 +204,7 @@ describe('browser command runner', () => {
   it('calls write callbacks and decodes UTF-8 bytes while a command runs', async () => {
     let flushed = false
     const result = await run(
-      'message send text --session 739182640518203 --to +15550002222 --body hi',
+      'message send text --connection 739182640518203 --to +15550002222 --body hi',
       () => {
         process.stdout.write(new TextEncoder().encode('héllo\n'), () => {
           flushed = true
@@ -219,7 +219,7 @@ describe('browser command runner', () => {
   })
 
   it('refuses a command whose output is binary audio before it runs', async () => {
-    const result = await run('calls media --session 739182640518203', () =>
+    const result = await run('calls media --connection 739182640518203', () =>
       json({}),
     )
     expect(result).toMatchObject({exitCode: 1, command: 'calls media'})

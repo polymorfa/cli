@@ -223,7 +223,7 @@ describe('rendering', () => {
       [
         'Allowed\tno',
         'Refusal\tcalls_disabled',
-        'Call permission\tnot used on linked-device numbers',
+        'Call permission\tnot used on linked-device connections',
       ].join('\n'),
     )
   })

@@ -2,7 +2,7 @@ import {fileURLToPath} from 'node:url'
 
 import EventStream from '../../src/commands/event/stream.js'
 
-Object.defineProperty(EventStream.prototype, 'developerSession', {
+Object.defineProperty(EventStream.prototype, 'developerConnection', {
   value: () =>
     Promise.resolve({
       context: {owner: 'project'},

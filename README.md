@@ -39,6 +39,16 @@ Both methods install the CLI's dependencies, including the TypeScript SDK
 `@polymorfa/sdk`, from the public npm registry. The CLI pins one exact SDK
 prerelease in `package.json`.
 
+The Connections migration candidate is source-only. Its registry SDK pin
+predates the new contract, so candidate CI first installs dependencies with
+`npm ci --ignore-scripts`. It checks out the exact SDK revision in
+`contracts/connections.json`, installs that checkout's dependencies, and runs
+`npm run ci:sdk-source -- --sdk-root /path/to/checked-sdk` before verification.
+The helper refuses changed source, a different revision or mismatched API
+snapshots. Its receipt describes a local source build. It does not establish
+registry installation or authorize publication; release still needs an accepted,
+published SDK.
+
 The version output includes both runtime components:
 
 ```text
@@ -253,31 +263,35 @@ polymorfa completion fish | source
 Completion suggests command names, flags, and fixed flag choices from the
 installed CLI. It does not look up profile names, project IDs, credentials, or
 other argument values, and it does not contact the API. Add the command for
-your shell to its startup file if you want completion in later sessions.
+your shell to its startup file if you want completion in later shell sessions.
 
-## Inspect sessions
+## Inspect connections
 
-Use a team API key with `sessions:read` to inspect stored session
+Use a team API key with `connections:read` to inspect stored connection
 metadata:
 
 ```shell
-polymorfa session list
-polymorfa session list --project PROJECT_ID --json
-polymorfa session view SESSION_ID
-polymorfa session status SESSION_ID --json
+polymorfa connection list
+polymorfa connection list --project PROJECT_ID --json
+polymorfa connection view CONNECTION_ID
+polymorfa connection status CONNECTION_ID --json
 ```
 
-`session list` reads every session in the team unless you pass a project UUID.
-Use a session ID from the list for `view` or `status`; these commands do not
+`connection list` reads every connection in the team unless you pass a project UUID.
+Use a connection ID from the list for `view` or `status`; these commands do not
 accept `--project`. `status` reads the stored status and optional reason from
-the session record. It does not probe the device or wait for a connection.
+the connection record. It does not probe the device or wait for a connection.
+Each Connection has `type: "whatsapp"` and one `method`: `linked_device`,
+`cloud_api`, or `hybrid`. Hybrid stays one Connection with one ID and one
+billing identity. Meta phone-number IDs remain `phoneNumberId`.
+
 Key metadata listing and revocation are available through `key list` and
 `key revoke`; the CLI does not mint or rotate team keys.
 
 ## QuickLinks
 
 A QuickLink is a persistent hosted link that connects one WhatsApp number to a
-new session in a project. Create one from a JSON request with a team
+new connection in a project. Create one from a JSON request with a team
 API key that has `quicklink:manage`:
 
 ```shell
@@ -287,7 +301,7 @@ polymorfa quicklink create \
 ```
 
 The request accepts `customerId`, `externalId`, and `configuration`. See
-[Guided session creation and configuration](#guided-session-creation-and-configuration)
+[Guided connection creation and configuration](#guided-connection-creation-and-configuration)
 for the configuration fields.
 
 Inspect or cancel a link with a team API key or an exact-project
@@ -303,10 +317,10 @@ polymorfa quicklink cancel ql_123 \
 ```
 
 Creation prints the hosted URL. Treat it as a credential and share it only with
-the person holding the phone. The CLI never retrieves direct session QR payloads
+the person holding the phone. The CLI never retrieves direct connection QR payloads
 or pairing codes. Cancel requires `--yes` and invalidates an unconnected link.
 For an initial real link, the API returns `202` after accepting cancellation;
-Number and session cleanup can continue afterward. Supplementary and test
+Connection and connection cleanup can continue afterward. Supplementary and test
 links return `200` when cancellation completes. Cancellation fails for a link
 that has already connected. The API does not accept an
 idempotency key for cancellation. The API exposes no QuickLink list, recovery,
@@ -344,10 +358,10 @@ reserve an invitation for one number, pass `--expected-phone` to
 per-link options.
 
 The `customer` commands cover project enablement, list filters and cursors,
-profile creation and updates, archive and restore, assigned Numbers, recent
-events, pairing-link creation/listing/revocation, and confirmed Number
+profile creation and updates, archive and restore, assigned Connections, recent
+events, pairing-link creation/listing/revocation, and confirmed Connection
 transfers. Mutations that require retry identity also require
-`--idempotency-key`. Archive, pairing-link revocation, and Number transfer
+`--idempotency-key`. Archive, pairing-link revocation, and Connection transfer
 require explicit confirmation with `--yes`.
 
 Pairing-link creation prints the one-time URL in human output. Store it when it
@@ -356,13 +370,13 @@ is returned. An idempotent replay returns the link record without the URL.
 ## Groups
 
 The first curated Messaging resource commands are read-only and require an
-explicit session:
+explicit connection:
 
 ```shell
-polymorfa group list --session session_123
-polymorfa group view 750000000001 --session session_123
-polymorfa group participants list 750000000001 --session session_123
-polymorfa group invite-link 750000000001 --session session_123
+polymorfa group list --connection session_123
+polymorfa group view 750000000001 --connection session_123
+polymorfa group participants list 750000000001 --connection session_123
+polymorfa group invite-link 750000000001 --connection session_123
 ```
 
 Add `--json` for complete resource data and response metadata. Group and
@@ -371,19 +385,19 @@ participant lists are unpaged because the source API does not expose cursors.
 Create and change groups with a server API key that has `groups:manage`:
 
 ```shell
-polymorfa group create --session session_123 \
+polymorfa group create --connection session_123 \
   --name 'Launch team' \
   --participant 750000000001 --participant 750000000002
 
-polymorfa group participants add 750000000009 --session session_123 --participant 750000000003
-polymorfa group participants promote 750000000009 --session session_123 --participant 750000000003
-polymorfa group participants demote 750000000009 --session session_123 --participant 750000000003
-polymorfa group participants remove 750000000009 --session session_123 --participant 750000000003 --yes
+polymorfa group participants add 750000000009 --connection session_123 --participant 750000000003
+polymorfa group participants promote 750000000009 --connection session_123 --participant 750000000003
+polymorfa group participants demote 750000000009 --connection session_123 --participant 750000000003
+polymorfa group participants remove 750000000009 --connection session_123 --participant 750000000003 --yes
 
-polymorfa group subject 750000000009 --session session_123 --value 'Launch crew'
-polymorfa group description 750000000009 --session session_123 --value ''
+polymorfa group subject 750000000009 --connection session_123 --value 'Launch crew'
+polymorfa group description 750000000009 --connection session_123 --value ''
 
-polymorfa group settings 750000000009 --session session_123 \
+polymorfa group settings 750000000009 --connection session_123 \
   --messaging admins --info-editing admins --member-add all --join-approval on
 ```
 
@@ -396,10 +410,10 @@ requires `--yes`.
 
 ### Stored group capabilities
 
-Use `polymorfa group capabilities GROUP_ID --session SESSION` to read the
-linked number's stored group configuration. Add `--json` for the complete
+Use `polymorfa group capabilities GROUP_ID --connection CONNECTION` to read the
+linked Connection's stored group configuration. Add `--json` for the complete
 response. This read requires `groups:read`, current group membership, and
-number-capabilities beta enrollment. Unknown configuration stays `unknown`;
+connection-capabilities beta enrollment. Unknown configuration stays `unknown`;
 the command does not open the group chat or fetch its configuration.
 
 The keys `polls.endTime`, `polls.hideVoters`, and `polls.creatorEdit` describe
@@ -416,26 +430,26 @@ Send text and perform the complete set of source-defined Messaging actions:
 
 ```shell
 polymorfa message send text \
-  --session session_123 \
+  --connection session_123 \
   --to +15551234567 \
   --body 'Hello'
 
 polymorfa message react 740000000001 \
-  --session session_123 \
+  --connection session_123 \
   --chat +15551234567 \
   --emoji '👍'
 
 polymorfa message mark-seen 740000000001 \
-  --session session_123 \
+  --connection session_123 \
   --chat +15551234567
 
 polymorfa message typing \
-  --session session_123 \
+  --connection session_123 \
   --chat +15551234567 \
   --state typing
 
 polymorfa message star 740000000001 \
-  --session session_123 \
+  --connection session_123 \
   --chat +15551234567
 ```
 
@@ -465,7 +479,7 @@ without an explicit key creates a new request and can repeat the write.
 ```shell
 # Reuse order-123-shipped only when retrying this exact notification.
 polymorfa message send text \
-  --session session_123 --to +15551234567 \
+  --connection session_123 --to +15551234567 \
   --body 'Your order shipped.' --idempotency-key order-123-shipped
 ```
 
@@ -497,17 +511,17 @@ header.
 ### Flow drafts and provider lifecycle
 
 Flow commands require a project scope and a team API key or project
-token. Reads use `sessions:read`; mutations use `sessions:manage`.
+token. Reads use `connections:read`; mutations use `connections:manage`.
 
 ```shell
 polymorfa flow list --project PROJECT_UUID
 polymorfa flow create --project PROJECT_UUID --input draft.json
 polymorfa flow get FLOW_UUID --project PROJECT_UUID
 polymorfa flow update FLOW_UUID --project PROJECT_UUID --input update.json
-polymorfa flow upload FLOW_UUID --project PROJECT_UUID --session number_123 --category APPOINTMENT_BOOKING --request-id REQUEST_UUID
+polymorfa flow upload FLOW_UUID --project PROJECT_UUID --connection number_123 --category APPOINTMENT_BOOKING --request-id REQUEST_UUID
 polymorfa flow receipts FLOW_UUID --project PROJECT_UUID
-polymorfa flow sync FLOW_UUID --project PROJECT_UUID --session number_123
-polymorfa flow publish FLOW_UUID --project PROJECT_UUID --session number_123 --yes
+polymorfa flow sync FLOW_UUID --project PROJECT_UUID --connection number_123
+polymorfa flow publish FLOW_UUID --project PROJECT_UUID --connection number_123 --yes
 ```
 
 Creation input contains `name` and `definition`, plus an optional `draftId`.
@@ -516,7 +530,7 @@ Update input requires the draft's observed `expectedUpdatedAt` and optional
 Project and Flow identity come from command arguments and cannot be overridden
 inside the file.
 
-Provider actions are beta and require an eligible Number. `publish`, `deprecate`,
+Provider actions are beta and require an eligible Connection. `publish`, `deprecate`,
 `discard`, and local `delete` require `--yes`. Discard removes a provider draft;
 local deletion is separate. Writes make one attempt. A successful HTTP response
 can still carry an `uncertain` operation: read its receipt and use `sync` to
@@ -531,45 +545,45 @@ flow key register --phone-number-id PHONE_NUMBER_ID --graph-version v26.0
 `business_public_key` as a 2048-bit RSA public key in PEM format. The matching
 private key stays on your endpoint. Registration affects every dynamic Flow on
 the phone number, so read the registered key after an uncertain outcome before
-submitting another replacement. Reading requires `sessions:read`; registration
-requires `sessions:manage`, an eligible Official API Number, and Graph access.
-These commands make Polymorfa release its managed key custody for that Number.
+submitting another replacement. Reading requires `connections:read`; registration
+requires `connections:manage`, an eligible Official API Connection, and Graph access.
+These commands make Polymorfa release its managed key custody for that Connection.
 
 Polymorfa can also host the data endpoint (beta). It can hold a managed key per
-Number, decrypt each WhatsApp request, and either forward it to your HTTPS URL
+Connection, decrypt each WhatsApp request, and either forward it to your HTTPS URL
 or run a deployed Function:
 
 ```shell
-polymorfa flow key rotate --project PROJECT_UUID --session number_123 --yes
-polymorfa flow key custody --project PROJECT_UUID --session number_123
-polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --session number_123 --mode forward --url https://example.com/flow
-polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --session number_123 --mode function --function FUNCTION_UUID
-polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --session number_123 --mode direct --url https://example.com/flow
-polymorfa flow endpoint get FLOW_UUID --project PROJECT_UUID --session number_123
+polymorfa flow key rotate --project PROJECT_UUID --connection number_123 --yes
+polymorfa flow key custody --project PROJECT_UUID --connection number_123
+polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --connection number_123 --mode forward --url https://example.com/flow
+polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --connection number_123 --mode function --function FUNCTION_UUID
+polymorfa flow endpoint set FLOW_UUID --project PROJECT_UUID --connection number_123 --mode direct --url https://example.com/flow
+polymorfa flow endpoint get FLOW_UUID --project PROJECT_UUID --connection number_123
 polymorfa flow endpoint receipts FLOW_UUID --project PROJECT_UUID --limit 20
-polymorfa flow endpoint delete FLOW_UUID --project PROJECT_UUID --session number_123 --yes
+polymorfa flow endpoint delete FLOW_UUID --project PROJECT_UUID --connection number_123 --yes
 ```
 
-`forward` and `function` need a Polymorfa-managed key on the Number. `direct`
+`forward` and `function` need a Polymorfa-managed key on the Connection. `direct`
 needs your own key, registered with `flow key register`. A forward endpoint's
 signing secret is printed once, when it is created, switched to forward, or
 rotated with `--rotate-signing-secret`. Verify `X-Polymorfa-Flow-Signature`
 with the SDK's `verifyFlowForwardSignature`. Configure the endpoint before
 `flow upload`, which attaches its URI to the Flow. Key rotation affects every
-Flow on the Number; the previous managed key decrypts for 24 hours. Rotation
+Flow on the Connection; the previous managed key decrypts for 24 hours. Rotation
 and endpoint writes make one attempt. Receipts are metadata only.
 
 ### Submit a project template
 
 ```shell
-polymorfa template submit TEMPLATE_ID --project-slug support --session number_123 --yes
+polymorfa template submit TEMPLATE_ID --project-slug support --connection number_123 --yes
 ```
 
 This command uses a server API key or project token with `templates:manage`.
-The saved project template and Number must belong to the same project. The API
+The saved project template and Connection must belong to the same project. The API
 checks the definition before submitting it to Meta. A successful response
-records the submission, not approval. Read the Number's template with
-`polymorfa cloud template get NAME --session number_123 --language en_US` to
+records the submission, not approval. Read the Connection's template with
+`polymorfa cloud template get NAME --connection number_123 --language en_US` to
 check its status. If the request times out or its response is lost, read the
 template before choosing whether to submit again. The command makes one
 network attempt and requires `--yes` because a second submission can create a
@@ -581,26 +595,26 @@ linked to another project; the API checks that the credential can access it.
 
 The `cloud` commands require a team API key or a project token with the
 listed scope. Client tokens cannot use these commands. Server-side feature
-access still applies: an installed command does not enroll a Number or enable a
+access still applies: an installed command does not enroll a Connection or enable a
 beta feature.
 
 ```shell
 polymorfa cloud catalog list --waba WABA_ID --graph-version v26.0 --limit 25
 polymorfa cloud catalog products --waba WABA_ID --catalog CATALOG_ID --graph-version v26.0 --limit 25
 polymorfa cloud marketing status --waba WABA_ID --graph-version v26.0
-polymorfa cloud template list --session number_123
-polymorfa cloud template get order_update --session number_123 --language en_US
-polymorfa cloud template create --session number_123 --input template.json --idempotency-key tpl-order-update
-polymorfa cloud template edit order_update --session number_123 --language en_US --input components.json
-polymorfa cloud template delete order_update --session number_123 --yes
-polymorfa cloud service-window +15551234567 --session number_123
-polymorfa cloud pricing --session number_123 --since 2026-09-01T00:00:00Z --until 2026-09-26T00:00:00Z
-polymorfa cloud credentials get --session number_123
-polymorfa cloud credentials reauthorize --session number_123
+polymorfa cloud template list --connection number_123
+polymorfa cloud template get order_update --connection number_123 --language en_US
+polymorfa cloud template create --connection number_123 --input template.json --idempotency-key tpl-order-update
+polymorfa cloud template edit order_update --connection number_123 --language en_US --input components.json
+polymorfa cloud template delete order_update --connection number_123 --yes
+polymorfa cloud service-window +15551234567 --connection number_123
+polymorfa cloud pricing --connection number_123 --since 2026-09-01T00:00:00Z --until 2026-09-26T00:00:00Z
+polymorfa cloud credentials get --connection number_123
+polymorfa cloud credentials reauthorize --connection number_123
 ```
 
 `cloud group` commands (beta) manage WhatsApp groups on an Official API
-Number. They need team enrollment and a Number whose WhatsApp Business Account
+Connection. They need team enrollment and a Connection whose WhatsApp Business Account
 is an Official Business Account; otherwise the API returns
 `whatsapp_groups_ineligible`. People join with the invite link and cannot be
 added; a group holds at most 8 participants besides your business. `create`
@@ -610,14 +624,14 @@ returns a `requestId`; the group's conversation ID and invite link arrive in a
 the API instead of changing the group again.
 
 ```bash
-polymorfa cloud group create --session number_123 --subject "Order 1042" --join-approval --idempotency-key grp-1042
-polymorfa cloud group list --session number_123
-polymorfa cloud group get GROUP_ID --session number_123
-polymorfa cloud group invite-link GROUP_ID --session number_123
-polymorfa cloud group join-requests list GROUP_ID --session number_123
-polymorfa cloud group join-requests approve GROUP_ID --session number_123 --request JOIN_REQUEST_ID
-polymorfa cloud group pin GROUP_ID --session number_123 --message MESSAGE_ID --days 7
-polymorfa cloud group delete GROUP_ID --session number_123 --yes
+polymorfa cloud group create --connection number_123 --subject "Order 1042" --join-approval --idempotency-key grp-1042
+polymorfa cloud group list --connection number_123
+polymorfa cloud group get GROUP_ID --connection number_123
+polymorfa cloud group invite-link GROUP_ID --connection number_123
+polymorfa cloud group join-requests list GROUP_ID --connection number_123
+polymorfa cloud group join-requests approve GROUP_ID --connection number_123 --request JOIN_REQUEST_ID
+polymorfa cloud group pin GROUP_ID --connection number_123 --message MESSAGE_ID --days 7
+polymorfa cloud group delete GROUP_ID --connection number_123 --yes
 ```
 
 Template commands use `messages:write` and the connected Meta business template
@@ -629,35 +643,35 @@ Deletion requires `--yes`. Create, edit and delete send one request and never
 retry. Create and delete accept `--idempotency-key`; reuse the same key after a
 lost response so the retained receipt prevents another execution. Replay data
 may be unavailable; keep the first response and reconcile uncertain outcomes. List the catalog before resubmitting. The template routes need an active
-Official API connection, including on a Hybrid Number; a Number with only a
+Official API connection, including on a Hybrid Connection; a Connection with only a
 Linked Devices connection is rejected.
 
 Service-window reads use `chats:read`. They report observed `open`, `closed`, or
 `unknown` state; missing or interrupted notifications can prevent a reliable
-window observation. Pricing reads use `sessions:read` and report Meta's message
+window observation. Pricing reads use `connections:read` and report Meta's message
 classifications and counts, without calculating prices or invoice totals. The
 optional ISO time range defaults to 30 days and cannot exceed 93 days.
 
-Credential reads use `sessions:read`; reauthorization uses `quicklink:manage`.
-`cloud catalog list` reads linked product-catalog IDs and names with `sessions:read`
+Credential reads use `connections:read`; reauthorization uses `quicklink:manage`.
+`cloud catalog list` reads linked product-catalog IDs and names with `connections:read`
 and Graph access. Pass the returned opaque cursor using `--after` for another
 page. Catalog visibility does not grant merchant ownership or permission to sell.
 `cloud catalog products` reads only IDs, optional retailer IDs, names and
 availability from one catalog linked to the authenticated WABA. Pass its
 `paging.cursors.after` value as `--after` to read the next page. The API rejects
-unlinked catalogs and simulated Numbers. This read does not send a product or
+unlinked catalogs and simulated Connections. This read does not send a product or
 establish that the merchant may sell it.
 
-`cloud marketing status` uses `sessions:read` to return Meta's raw WABA
+`cloud marketing status` uses `connections:read` to return Meta's raw WABA
 `marketing_messages_lite_api_status` and
 `marketing_messages_onboarding_status` strings when present. The values do not
 establish accepted terms, recipient permission, eligibility, or a right to
-send. Simulated Numbers and unsupported accounts return API errors; the CLI
+send. Simulated Connections and unsupported accounts return API errors; the CLI
 does not convert status strings into an eligibility decision.
 
 Reauthorization creates a QuickLink for a stopped or disconnected standalone
-Official Number. It never stops the Number or opens the link automatically.
-Running Numbers return a conflict; Hybrid reauthorization is unsupported.
+Official Connection. It never stops the Connection or opens the link automatically.
+Running Connections return a conflict; Hybrid reauthorization is unsupported.
 
 Template writes and credential reauthorization do not retry uncertain provider
 outcomes. Inspect the catalog or onboarding state before another write. API
@@ -665,9 +679,9 @@ access, state, and server failures retain the CLI's exit codes: 3 for forbidden
 access, 4 for conflicts, and 5 for server failures. Use `--json` to retain the
 observation fields and structured errors.
 
-For Official Numbers, `message typing` requires `--id` for a message you received
+For Official Connections, `message typing` requires `--id` for a message you received
 and `--state typing`. It marks that message read and shows typing until a reply
-is sent or 25 seconds pass. Linked Device Numbers also support `recording` and
+is sent or 25 seconds pass. Linked Device Connections also support `recording` and
 `paused` without an inbound ID.
 
 `quicklink view` shows contacts/history request receipts and history-delivery
@@ -677,28 +691,28 @@ does not establish that sync completed.
 
 ### Typed sends
 
-Every `message send <kind>` command accepts the same `--session`, `--to`,
+Every `message send <kind>` command accepts the same `--connection`, `--to`,
 `--reply-to`, `--mention`, `--forwarded`, and `--idempotency-key` flags as
 `message send text`:
 
 ```shell
 # Media from a local file (sent inline as base64) or a public URL
-polymorfa message send image --session session_123 --to +15551234567 --file ./photo.jpg --caption 'Today'
-polymorfa message send video --session session_123 --to +15551234567 --url https://example.com/clip.mp4
-polymorfa message send audio --session session_123 --to +15551234567 --file ./note.ogg --voice
-polymorfa message send document --session session_123 --to +15551234567 --file ./invoice.pdf
+polymorfa message send image --connection session_123 --to +15551234567 --file ./photo.jpg --caption 'Today'
+polymorfa message send video --connection session_123 --to +15551234567 --url https://example.com/clip.mp4
+polymorfa message send audio --connection session_123 --to +15551234567 --file ./note.ogg --voice
+polymorfa message send document --connection session_123 --to +15551234567 --file ./invoice.pdf
 
-polymorfa message send template --session session_123 --to +15551234567 \
+polymorfa message send template --connection session_123 --to +15551234567 \
   --name order_update --language en_US --components components.json
-polymorfa message send location --session session_123 --to +15551234567 \
+polymorfa message send location --connection session_123 --to +15551234567 \
   --lat 51.5007 --long=-0.1246 --address 'Westminster'
-polymorfa message send contact --session session_123 --to +15551234567 \
+polymorfa message send contact --connection session_123 --to +15551234567 \
   --name 'Ada Lovelace' --phone +15557654321
-polymorfa message send poll --session session_123 --to 730000000001 \
+polymorfa message send poll --connection session_123 --to 730000000001 \
   --title 'Lunch?' --option Pizza --option Sushi --multi-select
-polymorfa message send buttons --session session_123 --to +15551234567 \
+polymorfa message send buttons --connection session_123 --to +15551234567 \
   --body 'Confirm your order?' --button reply:yes=Yes --button reply:no=No
-polymorfa message send list --session session_123 --to +15551234567 \
+polymorfa message send list --connection session_123 --to +15551234567 \
   --title 'Pick a slot' --button-text Choose \
   --row 'Morning/am9=9:00' --row 'Afternoon/pm2=14:00|Near the office'
 ```
@@ -720,14 +734,14 @@ polymorfa message send list --session session_123 --to +15551234567 \
 
 ### Brazil payment orders (beta)
 
-Teams enrolled in the beta can send Brazil orders from Official API Numbers
+Teams enrolled in the beta can send Brazil orders from Official API Connections
 that Meta has made eligible for payments in Brazil. Polymorfa relays the order
 and payment reports; it does not collect, hold or confirm funds.
 
 ```sh
-polymorfa message send order --session session_123 --to +5511987654321 \
+polymorfa message send order --connection session_123 --to +5511987654321 \
   --order order.json --idempotency-key order-1522
-polymorfa message send order-status --session session_123 --to +5511987654321 \
+polymorfa message send order-status --connection session_123 --to +5511987654321 \
   --reference-id order-1522 --body 'Payment received' \
   --order-status processing --payment-status captured
 ```
@@ -752,8 +766,8 @@ The API has no sticker send kind, so the CLI has no `message send sticker`.
 ### Edit and delete
 
 ```shell
-polymorfa message edit 740000000001 --session session_123 --chat 730000000001 --body 'Corrected text'
-polymorfa message delete 740000000001 --session session_123 --chat 730000000001 --yes
+polymorfa message edit 740000000001 --connection session_123 --chat 730000000001 --body 'Corrected text'
+polymorfa message delete 740000000001 --connection session_123 --chat 730000000001 --yes
 ```
 
 Edit and delete require `chats:manage`. Delete asks for confirmation; pass
@@ -761,18 +775,18 @@ Edit and delete require `chats:manage`. Delete asks for confirmation; pass
 
 ### Stored chat history (beta)
 
-For a Number with hosted message storage (HMS) enabled, an enrolled team can
+For a Connection with hosted message storage (HMS) enabled, an enrolled team can
 read stored chats and messages. An owner or admin enrolls the team on the
-Console **Numbers** page. Storage includes only messages sent or received after
-HMS was enabled. Test Numbers have no stored history. These read commands
+Console **Connections** page. Storage includes only messages sent or received after
+HMS was enabled. Test Connections have no stored history. These read commands
 require a server API key or project token; client tokens cannot read history.
 
 ```shell
-polymorfa chat list --session NUMBER_ID --limit 20 --kind direct
-polymorfa chat view +15550001111 --session NUMBER_ID
-polymorfa chat message list +15550001111 --session NUMBER_ID --limit 20 --order desc
-polymorfa chat message view +15550001111 739182640518204 --session NUMBER_ID
-polymorfa chat message media +15550001111 739182640518204 --session NUMBER_ID --output ./attachment.bin
+polymorfa chat list --connection NUMBER_ID --limit 20 --kind direct
+polymorfa chat view +15550001111 --connection NUMBER_ID
+polymorfa chat message list +15550001111 --connection NUMBER_ID --limit 20 --order desc
+polymorfa chat message view +15550001111 739182640518204 --connection NUMBER_ID
+polymorfa chat message media +15550001111 739182640518204 --connection NUMBER_ID --output ./attachment.bin
 ```
 
 Chat reads require `chats:read`; message reads require `messages:read`. Older
@@ -786,8 +800,8 @@ include `--kind`, `--active-since`, and `--active-before`. The API defaults to a
 page of 50 and permits `--limit` from 1 through 100.
 
 Without enrollment, the API returns `403 permission_denied`; without HMS on
-the Number it returns `404 hms_not_enabled`. `503 service_unavailable` means
-the Number's regional history service cannot be reached. No search command is
+the Connection it returns `404 hms_not_enabled`. `503 service_unavailable` means
+the Connection's regional history service cannot be reached. No search command is
 available. See the [message history guide](https://docs.polymorfa.com/guides/communicate/message-history)
 for retention and media download behavior.
 
@@ -847,19 +861,19 @@ not advertise those operations.
 
 ## Labels
 
-Labels require a server API key and an explicit Messaging session:
+Labels require a server API key and an explicit Messaging connection:
 
 ```shell
-polymorfa label list --session session_123
-polymorfa label create --session session_123 --name Priority --color 5
-polymorfa label update label_123 --session session_123 --name Urgent
-polymorfa label delete label_123 --session session_123 --yes
+polymorfa label list --connection session_123
+polymorfa label create --connection session_123 --name Priority --color 5
+polymorfa label update label_123 --connection session_123 --name Urgent
+polymorfa label delete label_123 --connection session_123 --yes
 
 polymorfa label chat list +15551234567 \
-  --session session_123
+  --connection session_123
 
 polymorfa label chat replace +15551234567 \
-  --session session_123 \
+  --connection session_123 \
   --label priority \
   --label customer
 ```
@@ -873,24 +887,24 @@ exposes no message-label operation.
 ## Quick Replies
 
 Stored business quick replies require a server API key and an explicit
-Messaging session:
+Messaging connection:
 
 ```shell
-polymorfa quick-reply list --session session_123
+polymorfa quick-reply list --connection session_123
 
 polymorfa quick-reply create \
-  --session session_123 \
+  --connection session_123 \
   --shortcut /hours \
   --message 'We are open from 09:00 to 17:00.' \
   --keyword hours \
   --keyword opening
 
 polymorfa quick-reply replace reply_123 \
-  --session session_123 \
+  --connection session_123 \
   --shortcut /hours \
   --message 'We are open from 08:00 to 18:00.'
 
-polymorfa quick-reply delete reply_123 --session session_123 --yes
+polymorfa quick-reply delete reply_123 --connection session_123 --yes
 ```
 
 `quick-reply replace` replaces the complete shortcut and message rather than
@@ -909,19 +923,19 @@ View and update the connected account's Messaging profile with a server API
 key:
 
 ```shell
-polymorfa profile view --session session_123
-polymorfa profile name set --session session_123 --name Polymorfa
-polymorfa profile status set --session session_123 --status Available
+polymorfa profile view --connection session_123
+polymorfa profile name set --connection session_123 --name Polymorfa
+polymorfa profile status set --connection session_123 --status Available
 
 polymorfa profile picture set \
-  --session session_123 \
+  --connection session_123 \
   --file ./profile.jpg
 
 polymorfa profile picture set \
-  --session session_123 \
+  --connection session_123 \
   --url https://example.com/profile.jpg
 
-polymorfa profile picture delete --session session_123 --yes
+polymorfa profile picture delete --connection session_123 --yes
 ```
 
 Picture setting requires exactly one source. `--file` reads at most 50 MiB and
@@ -940,15 +954,15 @@ operation.
 View and change account-level Messaging privacy with a server API key:
 
 ```shell
-polymorfa privacy view --session session_123
+polymorfa privacy view --connection session_123
 
 polymorfa privacy set \
-  --session session_123 \
+  --connection session_123 \
   --setting online \
   --value match_last_seen
 
 polymorfa privacy disappearing-timer set \
-  --session session_123 \
+  --connection session_123 \
   --duration 7d
 ```
 
@@ -967,14 +981,14 @@ View the remembered self state, change it with a server key, or inspect and
 renew policy-governed chat observations:
 
 ```shell
-polymorfa presence view --session session_123
-polymorfa presence set --session session_123 --state available
+polymorfa presence view --connection session_123
+polymorfa presence set --connection session_123 --state available
 
 polymorfa presence chat view +15551234567 \
-  --session session_123
+  --connection session_123
 
 polymorfa presence chat subscribe +15551234567 \
-  --session session_123
+  --connection session_123
 ```
 
 `presence view` reports the service's remembered desired and last-sent state;
@@ -984,36 +998,36 @@ typing-observation fields. It does not bypass the configured observation
 policy.
 
 Reads and subscription accept either a server API key or an appropriately
-scoped, session-bound client token. Changing self presence requires a server
+scoped, connection-bound client token. Changing self presence requires a server
 API key. Repeat `presence chat subscribe` before the returned `expiresAt` to
 renew the subscription; the API exposes no watch, history, polling helper, or
 unsubscribe operation. Mutations accept `--idempotency-key`.
 
 ## Channels
 
-Channels are connected-session resources and require a server API key:
+Channels are connected-connection resources and require a server API key:
 
 ```shell
-polymorfa channel list --session session_123
-polymorfa channel view 760000000001 --session session_123
+polymorfa channel list --connection session_123
+polymorfa channel view 760000000001 --connection session_123
 
 polymorfa channel create \
-  --session session_123 \
+  --connection session_123 \
   --name 'Product updates' \
   --description 'Release announcements'
 
 polymorfa channel message list 760000000001 \
-  --session session_123 \
+  --connection session_123 \
   --limit 25 \
   --before 951
 
 polymorfa channel message updates 760000000001 \
-  --session session_123 \
+  --connection session_123 \
   --since 1787212800
 
 polymorfa channel live-updates subscribe \
   760000000001 \
-  --session session_123
+  --connection session_123
 ```
 
 Message and update listing return bounded arrays, not cursor pages. `--limit`
@@ -1039,24 +1053,24 @@ and groups, and the source has no dedicated channel-send operation.
 Contacts are Linked Device resources and require a server API key:
 
 ```shell
-polymorfa contact list --session session_123
+polymorfa contact list --connection session_123
 
 polymorfa contact check \
-  --session session_123 \
+  --connection session_123 \
   --phone +15551234567 \
   --phone +15557654321
 
-polymorfa contact view 750000000001 --session session_123
-polymorfa contact info 750000000001 --session session_123
-polymorfa contact picture 750000000001 --session session_123
-polymorfa contact devices 750000000001 --session session_123
-polymorfa contact business-profile 750000000001 --session session_123
-polymorfa contact blocklist --session session_123
-polymorfa contact block 750000000001 --session session_123
-polymorfa contact unblock 750000000001 --session session_123
+polymorfa contact view 750000000001 --connection session_123
+polymorfa contact info 750000000001 --connection session_123
+polymorfa contact picture 750000000001 --connection session_123
+polymorfa contact devices 750000000001 --connection session_123
+polymorfa contact business-profile 750000000001 --connection session_123
+polymorfa contact blocklist --connection session_123
+polymorfa contact block 750000000001 --connection session_123
+polymorfa contact unblock 750000000001 --connection session_123
 ```
 
-`contact view` reads contact data known to the connected session. `contact info`
+`contact view` reads contact data known to the connected connection. `contact info`
 requests live WhatsApp user metadata. The CLI keeps those sources distinct.
 `contact picture` returns the service-provided URL and does not download the
 image. `contact devices` returns the upstream linked-device JIDs without
@@ -1070,31 +1084,31 @@ pagination. Block and unblock are reversible actions and accept
 ## Calls
 
 The `calls` commands place, answer, join, decline, leave, and end calls, invite
-participants, follow a session's calls, and carry call audio. `calls stats` and
+participants, follow a connection's calls, and carry call audio. `calls stats` and
 `calls export` report on past calls; see
 [Call statistics and export](#call-statistics-and-export). For example:
 
 ```shell
-polymorfa calls place +15550100 --session support --exclusive
+polymorfa calls place +15550100 --connection support --exclusive
 polymorfa calls accept call_123 --exclusive --participant agent-7
 polymorfa calls reject call_123
 polymorfa calls leave call_123 --connection-id conn_0123456789
 polymorfa calls end call_123
 polymorfa calls invite call_123 +15550101
 
-polymorfa calls watch --session support --json
-polymorfa calls media --session support --place +15550100 \
+polymorfa calls watch --connection support --json
+polymorfa calls media --connection support --place +15550100 \
   --input prompt.pcm --leave-on-eof --output reply.pcm
 
-polymorfa calls settings get --session support
-polymorfa calls settings set --session support --no-conference-mode
-polymorfa calls settings set --session support --calls-enabled=false \
+polymorfa calls settings get --connection support
+polymorfa calls settings set --connection support --no-conference-mode
+polymorfa calls settings set --connection support --calls-enabled=false \
   --expected-revision 3
-polymorfa calls settings set --session support \
+polymorfa calls settings set --connection support \
   --inbound-route sip_trunk --sip-trunk 6f1c2f0e-1d5b-4d8e-9a55-0d4b8a6c1f10
-polymorfa calls settings set --session support \
+polymorfa calls settings set --connection support \
   --simultaneous-calls=true --acknowledge-risk
-polymorfa calls settings set --session support --simultaneous-calls=false
+polymorfa calls settings set --connection support --simultaneous-calls=false
 
 polymorfa calls retention get
 polymorfa calls retention set --policy compliance --expected-revision 0
@@ -1105,16 +1119,16 @@ polymorfa calls retention set --policy custom --days 14 --expected-revision 1 --
 participant again:
 
 ```shell
-polymorfa calls place-group --session support --to +15550100 --to +15550101
-polymorfa calls place-group --session support --group-id 9007199254740996
+polymorfa calls place-group --connection support --to +15550100 --to +15550101
+polymorfa calls place-group --connection support --group-id 9007199254740996
 polymorfa calls ring call_123 +15550101
 ```
 
 Group placement accepts 2 to 31 distinct recipients and checks every recipient's
 calling permissions. Use `--group-id` instead of `--to` to call every remote
-member of an existing group using its public ID. The Number must belong to the
+member of an existing group using its public ID. The Connection must belong to the
 group, and it must have 2 to 31 remote members. Membership changes during
-placement refuse the call. Group calls require a Linked Device Number. `calls ring`
+placement refuse the call. Group calls require a Linked Device Connection. `calls ring`
 only rings a non-connected participant already in the call roster; successful
 submission does not mean that the participant answered.
 
@@ -1126,31 +1140,31 @@ never answers or declines on its own.
   `@`, and `-`) to name it; the API uses `default` otherwise. A client token
   from `POLYMORFA_CLIENT_TOKEN` acts as its own participant, so the CLI rejects
   `--participant` with a client token before sending a request.
-- **Sessions.** Server API keys name the session with `--session` for
+- **Connections.** Server API keys name the connection with `--connection` for
   `calls place`, `calls watch`, and `calls media`. Client tokens use the
-  session they are bound to; `calls watch` and `calls media` reject
-  `--session` with a client token.
+  connection they are bound to; `calls watch` and `calls media` reject
+  `--connection` with a client token.
 - **Claims.** `calls accept --exclusive` claims the call. Other participants
   then receive `call_claimed`, and the command exits with code 4 and prints
   `code: "call_claimed"` under `--json`. Without a claim, a later accept joins
   the answered call. `calls reject` exits with code 4 and
   `code: "call_not_ringing"` when the call was already answered, declined, or
   ended. Declining ends the call for every participant.
-- **Number restrictions.** When WhatsApp restricts the Number to people it has
+- **Connection restrictions.** When WhatsApp restricts the Connection to people it has
   already chatted with, `calls place` and `calls invite` exit with code 3 and
-  `code: "number_restricted"` for anyone else; calls to people it has already
+  `code: "connection_restricted"` for anyone else; calls to people it has already
   chatted with still work. A call WhatsApp refuses for that reason ends with
   `reason: "call_restricted"` in `calls watch`.
-  `polymorfa listen --event session.restriction_updated` reports the
+  `polymorfa listen --event connection.restriction_updated` reports the
   restriction starting and ending.
 - **Connections.** `calls leave` closes one connection, named by an 8 to 64
   character ID from `A-Z`, `a-z`, `0-9`, `_`, and `-`. The call continues.
   `calls end` ends the call for everyone.
 - **Client token actions.** Client tokens can place, accept, decline, leave,
-  end, invite, watch, and carry audio when the session's client rules allow
+  end, invite, watch, and carry audio when the connection's client rules allow
   it. The API decides; the CLI reports its errors unchanged.
 - **Settings.** `calls settings` uses the Platform API and requires a server
-  API key. `--calls-enabled=false` turns calling off for the session: placing,
+  API key. `--calls-enabled=false` turns calling off for the connection: placing,
   answering and joining calls then exit with code 3 (`calls_disabled`),
   incoming calls are declined, and calls in progress continue.
   Conference mode is on by default: every participant you connect to a call
@@ -1160,13 +1174,13 @@ never answers or declines on its own.
   always hears all of your participants, and nobody hears their own audio.
   `--inbound-route sip_trunk` with `--sip-trunk` also sends incoming calls to a
   SIP trunk; `--sip-claim` controls whether the trunk's answer claims the
-  call. On a Cloud API session, `--host-cloud-api-calls=true` has Polymorfa
+  call. On a Cloud API connection, `--host-cloud-api-calls=true` has Polymorfa
   Calls answer incoming calls; with the default `false`, your Graph API
   integration answers them. `--simultaneous-calls=true` lets a linked-device
-  number hold any number of calls at once (incoming, placed, and campaign
-  calls); Cloud API numbers ignore it. WhatsApp's own apps never hold two calls
+  Connection hold any number of calls at once (incoming, placed, and campaign
+  calls); Cloud API connections ignore it. WhatsApp's own apps never hold two calls
   at once. While it is on, and for 30 days after you turn it off, Ban Insurance
-  does not cover a ban of the number: a claim opens as `denied` with verdict
+  does not cover a ban of the Connection: a claim opens as `denied` with verdict
   `simultaneous_calls`. Turning it on requires `--acknowledge-risk`; without
   it the command exits with code 2 and sends nothing. Only a team API key can
   turn it on. `--simultaneous-calls=false` needs no acknowledgment. After it
@@ -1175,11 +1189,11 @@ never answers or declines on its own.
   `--json`), until that time passes. Ban Insurance excludes a ban when
   simultaneous calls were on during the 30 days before it; this timestamp is the
   cutoff for a new ban from that period. Nothing is printed while the setting is on, and a missing or null
-  end does not mean the number is covered.
+  end does not mean the Connection is covered.
   `calls settings set` sends only the flags you pass; the other
   settings keep their values. `calls settings get` and `set` print the
   settings `revision`, which increases on every change and is `0` while the
-  session uses the defaults. Pass `--expected-revision <n>` to apply the
+  connection uses the defaults. Pass `--expected-revision <n>` to apply the
   change only if the settings still have that revision; if someone changed
   them first, the command exits with code 4 (`state_conflict`) and changes
   nothing.
@@ -1203,7 +1217,7 @@ never answers or declines on its own.
   shortens the period; `--yes` confirms without a prompt, and without a
   terminal the command exits with code 2 (`confirmation_required`) unless you
   pass `--yes`. Changing retention requires a team API key with the
-  `sessions:read` and `sessions:manage` scopes, because the command reads the
+  `connections:read` and `connections:manage` scopes, because the command reads the
   setting before it changes it. Project tokens can read the setting; the API
   refuses their changes, and the command exits with code 3.
 
@@ -1238,7 +1252,7 @@ Convert audio with any tool that writes raw PCM, for example:
 
 ```shell
 sox greeting.wav -t raw -r 16000 -e signed -b 16 -c 1 - | \
-  polymorfa calls media --session support --place +15550100 \
+  polymorfa calls media --connection support --place +15550100 \
     --input - --leave-on-eof > reply.pcm
 ```
 
@@ -1291,32 +1305,32 @@ polymorfa calls opt-outs remove 0b9f6a52-8f0e-4a44-9d51-3c1f9d6f2a10 --yes
   batches were stored; when nothing was stored it exits with the request's own
   code.
 
-Call permissions apply to Cloud API sessions and need a server API key:
+Call permissions apply to Cloud API connections and need a server API key:
 
 ```shell
-polymorfa calls permission get +14155550123 --session support
-polymorfa calls permission request +14155550123 --session support \
+polymorfa calls permission get +14155550123 --connection support
+polymorfa calls permission request +14155550123 --connection support \
   --body "We would like to call you about order 1522."
-polymorfa calls check +14155550123 --session support
+polymorfa calls check +14155550123 --connection support
 ```
 
 - **Read.** `calls permission get` asks WhatsApp on every request and prints
   the status (`none`, `temporary`, `permanent`, `revoked`), its expiry, and
   WhatsApp's limits on permission requests and calls. When WhatsApp cannot be
-  reached it prints the stored state and says so. A linked-device session exits
+  reached it prints the stored state and says so. A linked-device connection exits
   with code 4 (`unsupported_for_connection`).
 - **Ask.** `calls permission request` sends `callPermissionRequest` content
   through the messages send route, so WhatsApp shows `--body` above its allow
   and decline buttons and charges it as a message. The answer arrives as a
-  `call.permission_changed` event. WhatsApp limits how often a number can ask
+  `call.permission_changed` event. WhatsApp limits how often a Connection can ask
   the same person: the command then exits with code 5
   (`call_permission_request_limited`) and prints the `Retry-After` wait when
   WhatsApp gives one. A person who already granted permanent permission exits
   with code 4 (`call_permission_granted`). `--idempotency-key` identifies a
   retry of the same send.
 - **Check.** `calls check` runs the checks a placement runs without calling:
-  the session's calling switch, the do-not-call list and blocked country codes,
-  and on Cloud API sessions the person's permission and WhatsApp's call limits.
+  the connection's calling switch, the do-not-call list and blocked country codes,
+  and on Cloud API connections the person's permission and WhatsApp's call limits.
   It exits with code 0 whether or not the call is allowed; read `allowed` and
   `refusal` from the output. `refusal` is `calls_disabled`,
   `call_recipient_opted_out`, `call_destination_blocked`,
@@ -1326,14 +1340,14 @@ polymorfa calls check +14155550123 --session support
 
 `calls stats` summarizes calls and `calls export` writes call detail records.
 Both accept a team API key or an exact-project token with the
-`sessions:read` scope. Pass `--project` to read one project. Without it, an
+`connections:read` scope. Pass `--project` to read one project. Without it, an
 team API key reads every project in the team. A project token
 reads only its own project and requires `--project`.
 
 ```shell
 polymorfa calls stats
 polymorfa calls stats --project 018f0000-0000-7000-8000-000000000002 \
-  --group-by session
+  --group-by connection
 polymorfa calls stats --since 2026-09-01T00:00:00Z --until 2026-09-02T00:00:00Z \
   --group-by hour --timezone Europe/Lisbon --heatmap
 
@@ -1344,19 +1358,19 @@ polymorfa calls export --since 2026-09-01T00:00:00Z --cursor <cursor> \
   --output rest.csv
 ```
 
-Both commands filter with `--session`, `--direction` (`inbound` or
+Both commands filter with `--connection`, `--direction` (`inbound` or
 `outbound`), `--upstream` (`linked_device` or `cloud_api`), `--outcome`
 (`answered`, `missed`, `declined`, `failed`, or `in_progress`), `--since`, and
 `--until` (RFC 3339 times; a call matches by its start time).
 
 - **Statistics.** The range defaults to the last 7 days. `--group-by` accepts
-  `day` (the default, up to 366 days), `hour` (up to 31 days), `session`, or
+  `day` (the default, up to 366 days), `hour` (up to 31 days), `connection`, or
   `outcome`. Day and hour groups, and the `--heatmap` grid of calls by day of
   week and hour, use `--timezone`, an IANA name such as `Europe/Lisbon` (UTC by
   default). Human output prints the totals, with the answer rate as a
   percentage and durations as hours, minutes, and seconds, and then one row per
   group. `--json` prints the complete response, including the heatmap. Grouping
-  by session lists at most 500 numbers; the totals still count every call.
+  by connection lists at most 500 connections; the totals still count every call.
 - **Export.** `--format` is `csv` (the default) or `ndjson`. The command requests
   pages of `--limit` records (1 to 1,000; default 1,000), newest first, until
   none remain, and writes one CSV header. Records go to standard output, or to
@@ -1397,7 +1411,7 @@ passwords never appear in the command line. `create` refuses a body that names
 `projectId`; use `--project`. A trunk that accepts calls from your PBX, and
 `rotate-credentials`, print the password once. `update --expected-revision`
 exits with code 4 when the trunk changed; `delete` exits with code 4 while a
-session routes calls to the trunk.
+connection routes calls to the trunk.
 
 `endpoint` prints the host your PBX sends SIP to, each transport with its port
 and whether it requires SRTP, and the UDP port range call audio uses. The
@@ -1508,54 +1522,54 @@ With `--json`, stderr carries the error code in `error.code`.
 
 ### Call usage and limits
 
-When Calls access is enabled for a team, Polymorfa measures the calls its numbers host. Usage is measured, not charged.
-Commands require `sessions:read`; a project token reads only its own project's
+When Calls access is enabled for a team, Polymorfa measures the calls its connections host. Usage is measured, not charged.
+Commands require `connections:read`; a project token reads only its own project's
 usage and needs `--project` or a project-bound profile. `usage gates` needs a
 team API key, because gate state covers the whole team.
 
 ```shell
 polymorfa usage summary
-polymorfa usage summary --period 2026-09 --session support
+polymorfa usage summary --period 2026-09 --connection support
 polymorfa usage records --call 3EB0C431C26A1916E07A
-polymorfa usage records --session support --meter call.duration --limit 50
-polymorfa usage records --session support --cursor <cursor from the last page>
-polymorfa usage gates --session support
+polymorfa usage records --connection support --meter call.duration --limit 50
+polymorfa usage records --connection support --cursor <cursor from the last page>
+polymorfa usage gates --connection support
 ```
 
-`usage summary` totals one calendar month (UTC) by meter and by number, and
-defaults to the current month; without `--project`, each number row also shows
+`usage summary` totals one calendar month (UTC) by meter and by connection, and
+defaults to the current month; without `--project`, each Connection row also shows
 its project. `usage records` lists records newest first with each record's
 project, and prints the cursor for the next page. `usage gates` shows each gate's mode,
 limit, usage this month and how often an action went over the limit in the last
 30 days: in `record` mode nothing is refused, and in `enforce` mode an action
 over the limit exits with code 4 (`gate_limit_reached`).
 
-## Session call rejection and stable identities
+## Connection call rejection and stable identities
 
-`call reject` is a separate command for the Linked Device session route. It
-rejects an incoming call by session, call ID, and caller ID. Use
+`call reject` is a separate command for the Linked Device connection route. It
+rejects an incoming call by connection, call ID, and caller ID. Use
 `calls reject` for the unified Calls API. Three focused Linked Device commands
-cover the exact session call rejection, LIDs, and Users source tags:
+cover the exact connection call rejection, LIDs, and Users source tags:
 
 ```shell
 polymorfa call reject call_123 \
-  --session session_123 \
+  --connection session_123 \
   --from 750000000001 \
   --idempotency-key reject_call_123
 
 polymorfa identity resolve \
-  --session session_123 \
+  --connection session_123 \
   --phone-number +15551234567
 
 polymorfa identity resolve \
-  --session session_123 \
+  --connection session_123 \
   --username alice \
   --username-key 1234
 
-polymorfa user security-code 750000000001 --session session_123
+polymorfa user security-code 750000000001 --connection session_123
 ```
 
-All three require a server API key and an active Linked Device session. Call
+All three require a server API key and an active Linked Device connection. Call
 rejection requires the incoming call ID and caller's Polymorfa ID; it is not call accept,
 placement, history, or streaming. Identity resolution accepts exactly one phone
 number, decimal Polymorfa user ID, or username. A username
@@ -1571,20 +1585,20 @@ history/refresh, or verification-submit operation.
 ## Business App
 
 The complete Linked Device Business App surface requires a server API key and
-an active connected session. Its resource tree keeps the account's own profile,
+an active connected connection. Its resource tree keeps the account's own profile,
 catalog, products, collections, orders, compliance, and linked-account state
 separate:
 
 ```shell
-polymorfa business profile view --session session_123
-polymorfa business catalog view --session session_123 --id 750000000001
+polymorfa business profile view --connection session_123
+polymorfa business catalog view --connection session_123 --id 750000000001
 polymorfa business product view product_123 \
-  --session session_123 \
+  --connection session_123 \
   --id 750000000001
-polymorfa business collection list --session session_123 --id 750000000001
-polymorfa business compliance view --session session_123
-polymorfa business accounts view --session session_123
-polymorfa business eligibility view --session session_123
+polymorfa business collection list --connection session_123 --id 750000000001
+polymorfa business compliance view --connection session_123
+polymorfa business accounts view --connection session_123
+polymorfa business eligibility view --connection session_123
 ```
 
 Structurally rich mutations accept one bounded JSON document from a file or
@@ -1592,19 +1606,19 @@ standard input, matching the `gh api --input` convention:
 
 ```shell
 polymorfa business profile update \
-  --session session_123 \
+  --connection session_123 \
   --input profile-update.json
 
 polymorfa business product create \
-  --session session_123 \
+  --connection session_123 \
   --input product.json
 
 polymorfa business product replace product_123 \
-  --session session_123 \
+  --connection session_123 \
   --input product-replacement.json
 
 polymorfa business compliance replace \
-  --session session_123 \
+  --connection session_123 \
   --input compliance.json
 ```
 
@@ -1627,7 +1641,7 @@ pagination. A single collection accepts an `--after` cursor but its response
 has no next cursor. Order lookup requires the exact event token and is not an
 order-history command. The source exposes no catalog-independent list, product
 or collection search/history, binary upload, resumability, or Business App
-support for project credentials, client tokens, or Cloud API sessions.
+support for project credentials, client tokens, or Cloud API connections.
 
 ## BanSafe
 
@@ -1653,7 +1667,7 @@ polymorfa bansafe finding list --project project_123 --status open
 polymorfa bansafe enforcement list --project project_123
 polymorfa bansafe incident list --project project_123
 polymorfa bansafe incident report \
-  --session session_123 \
+  --connection session_123 \
   --idempotency-key customer-incident-123
 polymorfa bansafe incident retract incident_123 \
   --idempotency-key retract-incident-123
@@ -1702,27 +1716,27 @@ polymorfa key list
 polymorfa key revoke key_123 --yes --idempotency-key revoke_key_123
 polymorfa member list
 polymorfa audit-log list --action key.revoked --resource api-key --limit 100
-polymorfa session-ban list --active
+polymorfa connection-ban list --active
 polymorfa security-incident list
 polymorfa security-incident acknowledge incident_123
 polymorfa project-token list --project project_123
 polymorfa widget view --project project_123
 polymorfa widget update --project project_123 --input widget-patch.json
-polymorfa session stop session_1 session_2 --project project_123
-polymorfa session delete session_1 session_2 --project project_123 --yes
-polymorfa session capabilities support-line
+polymorfa connection stop session_1 session_2 --project project_123
+polymorfa connection delete session_1 session_2 --project project_123 --yes
+polymorfa connection capabilities support-line
 ```
 
-`session capabilities` shows the WhatsApp configuration gates and limits for
-one number, as of its last configuration sync. An enabled gate does not prove
+`connection capabilities` shows the WhatsApp configuration gates and limits for
+one Connection, as of its last configuration sync. An enabled gate does not prove
 that the feature is usable in a particular client or environment, or that
 WhatsApp will accept an operation. Each line
 is the capability key, its value (`enabled`, `off`, a limit, or `unknown`), and
 its source: `server` (WhatsApp sent the setting), `client_default` (WhatsApp
 sent none, so its default applies) or `account_type` (the capability does not
 apply to this kind of account, for example a business-only feature on a
-personal number). Before the number's first sync every value is `unknown`.
-It is a beta: the team must be enrolled, and it needs `sessions:read`.
+personal account). Before the Connection's first sync every value is `unknown`.
+It is a beta: the team must be enrolled, and it needs `connections:read`.
 
 Key and project-token lists contain metadata only; neither command returns raw
 bearer material. The API's reported API-key scope mask is retained in JSON but
@@ -1736,7 +1750,7 @@ These list operations return complete arrays and expose no cursor. Project-token
 listing requires one explicit project ID. Follow asynchronous work with the
 `operation` commands described in [Operations](#operations).
 
-Member invite, role update, and removal remain dashboard-session routes and are
+Member invite, role update, and removal remain dashboard-connection routes and are
 not exposed through server-key commands. The API also exposes no compatible
 API-key creation, token mint/revoke, incident detail, or cross-project token
 aggregate in this typed slice. The raw API command is not a credential-boundary
@@ -1765,7 +1779,7 @@ phone-change policy.
 }
 ```
 
-Session stop and delete accept 1 through 100 unique UUIDs or stable slugs. The
+Connection stop and delete accept 1 through 100 unique UUIDs or stable slugs. The
 CLI trims IDs and rejects duplicates or oversized batches before transport.
 Returned counts are matching rows, not the number requested. Stop only requests
 asynchronous work and does not wait for completion. Delete synchronously removes
@@ -1848,7 +1862,7 @@ failed recipients rather than returning the first result.
 #### Receipt-timed follow-ups (beta)
 
 Add `followUp` to the `campaign create` input to send each recipient one more
-message from the number that sent the first one:
+message from the Connection that sent the first one:
 
 ```json
 {
@@ -1891,7 +1905,7 @@ access gets `403 feature_unavailable`. For Messaging campaign creation, use
   weights add up to 100) and a `blueprint`. Each recipient receives one
   alternative and keeps it across retries. Every alternative must use the same
   `{{variable}}` placeholders. Alternatives send only from linked-device
-  numbers and cannot be combined with `templateId`, composed messages or an
+  connections and cannot be combined with `templateId`, composed messages or an
   A/B test.
 
 ```json
@@ -1961,7 +1975,7 @@ polymorfa campaign recipients list campaign_123 \
 One append accepts at most 1,000 entries. `--csv` reads the file locally and
 sends the rows inline; it does not upload the file. Blank rows are ignored, but
 a row with other values and an empty phone cell stops the command before
-anything is sent, naming the row numbers (the header is row 1). `--input`
+anything is sent, naming the row connections (the header is row 1). `--input`
 entries with an empty phone, and any phone longer than 64 characters, are
 refused the same way, as is an empty `--input` array, because the API would
 reject the whole request. JSON variables must use valid names and string values;
@@ -2118,17 +2132,17 @@ polymorfa webhook delivery attempt list delivery_123 \
 
 `--phone-offline-start-day` on `webhook create` and `webhook update` sets the
 first day without the phone, from `7` to `13`, on which the webhook receives
-`session.phone_offline`. The API default is `10`. `off` removes that event from
+`connection.phone_offline`. The API default is `10`. `off` removes that event from
 the webhook's event types; `webhook update` reads the saved event types when
 `--input` has none, and refuses `off` when it would leave no event. `webhook
 update` accepts the flag without `--input`. See
 [Phone offline warnings](https://docs.polymorfa.com/api/webhooks#phone-offline-warnings).
 
 `webhook test` requires `--event`. Team tests accept that event type only.
-Project tests can also read a JSON object with `body` and `sessionId` from
+Project tests can also read a JSON object with `body` and `connectionId` from
 `--input`; supply both fields together. The CLI rejects a team body or an
 incomplete project body before requesting a delivery. The `body` must be an
-exact base64-encoded native event for an HMS-enabled Number in the same
+exact base64-encoded native event for an HMS-enabled Connection in the same
 project. See the [webhook guide](https://docs.polymorfa.com/api/webhooks#send-a-test-delivery).
 
 Webhook creation and secret rotation return a signing secret once. JSON and
@@ -2234,7 +2248,7 @@ more requests are waiting, and waits for `Retry-After` when the read limit of
 `--max-events` stops after a fixed number. Ctrl-C stops with exit code 0.
 
 Filters: `--status` (codes or classes), `--method`, `--route` (exact pattern
-such as `/messaging/:session/messages`), `--source api|mcp`, `--credential`
+such as `/messaging/:connection/messages`), `--source api|mcp`, `--credential`
 (key or token ID), `--request-id` and `--trace-id`. Send a `traceparent` header
 with your API requests to find them by your own trace ID.
 
@@ -2274,12 +2288,12 @@ require `--forward-secret-out`; the per-run secret is not printed to stdout.
 
 ## Trigger test events
 
-`polymorfa trigger` sends a signed test event for a Test number. The event
+`polymorfa trigger` sends a signed test event for a Test Connection. The event
 reaches your webhooks, event history, and a running `polymorfa listen` with
-`source: "test"`, and does not change the Test number. Real numbers are
+`source: "test"`, and does not change the Test Connection. Real connections are
 refused. Each project can trigger 30 test events per minute. It requires a
 server API key with `sandbox:write` (`sandbox:read` for `--list`) and Test
-numbers access.
+connections access.
 
 Run a listener in one terminal:
 
@@ -2291,15 +2305,15 @@ Trigger events in another:
 
 ```shell
 polymorfa trigger --list
-polymorfa trigger message.received --session my-test-number --text "hi"
-polymorfa trigger message.received --session my-test-number \
+polymorfa trigger message.received --connection my-test-connection --text "hi"
+polymorfa trigger message.received --connection my-test-connection \
   --override mediaType=image --override caption=look
-polymorfa trigger message.ack --session my-test-number --override ackStatus=read
-polymorfa trigger message.failed --session my-test-number
-polymorfa trigger call.received --project PROJECT_ID --session my-test-number --override video=true
-polymorfa trigger session.restriction_updated --project PROJECT_ID --session my-test-number \
+polymorfa trigger message.ack --connection my-test-connection --override ackStatus=read
+polymorfa trigger message.failed --connection my-test-connection
+polymorfa trigger call.received --project PROJECT_ID --connection my-test-connection --override video=true
+polymorfa trigger connection.restriction_updated --project PROJECT_ID --connection my-test-connection \
   --override restrictionActive=false
-polymorfa trigger template.status --project PROJECT_ID --session my-test-number \
+polymorfa trigger template.status --project PROJECT_ID --connection my-test-connection \
   --override templateStatus=REJECTED --override reason=INVALID_FORMAT
 ```
 
@@ -2309,13 +2323,13 @@ the same line (`message.received <eventId>`) when the event arrives; with
 with `--forward-secret-out <file>` (JSON forwarding requires the secret file),
 which writes one JSON line per event. Fixtures are
 `message.received`, `message.ack`, `message.failed`, `call.received`,
-`call.missed`, `call.ended`, `session.status`, `session.restriction_updated`,
+`call.missed`, `call.ended`, `connection.status`, `connection.restriction_updated`,
 and `template.status`. `--override key=value`
 sets one payload field and can be repeated; `--text` and `--from` are
 shortcuts. `video` and `restrictionActive` accept only `true` or `false`;
 `durationSeconds` accepts a whole number. Set `restrictionActive=false` to
-test the end of a restriction. `--from-number OTHER_TEST_NUMBER` sends a real simulated text from
-another Test number in the project instead, producing an ordinary
+test the end of a restriction. `--from-connection OTHER_TEST_NUMBER` sends a real simulated text from
+another Test Connection in the project instead, producing an ordinary
 `message.received` event you can reply to. Use `--json` for one JSON document.
 
 ## Local MCP tools
@@ -2336,10 +2350,10 @@ They do not create detached daemons. MCP responses contain listener IDs,
 status, and safe counters, never primary credentials, listener credentials,
 forwarding secrets, or unrestricted payloads.
 
-`polymorfa_session_list` is a read-only discovery tool for one explicit project
-UUID. It uses the selected CLI team API key with `sessions:read` and
-returns session ID, name, stored status, and test-mode flag. It omits phone
-numbers, credentials, and message data. The tool does not probe the live device.
+`polymorfa_connection_list` is a read-only discovery tool for one explicit project
+UUID. It uses the selected CLI team API key with `connections:read` and
+returns connection ID, name, stored status, and test-mode flag. It omits phone
+connections, credentials, and message data. The tool does not probe the live device.
 Project tokens and Messaging client tokens cannot use this tool. A failed read
 returns a generic error without exposing the credential or API response body.
 
@@ -2470,7 +2484,7 @@ log link, and the documentation link for the error code when the API returned
 them:
 
 ```text
-Error: WhatsApp is limiting requests from this number. Follow Retry-After when supplied.
+Error: WhatsApp is limiting requests from this Connection. Follow Retry-After when supplied.
 Request ID: 5f0c2a8e-3b1d-4c6f-9e2a-7d4b1c8f6a30
 Request log: https://www.polymorfa.com/console/acme/support-bot/logs/api?request_id=5f0c2a8e-3b1d-4c6f-9e2a-7d4b1c8f6a30
 Docs: https://docs.polymorfa.com/api/errors#whatsapp-rate-limited
@@ -2497,43 +2511,43 @@ The verification gate checks formatting, lint, strict TypeScript, tests,
 production build, npm package contents, and the production dependency audit on
 Node.js 22 in hosted CI.
 
-### Test-number account modes
+### Test Connection account modes
 
 The Business commands follow API source `14153ad9d69ddd3bae972594e6b3dc3ddae8e8e4`.
 `contracts/business-account-modes.json` binds the actual API producer input.
 This source support does not establish hosted availability or a package release.
-A 409 from `testing account-mode` means the Test number is claimed in Inspector or another mode change is pending.
+A 409 from `testing account-mode` means the Test Connection is claimed in Inspector or another mode change is pending.
 The CLI validates this contract and uses the installed SDK's public transport;
 it does not assume that the registry SDK exports the new typed operation.
 
 ```sh
 polymorfa quicklink create --project PROJECT_UUID --account-type business_app --primary-platform ios
-polymorfa testing account-mode TEST_SESSION --account-type meta_cloud --yes --json
+polymorfa testing account-mode TEST_CONNECTION --account-type meta_cloud --yes --json
 ```
 
 The modes are `whatsapp_app`, `business_app`, `meta_cloud` and `meta_coexistence`.
 Phone modes accept `android` or `ios`. Omit `--primary-platform` for `meta_cloud`.
 Legacy `personal` and `business` mode names are rejected. A mode change unlinks
 companions; they must pair again. `--yes` confirms that effect. The operation
-requires a server credential and applies only to Test numbers. It never converts
-a real WhatsApp account. The API enforces Number, membership and session checks.
+requires a server credential and applies only to Test connections. It never converts
+a real WhatsApp account. The API enforces Connection, membership and connection checks.
 
 QuickLink flags preserve other nested testing configuration. Conflicting input
 fields fail before a request. `contact business-profile` preserves the optional
 `encryption` value (`end_to_end`, `hybrid` or `not_end_to_end`) in JSON and plain
 output. An omitted field stays omitted.
 
-### Guided session creation and configuration
+### Guided connection creation and configuration
 
-Create real or simulated sessions with `polymorfa quicklink create --project <id> --input request.json`.
+Create real or simulated connections with `polymorfa quicklink create --project <id> --input request.json`.
 The request accepts `configuration` for connection, phone, history and test simulation.
 Page copy, appearance, legal links and callbacks belong in saved widget settings.
 Free-tier real accounts must pair inside the authenticated Console.
 
-Session configuration uses Platform authority and requires a server API key.
+Connection configuration uses Platform authority and requires a server API key.
 Updates reject unknown fields, invalid nested values, and fields listed in both `set` and `reset` before sending a request. Include at least one of `set` or `reset`; the API enforces permissions, consent, and storage eligibility.
-Inspect configuration with `polymorfa session configuration get <session>`.
-Update it with `polymorfa session configuration update <session> --input update.json`:
+Inspect configuration with `polymorfa connection configuration get <connection>`.
+Update it with `polymorfa connection configuration update <connection> --input update.json`:
 
 ```json
 {
@@ -2547,7 +2561,7 @@ Update it with `polymorfa session configuration update <session> --input update.
 
 Use the revision from the preceding read. Reset removes an override so future defaults
 continue to apply. A saved update can remain pending until the runtime acknowledges it.
-The CLI does not offer direct session creation; QuickLinks preserve onboarding authority.
+The CLI does not offer direct connection creation; QuickLinks preserve onboarding authority.
 
 Upload simulated history separately from configuration, then use the returned
 fixture ID in `configuration.testing.configuration.historyFixtureId`:
@@ -2558,7 +2572,7 @@ polymorfa testing history-fixture create --project PROJECT_ID --input history.js
 
 The file contains `messages`, with up to 100 entries specifying `id`,
 `senderPhone`, `text`, `timestamp` (Unix seconds), and `fromMe`. Senders must be
-existing simulated numbers in the selected project. This command does not enable
+existing simulated connections in the selected project. This command does not enable
 hosted message storage.
 
 ## Prepaid billing responses
@@ -2573,48 +2587,48 @@ server error. Add credit or resolve the billing restriction in the Console befor
 retrying. HTTP 409 from an expired tier quote also requires reviewing a new quote;
 the CLI never creates or confirms a replacement purchase automatically.
 
-### Number tier changes
+### Connection tier changes
 
 Tier changes use a team API key. Quote first, review the credit charge
 and effective time, then confirm that exact quote:
 
 ```shell
-polymorfa session tier quote support --tier pro
-polymorfa session tier confirm support --quote QUOTE_UUID --yes
-polymorfa session tier status support QUOTE_UUID
+polymorfa connection tier quote support --tier pro
+polymorfa connection tier confirm support --quote QUOTE_UUID --yes
+polymorfa connection tier status support QUOTE_UUID
 ```
 
 `--tier inherit` restores the project default tier. A quote does not change the
-Number or spend credit. `confirm` requires `--yes` and accepts
+Connection or spend credit. `confirm` requires `--yes` and accepts
 `--idempotency-key`; it never creates a replacement quote. Read `status` until
 the change is applied or rejected.
 
-A Hybrid Link Number leaving Pro needs a choice. Without one, the quote fails
+A Hybrid Link Connection leaving Pro needs a choice. Without one, the quote fails
 with `hybrid_choice_required` (exit code 4) and the CLI names the flags to
 add. This includes `--tier inherit` when the project default lacks Hybrid Link.
 
 ```shell
 # Keep one connection; the other is disconnected when Pro ends.
-polymorfa session tier quote support --tier standard --keep linked_devices
-# Split into two Standard Numbers. This Number keeps the Official API; Linked
-# Devices moves to a new Number named support-linked without re-pairing.
-polymorfa session tier quote support --tier standard --split --stay official_api --new-number-name support-linked
+polymorfa connection tier quote support --tier standard --keep linked_devices
+# Split into two Standard Connections. This Connection keeps the Official API; Linked
+# Devices moves to a new Connection named support-linked without re-pairing.
+polymorfa connection tier quote support --tier standard --split --stay official_api --new-connection-name support-linked
 ```
 
 The choice runs when the paid Pro window ends. A queued change that is rejected
 because no choice is recorded shows `rejected (hybrid_choice_required)` in
-`session tier status`; quote again with a choice. To merge two Numbers that are the
-same WhatsApp Business number into one Hybrid Link Number, list the pairs, then
-quote Pro on the Number that keeps its ID:
+`connection tier status`; quote again with a choice. To merge two Connections that are the
+same WhatsApp Business number into one Hybrid Link Connection, list the pairs, then
+quote Pro on the Connection that keeps its ID:
 
 ```shell
-polymorfa session hybrid-merge-candidates --project PROJECT_UUID
-polymorfa session tier quote KEEP_UUID --tier pro --merge-with OTHER_UUID
+polymorfa connection hybrid-merge-candidates --project PROJECT_UUID
+polymorfa connection tier quote KEEP_UUID --tier pro --merge-with OTHER_UUID
 ```
 
-`hybrid-merge-candidates` marks each Number "can be absorbed" or "must be
-kept". A Number that uses hosted message storage must be kept, so quote the
-merge on it and pass the other Number to `--merge-with`; the output prints that
+`hybrid-merge-candidates` marks each Connection "can be absorbed" or "must be
+kept". A Connection that uses hosted message storage must be kept, so quote the
+merge on it and pass the other Connection to `--merge-with`; the output prints that
 command for eligible pairs. An ineligible pair shows its reason, such as
 `pairing_in_progress`, `transition_in_progress` or `hms_enabled`. Listing
 candidates requires Hybrid Link access; without it the command exits with code 3
@@ -2624,9 +2638,9 @@ candidates requires Hybrid Link access; without it the command exits with code 3
 combinations exit with code 2 before any request. The quote, confirm and status
 output shows the Hybrid Link plan and its status (`scheduled`, `running`,
 `completed`, `failed` or `cancelled`) separately from the tier change, plus the
-new Number ID after a split. When the output says action is required, disconnect
+new Connection ID after a split. When the output says action is required, disconnect
 the Official API in the WhatsApp Business app under Settings > Account >
-Business Platform > Disconnect Account. An ineligible Number or pair fails with
+Business Platform > Disconnect Account. An ineligible Connection or pair fails with
 `hybrid_transition_ineligible` (exit code 4) and the API's reason in the message.
 Merging requires Hybrid Link access, which the API enforces.
 
@@ -2645,23 +2659,23 @@ versions fail without an automatic upgrade or resend.
 These commands require API-authorized private-preview access. An installed CLI
 or a transport flag does not enable Hybrid Link. Use a team API key or project
 token through `POLYMORFA_PROJECT_TOKEN` or a project-token profile. Project tokens
-can control only their project and its Numbers; team routing policies require a
+can control only their project and its Connections; team routing policies require a
 team API key. Browser client tokens cannot control Hybrid Link or send through it.
 
 ```bash
-polymorfa quicklink availability --project PROJECT_UUID --session NUMBER
+polymorfa quicklink availability --project PROJECT_UUID --connection CONNECTION
 polymorfa quicklink create --project PROJECT_UUID --connection-goal hybrid
-polymorfa quicklink create --project PROJECT_UUID --purpose add_connection --session NUMBER --add-connection linked_devices
-polymorfa message send text --session NUMBER --to +14155550123 --body Hello --transport official_api
-polymorfa message operation-status OPERATION_UUID --session NUMBER
-polymorfa routing-policy get --scope session --project PROJECT_UUID --session NUMBER
-polymorfa routing-policy set --scope session --project PROJECT_UUID --session NUMBER --expected-revision REVISION --prefer linked_devices --allow linked_devices --allow official_api
-polymorfa hybrid-link state --session NUMBER
-polymorfa hybrid-link pause --session NUMBER --expected-revision REVISION
-polymorfa hybrid-link resume --session NUMBER --expected-revision REVISION
+polymorfa quicklink create --project PROJECT_UUID --purpose add_method --connection CONNECTION --add-method linked_devices
+polymorfa message send text --connection CONNECTION --to +14155550123 --body Hello --transport official_api
+polymorfa message operation-status OPERATION_UUID --connection CONNECTION
+polymorfa routing-policy get --scope connection --project PROJECT_UUID --connection CONNECTION
+polymorfa routing-policy set --scope connection --project PROJECT_UUID --connection CONNECTION --expected-revision REVISION --prefer linked_devices --allow linked_devices --allow official_api
+polymorfa hybrid-link state --connection CONNECTION
+polymorfa hybrid-link pause --connection CONNECTION --expected-revision REVISION
+polymorfa hybrid-link resume --connection CONNECTION --expected-revision REVISION
 ```
 
-For project and session routing scopes, `--project`, the nearest linked project,
+For project and connection routing scopes, `--project`, the nearest linked project,
 and the selected profile determine the project in that order. A project-token
 profile fails when its project differs from the linked directory. Team routing
 scope uses a team API key and ignores directory project links. `quicklink
@@ -2721,35 +2735,35 @@ Function, deployment, secret and invocation lists accept `--limit 1..100` and `-
 
 `calls react CALL --connection-id CONNECTION --emoji '👍'` sends a reaction;
 `--clear` clears it. `calls hand CALL --connection-id CONNECTION --raised`
-raises the Number's hand; omit `--raised` to lower it. A server credential may
+raises the Connection's hand; omit `--raised` to lower it. A server credential may
 name `--participant`; a client token acts as its own participant. The named
 connection must still be attached to the call.
 
 Reactions are transient and are never retried automatically. Hand state is
-shared by the Number's clients.
+shared by the Connection's clients.
 
 ### Call links
 
 ```sh
-polymorfa calls link create --session support
-polymorfa calls link create --session support --video --json
-printf '%s' "$CALL_LINK" | polymorfa calls link preview --session support
+polymorfa calls link create --connection support
+polymorfa calls link create --connection support --video --json
+printf '%s' "$CALL_LINK" | polymorfa calls link preview --connection support
 ```
 
-`calls link create` creates a WhatsApp call link from a Linked Device Number
+`calls link create` creates a WhatsApp call link from a Linked Device Connection
 and prints its URL. It does not place or join a call. The request is never
 retried; if the outcome is unknown, check before creating another link.
 Anyone with the link can use it in WhatsApp, so keep it private.
 
 `calls link preview` reads a link without joining the call and prints its
 creator, whether joining needs approval, and whether WhatsApp reports the
-Number as a link administrator. It reads the link, or its bare token, from
+Connection as a link administrator. It reads the link, or its bare token, from
 standard input, so the token stays out of shell history and process listings.
 A full link sets voice or video; pass `--video` with a bare video-link token.
 
 Both commands require a server API key or project token, a Linked Device
-Number, and calling enabled for that Number. Client tokens are refused before
-a request is sent, and Cloud API-only Numbers are refused by the API.
+Connection, and calling enabled for that Connection. Client tokens are refused before
+a request is sent, and Cloud API-only Connections are refused by the API.
 
 ### Stored call records
 
@@ -2760,7 +2774,7 @@ polymorfa calls view CALL_ID --json
 ```
 
 `calls list` reads one page through the existing Calls records API. Reuse the
-same filters when following a cursor. These reads need `sessions:read` and a
+same filters when following a cursor. These reads need `connections:read` and a
 server credential. Project tokens only read calls originally owned by their
 project. Human output labels unmeasured duration as `unknown`.
 
@@ -2780,13 +2794,13 @@ polymorfa billing priority list --json
 Changes require `billing:manage` and Pay-As-You-Go. Supply the observed revision:
 
 ```bash
-polymorfa billing limits set <number-uuid> --scope number --credits 1000 --expected-revision 0
+polymorfa billing limits set <connection-uuid> --scope connection --credits 1000 --expected-revision 0
 polymorfa billing limits set <project-uuid> --scope project --unlimited --expected-revision 1
-polymorfa billing priority set <number-uuid> --scope number --priority 10 --expected-revision 0
-polymorfa billing priority reorder --scope number --project <project-uuid> --ids <first-uuid>,<second-uuid> --expected-revision 1
+polymorfa billing priority set <connection-uuid> --scope connection --priority 10 --expected-revision 0
+polymorfa billing priority reorder --scope connection --project <project-uuid> --ids <first-uuid>,<second-uuid> --expected-revision 1
 ```
 
-A reorder includes every active project, customer or real number in the selected
+A reorder includes every active project, customer or real Connection in the selected
 project, highest first. A stale or incomplete order fails without partial
 changes. Monthly limits reset at 00:00 UTC on the first day; zero blocks new
 charges and null removes the limit. Existing paid service keeps its window.
@@ -2805,25 +2819,25 @@ polymorfa quicklink create --project <project-uuid> --limit-credits 250 --priori
 ```
 
 The combined save is atomic and requires both observed revisions. Project
-priority wins first. Numbers inherit customer priority; a higher number
-priority overrides it within the project. A customer's assigned numbers share
-its monthly cap. Creation controls apply to a real new
-number before pairing admission; testing and supplementary connections reject
+priority wins first. Connections inherit customer priority; a higher Connection
+priority overrides it within the project. A customer's assigned connections share
+its monthly cap. Creation controls apply to a new real
+Connection before pairing admission; testing and adding a method rejects
 these fields. Omit them to keep the default unlimited cap and priority zero.
 
-Read one project's funding controls and save its combined customer and number
+Read one project's funding controls and save its combined customer and Connection
 order:
 
 ```bash
 polymorfa billing priority list --project <project-uuid>
-polymorfa billing priority reorder --scope resource --project <project-uuid> --ids number:<number-uuid>,customer:<customer-uuid> --expected-revision 5
+polymorfa billing priority reorder --scope resource --project <project-uuid> --ids connection:<connection-uuid>,customer:<customer-uuid> --expected-revision 5
 ```
 
-Include every active customer and real number, highest priority first. For
+Include every active customer and real Connection, highest priority first. For
 thousands of resources, put the complete order in a JSON file:
 
 ```json
-["number:<number-uuid>", "customer:<customer-uuid>"]
+["connection:<connection-uuid>", "customer:<customer-uuid>"]
 ```
 
 ```bash
@@ -2834,13 +2848,13 @@ Use either `--ids` or `--ids-file`. Funding order never bypasses a spending cap.
 
 ### WhatsApp Analytics
 
-Read message and call outcomes, response times, number activity and connection
-vitals with a credential carrying `sessions:read`. Enable Analytics in the
+Read message and call outcomes, response times, Connection activity and connection
+vitals with a credential carrying `connections:read`. Enable Analytics in the
 Console to collect business data. Project credentials stay within their project.
 
 ```bash
 polymorfa analytics get --project PROJECT_UUID --json
-polymorfa analytics get --project PROJECT_UUID --session-id NUMBER_UUID --since 2026-10-01T00:00:00Z --until 2026-10-03T00:00:00Z --json
+polymorfa analytics get --project PROJECT_UUID --connection-id CONNECTION_UUID --since 2026-10-01T00:00:00Z --until 2026-10-03T00:00:00Z --json
 polymorfa analytics metrics --project PROJECT_UUID --window-hours 24 > analytics.prom
 polymorfa analytics metrics --project PROJECT_UUID --segments --format openmetrics
 ```

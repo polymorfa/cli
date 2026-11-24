@@ -19,14 +19,14 @@ export default class EventView extends BaseCommand {
 
   async run(): Promise<void> {
     const {args, flags} = await this.parse(EventView)
-    const session = await this.developerSession(flags)
-    const response = await session.client.events.retrieve(
+    const connection = await this.developerConnection(flags)
+    const response = await connection.client.events.retrieve(
       args.event,
       {includePayload: flags['include-payload']},
-      session.requestOptions,
+      connection.requestOptions,
     )
     this.writeValue(
-      developerResponse(response, session.context),
+      developerResponse(response, connection.context),
       renderEventDetail(response.data, flags['include-payload']),
       flags,
     )

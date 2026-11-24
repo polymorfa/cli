@@ -8,16 +8,16 @@ import {
 
 export default class CallsLinkCreate extends BaseCommand {
   static override description =
-    'Create a WhatsApp call link from a Linked Device Number. It does not place or join a call. Requires a server API key or project token and calling enabled for the Number; client tokens and Cloud API-only Numbers are refused. The request is never retried: if the outcome is unknown, check before creating another link. Keep the link private.'
+    'Create a WhatsApp call link from a Linked Device Connection. It does not place or join a call. Requires a server API key or project token and calling enabled for the Connection; client tokens and Cloud API-only Connections are refused. The request is never retried: if the outcome is unknown, check before creating another link. Keep the link private.'
 
   static override examples = [
-    '<%= config.bin %> calls link create --session support',
-    '<%= config.bin %> calls link create --session support --video --json',
+    '<%= config.bin %> calls link create --connection support',
+    '<%= config.bin %> calls link create --connection support --video --json',
   ]
 
   static override flags = {
-    session: Flags.string({
-      description: 'Linked Device session that owns the link.',
+    connection: Flags.string({
+      description: 'Linked Device connection that owns the link.',
       required: true,
     }),
     video: Flags.boolean({description: 'Create a video link.'}),
@@ -29,7 +29,7 @@ export default class CallsLinkCreate extends BaseCommand {
     const {flags} = await this.parse(CallsLinkCreate)
     const result = await createCallLink(
       await this.messagingClient(flags, {serverCredentialOnly: 'Call link'}),
-      {session: flags.session, video: flags.video},
+      {connection: flags.connection, video: flags.video},
     )
     this.writeValue(result, renderCreatedCallLink(result.data), flags)
   }

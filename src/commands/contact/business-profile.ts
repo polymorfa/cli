@@ -17,8 +17,8 @@ export default class ContactBusinessProfile extends BaseCommand {
   static override description = 'Get a contact’s WhatsApp business profile.'
 
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -27,7 +27,7 @@ export default class ContactBusinessProfile extends BaseCommand {
     const {args, flags} = await this.parse(ContactBusinessProfile)
     const result = await viewContactBusinessProfile(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Contact'}),
-      flags.session,
+      flags.connection,
       args.contact,
     )
     this.writeValue(result, renderBusinessProfile(result.data), flags)

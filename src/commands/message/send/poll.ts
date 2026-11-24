@@ -16,7 +16,7 @@ export default class MessageSendPoll extends BaseCommand {
   static override description = 'Send a poll.'
 
   static override examples = [
-    '<%= config.bin %> message send poll --session session_123 --to 730000000001 --title "Lunch?" --option Pizza --option Sushi',
+    '<%= config.bin %> message send poll --connection connection_123 --to 730000000001 --title "Lunch?" --option Pizza --option Sushi',
   ]
 
   static override flags = {
@@ -71,7 +71,7 @@ export default class MessageSendPoll extends BaseCommand {
     }
     const result = await sendMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       request,
       sendIdempotencyOptions(flags['idempotency-key']),
     )

@@ -13,8 +13,8 @@ export default class CloudGroupDelete extends BaseCommand {
     }),
   }
   static override flags = {
-    session: Flags.string({
-      description: 'Messaging Number ID.',
+    connection: Flags.string({
+      description: 'Messaging Connection ID.',
       required: true,
     }),
     yes: Flags.boolean({
@@ -37,7 +37,7 @@ export default class CloudGroupDelete extends BaseCommand {
       serverCredentialOnly: 'Official API',
     })
     const response = await client.officialGroups.delete(
-      flags.session,
+      flags.connection,
       args.group,
       requestKey(flags['idempotency-key']),
     )

@@ -16,7 +16,7 @@ export default class MessageEdit extends BaseCommand {
   static override description = 'Replace the text of a message you sent.'
 
   static override examples = [
-    '<%= config.bin %> message edit 740000000001 --session session_123 --chat 730000000001 --body "Corrected text"',
+    '<%= config.bin %> message edit 740000000001 --connection connection_123 --chat 730000000001 --body "Corrected text"',
   ]
 
   static override flags = {
@@ -30,8 +30,8 @@ export default class MessageEdit extends BaseCommand {
       description:
         'Idempotency-Key header. Generated per invocation when omitted; reuse an explicit key across process retries (1-hour retention).',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -40,7 +40,7 @@ export default class MessageEdit extends BaseCommand {
     const {args, flags} = await this.parse(MessageEdit)
     const result = await editMessage(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       flags.chat,
       args.message,
       flags.body,

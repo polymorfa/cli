@@ -7,10 +7,8 @@ import {
   type TestHttpServer,
 } from '../helpers/http-server.js'
 
-const API_KEY =
-  'pmfa_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQFnfH-m'
-const PROJECT_TOKEN =
-  'pmfa_pt_AQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBqz0whQ'
+const API_KEY = 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
+const PROJECT_TOKEN = 'pmfa_pt_AAECAwQFBgcICQoLDA0ODxAREhM73f-k'
 
 const PROJECT_A = '22222222-2222-4222-8222-222222222222'
 const PROJECT_B = '33333333-3333-4333-8333-333333333333'
@@ -26,14 +24,14 @@ const summary = {
   billingEnabled: false,
   end: '2026-10-01T00:00:00.000Z',
   meters: [meterTotal],
-  numbers: [
-    {meters: [meterTotal], projectId: PROJECT_A, session: 'support'},
-    {meters: [meterTotal], projectId: PROJECT_B, session: 'support'},
+  connections: [
+    {meters: [meterTotal], projectId: PROJECT_A, connection: 'support'},
+    {meters: [meterTotal], projectId: PROJECT_B, connection: 'support'},
   ],
-  numbersTruncated: false,
+  connectionsTruncated: false,
   period: '2026-09',
   projectId: null,
-  session: null,
+  connection: null,
   start: '2026-09-01T00:00:00.000Z',
 }
 const record = {
@@ -55,7 +53,7 @@ const record = {
   projectId: PROJECT_A,
   quantity: 42,
   revision: 1,
-  session: 'support',
+  connection: 'support',
   sourceId: 'CALL-1',
   sourceKind: 'call',
   unit: 'second',
@@ -87,7 +85,7 @@ const gates = {
       used: null,
     },
   ],
-  session: 'support',
+  connection: 'support',
 }
 
 describe('usage commands', () => {
@@ -144,8 +142,12 @@ describe('usage commands', () => {
         body: {
           data: {
             ...summary,
-            numbers: [
-              {meters: [meterTotal], projectId: PROJECT_A, session: 'support'},
+            connections: [
+              {
+                meters: [meterTotal],
+                projectId: PROJECT_A,
+                connection: 'support',
+              },
             ],
             projectId: PROJECT_A,
           },
@@ -201,7 +203,7 @@ describe('usage commands', () => {
     ])
 
     const listed = await apiKey(() =>
-      runCommand('usage gates --session support'),
+      runCommand('usage gates --connection support'),
     )
 
     expect(listed.error).toBeUndefined()
@@ -210,7 +212,7 @@ describe('usage commands', () => {
     )
     expect(listed.stdout).toContain('voice.flows\trecord\tnot checked yet')
     expect(server.requests.map(({method, url}) => `${method} ${url}`)).toEqual([
-      'GET /platform/gates?session=support',
+      'GET /platform/gates?connection=support',
     ])
   })
 

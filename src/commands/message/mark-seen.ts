@@ -19,8 +19,8 @@ export default class MessageMarkSeen extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this seen receipt.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -29,7 +29,7 @@ export default class MessageMarkSeen extends BaseCommand {
     const {args, flags} = await this.parse(MessageMarkSeen)
     const result = await markMessageSeen(
       await this.messagingClient(flags),
-      flags.session,
+      flags.connection,
       {conversation: conversationReference(flags.chat), id: args.message},
       flags['idempotency-key'] === undefined
         ? {}

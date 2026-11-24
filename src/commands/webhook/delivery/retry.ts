@@ -26,19 +26,19 @@ export default class WebhookDeliveryRetry extends BaseCommand {
       prompt: `Retry webhook delivery ${args.delivery}?`,
       yes: flags.yes,
     })
-    const session = await this.developerSession(flags)
-    const response = await session.client.webhookDeliveries.retry(
+    const connection = await this.developerConnection(flags)
+    const response = await connection.client.webhookDeliveries.retry(
       args.delivery,
       {},
       {
-        ...session.requestOptions,
+        ...connection.requestOptions,
         idempotencyKey: idempotencyKey(flags['idempotency-key']),
       },
     )
     const receipt = record(response.data, 'Webhook delivery retry receipt')
     const deliveryId = stringField(receipt, 'deliveryId')
     const output = developerMutation({
-      context: session.context,
+      context: connection.context,
       metadata: response.metadata,
       receipt,
       resource: {id: deliveryId, type: 'webhook_delivery'},

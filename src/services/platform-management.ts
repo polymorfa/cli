@@ -11,13 +11,13 @@ import {
   type ResponseMetadata,
   type SecurityIncident,
   type SecurityIncidentAcknowledgement,
-  type SessionBan,
-  type Session,
-  type SessionBatchRemoveResult,
-  type SessionBatchRequest,
-  type SessionBatchStopResult,
-  type PlatformSession,
-  type SessionCapabilities,
+  type ConnectionBan,
+  type Connection,
+  type ConnectionBatchRemoveResult,
+  type ConnectionBatchRequest,
+  type ConnectionBatchStopResult,
+  type PlatformConnection,
+  type ConnectionCapabilities,
   type UpdateQuickLinkSettingsInput,
   type TeamQuickLinkSettings,
   type ProjectQuickLinkSettings,
@@ -66,13 +66,13 @@ export async function listAuditLogs(
   return result(response.data.data, response.metadata)
 }
 
-export async function listSessionBans(
+export async function listConnectionBans(
   client: ClientInstance<'team'>,
   activeOnly: boolean,
-): Promise<PlatformResult<readonly SessionBan[]>> {
+): Promise<PlatformResult<readonly ConnectionBan[]>> {
   const response = activeOnly
-    ? await client.sessionBans.listActive()
-    : await client.sessionBans.list()
+    ? await client.connectionBans.listActive()
+    : await client.connectionBans.list()
   return result(response.data.data, response.metadata)
 }
 
@@ -103,57 +103,58 @@ export async function listProjectTokens(
   return result(response.data.data, response.metadata)
 }
 
-export async function listManagedSessions(
+export async function listManagedConnections(
   client: ClientInstance<'team'>,
   projectId?: string,
-): Promise<PlatformResult<readonly PlatformSession[]>> {
-  const response = await client.sessions.list(
+): Promise<PlatformResult<readonly PlatformConnection[]>> {
+  const response = await client.connections.list(
     projectId === undefined ? {} : {projectId},
   )
   return result(response.data.data, response.metadata)
 }
 
-export async function viewManagedSession(
+export async function viewManagedConnection(
   client: ClientInstance<'team'>,
-  sessionId: string,
-): Promise<PlatformResult<Session>> {
-  const response = await client.sessions.retrieve(sessionId)
+  connectionId: string,
+): Promise<PlatformResult<Connection>> {
+  const response = await client.connections.retrieve(connectionId)
   return result(response.data.data, response.metadata)
 }
 
-export function renderManagedSessions(
-  sessions: readonly PlatformSession[],
+export function renderManagedConnections(
+  connections: readonly PlatformConnection[],
 ): string {
-  if (sessions.length === 0) return 'No sessions found.'
-  return sessions
-    .map((session) =>
+  if (connections.length === 0) return 'No connections found.'
+  return connections
+    .map((connection) =>
       [
-        session.sessionId,
-        session.name,
-        session.status,
-        session.testMode ? 'test' : 'real',
-        session.projectId,
+        connection.connectionId,
+        connection.name,
+        connection.status,
+        connection.testMode ? 'test' : 'real',
+        connection.projectId,
       ].join('\t'),
     )
     .join('\n')
 }
 
-export function renderManagedSession(session: Session): string {
+export function renderManagedConnection(connection: Connection): string {
   return [
-    `ID\t${session.sessionId}`,
-    `Name\t${session.name}`,
-    `Status\t${session.status}`,
-    ...(session.statusReason === undefined
+    `ID\t${connection.connectionId}`,
+    `Name\t${connection.name}`,
+    `Status\t${connection.status}`,
+    ...(connection.statusReason === undefined
       ? []
-      : [`Status reason\t${session.statusReason}`]),
-    `Connection\t${session.type}`,
-    `Number\t${session.testMode ? 'test' : 'real'}`,
-    ...newChatCapLine(session),
-    `Updated\t${session.updatedAt}`,
+      : [`Status reason\t${connection.statusReason}`]),
+    `Type\t${connection.type}`,
+    `Method\t${connection.method}`,
+    `Mode\t${connection.testMode ? 'test' : 'real'}`,
+    ...newChatCapLine(connection),
+    `Updated\t${connection.updatedAt}`,
   ].join('\n')
 }
 
-/** WhatsApp's per-number new-chat cap, as Get session returns it. */
+/** WhatsApp's per-number new-chat cap, as Get connection returns it. */
 interface NewChatCapView {
   readonly enabled: boolean | null
   readonly capped: boolean
@@ -162,9 +163,10 @@ interface NewChatCapView {
   readonly resetsAt: string | null
 }
 
-function newChatCapLine(session: Session): string[] {
-  const cap = (session as Session & {newChatCapping?: NewChatCapView | null})
-    .newChatCapping
+function newChatCapLine(connection: Connection): string[] {
+  const cap = (
+    connection as Connection & {newChatCapping?: NewChatCapView | null}
+  ).newChatCapping
   if (cap === undefined) return []
   if (cap === null) return ['New-chat cap\tnot observed yet']
   if (cap.enabled === null) return ['New-chat cap\tundetermined']
@@ -176,33 +178,33 @@ function newChatCapLine(session: Session): string[] {
   return [`New-chat cap\t${cap.used} of ${cap.limit} used${reset}`]
 }
 
-export async function stopSessions(
+export async function stopConnections(
   client: ClientInstance<'team'>,
-  sessionIds: readonly string[],
+  connectionIds: readonly string[],
   projectId?: string,
   options: RequestOptions = {},
-): Promise<PlatformResult<SessionBatchStopResult>> {
-  const response = await client.sessions.stopMany(
-    sessionBatch(sessionIds, projectId),
+): Promise<PlatformResult<ConnectionBatchStopResult>> {
+  const response = await client.connections.stopMany(
+    connectionBatch(connectionIds, projectId),
     options,
   )
   return result(response.data.data, response.metadata)
 }
 
 /** WhatsApp features and limits WhatsApp enabled for a number (beta). */
-export async function getSessionCapabilities(
+export async function getConnectionCapabilities(
   client: ClientInstance<'team'>,
-  session: string,
-): Promise<PlatformResult<SessionCapabilities>> {
-  const response = await client.sessions.getCapabilities(session)
+  connection: string,
+): Promise<PlatformResult<ConnectionCapabilities>> {
+  const response = await client.connections.getCapabilities(connection)
   return result(response.data.data, response.metadata)
 }
 
-export function renderSessionCapabilities(
-  capabilities: SessionCapabilities,
+export function renderConnectionCapabilities(
+  capabilities: ConnectionCapabilities,
 ): string {
   const header = [
-    `Session\t${capabilities.session}`,
+    `Connection\t${capabilities.connection}`,
     `Status\t${capabilities.status}`,
     `Synced\t${capabilities.syncedAt ?? 'never'}`,
     `Account\t${capabilities.accountType ?? 'unknown'}`,
@@ -221,14 +223,14 @@ export function renderSessionCapabilities(
   return [...header, '', ...rows].join('\n')
 }
 
-export async function deleteSessions(
+export async function deleteConnections(
   client: ClientInstance<'team'>,
-  sessionIds: readonly string[],
+  connectionIds: readonly string[],
   projectId?: string,
   options: RequestOptions = {},
-): Promise<PlatformResult<SessionBatchRemoveResult>> {
-  const response = await client.sessions.deleteMany(
-    sessionBatch(sessionIds, projectId),
+): Promise<PlatformResult<ConnectionBatchRemoveResult>> {
+  const response = await client.connections.deleteMany(
+    connectionBatch(connectionIds, projectId),
     options,
   )
   return result(response.data.data, response.metadata)
@@ -272,12 +274,12 @@ export function renderAuditLogs(logs: readonly AuditLog[]): string {
     .join('\n')
 }
 
-export function renderSessionBans(bans: readonly SessionBan[]): string {
-  if (bans.length === 0) return 'No session bans found.'
+export function renderConnectionBans(bans: readonly ConnectionBan[]): string {
+  if (bans.length === 0) return 'No connection bans found.'
   return bans
     .map((ban) =>
       [
-        ban.sessionName,
+        ban.connectionName,
         ban.status,
         ban.banCode ?? '',
         ban.banReason ?? '',
@@ -367,12 +369,12 @@ export function renderWidgetSettings(
   ].join('\n')
 }
 
-export function renderSessionStops(stopping: number): string {
-  return `Requested stops for ${stopping} matching ${plural(stopping, 'session')}. This does not wait for completion.`
+export function renderConnectionStops(stopping: number): string {
+  return `Requested stops for ${stopping} matching ${plural(stopping, 'connection')}. This does not wait for completion.`
 }
 
-export function renderSessionDeletes(removed: number): string {
-  return `Removed ${removed} matching ${plural(removed, 'session')} from management. Device termination is best effort.`
+export function renderConnectionDeletes(removed: number): string {
+  return `Removed ${removed} matching ${plural(removed, 'connection')} from management. Device termination is best effort.`
 }
 
 function result<T>(data: T, metadata: ResponseMetadata): PlatformResult<T> {
@@ -415,35 +417,35 @@ function widgetUpdate(input: unknown): UpdateQuickLinkSettingsInput {
   }
 }
 
-function sessionBatch(
+function connectionBatch(
   ids: readonly string[],
   projectId?: string,
-): SessionBatchRequest {
-  const sessionIds = ids.map((id) => id.trim())
-  if (sessionIds.length === 0) {
-    throw new PolymorfaValidationError('Provide at least one session ID.', {
-      code: 'empty_session_batch',
+): ConnectionBatchRequest {
+  const connectionIds = ids.map((id) => id.trim())
+  if (connectionIds.length === 0) {
+    throw new PolymorfaValidationError('Provide at least one connection ID.', {
+      code: 'empty_connection_batch',
     })
   }
-  if (sessionIds.length > 100) {
+  if (connectionIds.length > 100) {
     throw new PolymorfaValidationError(
-      'Session batches cannot exceed 100 IDs.',
-      {code: 'session_batch_too_large'},
+      'Connection batches cannot exceed 100 IDs.',
+      {code: 'connection_batch_too_large'},
     )
   }
-  if (sessionIds.some((id) => id.length === 0)) {
-    throw new PolymorfaValidationError('Session IDs cannot be empty.', {
-      code: 'empty_session_id',
+  if (connectionIds.some((id) => id.length === 0)) {
+    throw new PolymorfaValidationError('Connection IDs cannot be empty.', {
+      code: 'empty_connection_id',
     })
   }
-  if (new Set(sessionIds).size !== sessionIds.length) {
-    throw new PolymorfaValidationError('Session IDs must be unique.', {
-      code: 'duplicate_session_id',
+  if (new Set(connectionIds).size !== connectionIds.length) {
+    throw new PolymorfaValidationError('Connection IDs must be unique.', {
+      code: 'duplicate_connection_id',
     })
   }
 
   return {
-    sessionIds,
+    connectionIds,
     ...(projectId === undefined ? {} : {projectId}),
   }
 }

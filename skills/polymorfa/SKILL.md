@@ -18,7 +18,7 @@ Team API keys and exact-project tokens are durable principals. Browser client to
 
 Voice Automation commands (`polymorfa voice audio`, `polymorfa voice credential`) are a beta for enrolled teams; `voice_not_enabled` (exit 6) means the team is not enrolled and `gate_limit_reached` (exit 7) means a voice limit is reached, so do not retry either. Pass a provider key to `polymorfa voice credential add` only through standard input or the environment variable named by `--key-env`, never as an argument.
 
-Use `polymorfa quicklink create --project PROJECT --input request.json` with a team API key for standard number pairing. Treat the returned hosted URL as credential material; do not request direct session QR payloads or pairing codes.
+Use `polymorfa quicklink create --project PROJECT --input request.json` with a team API key for standard Connection pairing. Treat the returned hosted URL as credential material; do not request direct connection QR payloads or pairing codes.
 
 ## Choose an interface
 

@@ -17,8 +17,8 @@ export default class ContactUnblock extends BaseCommand {
     'idempotency-key': Flags.string({
       description: 'Safely identify retries of this unblock action.',
     }),
-    session: Flags.string({
-      description: 'Messaging session ID.',
+    connection: Flags.string({
+      description: 'Messaging connection ID.',
       required: true,
     }),
   }
@@ -27,7 +27,7 @@ export default class ContactUnblock extends BaseCommand {
     const {args, flags} = await this.parse(ContactUnblock)
     const result = await unblockContact(
       await this.messagingClient(flags, {serverApiKeyOnly: 'Contact'}),
-      flags.session,
+      flags.connection,
       args.contact,
       flags['idempotency-key'] === undefined
         ? {}
