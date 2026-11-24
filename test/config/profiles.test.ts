@@ -65,7 +65,7 @@ describe('ProfileRepository', () => {
       profiles: {
         work: {
           credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
-          organization: 'org_123',
+          team: 'team_123',
         },
       },
       version: 2,
@@ -77,7 +77,7 @@ describe('ProfileRepository', () => {
       profiles: {
         work: {
           credential: {account: 'profile:work:apiKey', kind: 'apiKey'},
-          organization: 'org_123',
+          team: 'team_123',
         },
       },
       version: 2,
@@ -131,7 +131,7 @@ describe('ProfileRepository', () => {
               account: 'profile:project:projectToken',
               kind: 'projectToken',
             },
-            owner: 'organization',
+            owner: 'team',
             project: 'project_1',
           },
         },

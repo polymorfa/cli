@@ -6,7 +6,7 @@ import {
 
 export default class OptOutSettingsView extends BaseCommand {
   static override description =
-    'Show the organization’s STOP and START keyword capture settings.'
+    'Show the team’s STOP and START keyword capture settings.'
 
   async run(): Promise<void> {
     const {flags} = await this.parse(OptOutSettingsView)

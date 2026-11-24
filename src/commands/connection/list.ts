@@ -6,7 +6,7 @@ import {
 
 export default class ConnectionList extends BaseCommand {
   static override description =
-    'List connection metadata for the team or one project. Requires an organization API key with connections:read.'
+    'List connection metadata for the team or one project. Requires a team API key with connections:read.'
   static override examples = [
     '<%= config.bin %> connection list',
     '<%= config.bin %> connection list --project PROJECT_ID --json',

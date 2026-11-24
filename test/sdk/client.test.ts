@@ -80,7 +80,7 @@ describe('createRawClient', () => {
     expect(client.quickLinks).toHaveProperty('create')
   })
 
-  test('creates the unified organization client and rejects the wrong surface', () => {
+  test('creates the unified team client and rejects the wrong surface', () => {
     const client = createPlatformClient({
       surface: 'platform',
       credential: {

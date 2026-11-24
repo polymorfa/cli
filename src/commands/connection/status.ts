@@ -6,7 +6,7 @@ import {viewManagedConnection} from '../../services/platform-management.js'
 
 export default class ConnectionStatus extends BaseCommand {
   static override description =
-    'Read the stored connection status and reason. Requires an organization API key with connections:read.'
+    'Read the stored connection status and reason. Requires a team API key with connections:read.'
   static override args = {
     connection: Args.string({description: 'Connection ID.', required: true}),
   }

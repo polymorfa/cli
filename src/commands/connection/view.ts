@@ -9,7 +9,7 @@ import {
 
 export default class ConnectionView extends BaseCommand {
   static override description =
-    'Read one connection by its ID. Requires an organization API key with connections:read.'
+    'Read one connection by its ID. Requires a team API key with connections:read.'
   static override args = {
     connection: Args.string({description: 'Connection ID.', required: true}),
   }

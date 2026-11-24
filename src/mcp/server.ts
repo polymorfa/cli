@@ -97,7 +97,7 @@ export function createMcpServer(
         readOnlyHint: true,
       },
       description:
-        'List stored connection summaries in one project. Requires a CLI organization API key with connections:read.',
+        'List stored connection summaries in one project. Requires a CLI team API key with connections:read.',
       inputSchema: z.object({
         projectId: z.string().regex(LISTENER_PROJECT_ID_PATTERN),
       }),
@@ -110,7 +110,7 @@ export function createMcpServer(
         return {
           content: [
             {
-              text: 'Could not list project connections with the selected CLI organization API key.',
+              text: 'Could not list project connections with the selected CLI team API key.',
               type: 'text' as const,
             },
           ],

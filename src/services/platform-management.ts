@@ -251,7 +251,7 @@ export function renderApiKeys(keys: readonly ApiKey[]): string {
 }
 
 export function renderMembers(members: readonly TeamMember[]): string {
-  if (members.length === 0) return 'No organization members found.'
+  if (members.length === 0) return 'No team members found.'
   return members
     .map((member) =>
       [member.email, member.name ?? '', member.role, member.status].join('\t'),
@@ -347,13 +347,13 @@ export function renderWidgetSettings(
 ): string {
   if (settings === null) {
     return requestedProjectId === undefined
-      ? 'No saved organization-default widget settings found.'
+      ? 'No saved team-default widget settings found.'
       : `No saved widget settings found for project ${requestedProjectId}.`
   }
 
   return [
     `ID\t${settings.id}`,
-    `Scope\t${settings.projectId ?? 'organization defaults'}`,
+    `Scope\t${settings.projectId ?? 'team defaults'}`,
     `Enabled\t${settings.enabled}`,
     `Methods\t${settings.methods?.join(', ') ?? 'default'}`,
     `Theme\t${settings.theme}`,

@@ -257,18 +257,18 @@ describe('project context', () => {
     expect(explicit.context.projectId).toBe(APP)
   })
 
-  test('organization-owned commands ignore the linked project', async () => {
+  test('team-owned commands ignore the linked project', async () => {
     const environment = await resolveDeveloperEnvironment(
-      {env: {}, linkedProject: WEB, owner: 'organization'},
+      {env: {}, linkedProject: WEB, owner: 'team'},
       profiles,
       credentials,
       lookup,
     )
-    expect(environment.context).toMatchObject({owner: 'organization'})
+    expect(environment.context).toMatchObject({owner: 'team'})
     expect(environment.context.projectId).toBeUndefined()
   })
 
-  test('organization-owned profiles do not read a project link', async () => {
+  test('team-owned profiles do not read a project link', async () => {
     const loadLinkedProject = vi.fn(() =>
       Promise.reject(new Error('Broken project link')),
     )
@@ -280,7 +280,7 @@ describe('project context', () => {
             ...config,
             profiles: {
               ...config.profiles,
-              work: {...config.profiles.work!, owner: 'organization'},
+              work: {...config.profiles.work!, owner: 'team'},
             },
           }),
         save: () => Promise.resolve(),
@@ -289,7 +289,7 @@ describe('project context', () => {
       lookup,
     )
 
-    expect(environment.context.owner).toBe('organization')
+    expect(environment.context.owner).toBe('team')
     expect(loadLinkedProject).not.toHaveBeenCalled()
   })
 
@@ -326,7 +326,7 @@ function project(id: string, slug: string, name: string) {
     isActive: true,
     lastActivity: null,
     name,
-    teamId: 'org_1',
+    teamId: 'team_1',
     slug,
     stage: 'development',
     totalMessages: 0,

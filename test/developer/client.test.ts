@@ -5,7 +5,7 @@ import {createDeveloperConnection} from '../../src/developer/client.js'
 import {withEnvironment} from '../helpers/http-server.js'
 
 describe('createDeveloperConnection', () => {
-  test('ignores a broken project link for organization-owned resources', async () => {
+  test('ignores a broken project link for team-owned resources', async () => {
     const loadLinkedProject = vi.fn(() =>
       Promise.reject(new Error('Broken project link')),
     )
@@ -17,17 +17,17 @@ describe('createDeveloperConnection', () => {
       },
       () =>
         createDeveloperConnection(
-          {owner: 'organization'},
+          {owner: 'team'},
           undefined,
           loadLinkedProject,
         ),
     )
 
-    expect(connection.context.owner).toBe('organization')
+    expect(connection.context.owner).toBe('team')
     expect(loadLinkedProject).not.toHaveBeenCalled()
   })
 
-  test('creates an immutable project view from an organization key', async () => {
+  test('creates an immutable project view from a team key', async () => {
     const connection = await withEnvironment(
       {
         POLYMORFA_API_KEY: 'pmfa_AAECAwQFBgcICQoLDA0ODxAREhM73f-k',
@@ -46,7 +46,7 @@ describe('createDeveloperConnection', () => {
     expect(connection.client.projectId).toBe(PROJECT)
     expect(connection.context).toMatchObject({
       owner: 'project',
-      principalType: 'organization_key',
+      principalType: 'team_key',
       projectId: PROJECT,
     })
   })

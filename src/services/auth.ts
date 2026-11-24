@@ -26,8 +26,8 @@ export interface ProfileSummary {
   readonly baseUrl?: string
   readonly credentialKind: 'apiKey' | 'projectToken'
   readonly name: string
-  readonly owner?: 'organization' | 'project'
-  readonly organization?: string
+  readonly owner?: 'team' | 'project'
+  readonly team?: string
   readonly project?: string
 }
 
@@ -72,9 +72,7 @@ export class AuthService {
         ? {}
         : {apiVersion: previous.apiVersion}),
       ...(previous?.baseUrl === undefined ? {} : {baseUrl: previous.baseUrl}),
-      ...(previous?.organization === undefined
-        ? {}
-        : {organization: previous.organization}),
+      ...(previous?.team === undefined ? {} : {team: previous.team}),
       credential: {account, kind: 'apiKey'},
     }
     const next: ProfileConfig = {
@@ -131,9 +129,7 @@ export class AuthService {
         ? {}
         : {apiVersion: previous.apiVersion}),
       ...(previous?.baseUrl === undefined ? {} : {baseUrl: previous.baseUrl}),
-      ...(previous?.organization === undefined
-        ? {}
-        : {organization: previous.organization}),
+      ...(previous?.team === undefined ? {} : {team: previous.team}),
       credential: {account, kind: 'projectToken'},
       owner: 'project',
       project,
@@ -271,9 +267,7 @@ function summary(
       ? {}
       : {apiVersion: profile.apiVersion}),
     ...(profile.baseUrl === undefined ? {} : {baseUrl: profile.baseUrl}),
-    ...(profile.organization === undefined
-      ? {}
-      : {organization: profile.organization}),
+    ...(profile.team === undefined ? {} : {team: profile.team}),
     ...(profile.owner === undefined ? {} : {owner: profile.owner}),
     ...(profile.project === undefined ? {} : {project: profile.project}),
   }

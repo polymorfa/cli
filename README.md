@@ -13,7 +13,7 @@ polymorfa version
 ## Requirements
 
 - Node.js 22 or newer
-- A Polymorfa organization API key or exact-project token for developer requests
+- A Polymorfa team API key or exact-project token for developer requests
 - A server API key or short-lived client token for Messaging requests
 
 ## Development installation
@@ -150,7 +150,7 @@ The registry comes from the real command files. Commands needing the installed C
 ## Authentication profiles
 
 Until the backend exposes a revocable CLI device-authorization flow, login
-accepts an organization API key or exact-project token through standard input:
+accepts a team API key or exact-project token through standard input:
 
 ```shell
 printf '%s' "$POLYMORFA_API_KEY" | \
@@ -164,7 +164,7 @@ printf '%s' "$POLYMORFA_PROJECT_TOKEN" | \
   polymorfa auth login --with-project-token --project project_123 --profile project-work
 ```
 
-Profile metadata records its explicit project or organization owner. Credentials
+Profile metadata records its explicit project or team owner. Credentials
 are stored separately in macOS Keychain, Windows Credential Manager, or Linux
 Secret Service. A keyring failure stops the command; the CLI never silently
 falls back to plaintext. `auth status` reports local secure-store availability
@@ -204,7 +204,7 @@ polymorfa project current            # show the project and where it comes from
 
 Commands resolve the project in this order: `--project`, the nearest
 `polymorfa.json` in the current directory or a parent, then the
-profile's stored project. Organization-owned commands ignore linked and profile
+profile's stored project. Team-owned commands ignore linked and profile
 projects. `--verbose` prints the link file in use.
 
 `project use` and `link` accept a UUID or a unique slug and store the canonical
@@ -267,7 +267,7 @@ your shell to its startup file if you want completion in later shell sessions.
 
 ## Inspect connections
 
-Use an organization API key with `connections:read` to inspect stored connection
+Use a team API key with `connections:read` to inspect stored connection
 metadata:
 
 ```shell
@@ -286,12 +286,12 @@ Each Connection has `type: "whatsapp"` and one `method`: `linked_device`,
 billing identity. Meta phone-number IDs remain `phoneNumberId`.
 
 Key metadata listing and revocation are available through `key list` and
-`key revoke`; the CLI does not mint or rotate organization keys.
+`key revoke`; the CLI does not mint or rotate team keys.
 
 ## QuickLinks
 
 A QuickLink is a persistent hosted link that connects one WhatsApp number to a
-new connection in a project. Create one from a JSON request with an organization
+new connection in a project. Create one from a JSON request with a team
 API key that has `quicklink:manage`:
 
 ```shell
@@ -304,7 +304,7 @@ The request accepts `customerId`, `externalId`, and `configuration`. See
 [Guided connection creation and configuration](#guided-connection-creation-and-configuration)
 for the configuration fields.
 
-Inspect or cancel a link with an organization API key or an exact-project
+Inspect or cancel a link with a team API key or an exact-project
 token that has `quicklink:manage`:
 
 ```shell
@@ -328,7 +328,7 @@ or history operation, so the CLI does not synthesize them.
 
 ## Customers
 
-Manage Customers through the Platform API with an organization server key and
+Manage Customers through the Platform API with a team server key and
 an explicit project ID:
 
 ```shell
@@ -510,7 +510,7 @@ header.
 
 ### Flow drafts and provider lifecycle
 
-Flow commands require a project scope and an organization API key or project
+Flow commands require a project scope and a team API key or project
 token. Reads use `connections:read`; mutations use `connections:manage`.
 
 ```shell
@@ -593,7 +593,7 @@ linked to another project; the API checks that the credential can access it.
 
 ### Official API observations and templates
 
-The `cloud` commands require an organization API key or a project token with the
+The `cloud` commands require a team API key or a project token with the
 listed scope. Client tokens cannot use these commands. Server-side feature
 access still applies: an installed command does not enroll a Connection or enable a
 beta feature.
@@ -1260,7 +1260,7 @@ sox greeting.wav -t raw -r 16000 -e signed -b 16 -c 1 - | \
 
 Polymorfa checks every call against the team's call policy before the
 destination rings. `calls policy` and `calls opt-outs` read and change that
-policy and require an organization API key (`POLYMORFA_API_KEY` or a profile).
+policy and require a team API key (`POLYMORFA_API_KEY` or a profile).
 A project token used as the API key reaches the API, which refuses it with
 `403` (exit code 3). A client token is not a Platform credential, so the CLI
 refuses the command before sending a request (exit code 2).
@@ -1339,9 +1339,9 @@ polymorfa calls check +14155550123 --connection support
 ### Call statistics and export
 
 `calls stats` summarizes calls and `calls export` writes call detail records.
-Both accept an organization API key or an exact-project token with the
+Both accept a team API key or an exact-project token with the
 `connections:read` scope. Pass `--project` to read one project. Without it, an
-organization API key reads every project in the organization. A project token
+team API key reads every project in the team. A project token
 reads only its own project and requires `--project`.
 
 ```shell
@@ -1430,7 +1430,7 @@ or times out, the command keeps the password on screen and exits successfully.
 Voice Automation is a beta (`calls.voice-automation`) for enrolled teams only.
 For other teams, every change except delete fails with `voice_not_enabled`.
 Reads, previews and deletes keep working after a team leaves the beta. The
-commands require an organization server API key with `voice:read` (lists,
+commands require a team server API key with `voice:read` (lists,
 views, previews) or `voice:manage` (changes).
 
 ### Audio library
@@ -1707,7 +1707,7 @@ request metadata.
 
 ## Platform access and security
 
-Organization server API keys can inspect the credential, membership, audit,
+Team server API keys can inspect the credential, membership, audit,
 ban, incident, saved QuickLink settings, and project-token metadata made
 available by the Platform API:
 
@@ -1760,7 +1760,7 @@ bypass.
 returns `null` in JSON when no settings row has been saved. Update
 accepts one bounded JSON object from `--input`; the target project is selected
 separately with `--project` and cannot be hidden in that input. Omitting the
-project targets organization defaults. Widget logo fields are existing storage
+project targets team defaults. Widget logo fields are existing storage
 identifiers, not file, URL, base64, upload, or download operations. Widget
 access requires the `quicklink:manage` scope.
 
@@ -1790,7 +1790,7 @@ enqueue another request, while repeated deletion counts only rows still present.
 
 ## Messaging campaigns
 
-Campaign commands use organization Messaging API keys and require an explicit
+Campaign commands use team Messaging API keys and require an explicit
 project slug because the source routes are slug-scoped:
 
 ```shell
@@ -2033,7 +2033,7 @@ or stop a campaign's operation, use the `operation` commands in
 
 ## Campaign audiences
 
-Audience commands are organization-scoped and use the Platform API:
+Audience commands are team-scoped and use the Platform API:
 
 ```shell
 polymorfa audience create --name "August launch" \
@@ -2065,7 +2065,7 @@ recipient listing.
 
 ## Campaign opt-outs
 
-Opt-out suppression is organization-wide. Keyword capture has its own settings:
+Opt-out suppression is team-wide. Keyword capture has its own settings:
 
 ```shell
 polymorfa optout settings view
@@ -2088,8 +2088,8 @@ recipient with `lastError` `opted_out`.
 ## Developer events and webhooks
 
 Developer resources always have an explicit owner. Project-owned commands need
-`--owner project --project <id>`. Organization-owned commands use
-`--owner organization` and reject a project override. A stored profile can
+`--owner project --project <id>`. Team-owned commands use
+`--owner team` and reject a project override. A stored profile can
 provide the owner, but the CLI never guesses it from a credential or retries a
 request against a different owner.
 
@@ -2166,18 +2166,18 @@ operation ID in the JSON `operation.id` field. Follow it with
 
 Campaign sends, production enrollments, and other durable work are tracked as
 operations. The commands need `operations:read`; `operation cancel` needs
-`operations:cancel`. With `--owner organization`, commands read team-owned
+`operations:cancel`. With `--owner team`, commands read team-owned
 operations and every project's operations. With `--owner project`, they read
 one project.
 
 ```shell
-polymorfa operation list --owner organization --status running
-polymorfa operation list --owner organization \
+polymorfa operation list --owner team --status running
+polymorfa operation list --owner team \
   --resource-type campaign --resource-id campaign_123
-polymorfa operation view operation_123 --owner organization
-polymorfa operation wait operation_123 --owner organization --timeout 600
-polymorfa operation watch operation_123 --owner organization
-polymorfa operation cancel operation_123 --owner organization --yes
+polymorfa operation view operation_123 --owner team
+polymorfa operation wait operation_123 --owner team --timeout 600
+polymorfa operation watch operation_123 --owner team
+polymorfa operation cancel operation_123 --owner team --yes
 ```
 
 `operation wait` long-polls the API (up to 30 seconds per request) until the
@@ -2351,7 +2351,7 @@ status, and safe counters, never primary credentials, listener credentials,
 forwarding secrets, or unrestricted payloads.
 
 `polymorfa_connection_list` is a read-only discovery tool for one explicit project
-UUID. It uses the selected CLI organization API key with `connections:read` and
+UUID. It uses the selected CLI team API key with `connections:read` and
 returns connection ID, name, stored status, and test-mode flag. It omits phone
 connections, credentials, and message data. The tool does not probe the live device.
 Project tokens and Messaging client tokens cannot use this tool. A failed read
@@ -2589,7 +2589,7 @@ the CLI never creates or confirms a replacement purchase automatically.
 
 ### Connection tier changes
 
-Tier changes use an organization API key. Quote first, review the credit charge
+Tier changes use a team API key. Quote first, review the credit charge
 and effective time, then confirm that exact quote:
 
 ```shell
@@ -2678,7 +2678,7 @@ polymorfa hybrid-link resume --connection CONNECTION --expected-revision REVISIO
 For project and connection routing scopes, `--project`, the nearest linked project,
 and the selected profile determine the project in that order. A project-token
 profile fails when its project differs from the linked directory. Team routing
-scope uses an organization API key and ignores directory project links. `quicklink
+scope uses a team API key and ignores directory project links. `quicklink
 availability` shows existing connection status and any QuickLink that can be
 resumed.
 
@@ -2699,7 +2699,7 @@ transports within the restrictions inherited from the team and project.
 
 ### Functions
 
-Functions are project-owned. Select `--project` or use the linked project/profile context. The commands accept an organization API key or a project token; browser client tokens are refused. Access also depends on the team's enabled Functions release and the configured execution region.
+Functions are project-owned. Select `--project` or use the linked project/profile context. The commands accept a team API key or a project token; browser client tokens are refused. Access also depends on the team's enabled Functions release and the configured execution region.
 
 ```bash
 polymorfa function list --project PROJECT_UUID
@@ -2784,7 +2784,7 @@ does not retrieve media or webhook deliveries.
 
 ### Spending limits and funding priority
 
-With an organization key carrying `billing:read`, inspect current controls:
+With a team key carrying `billing:read`, inspect current controls:
 
 ```bash
 polymorfa billing limits list --project <project-uuid> --json

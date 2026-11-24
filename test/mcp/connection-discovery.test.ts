@@ -79,7 +79,7 @@ describe('MCP connection discovery', () => {
         },
         () => listMcpConnections(PROJECT_ID),
       ),
-    ).rejects.toThrow('Select only one organization API key')
+    ).rejects.toThrow('Select only one team API key')
     expect(server.requests).toHaveLength(0)
   })
 })

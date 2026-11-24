@@ -7,7 +7,7 @@ export abstract class FunctionsCommand extends BaseCommand {
   protected async functionContext(flags: GlobalFlags) {
     if (flags.owner !== undefined && flags.owner !== 'project')
       throw new PolymorfaConfigurationError(
-        'Functions are project-owned; --owner organization is not supported.',
+        'Functions are project-owned; --owner team is not supported.',
         'owner',
       )
     const connection = await this.developerConnection({

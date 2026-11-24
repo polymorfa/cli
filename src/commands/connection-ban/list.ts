@@ -7,7 +7,7 @@ import {
 } from '../../services/platform-management.js'
 
 export default class ConnectionBanList extends BaseCommand {
-  static override description = 'List recorded organization connection bans.'
+  static override description = 'List recorded team connection bans.'
 
   static override flags = {
     active: Flags.boolean({description: 'Return only active bans.'}),

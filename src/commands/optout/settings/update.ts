@@ -9,7 +9,7 @@ import {
 
 export default class OptOutSettingsUpdate extends BaseCommand {
   static override description =
-    'Replace the organization’s STOP and START keyword capture settings. Every field is replaced, so pass the complete keyword set.'
+    'Replace the team’s STOP and START keyword capture settings. Every field is replaced, so pass the complete keyword set.'
 
   static override examples = [
     '<%= config.bin %> <%= command.id %> --enabled --opt-out-keyword STOP --opt-out-keyword BAJA --opt-in-keyword START',

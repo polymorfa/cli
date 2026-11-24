@@ -32,7 +32,7 @@ prompts, output, errors, and workflows are written and reviewed by hand.
 3. **One behavior across humans and agents.** CLI commands and MCP tools call
    the same application services and share validation, authorization, and error
    handling.
-4. **Make context visible.** Organization, project, environment, API surface,
+4. **Make context visible.** Team, project, environment, API surface,
    and profile are shown before consequential actions and in verbose output.
 5. **Never leak credentials.** Secrets do not appear in arguments, config
    files, debug logs, shell history, MCP results, or generated support bundles.
@@ -135,8 +135,8 @@ LID resolution, user security codes, business profiles, catalogs, products,
 collections, orders, compliance, observation policies, webhooks, client tokens,
 project templates, project-scoped campaigns, and all 33 signed event payload
 schemas plus Platform
-organizations, projects, sessions, billing, campaigns, audiences, opt-outs,
-media, organization API keys, members, audit logs, session bans, security
+teams, projects, sessions, billing, campaigns, audiences, opt-outs,
+media, team API keys, members, audit logs, session bans, security
 incidents, project-token metadata, saved QuickLink (widget) settings, and batch
 session stop/delete. Curated commands do not use the SDK's raw escape
 hatch to paper over a missing public contract. The explicit `api` command is
@@ -193,8 +193,8 @@ choosing the first result.
 ### Global context flags
 
 - `--profile <name>` selects stored authentication and defaults.
-- Organization-owned API requests use the organization bound to the selected
-  key. The CLI does not accept an organization override that could relabel a
+- Team-owned API requests use the team bound to the selected
+  key. The CLI does not accept a team override that could relabel a
   request without changing its authorization.
 - `--project <id-or-slug>` overrides the linked or profile project.
 - `--api-version <version>` overrides the SDK default when the API permits it.
@@ -243,7 +243,7 @@ Errors contain:
 - a concise human message;
 - a stable CLI error code;
 - the Polymorfa request ID when available;
-- the selected profile, organization, project, and API surface when relevant;
+- the selected profile, team, project, and API surface when relevant;
 - a corrective command or documentation link; and
 - additional sanitized detail under `--verbose` or `--debug`.
 
@@ -314,13 +314,13 @@ slurping, and JSON filtering. It adds an explicit `--surface
 messaging|platform` selector. The CLI may infer the surface only when the route
 and available credential make the choice unique.
 
-`dashboard` opens the active organization, project, session, or other supplied
+`dashboard` opens the active team, project, session, or other supplied
 resource in the Polymorfa console without embedding credentials in the URL.
 
-### Organizations, projects, credentials, access, and billing
+### Teams, projects, credentials, access, and billing
 
 ```text
-organization
+team
   list
   view
   create
@@ -382,14 +382,14 @@ rather than pretending rotation is atomic. Billing commands expose operational
 status and open the hosted billing portal; they do not duplicate the console's
 purchasing UI.
 
-The organization-key billing contract provides balance status, usage, an
+The team-key billing contract provides balance status, usage, an
 unpaged transaction list, tier pricing, and reminder-settings mutation. The CLI
 does not invent pagination or a usage export when the API exposes neither.
 Billing top-ups and console usage-insight aggregation remain dashboard/staff
 surfaces. `billing portal` is a credential-free console navigation helper, not
 an API mutation.
 
-`organization view` remains credential-compatible. Organization update and
+`team view` remains credential-compatible. Team update and
 member/invite mutations remain reserved and unshipped because those routes
 require a dashboard session. In particular, the CLI must not use
 `raw.request` to bypass that credential boundary.
@@ -585,7 +585,7 @@ group
 ```
 
 Number pairing uses a persistent hosted QuickLink. `quicklink create` accepts a
-JSON request with an organization API key and returns the link URL,
+JSON request with a team API key and returns the link URL,
 `quicklink view` reads its status, and `quicklink cancel` invalidates a link that
 has not connected. View and cancel also accept an exact-project token. Saved
 QuickLink settings are managed with `widget view` and `widget update`; the CLI
@@ -814,11 +814,11 @@ bounded concurrency, and machine-readable partial-failure artifacts.
 
 The `flow` top-level command name remains reserved but is not shipped against
 this SDK baseline. The separate Platform template and Flow routes require
-dashboard JWTs and reject organization keys. The CLI must not collect, persist,
+dashboard JWTs and reject team keys. The CLI must not collect, persist,
 or replay dashboard session JWTs to bypass that boundary, and neither MCP tools
 nor skills may expose those routes. Platform template management and Flow
 commands can enter the implementation plan only after the Platform API provides
-a CLI-appropriate organization or project credential contract and the public
+a CLI-appropriate team or project credential contract and the public
 SDK exposes it. The shipped `template` family uses the credential-compatible
 Messaging project-template resource instead. `message send template` is a
 separate Messaging send operation.
@@ -1000,7 +1000,7 @@ maintenance work.
 
 ### Phase 1: core messaging and MCP
 
-- Organization and project discovery.
+- Team and project discovery.
 - Session lifecycle and connection workflows.
 - Text and media message sending plus essential reads.
 - Webhook inspection and testing.
@@ -1071,7 +1071,7 @@ slices:
 - unified Calls commands for placement, answering and joining with exclusive
   claims, declining, leaving, ending, inviting, session call updates, raw PCM
   call audio, and session call settings, pinned to an unpushed SDK revision;
-- organization-key API-key list/revocation, member and audit lists, session-ban
+- team-key API-key list/revocation, member and audit lists, session-ban
   filtering, security-incident list/acknowledgement, and project-token metadata
   commands;
 - bounded batch session stop and confirmed management deletion commands;
@@ -1079,8 +1079,8 @@ slices:
   commands, with accepted-work receipts and direct requeue;
 - explicit owner-scoped event list/view/replay, webhook CRUD/test/secret
   rotation, delivery and attempt inspection, and retry commands;
-- persistent QuickLink create with organization keys, view/cancel with
-  organization keys or exact-project tokens, and no direct session QR fallback;
+- persistent QuickLink create with team keys, view/cancel with
+  team keys or exact-project tokens, and no direct session QR fallback;
 - the bounded SSE listener with JSONL and human sinks, fail-closed gap handling,
   cumulative acknowledgement, checkpointed reconnects, exact-byte local
   signing, and redirect-safe forwarding;

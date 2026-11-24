@@ -145,12 +145,12 @@ describe('developer webhook commands', () => {
     const output = stdout()
 
     await developerEnvironment(() =>
-      WebhookList.run(['--owner', 'organization', '--limit', '10', '--json']),
+      WebhookList.run(['--owner', 'team', '--limit', '10', '--json']),
     )
 
     expect(findCall('webhooks.list').args).toEqual([{limit: 10}, {}])
     expect(json(output)).toMatchObject({
-      context: {owner: 'organization'},
+      context: {owner: 'team'},
       data: [{id: 'wh_1'}],
       page: {hasMore: true, nextCursor: 'next_1'},
       schemaVersion: 1,
@@ -161,7 +161,7 @@ describe('developer webhook commands', () => {
     const output = stdout()
 
     await developerEnvironment(() =>
-      WebhookView.run(['wh_1', '--owner', 'organization', '--json']),
+      WebhookView.run(['wh_1', '--owner', 'team', '--json']),
     )
 
     expect(findCall('webhooks.retrieve').args).toEqual(['wh_1', {}])
@@ -172,8 +172,8 @@ describe('developer webhook commands', () => {
     const output = stdout()
 
     await developerEnvironment(async () => {
-      await WebhookView.run(['wh_1', '--owner', 'organization'])
-      await WebhookDeliveryView.run(['delivery_1', '--owner', 'organization'])
+      await WebhookView.run(['wh_1', '--owner', 'team'])
+      await WebhookDeliveryView.run(['delivery_1', '--owner', 'team'])
     })
 
     const text = output.mock.calls.map(([chunk]) => String(chunk)).join('')
@@ -191,7 +191,7 @@ describe('developer webhook commands', () => {
       WebhookDelete.run([
         'wh_1',
         '--owner',
-        'organization',
+        'team',
         '--yes',
         '--idempotency-key',
         'delete_1',
@@ -272,7 +272,7 @@ describe('developer webhook commands', () => {
         'delivery_1',
         'attempt_1',
         '--owner',
-        'organization',
+        'team',
         '--json',
       ]),
     )
@@ -292,12 +292,7 @@ describe('developer webhook commands', () => {
     const output = stdout()
 
     await developerEnvironment(() =>
-      WebhookDeliveryView.run([
-        'delivery_1',
-        '--owner',
-        'organization',
-        '--json',
-      ]),
+      WebhookDeliveryView.run(['delivery_1', '--owner', 'team', '--json']),
     )
 
     expect(findCall('webhookDeliveries.retrieve').args).toEqual([
@@ -348,7 +343,7 @@ describe('developer webhook commands', () => {
       WebhookUpdate.run([
         'wh_1',
         '--owner',
-        'organization',
+        'team',
         '--input',
         input,
         '--idempotency-key',
@@ -411,7 +406,7 @@ describe('developer webhook commands', () => {
       WebhookUpdate.run([
         'wh_1',
         '--owner',
-        'organization',
+        'team',
         '--phone-offline-start-day',
         '13',
         '--idempotency-key',
@@ -432,7 +427,7 @@ describe('developer webhook commands', () => {
       WebhookUpdate.run([
         'wh_1',
         '--owner',
-        'organization',
+        'team',
         '--phone-offline-start-day',
         'off',
         '--idempotency-key',
@@ -456,7 +451,7 @@ describe('developer webhook commands', () => {
       WebhookUpdate.run([
         'wh_1',
         '--owner',
-        'organization',
+        'team',
         '--phone-offline-start-day',
         'off',
       ]),
@@ -480,7 +475,7 @@ describe('developer webhook commands', () => {
         WebhookUpdate.run([
           'wh_1',
           '--owner',
-          'organization',
+          'team',
           '--phone-offline-start-day',
           value,
         ]),
@@ -500,7 +495,7 @@ describe('developer webhook commands', () => {
       .spyOn(process.stderr, 'write')
       .mockImplementation(() => true)
     const error = await developerEnvironment(() =>
-      WebhookUpdate.run(['wh_1', '--owner', 'organization']),
+      WebhookUpdate.run(['wh_1', '--owner', 'team']),
     ).catch((caught: unknown) => caught)
     expect(exitCode(error)).toBe(2)
     expect(String(stderr.mock.calls.flat().join(''))).toContain(
@@ -559,7 +554,7 @@ describe('developer webhook commands', () => {
       WebhookTest.run([
         'wh_1',
         '--owner',
-        'organization',
+        'team',
         '--event',
         'customer.created',
         '--input',
@@ -639,7 +634,7 @@ describe('developer webhook commands', () => {
       WebhookSecretRotate.run([
         'wh_1',
         '--owner',
-        'organization',
+        'team',
         '--overlap',
         '1h',
         '--secret-out',
@@ -671,7 +666,7 @@ describe('developer webhook commands', () => {
       WebhookSecretRotate.run([
         'wh_1',
         '--owner',
-        'organization',
+        'team',
         '--secret-out',
         secret,
         '--yes',
@@ -694,7 +689,7 @@ describe('developer webhook commands', () => {
       WebhookDeliveryRetry.run([
         'delivery_1',
         '--owner',
-        'organization',
+        'team',
         '--yes',
         '--idempotency-key',
         'retry_1',
@@ -807,7 +802,7 @@ function resource(
                 format: 'native',
                 headers: [],
                 id: String(args[0]),
-                owner: 'organization',
+                owner: 'team',
                 projectId: null,
                 updatedAt: '2026-09-08T00:00:00Z',
                 url: 'https://hooks.example.test/polymorfa',

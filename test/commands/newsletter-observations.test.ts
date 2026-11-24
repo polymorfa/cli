@@ -56,7 +56,7 @@ const metadata = (
   events: readonly (FixtureEnvelope | CurrentEnvelope)[] = fixture.events,
 ) => ({
   id: fixture.events[index]!.id,
-  organizationId: 'org_1',
+  teamId: 'team_1',
   projectId: PROJECT,
   type: 'newsletter.update',
   source: 'runtime',

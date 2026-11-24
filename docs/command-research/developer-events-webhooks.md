@@ -35,7 +35,7 @@ listen
 mcp serve|install|uninstall|status|tools|doctor
 ```
 
-Developer resources have an explicit `project` or `organization` owner. A
+Developer resources have an explicit `project` or `team` owner. A
 stored profile may fix that choice; otherwise `--owner` is required before any
 transport. Project ownership also requires exact project context. The CLI never
 probes one owner after another and never treats a credential prefix, resource

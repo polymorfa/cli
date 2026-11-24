@@ -322,30 +322,27 @@ test.each(cases)(
 test.each([
   'routing-policy get --scope team',
   'routing-policy set --scope team --expected-revision default --prefer inherit --deny-all',
-])(
-  'project credentials cannot invoke organization policy: %s',
-  async (command) => {
-    const server = await startHttpSequenceServer([{body: {}}])
-    try {
-      await withEnvironment(
-        {
-          POLYMORFA_BASE_URL: server.baseUrl,
-          POLYMORFA_API_KEY: undefined,
-          POLYMORFA_PROJECT_TOKEN: projectToken,
-          POLYMORFA_CLIENT_TOKEN: undefined,
-        },
-        async () => {
-          const result = await runCommand(`${command} --json`)
-          expect(result.error).toBeDefined()
-          expect(result.stderr).toContain('require a server API key')
-        },
-      )
-      expect(server.requests).toEqual([])
-    } finally {
-      await server.close()
-    }
-  },
-)
+])('project credentials cannot invoke team policy: %s', async (command) => {
+  const server = await startHttpSequenceServer([{body: {}}])
+  try {
+    await withEnvironment(
+      {
+        POLYMORFA_BASE_URL: server.baseUrl,
+        POLYMORFA_API_KEY: undefined,
+        POLYMORFA_PROJECT_TOKEN: projectToken,
+        POLYMORFA_CLIENT_TOKEN: undefined,
+      },
+      async () => {
+        const result = await runCommand(`${command} --json`)
+        expect(result.error).toBeDefined()
+        expect(result.stderr).toContain('require a server API key')
+      },
+    )
+    expect(server.requests).toEqual([])
+  } finally {
+    await server.close()
+  }
+})
 
 test('invalid project-token format is rejected before transport', async () => {
   const server = await startHttpSequenceServer([{body: {}}])

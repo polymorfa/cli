@@ -5,7 +5,7 @@ import {
 } from '../../services/platform-management.js'
 
 export default class SecurityIncidentList extends BaseCommand {
-  static override description = 'List organization security incidents.'
+  static override description = 'List team security incidents.'
 
   async run(): Promise<void> {
     const {flags} = await this.parse(SecurityIncidentList)

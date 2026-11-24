@@ -212,7 +212,7 @@ export function callFilterQuery(input: CallFilterInput): Query {
   }
 }
 
-/** The project filter for the resolved context; none for the organization. */
+/** The project filter for the resolved context; none for the team. */
 export function projectQuery(context: OutputContext): Query {
   return context.owner === 'project' && context.projectId
     ? {projectId: context.projectId}

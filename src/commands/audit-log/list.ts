@@ -7,7 +7,7 @@ import {
 } from '../../services/platform-management.js'
 
 export default class AuditLogList extends BaseCommand {
-  static override description = 'List organization audit log entries.'
+  static override description = 'List team audit log entries.'
 
   static override flags = {
     action: Flags.string({description: 'Match one exact audit action.'}),

@@ -34,7 +34,7 @@ export async function listMcpConnections(
       process.env.POLYMORFA_CLIENT_TOKEN?.trim())
   ) {
     throw new PolymorfaConfigurationError(
-      'Select only one organization API key for MCP connection discovery.',
+      'Select only one team API key for MCP connection discovery.',
       'credential',
     )
   }

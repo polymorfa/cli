@@ -6,7 +6,7 @@ import {
 
 export default class WidgetView extends BaseCommand {
   static override description =
-    'View saved Connect widget settings for the organization or one project.'
+    'View saved Connect widget settings for the team or one project.'
 
   async run(): Promise<void> {
     const {flags} = await this.parse(WidgetView)

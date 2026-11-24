@@ -85,14 +85,14 @@ describe('resolveEnvironment', () => {
             POLYMORFA_API_KEY: 'ambient_key',
             POLYMORFA_CLIENT_TOKEN: 'ambient_client',
           },
-          owner: 'organization',
+          owner: 'team',
           profile: 'work',
         },
         fakeProfiles(),
         fakeCredentials('pmfa_AQIDBAUGBwgJCgsMDQ4PEBESExRXid_4'),
       ),
     ).resolves.toMatchObject({
-      context: {owner: 'organization', profile: 'work'},
+      context: {owner: 'team', profile: 'work'},
       credential: 'pmfa_AQIDBAUGBwgJCgsMDQ4PEBESExRXid_4',
     })
   })
@@ -146,12 +146,12 @@ describe('resolveEnvironment', () => {
       ),
     ).resolves.toMatchObject({
       credential: 'pmfa_AgMEBQYHCAkKCwwNDg8QERITFBXd5SUP',
-      principalType: 'organization_key',
+      principalType: 'team_key',
     })
     expect(credentials.get).not.toHaveBeenCalled()
   })
 
-  test('resolves an organization project slug to its canonical UUID', async () => {
+  test('resolves a team project slug to its canonical UUID', async () => {
     const lookup = vi.fn(() => Promise.resolve([fakeProject('checkout')]))
 
     await expect(
@@ -167,7 +167,7 @@ describe('resolveEnvironment', () => {
         lookup,
       ),
     ).resolves.toMatchObject({
-      principalType: 'organization_key',
+      principalType: 'team_key',
       projectId: PROJECT,
     })
     expect(lookup).toHaveBeenCalledOnce()
@@ -201,24 +201,21 @@ describe('resolveEnvironment', () => {
         fakeProject('checkout', OTHER_PROJECT),
       ],
     },
-  ])(
-    'rejects an organization slug that is $expected',
-    async ({expected, projects}) => {
-      await expect(
-        resolveListenerEnvironment(
-          {
-            env: {
-              POLYMORFA_API_KEY: 'pmfa_AwQFBgcICQoLDA0ODxAREhMUFRYcof0T',
-            },
-            project: 'checkout',
+  ])('rejects a team slug that is $expected', async ({expected, projects}) => {
+    await expect(
+      resolveListenerEnvironment(
+        {
+          env: {
+            POLYMORFA_API_KEY: 'pmfa_AwQFBgcICQoLDA0ODxAREhMUFRYcof0T',
           },
-          fakeProfiles(),
-          fakeCredentials('unused'),
-          () => Promise.resolve(projects),
-        ),
-      ).rejects.toThrow(expected)
-    },
-  )
+          project: 'checkout',
+        },
+        fakeProfiles(),
+        fakeCredentials('unused'),
+        () => Promise.resolve(projects),
+      ),
+    ).rejects.toThrow(expected)
+  })
 
   test('rejects a project-token slug without attempting project discovery', async () => {
     const lookup = vi.fn(() => Promise.resolve([fakeProject('checkout')]))
@@ -412,7 +409,7 @@ describe('resolveEnvironment', () => {
     expect(credentials.get).not.toHaveBeenCalled()
   })
 
-  test('preserves the organization Platform credential boundary for project profiles and environment', async () => {
+  test('preserves the team Platform credential boundary for project profiles and environment', async () => {
     expect(() =>
       resolveEnvironment({
         env: {POLYMORFA_PROJECT_TOKEN: PROJECT_TOKEN},
@@ -426,7 +423,7 @@ describe('resolveEnvironment', () => {
         projectProfiles(),
         credentials,
       ),
-    ).rejects.toThrow('organization API key')
+    ).rejects.toThrow('team API key')
     expect(credentials.get).not.toHaveBeenCalled()
   })
 
@@ -508,7 +505,7 @@ describe('resolveEnvironment', () => {
 describe('resolveDeveloperEnvironment owner inference', () => {
   const key = 'pmfa_AQIDBAUGBwgJCgsMDQ4PEBESExRXid_4'
 
-  test('reads the whole organization despite a saved project profile', async () => {
+  test('reads the whole team despite a saved project profile', async () => {
     const config: ProfileConfig = {
       activeProfile: 'scoped',
       profiles: {
@@ -530,7 +527,7 @@ describe('resolveDeveloperEnvironment owner inference', () => {
       profiles,
       fakeCredentials(key),
     )
-    expect(analytics.context.owner).toBe('organization')
+    expect(analytics.context.owner).toBe('team')
     expect(analytics.context.projectId).toBeUndefined()
 
     const explicitProfileScope = await resolveDeveloperEnvironment(
@@ -544,7 +541,7 @@ describe('resolveDeveloperEnvironment owner inference', () => {
     })
   })
 
-  test('reads the organization with an organization key and no project', async () => {
+  test('reads the team with a team key and no project', async () => {
     await expect(
       resolveDeveloperEnvironment(
         {env: {POLYMORFA_API_KEY: key}, inferOwner: true},
@@ -552,7 +549,7 @@ describe('resolveDeveloperEnvironment owner inference', () => {
         fakeCredentials('unused'),
       ),
     ).resolves.toMatchObject({
-      context: {owner: 'organization', principalType: 'organization_key'},
+      context: {owner: 'team', principalType: 'team_key'},
     })
   })
 
