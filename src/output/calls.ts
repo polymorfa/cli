@@ -1,3 +1,4 @@
+import {terminalText} from '../developer/render.js'
 import type {CallActivity, CallsStatus} from '../services/calls.js'
 
 /** An abort signal for Ctrl-C and SIGTERM, removed when the command ends. */
@@ -58,11 +59,25 @@ export function renderCallActivity(activity: CallActivity): string {
         `participant=${activity.participant.id}`,
         `state=${activity.participant.state}`,
       )
+      if ((activity.participant as {guest?: boolean}).guest === true)
+        fields.push('guest=true')
+      if (typeof (activity.participant as {name?: string}).name === 'string')
+        fields.push(
+          `name=${terminalText(JSON.stringify((activity.participant as {name?: string}).name))}`,
+        )
       break
     case 'participant_left':
       fields.push(`participant=${activity.participantId}`)
       if (activity.reason !== undefined)
         fields.push(`reason=${activity.reason}`)
+      break
+    case 'waiting_room':
+      fields.push(
+        `approvalRequired=${activity.room.enabled}`,
+        `isAdmin=${activity.room.isAdmin}`,
+        `inWaitingRoom=${activity.room.inWaitingRoom}`,
+        `users=${terminalText(JSON.stringify(activity.room.users))}`,
+      )
       break
     case 'ended':
       fields.push(`reason=${activity.reason}`, `duration=${activity.duration}s`)

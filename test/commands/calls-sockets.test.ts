@@ -1,3 +1,4 @@
+import {Call} from '@polymorfa/sdk/calls'
 import {
   link,
   mkdir,
@@ -29,6 +30,12 @@ const API_KEY = 'pmfa_BAUGBwgJCgsMDQ4PEBESExQVFhfgvFaM'
 const CLIENT_TOKEN = 'pmfa_ct_cG1mYV9jdF9zb2NrZXRfdGVzdF90b2tlbg'
 const TIMESTAMP = '2026-09-16T10:00:00.000Z'
 
+const guestSdk =
+  typeof (Call.prototype as unknown as {admitParticipant?: unknown})
+    .admitParticipant === 'function'
+if (process.env.POLYMORFA_GUEST_SDK_REQUIRED === '1' && !guestSdk)
+  throw new Error('Guest acceptance requires the pinned candidate SDK package')
+
 describe('calls watch and media', () => {
   let server: CallsServer | undefined
   let directory: string
@@ -42,6 +49,112 @@ describe('calls watch and media', () => {
     server = undefined
     await rm(directory, {force: true, recursive: true})
   })
+
+  test.runIf(guestSdk)(
+    'moderates a guest over the same live media connection and matches the result',
+    async () => {
+      const outputPath = join(directory, 'guest.pcm')
+      const controlsPath = join(directory, 'controls.jsonl')
+      await writeFile(
+        controlsPath,
+        '{"action":"admit","participantId":"123"}\n',
+      )
+      const commands: Record<string, unknown>[] = []
+      server = await startCallsServer({
+        onSocket: async (socket) => {
+          await socket.next()
+          if (socket.path.startsWith('/voip/ws')) {
+            socket.sendJson({participant: 'server:default', type: 'ready'})
+            await delay(100)
+            sendEvent(socket, 'call.accepted', 'call_guest', {
+              answeredBy: 'server:default',
+              exclusive: false,
+            })
+            return
+          }
+          socket.sendJson({
+            callId: 'call_guest',
+            sampleRate: 16000,
+            type: 'ready',
+            video: false,
+          })
+          socket.sendJson({
+            type: 'waiting_room',
+            state: {
+              enabled: true,
+              isAdmin: true,
+              inWaitingRoom: false,
+              users: [
+                {
+                  id: '123',
+                  state: 'invited',
+                  audioMuted: false,
+                  video: false,
+                  guest: true,
+                  name: 'Ada Guest',
+                },
+              ],
+            },
+          })
+          const command = JSON.parse(String(await socket.next())) as Record<
+            string,
+            unknown
+          >
+          commands.push(command)
+          socket.sendJson({
+            type: 'waiting_room_result',
+            requestId: 'unrelated_update',
+            ok: true,
+          })
+          await delay(25)
+          socket.sendJson({
+            type: 'waiting_room_result',
+            requestId: command.requestId,
+            ok: true,
+          })
+          await delay(25)
+          socket.close(1000)
+        },
+        rest: () => ({
+          body: {
+            data: {callId: 'call_guest', connection: 'support', video: false},
+            success: true,
+          },
+          status: 201,
+        }),
+      })
+      const result = await apiKey(() =>
+        runCommand(
+          `calls media --connection support --place +15550100 --output ${outputPath} --control-input ${controlsPath} --json`,
+        ),
+      )
+      expect(result.error, result.stderr).toBeUndefined()
+      expect(commands).toHaveLength(1)
+      expect(commands[0]).toMatchObject({
+        type: 'waiting_room_control',
+        operation: 'admit',
+        participantId: '123',
+      })
+      expect(
+        server.sockets.filter((s) => s.path.includes('/media')),
+      ).toHaveLength(1)
+      const statuses = result.stderr
+        .trim()
+        .split('\n')
+        .map((line) => JSON.parse(line) as Record<string, unknown>)
+      expect(statuses).toContainEqual({
+        type: 'waiting_room_control_result',
+        sequence: 1,
+        action: 'admit',
+        ok: true,
+      })
+      expect(
+        statuses.find((value) => value.type === 'waiting_room'),
+      ).toMatchObject({
+        room: {users: [{id: '123', guest: true, name: 'Ada Guest'}]},
+      })
+    },
+  )
 
   test('streams call updates as JSON lines after first-frame authentication', async () => {
     server = await startCallsServer({
