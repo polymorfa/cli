@@ -3,6 +3,435 @@
   "cliVersion": "0.1.0-dev.0",
   "commands": [
     {
+      "id": "account list",
+      "summary": "List local account-device profile metadata without reading credentials or making requests.",
+      "description": "List local account-device profile metadata without reading credentials or making requests.",
+      "usage": ["polymorfa account list [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account login",
+      "summary": "Sign in through browser approval and store only the account session in its separate OS keyring.",
+      "description": "Sign in through browser approval and store only the account session in its separate OS keyring.",
+      "usage": ["polymorfa account login [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "api-origin",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Trusted HTTPS API origin for this Polymorfa environment.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "console-origin",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Trusted HTTPS Console origin for browser approval.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account logout",
+      "summary": "Revoke only the selected account session and report remote revocation separately from local cleanup.",
+      "description": "Revoke only the selected account session and report remote revocation separately from local cleanup.",
+      "usage": ["polymorfa account logout [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account projects",
+      "summary": "Read one page of projects in a currently allowed team; this grants no command or messaging access.",
+      "description": "Read one page of projects in a currently allowed team; this grants no command or messaging access.",
+      "usage": ["polymorfa account projects [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "after",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Continue after this project UUID.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "limit",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Page size, up to 100.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "team",
+          "char": null,
+          "type": "option",
+          "required": true,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Team UUID returned by account teams.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account status",
+      "summary": "Check the selected account session against its pinned API issuer.",
+      "description": "Check the selected account session against its pinned API issuer.",
+      "usage": ["polymorfa account status [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account teams",
+      "summary": "Read one page of teams currently allowed to the selected account session.",
+      "description": "Read one page of teams currently allowed to the selected account session.",
+      "usage": ["polymorfa account teams [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [],
+      "flags": [
+        {
+          "name": "after",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Continue after this team UUID.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "limit",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Page size, up to 100.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
+      "id": "account use",
+      "summary": "Select a local account-device profile without changing the active machine profile or its authority.",
+      "description": "Select a local account-device profile without changing the active machine profile or its authority.",
+      "usage": ["polymorfa account use NAME [flags]"],
+      "aliases": [],
+      "hidden": false,
+      "args": [
+        {"name": "name", "description": "", "required": true, "options": []}
+      ],
+      "flags": [
+        {
+          "name": "json",
+          "char": null,
+          "type": "boolean",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Print one JSON result.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "profile",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Select an account-device profile, separate from machine profiles.",
+          "env": null,
+          "helpGroup": null
+        },
+        {
+          "name": "timeout",
+          "char": null,
+          "type": "option",
+          "required": false,
+          "multiple": false,
+          "default": null,
+          "options": [],
+          "description": "Cancel this operation after this many milliseconds.",
+          "env": null,
+          "helpGroup": null
+        }
+      ],
+      "examples": [],
+      "state": null
+    },
+    {
       "id": "agent setup",
       "summary": "Install the Polymorfa agent kit in detected coding agents.",
       "description": "Detect Claude Code, Codex, Gemini CLI, and Cursor. Confirm before installing skills, plugin manifests, and the public documentation MCP through client installers. Cursor and unsupported Codex versions receive manual instructions. No Polymorfa credentials are needed.",

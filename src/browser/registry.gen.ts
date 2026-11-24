@@ -3,6 +3,48 @@ import {BrowserUnsupportedError} from './stubs/unsupported.js'
 export const COMMAND_LOADERS: Readonly<
   Record<string, () => Promise<{default: unknown}>>
 > = {
+  'account list': () =>
+    Promise.reject(
+      new BrowserUnsupportedError(
+        'requires local account profiles and the operating-system keyring',
+      ),
+    ),
+  'account login': () =>
+    Promise.reject(
+      new BrowserUnsupportedError(
+        'requires local account profiles and the operating-system keyring',
+      ),
+    ),
+  'account logout': () =>
+    Promise.reject(
+      new BrowserUnsupportedError(
+        'requires local account profiles and the operating-system keyring',
+      ),
+    ),
+  'account projects': () =>
+    Promise.reject(
+      new BrowserUnsupportedError(
+        'requires local account profiles and the operating-system keyring',
+      ),
+    ),
+  'account status': () =>
+    Promise.reject(
+      new BrowserUnsupportedError(
+        'requires local account profiles and the operating-system keyring',
+      ),
+    ),
+  'account teams': () =>
+    Promise.reject(
+      new BrowserUnsupportedError(
+        'requires local account profiles and the operating-system keyring',
+      ),
+    ),
+  'account use': () =>
+    Promise.reject(
+      new BrowserUnsupportedError(
+        'requires local account profiles and the operating-system keyring',
+      ),
+    ),
   'agent setup': () =>
     Promise.reject(
       new BrowserUnsupportedError(

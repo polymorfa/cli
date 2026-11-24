@@ -173,6 +173,48 @@ in this development slice and does not yet claim remote identity validation.
 Environment credentials take precedence over the active profile for automation.
 An explicit `--profile <name>` takes precedence over environment credentials.
 
+## Account browser sign-in
+
+The separate `account` commands require an API environment that registers the
+Polymorfa CLI device client. Installing a CLI package does not enable that server
+feature. Supply the trusted API and Console origins for the same environment:
+
+```shell
+polymorfa account login --profile personal \
+  --api-origin https://api.example.invalid \
+  --console-origin https://console.example.invalid
+polymorfa account status --profile personal --json
+polymorfa account teams --profile personal --limit 25 --json
+polymorfa account projects --profile personal --team TEAM_UUID --json
+polymorfa account logout --profile personal --json
+```
+
+Replace the example origins with your configured environment. Login prints the
+validated approval URL and user code to standard error; open that URL and approve
+the request in the browser. It never opens a browser automatically or accepts a
+session token on the command line. `--json` prints one final result to standard
+output. `--timeout` cancels the operation without extending the server's original
+device-code expiry. Interrupting an already redeemed sign-in attempts to revoke
+that new session; an uncertain revocation is reported as uncertain.
+
+Account sessions use their own profile file and operating-system keyring
+namespace. The opaque session stays in the keyring; short-lived verified JWTs
+stay in memory. `account list` and `account use NAME` inspect or select only these
+account profiles. They do not change the active machine profile. API-key,
+project-token and Messaging commands cannot use an account session.
+
+The only account resource commands are the read-only `account teams` and
+`account projects`. Each response is one page; pass `--after` the returned
+`nextAfter` UUID to continue. Current membership and approved live team/project
+grants are checked by the API on every read. Approval for all current and future
+resources does not add command permissions. There is no account raw-request,
+key-minting or messaging command. These commands require the local Node.js CLI
+and are refused by the browser build before reading its environment or fetching.
+
+Logout reports remote session revocation and local profile/keyring cleanup
+separately. Incomplete cleanup or unconfirmed revocation exits unsuccessfully;
+local removal alone is not proof that a remote session was revoked.
+
 ## Start a Node project
 
 Create a Node.js and TypeScript starter in an existing directory:
